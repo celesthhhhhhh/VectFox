@@ -219,4 +219,75 @@ eventbase-retrieval.js    → keyword-boost.js → bm25-scorer.js
 eventbase-workflow.js     → collection-metadata.js, constants.js, progress-tracker.js
 ```
 
-**Key takeaway:** The truly decoupled modules (`scenes.js`, `chunking.js`, `chunk-groups.js`, `temporal-decay.js`, `keyword-learner.js`, `emotion-classifier.js`, `summarizer.js`, `conditional-activation.js`, `world-info-integration.js`, etc.) operate on the legacy `vecthare_chat_*` collection pipeline and have **no awareness** of EventBase in either direction. They are safe to refactor, remove, or replace without any impact on EventBase.
+**Key takeaway (revised):** “Decoupled from EventBase” does **not** mean “safe to remove from VectHare.”
+Many of these modules are still required by the active **chunk-based pipeline** (`chat-vectorization` + `content-vectorization` + retrieval/injection flow). Removing them can break non-EventBase features even if EventBase itself remains intact.
+
+---
+
+## 11. NOT Safe to Remove (still required by chunk-based vector flow)
+
+Given current behavior, these files are still part of production chunk workflows and should **not** be removed.
+
+### 11.1 Chunk ingestion / retrieval orchestrators
+
+| File | Why not safe to remove |
+|------|-------------------------|
+| [`core/chat-vectorization.js`](core/chat-vectorization.js) | Main chunk retrieval/injection orchestrator when EventBase is off; also handles chat auto-sync chunk path |
+| [`core/content-vectorization.js`](core/content-vectorization.js) | Primary chunk vectorization pipeline for chat (non-EventBase mode) + all non-chat content types |
+| [`ui/content-vectorizer.js`](ui/content-vectorizer.js) | UI entry point that triggers chunk vectorization for non-chat and chat when EventBase is disabled |
+
+### 11.2 Collection and query infrastructure used by chunk flow
+
+| File | Why not safe to remove |
+|------|-------------------------|
+| [`core/core-vector-api.js`](core/core-vector-api.js) | Chunk insert/query/purge primitives used across chunk ingestion + retrieval |
+| [`core/collection-loader.js`](core/collection-loader.js) | Registry/discovery used by chunk collection selection and lifecycle |
+| [`core/collection-metadata.js`](core/collection-metadata.js) | `enabled`, locks, triggers/conditions metadata used by chunk activation/filtering |
+| [`core/collection-ids.js`](core/collection-ids.js) | Chat collection IDs and registry key parsing used by chunk gather/filter logic |
+| [`core/constants.js`](core/constants.js) | Prompt tag constants used by chunk prompt injection path |
+
+### 11.3 Chunk retrieval/ranking/activation features currently in use
+
+| File | Why not safe to remove |
+|------|-------------------------|
+| [`core/keyword-boost.js`](core/keyword-boost.js) | Query keyword extraction + chunk score boosting in chunk retrieval |
+| [`core/conditional-activation.js`](core/conditional-activation.js) | Search context + chunk/collection condition evaluation used by chunk filtering |
+| [`core/chunk-groups.js`](core/chunk-groups.js) | Inclusive/exclusive group processing and virtual links in chunk result post-processing |
+| [`core/temporal-decay.js`](core/temporal-decay.js) | Optional temporal relevance adjustment in chunk pipeline |
+| [`core/scenes.js`](core/scenes.js) | Scene-based chunk disabling and scene-aware behavior in chunk flow |
+| [`core/world-info-integration.js`](core/world-info-integration.js) | Semantic WI retrieval merged into chunk injection flow |
+
+### 11.4 Chunk preparation dependencies
+
+| File | Why not safe to remove |
+|------|-------------------------|
+| [`core/chunking.js`](core/chunking.js) | Core text chunking for vectorization |
+| [`core/summarizer.js`](core/summarizer.js) | Optional summarization path during chunk vectorization/grouping |
+| [`core/text-cleaning.js`](core/text-cleaning.js) | Cleaning of chat/content text before chunking/vectorization |
+
+### 11.5 Backends/providers/utilities required by chunk data path
+
+| File | Why not safe to remove |
+|------|-------------------------|
+| [`backends/backend-manager.js`](backends/backend-manager.js) | Backend resolution used by chunk query/insert operations |
+| [`backends/standard.js`](backends/standard.js) | Standard backend adapter for chunk storage/query |
+| [`backends/qdrant.js`](backends/qdrant.js) | Qdrant backend adapter for chunk storage/query |
+| [`core/providers.js`](core/providers.js) | Embedding provider routing used by chunk vectorization/query |
+| [`providers/webllm.js`](providers/webllm.js) | WebLLM provider path used by embedding stack |
+| [`core/bm25-scorer.js`](core/bm25-scorer.js) | BM25/tokenization scoring used in chunk hybrid/boost logic |
+| [`core/hybrid-search.js`](core/hybrid-search.js) | Hybrid search mode for chunk retrieval |
+| [`utils/async-utils.js`](utils/async-utils.js) | Async helpers used in vector/query infrastructure |
+| [`utils/string-utils.js`](utils/string-utils.js) | String helpers used in vector/query infrastructure |
+| [`utils/data-structures.js`](utils/data-structures.js) | Queue/LRU used in chat chunk sync/retrieval internals |
+
+### 11.6 UI and debug components still tied to chunk workflows
+
+| File | Why not safe to remove |
+|------|-------------------------|
+| [`ui/database-browser.js`](ui/database-browser.js) | Collection enable/locks/activation controls that gate chunk querying |
+| [`ui/search-debug.js`](ui/search-debug.js) | Debug trace/fate tracking invoked throughout chunk retrieval stages |
+| [`ui/progress-tracker.js`](ui/progress-tracker.js) | Progress/cancel path for chunk vectorization workflows |
+
+### Practical rule
+
+Before removing any “decoupled-from-EventBase” file, validate whether it is part of the chunk path in [`core/chat-vectorization.js`](core/chat-vectorization.js), [`core/content-vectorization.js`](core/content-vectorization.js), or [`ui/content-vectorizer.js`](ui/content-vectorizer.js). If yes, it is **not safe to remove** under current mixed-mode architecture.

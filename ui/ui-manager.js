@@ -1004,6 +1004,15 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <input type="range" id="vecthare_eventbase_retrieval_min_importance" min="1" max="10" step="1" class="vecthare-range" />
                             </div>
 
+                            <div class="vecthare-form-group">
+                                <label class="vecthare-label">Injection Format</label>
+                                <select id="vecthare_eventbase_injection_format" class="vecthare-select">
+                                    <option value="jsonarray">JSONArray</option>
+                                    <option value="densetext">DenseText</option>
+                                </select>
+                                <small class="vecthare_hint">JSONArray keeps full structured JSON. DenseText uses compact key/value blocks to reduce prompt space.</small>
+                            </div>
+
                             <!-- Re-rank weights -->
                             <p style="margin: 12px 0 4px; font-size:0.85em; font-weight:600;">Re-rank Weights</p>
                             <small class="vecthare_hint">Weights are normalized to sum to 1.0 on save. Defaults are tuned for long-form SillyTavern RP.</small>
@@ -3145,6 +3154,14 @@ function bindSettingsEvents(settings, callbacks) {
     _bindEventBaseRange('max_events_per_window', 'eventbase_max_events_per_window', 'max_events_per_window');
     _bindEventBaseRange('retrieval_top_k', 'eventbase_retrieval_top_k', 'retrieval_top_k');
     _bindEventBaseRange('retrieval_min_importance', 'eventbase_retrieval_min_importance', 'retrieval_min_importance');
+
+    $('#vecthare_eventbase_injection_format')
+        .val(settings.eventbase_injection_format || 'jsonarray')
+        .on('change', function() {
+            settings.eventbase_injection_format = String($(this).val() || 'jsonarray').toLowerCase();
+            Object.assign(extension_settings.vecthareplus, settings);
+            saveSettingsDebounced();
+        });
 
     // Number inputs (temperature, max_tokens, timeout_ms)
     const _bindEventBaseNumber = (id, settingKey) => {

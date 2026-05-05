@@ -724,15 +724,14 @@ function gatherCollectionsToQuery(settings) {
     const collectionsToQuery = [];
     const registry = getCollectionRegistry();
 
-    // UI pause/resume is typically saved on registry keys (backend:source:collectionId),
-    // so resolve the chat collection to registry key first when possible.
-    let chatCollectionRegistryKey = null;
+    // UI pause/resume may be saved either on plain collectionId or on registry keys
+    // (backend:source:collectionId). Collect all matching keys for robust enabled checks.
+    const chatCollectionRegistryKeys = [];
     if (chatCollectionId) {
         for (const registryKey of registry) {
             const parsed = parseRegistryKey(registryKey);
             if (parsed.collectionId === chatCollectionId) {
-                chatCollectionRegistryKey = registryKey;
-                break;
+                chatCollectionRegistryKeys.push(registryKey);
             }
         }
     }
@@ -740,9 +739,10 @@ function gatherCollectionsToQuery(settings) {
     // Include chat collection if it's enabled AND we have a valid collection ID
     // Uses per-collection enabled state, not global enabled_chats
     if (chatCollectionId) {
-        const chatKeyToCheck = chatCollectionRegistryKey || chatCollectionId;
-        if (isCollectionEnabled(chatKeyToCheck)) {
-            collectionsToQuery.push(chatKeyToCheck);
+        const candidates = [chatCollectionId, ...chatCollectionRegistryKeys];
+        const firstEnabledKey = candidates.find((key) => isCollectionEnabled(key));
+        if (firstEnabledKey) {
+            collectionsToQuery.push(firstEnabledKey);
         }
     }
 

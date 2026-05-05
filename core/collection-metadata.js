@@ -938,6 +938,15 @@ export async function shouldCollectionActivate(collectionId, context) {
         return false;
     }
 
+    // Priority 1.3: If the user has explicitly saved lock settings (lockedToChatIds is present)
+    // and the current chat is NOT in the list, block activation.
+    // An empty array means the user opened settings and unchecked "Active for current chat".
+    // Absence of the property means the user has never configured it → unrestricted.
+    if (currentChatId && Array.isArray(meta.lockedToChatIds) && !isCollectionLockedToChat(collectionId, currentChatId)) {
+        console.log(`[VectHare Activation Filter] Collection ${collectionId}: ✗ NOT_LOCKED_TO_CURRENT_CHAT`);
+        return false;
+    }
+
     // Priority 2: Check if locked to current chat (overrides other conditions)
     if (currentChatId && isCollectionLockedToChat(collectionId, currentChatId)) {
         console.log(`[VectHare Activation Filter] Collection ${collectionId}: ✓ LOCKED_TO_CURRENT_CHAT (${currentChatId})`);

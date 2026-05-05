@@ -736,9 +736,10 @@ function gatherCollectionsToQuery(settings) {
         }
     }
 
-    // Include chat collection if it's enabled AND we have a valid collection ID
-    // Uses per-collection enabled state, not global enabled_chats
-    if (chatCollectionId) {
+    // Include chat collection if it's enabled AND we have a valid collection ID.
+    // When EventBase is ON, skip chunk chat collections — the eventbase workflow owns them.
+    // Uses per-collection enabled state, not global enabled_chats.
+    if (chatCollectionId && !settings?.eventbase_enabled) {
         const candidates = [chatCollectionId, ...chatCollectionRegistryKeys];
         const firstEnabledKey = candidates.find((key) => isCollectionEnabled(key));
         if (firstEnabledKey) {
@@ -746,16 +747,20 @@ function gatherCollectionsToQuery(settings) {
         }
     }
 
-    // Get all other registered collections that are enabled
+    // Get all other registered collections that are enabled.
+    // Enforce workflow isolation symmetrically:
+    //   EventBase OFF  → skip vecthare_eventbase_* (chunk pipeline should not touch them)
+    //   EventBase ON   → skip vecthare_chat_*       (eventbase pipeline owns those)
     for (const registryKey of registry) {
         // Use proper registry key parser to extract collection ID
         const parsedKey = parseRegistryKey(registryKey);
         const collectionId = parsedKey.collectionId;
 
-        // Keep EventBase retrieval isolated to its dedicated workflow.
-        // When EventBase workflow is OFF, do not query EventBase collections
-        // through chunk-based retrieval.
         if (!settings?.eventbase_enabled && collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE)) {
+            continue;
+        }
+
+        if (settings?.eventbase_enabled && collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_CHAT)) {
             continue;
         }
 

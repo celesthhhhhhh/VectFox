@@ -39,11 +39,9 @@ const defaultCollectionMeta = {
     // the collection activates. This is the primary, user-friendly method.
     //
     // Priority order:
-    // 1. alwaysActive=true → Collection always queries (ignores triggers)
-    // 2. triggers[] not empty → Match keywords in recent messages
-    // 3. conditions.enabled=true → Advanced rules (secondary method)
-    // 4. No triggers + no conditions → Auto-activates (like alwaysActive)
-    alwaysActive: false,           // If true, ignores triggers and conditions
+    // 1. triggers[] not empty → Match keywords in recent messages
+    // 2. conditions.enabled=true → Advanced rules (secondary method)
+    // 3. No triggers + no conditions → Auto-activates
     triggers: [],                  // Array of trigger keywords (case-insensitive)
     triggerMatchMode: 'any',       // 'any' = OR logic, 'all' = AND logic
     triggerCaseSensitive: false,   // Case sensitivity for trigger matching
@@ -911,27 +909,6 @@ export async function shouldCollectionActivate(collectionId, context) {
     const currentChatId = context?.currentChatId;
     const currentChatCollectionId = context?.currentChatCollectionId;
 
-    // Priority 0: alwaysActive flag bypasses all trigger/condition logic
-    if (meta.alwaysActive === true) {
-        console.log(`[VectHare Activation Filter] Collection ${collectionId}: ✓ ALWAYS_ACTIVE`);
-        return true;
-    }
-
-    // Priority 1.5: Current chat collection should always be eligible for activation.
-    // Supports plain IDs and registry-key variants (backend:source:collectionId).
-    if (currentChatCollectionId) {
-        const targetParsed = parseRegistryKey(collectionId);
-        const currentParsed = parseRegistryKey(currentChatCollectionId);
-        if (
-            collectionId === currentChatCollectionId
-            || targetParsed.collectionId === currentChatCollectionId
-            || targetParsed.collectionId === currentParsed.collectionId
-        ) {
-            console.log(`[VectHare Activation Filter] Collection ${collectionId}: ✓ CURRENT_CHAT_COLLECTION`);
-            return true;
-        }
-    }
-
     // Priority 1: Check if collection is disabled entirely
     if (meta.enabled === false) {
         console.log(`[VectHare Activation Filter] Collection ${collectionId}: ✗ DISABLED`);
@@ -1056,25 +1033,6 @@ export function getCollectionTriggers(collectionId) {
 }
 
 /**
- * Sets the always active flag for a collection
- * @param {string} collectionId Collection identifier
- * @param {boolean} alwaysActive Whether to always activate
- */
-export function setCollectionAlwaysActive(collectionId, alwaysActive) {
-    setCollectionMeta(collectionId, { alwaysActive });
-}
-
-/**
- * Checks if a collection is set to always active
- * @param {string} collectionId Collection identifier
- * @returns {boolean} Whether collection is always active
- */
-export function isCollectionAlwaysActive(collectionId) {
-    const meta = getCollectionMeta(collectionId);
-    return meta.alwaysActive === true;
-}
-
-/**
  * Gets a summary of a collection's activation settings
  * @param {string} collectionId Collection identifier
  * @returns {object} Summary of activation state
@@ -1085,9 +1043,7 @@ export function getCollectionActivationSummary(collectionId) {
     const hasConditions = meta.conditions?.enabled && meta.conditions?.rules?.length > 0;
 
     let mode = 'auto'; // No triggers, no conditions = auto-activate
-    if (meta.alwaysActive) {
-        mode = 'always';
-    } else if (triggers.length > 0) {
+    if (triggers.length > 0) {
         mode = 'triggers';
     } else if (hasConditions) {
         mode = 'conditions';
@@ -1095,7 +1051,6 @@ export function getCollectionActivationSummary(collectionId) {
 
     return {
         mode,
-        alwaysActive: meta.alwaysActive || false,
         triggerCount: triggers.length,
         conditionCount: meta.conditions?.rules?.length || 0,
         conditionsEnabled: hasConditions,

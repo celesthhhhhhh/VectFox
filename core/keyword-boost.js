@@ -1215,12 +1215,15 @@ export function applyKeywordBoost(results, query, options = {}) {
 
     const {
         diminishingReturns = true,
-        perKeywordCap = true
+        perKeywordCap = true,
+        debug = false,
     } = options;
 
     const queryLower = query.toLowerCase();
 
-    console.log(`[VectHare Keyword Boost] Starting keyword boost for query: "${query}" (diminishing=${diminishingReturns}, cap=${perKeywordCap})`);
+    if (debug) {
+        console.log(`[VectHare Keyword Boost] Starting keyword boost for query: "${query}" (diminishing=${diminishingReturns}, cap=${perKeywordCap})`);
+    }
 
     const boosted = results.map(result => {
         const rawKeywords = result.keywords || result.metadata?.keywords || [];
@@ -1259,7 +1262,7 @@ export function applyKeywordBoost(results, query, options = {}) {
             finalBoost = rawBoost;
         }
 
-        if (matchedKeywords.length > 0) {
+        if (debug && matchedKeywords.length > 0) {
             const scaleInfo = diminishingReturns
                 ? ` (raw=${rawBoost.toFixed(2)}x, scale=${(MATCH_SCALING_FACTORS[Math.min(matchedKeywords.length, 3)] * 100).toFixed(0)}%)`
                 : '';
@@ -1282,8 +1285,10 @@ export function applyKeywordBoost(results, query, options = {}) {
     // Sort by boosted score
     boosted.sort((a, b) => b.score - a.score);
 
-    const boostedCount = boosted.filter(r => r.keywordBoosted).length;
-    console.log(`[VectHare Keyword Boost] Applied keyword boosts to ${boostedCount}/${boosted.length} results (diminishing=${diminishingReturns})`);
+    if (debug) {
+        const boostedCount = boosted.filter(r => r.keywordBoosted).length;
+        console.log(`[VectHare Keyword Boost] Applied keyword boosts to ${boostedCount}/${boosted.length} results (diminishing=${diminishingReturns})`);
+    }
 
     return boosted;
 }
@@ -1307,7 +1312,7 @@ export function getOverfetchAmount(topK) {
  * @param {number} topK - Number of results to return
  * @returns {Array} Boosted and trimmed results
  */
-export function applyKeywordBoosts(results, query, topK) {
-    const boosted = applyKeywordBoost(results, query);
+export function applyKeywordBoosts(results, query, topK, options = {}) {
+    const boosted = applyKeywordBoost(results, query, options);
     return boosted.slice(0, topK);
 }

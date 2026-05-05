@@ -859,7 +859,9 @@ export async function queryCollection(collectionId, searchText, topK, settings) 
 
     // Check if hybrid search is enabled
     if (settings.hybrid_search_enabled) {
-        console.log('[VectHare] Hybrid search enabled, dispatching to hybrid search module');
+        if (settings.eventbase_debug_logging) {
+            console.log('[VectHare] Hybrid search enabled, dispatching to hybrid search module');
+        }
         const queryStart = Date.now();
         try {
             const result = await hybridSearch(collectionId, searchText, topK, settings, { queryVector });
@@ -955,7 +957,9 @@ function scoreResults(resultsForBoost, searchText, topK, settings, overfetchAmou
         // Use both keyword boost and BM25
         // VEC-24: Use safe overfetch amount
         const keywordBoostLimit = safeOverfetchAmount;
-        const keywordBoosted = applyKeywordBoosts(resultsForBoost, searchText, keywordBoostLimit);
+        const keywordBoosted = applyKeywordBoosts(resultsForBoost, searchText, keywordBoostLimit, {
+            debug: settings.eventbase_debug_logging,
+        });
         const hybridResults = applyBM25Scoring(keywordBoosted, searchText, {
             k1: settings.bm25_k1 || 1.5,
             b: settings.bm25_b || 0.75,
@@ -965,7 +969,9 @@ function scoreResults(resultsForBoost, searchText, topK, settings, overfetchAmou
         finalResults = hybridResults.slice(0, topK);
     } else {
         // Use traditional keyword boost (default)
-        finalResults = applyKeywordBoosts(resultsForBoost, searchText, topK);
+        finalResults = applyKeywordBoosts(resultsForBoost, searchText, topK, {
+            debug: settings.eventbase_debug_logging,
+        });
     }
     return finalResults;
 }
@@ -1007,7 +1013,9 @@ export async function queryMultipleCollections(collectionIds, searchText, topK, 
 
     // Check if hybrid search is enabled - process each collection with hybrid search
     if (settings.hybrid_search_enabled) {
-        console.log('[VectHare] Hybrid search enabled for multi-collection query');
+        if (settings.eventbase_debug_logging) {
+            console.log('[VectHare] Hybrid search enabled for multi-collection query');
+        }
         const processedResults = {};
         for (const collectionId of collectionIds) {
             try {

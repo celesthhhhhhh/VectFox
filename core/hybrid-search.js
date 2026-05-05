@@ -30,6 +30,7 @@ export const DEFAULT_RRF_K = 60;
  */
 export async function hybridSearch(collectionId, searchText, topK, settings, options = {}) {
     const backend = await getBackend(settings);
+    const debugLog = settings?.eventbase_debug_logging;
 
     const {
         fusionMethod = settings.hybrid_fusion_method || 'rrf',
@@ -42,7 +43,9 @@ export async function hybridSearch(collectionId, searchText, topK, settings, opt
     // Check if backend supports native hybrid search and user prefers it
     const preferNative = settings.hybrid_native_prefer !== false;
     if (preferNative && backend.supportsHybridSearch && backend.supportsHybridSearch()) {
-        console.log(`[HybridSearch] Using native hybrid search (${backend.constructor.name})`);
+        if (debugLog) {
+            console.log(`[HybridSearch] Using native hybrid search (${backend.constructor.name})`);
+        }
         try {
             return await backend.hybridQuery(collectionId, searchText, topK, settings, {
                 vectorWeight,
@@ -51,13 +54,17 @@ export async function hybridSearch(collectionId, searchText, topK, settings, opt
                 rrfK
             });
         } catch (error) {
-            console.warn(`[HybridSearch] Native hybrid failed, falling back to client-side:`, error.message);
+            if (debugLog) {
+                console.warn(`[HybridSearch] Native hybrid failed, falling back to client-side:`, error.message);
+            }
             // Fall through to client-side fusion
         }
     }
 
     // Client-side fusion for backends without native support
-    console.log(`[HybridSearch] Using client-side ${fusionMethod.toUpperCase()} fusion`);
+    if (debugLog) {
+        console.log(`[HybridSearch] Using client-side ${fusionMethod.toUpperCase()} fusion`);
+    }
     return clientSideHybridSearch(
         backend,
         collectionId,

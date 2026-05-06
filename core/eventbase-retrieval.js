@@ -16,7 +16,6 @@
 import { queryEvents } from './eventbase-store.js';
 import { getChatUUID } from './collection-ids.js';
 import { extractChatKeywords, applyKeywordBoost } from './keyword-boost.js';
-import { extractCJKTokens } from './bm25-scorer.js';
 
 // ---------------------------------------------------------------------------
 // Default re-rank weights (tuned for long-form SillyTavern RP)
@@ -79,13 +78,6 @@ function _normalizeWeights(w) {
         persist: w.persist / sum,
         recency: w.recency / sum,
     };
-}
-
-function _truncateWords(text, maxWords = 100) {
-    if (!text || typeof text !== 'string') return '';
-    const words = text.trim().split(/\s+/).filter(Boolean);
-    if (words.length <= maxWords) return text.trim();
-    return `${words.slice(0, maxWords).join(' ')} ...`;
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +177,6 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     const baseWeight = settings.keyword_boost_base_weight || 1.5;
     const queryKeywords = extractChatKeywords(boostText, { level: extractionLevel, baseWeight });
     const queryKeywordTexts = queryKeywords.map(k => k.text);
-    const cjkDebugTokens = extractCJKTokens(boostText).slice(0, 30);
     let boostedCandidates = rawCandidates;
     if (!useHybrid && queryKeywords.length > 0) {
         // Non-hybrid path: apply term-level keyword boost on top of raw cosine results.
@@ -198,8 +189,6 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     } else if (useHybrid && debugLog) {
         console.log(`[EventBase] Keyword boost skipped — hybrid search (${settings.hybrid_fusion_method || 'rrf'}) already includes BM25 scoring`);
         console.log(`[EventBase] Hybrid keyword debug — extracted ${queryKeywords.length} keyword(s) from boostText: ${queryKeywordTexts.length ? queryKeywordTexts.join(', ') : '(none)'}`);
-        console.log(`[EventBase] Hybrid CJK token debug — extracted ${cjkDebugTokens.length} token(s) from boostText: ${cjkDebugTokens.length ? cjkDebugTokens.join(', ') : '(none)'}`);
-        console.log(`[EventBase] Hybrid AI-text snippet (<=100 words): ${_truncateWords(searchText, 100)}`);
     }
 
     // 3. Filter by minimum importance

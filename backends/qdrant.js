@@ -759,7 +759,8 @@ export class QdrantBackend extends VectorBackend {
                 textWeight,
                 fusionMethod,
                 rrfK
-            }
+            },
+            eventbaseDebug: !!settings.eventbase_debug_hdrant_backend,
         };
 
         // Add content_type filter for multitenancy mode

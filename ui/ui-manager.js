@@ -898,6 +898,12 @@ export function renderSettings(containerId, settings, callbacks) {
                             </label>
                             <small class="vecthare_hint">Log [EventBase] details and vectorization progress diagnostics (ProgressTracker + batch/parsing logs) to the browser console.</small>
 
+                            <label class="checkbox_label" for="vecthare_eventbase_debug_hdrant_backend" style="margin-top: 12px;">
+                                <input type="checkbox" id="vecthare_eventbase_debug_hdrant_backend" />
+                                <span>Debug Hdrant backend</span>
+                            </label>
+                            <small class="vecthare_hint">Log native hybrid backend keyword/fusion diagnostics from the Similharity Qdrant backend. Turn this off when not actively debugging to avoid noisy console output.</small>
+
                         </div>
                     </div>
 
@@ -3366,6 +3372,14 @@ function bindSettingsEvents(settings, callbacks) {
         .on('input', function() {
             const value = parseInt($(this).val());
             settings.rate_limit_interval = isNaN(value) ? 60 : value;
+            Object.assign(extension_settings.vecthareplus, settings);
+            saveSettingsDebounced();
+        });
+
+    $('#vecthare_eventbase_debug_hdrant_backend')
+        .prop('checked', !!settings.eventbase_debug_hdrant_backend)
+        .on('change', function() {
+            settings.eventbase_debug_hdrant_backend = !!$(this).prop('checked');
             Object.assign(extension_settings.vecthareplus, settings);
             saveSettingsDebounced();
         });

@@ -176,6 +176,7 @@ const defaultSettings = {
     eventbase_retrieval_min_importance: 1,        // Minimum importance for retrieval
     eventbase_retrieval_filters_enabled: true,
     eventbase_debug_logging: false,
+    eventbase_debug_hdrant_backend: false,
     debug_vectorizing_log: false,                // Verbose vectorization progress logs in console
     eventbase_custom_prompt: '',                  // Custom extraction prompt (empty = use built-in default)
     // Re-rank weights (sum is normalized to 1.0 at runtime)

@@ -801,7 +801,7 @@ export class QdrantBackend extends VectorBackend {
                         hybridSearch: true,
                         vectorRank: r.debug?.vectorRank,
                         keywordRank: r.debug?.keywordRank,
-                        matchedKeywords: r.debug?.matchedKeywords,
+                        matchedKeywordWeight: r.debug?.matchedKeywordWeight,
                         ...r.metadata,
                     }))
                 };

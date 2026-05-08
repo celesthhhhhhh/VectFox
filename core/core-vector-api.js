@@ -943,6 +943,11 @@ export async function queryCollection(collectionId, searchText, topK, settings) 
 }
 
 function scoreResults(resultsForBoost, searchText, topK, settings) {
+    // Short-circuit: nothing to re-rank means no need to extract keywords or run BM25.
+    if (!resultsForBoost || resultsForBoost.length === 0) {
+        return [];
+    }
+
     // A1 — BM25 re-rank over ANN top-K candidates only (no full corpus scan)
     const level = settings?.hybrid_keyword_level || 'balance';
     const maxKeywords = RETRIEVAL_KEYWORD_LEVELS[level]?.maxKeywords ?? 50;

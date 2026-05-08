@@ -1,172 +1,271 @@
-client debugLog
-
 Generate entered
 index.js:19 [QR2] calling {args: Array(3), functionToCall: ƒ}
-chat-vectorization.js:1829 🐰 VectHare: rearrangeChat called (type: normal, chat length: 2116)
-eventbase-workflow.js:314 [EventBase] Retrieval start, searchText length: 4452
-eventbase-workflow.js:331 [EventBase] Keyword query (user last message, 28 chars): 我對 Mayla 説 "你記得我當時怎樣為你贖身的嗎?"
-eventbase-retrieval.js:117 [EventBase] Retrieval start — topK overfetch=16, minImportance=1, hybrid=true
-core-vector-api.js:863 [VectHare] Hybrid search enabled, dispatching to hybrid search module
-hybrid-search.js:47 [HybridSearch] Using native hybrid search (QdrantBackend)
-qdrant.js:777 [EventBase] Native hybrid request payload: backend=qdrant, collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, source=openrouter, model=qwen/qwen3-embedding-8b, topK=16, threshold=0, vectorWeight=0.5, textWeight=0.5, fusion=rrf, rrfK=60, searchTextLen=28, searchTextPreview="我對 Mayla 説 "你記得我當時怎樣為你贖身的嗎?""
-core-vector-api.js:863 [VectHare] Hybrid search enabled, dispatching to hybrid search module
-hybrid-search.js:47 [HybridSearch] Using native hybrid search (QdrantBackend)
-qdrant.js:777 [EventBase] Native hybrid request payload: backend=qdrant, collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, source=openrouter, model=qwen/qwen3-embedding-8b, topK=16, threshold=0, vectorWeight=0.5, textWeight=0.5, fusion=rrf, rrfK=60, searchTextLen=4452, searchTextPreview="我對 Mayla 説 "你記得我當時怎樣為你贖身的嗎?" 好，來仔細思考一下這次的劇情！ - 回顧當前情況 * 時間：20:15，晚上 * 位置：新大陸.流沙之國.扎赫拉巴德.星月綠洲頂層皇家套房，9個人分配好床位（Critblade+Mayla一張，索拉雅單獨，阿斯蒙蒂斯單獨，Kashier+Fern，Valerie單獨，Engni+Lia） * 人物關係：Mayla剛剛崩潰大哭，擔心Critblade會像她父親影翼一樣消失。Critblade現在要鼓勵她，並對房間內所有人喊話 - 當前劇情的主線是？暗線是？ * 主線：Critblade安撫Mayla"
-qdrant.js:790 [Qdrant] Native hybrid search returned 16 results
-core-vector-api.js:873 [EventBase] Hybrid search (RRF) response: 16 result(s) in 963ms, scores=[0.0147, 0.0141, 0.0137, 0.0133, 0.0131, 0.0131, 0.0130, 0.0128, 0.0124, 0.0122, 0.0122, 0.0119, 0.0118, 0.0117, 0.0114, 0.0112]
-qdrant.js:790 [Qdrant] Native hybrid search returned 16 results
-core-vector-api.js:873 [EventBase] Hybrid search (RRF) response: 16 result(s) in 1116ms, scores=[0.0102, 0.0100, 0.0095, 0.0095, 0.0090, 0.0088, 0.0088, 0.0087, 0.0085, 0.0084, 0.0083, 0.0082, 0.0082, 0.0081, 0.0080, 0.0080]
-eventbase-retrieval.js:153 [EventBase] Dual-query: user=16 + context=16 → merged=27 unique events
-eventbase-retrieval.js:190 [EventBase] Keyword boost skipped — hybrid search (rrf) already includes BM25 scoring
-eventbase-retrieval.js:191 [EventBase] Hybrid keyword debug — extracted 8 keyword(s) from boostText: mayla, critblade, kashier, fern, engni, lia, valerie, master
-eventbase-retrieval.js:201 [EventBase] After importance filter (>=1): 27 candidates
-eventbase-retrieval.js:276 [EventBase] Final events after dedup + trim: 8
-eventbase-retrieval.js:278   [0] type=promise_or_oath imp=9 score=0.786 persist=true
-eventbase-retrieval.js:278   [1] type=relationship_change imp=9 score=0.771 persist=true
-eventbase-retrieval.js:278   [2] type=revelation imp=9 score=0.769 persist=true
-eventbase-retrieval.js:278   [3] type=character_state_change imp=9 score=0.747 persist=true
-eventbase-retrieval.js:278   [4] type=revelation imp=9 score=0.746 persist=true
-eventbase-retrieval.js:278   [5] type=promise_or_oath imp=10 score=0.743 persist=true
-eventbase-retrieval.js:278   [6] type=promise_or_oath imp=9 score=0.726 persist=true
-eventbase-retrieval.js:278   [7] type=relationship_change imp=9 score=0.724 persist=true
-eventbase-workflow.js:343 [EventBase] Retrieval debug: {dualQuery: true, hybridUsed: true, fusionMethod: 'rrf', rawCount: 27, keywordsBoosted: 0, …}
-eventbase-workflow.js:377 [EventBase] Injected 8 event(s) (requested 8), text length: 4250
-eventbase-workflow.js:378 [EventBase] setExtensionPrompt tag="3_vecthare_eventbase" position=0 depth=2
-eventbase-workflow.js:381 [EventBase] Slot verification — key exists: true, value type: string, length: 4250
-eventbase-workflow.js:382 [EventBase] extension_prompts keys: (11) ['1_memory', '2_floating_prompt', 'QUIET_PROMPT', 'customDepthWI_0_0', 'customDepthWI_0_1', 'customDepthWI_0_2', 'PERSONA_DESCRIPTION', '__STORY_STRING__', 'DEPTH_PROMPT', '3_vecthare', '3_vecthare_eventbase']
-eventbase-workflow.js:383 [EventBase] Injection preview: <VectHareMemory>
-# Event 1
-event_type: promise_or_oath
-importance: 9
-summary: Critblade 擁抱 Mayla，承諾房內所有人會幫助尋找她的父親，生要見人死要見屍，並向房間大喊「對吧？」確認。同時嚴厲指出 Mayla 需展現領導力，擺脫愁眉苦臉以說服其他 familiars 跟隨。這一席話引發房間死寂，轉為「壞孩子們」的審判氛圍。
-DateTime: -
-cause: Mayla 因父親影翼失蹤而悲傷顫慄。
-result: Kashier、Fern、Engni 等回應提出條件與測試，Lia 以沈默審視，迫使 Ma
-script.js:4547 Core/all messages: 2116/2116
-world-info.js:623 [WI] Processing sticky entry ArtificRealm創世域.42 {hash: 5608283655957508, start: 2116, end: 2117, protected: false}
-world-info.js:627 [WI] Removing sticky entry ArtificRealm創世域.42 from timedWorldInfo: chat not advanced {hash: 5608283655957508, start: 2116, end: 2117, protected: false}
-world-info.js:722 [WI] Adding sticky entry ArtificRealm創世域.42: start=2116, end=2117, protected=false
-
-
---------------------------
-server logs (before stop word list fix)
-
-[similharity] LanceDB folder not found or not accessible: ENOENT: no such file or directory, access 'data/default-user/vectors/lancedb'
->>> [Qdrant] Listed 1058 items from vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
->>> [Qdrant] Listed 1058 items from vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
-Discovered Qdrant Collection: vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 1058 items
->>> [Qdrant] Listed 1058 items from vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
->>> [Qdrant] Listed 1090 items from vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
-Discovered Qdrant Collection: vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 1090 items
-Instantiated the tokenizer for gemma
->>> [Qdrant] Listed 1090 items from vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
->>> [Qdrant] Listed 1090 items from vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
-[Qdrant] hybrid searchText snippet (~100 words, 28 chars, 4 whitespace words): 我對 Mayla 説 "你記得我當時怎樣為你贖身的嗎?"
-[Qdrant] extractQueryKeywords CJK pass → 6 unique tokens (showing top 6): 我對, 記得, 當時, 怎樣, 為你, 贖身
-[Qdrant] extractQueryKeywords Latin pass → 1 unique tokens (showing top 1): mayla
-[Qdrant] extractQueryKeywords final → 7 tokens (fullCJK=false): 我對, 記得, 當時, 怎樣, 為你, 贖身, mayla
-[Qdrant] extractQueryKeywords → 7 tokens: 我對, 記得, 當時, 怎樣, 為你, 贖身, mayla
-[Qdrant] Hybrid query START: collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, keywords=7, topK=16
-[Qdrant] Hybrid options: vectorWeight=0.5, keywordWeight=0.5, fusion=rrf
-[Hdrant-backend] Hybrid query keywords (7): 我對, 記得, 當時, 怎樣, 為你, 贖身, mayla
-[Qdrant] Collection vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 exists, proceeding with hybrid search
-[Qdrant] Vector search complete: 32 results
-[Qdrant] Starting keyword search with 7 keywords: 我對, 記得, 當時, 怎樣, 為你, 贖身, mayla
-[Qdrant] Keyword search complete: 112 results
-[Qdrant] Starting fusion: 32 vector + 112 keyword results
-[Hdrant-backend] [0] finalScore=0.014662, vectorScore=0.505708, keywordScore=0.107143, vectorRank=13, keywordRank=4, matchedKeywordList=mayla:text
-[Hdrant-backend] [1] finalScore=0.014149, vectorScore=0.614283, keywordScore=0.107143, vectorRank=1, keywordRank=24, matchedKeywordList=mayla:text
-[Hdrant-backend] [2] finalScore=0.013431, vectorScore=0.476565, keywordScore=0.321429, vectorRank=31, keywordRank=3, matchedKeywordList=mayla:text, mayla:payload
-[Hdrant-backend] [3] finalScore=0.013292, vectorScore=0.489223, keywordScore=0.107143, vectorRank=20, keywordRank=11, matchedKeywordList=mayla:text
-[Hdrant-backend] [4] finalScore=0.013145, vectorScore=0.481416, keywordScore=0.321429, vectorRank=28, keywordRank=7, matchedKeywordList=mayla:text, mayla:payload
-[Hdrant-backend] [5] finalScore=0.013072, vectorScore=0.497070, keywordScore=0.107143, vectorRank=16, keywordRank=17, matchedKeywordList=mayla:text
-[Hdrant-backend] [6] finalScore=0.012890, vectorScore=0.481683, keywordScore=0.107143, vectorRank=27, keywordRank=10, matchedKeywordList=mayla:text
-[Hdrant-backend] [7] finalScore=0.012802, vectorScore=0.477421, keywordScore=0.107143, vectorRank=30, keywordRank=9, matchedKeywordList=mayla:text
-[Hdrant-backend] [8] finalScore=0.012413, vectorScore=0.551089, keywordScore=0.107143, vectorRank=7, keywordRank=41, matchedKeywordList=mayla:text
-[Hdrant-backend] [9] finalScore=0.012249, vectorScore=0.553012, keywordScore=0.107143, vectorRank=6, keywordRank=47, matchedKeywordList=mayla:text
-[Qdrant] Hybrid query: 32 vector + 112 keyword = 16 fused results
-[Qdrant] hybrid searchText snippet (~100 words, 4452 chars, 212 whitespace words): 我對 Mayla 説 "你記得我當時怎樣為你贖身的嗎?" 好，來仔細思考一下這次的劇情！ - 回顧當前情況 * 時間：20:15，晚上 * 位置：新大陸.流沙之國.扎赫拉巴德.星月綠洲頂層皇家套房，9個人分配好床位（Critblade+Mayla一張，索拉雅單獨，阿斯蒙蒂斯單獨，Kashier+Fern，Valerie單獨，Engni+Lia） * 人物關係：Mayla剛剛崩潰大哭，擔心Critblade會像她父親影翼一樣消失。Critblade現在要鼓勵她，並對房間內所有人喊話 - 當前劇情的主線是？暗線是？ * 主線：Critblade安撫Mayla，告訴她所有人都會幫她找父親，但同時點醒她——她需要展現領導能力，不能整天愁眉苦臉 * 暗線：索拉雅在角落忍受淫紋發作，Engni和Lia表面裝睡但其實在偷聽，Kashier和Fern也在聽，所有人對Mayla的崩潰都有不同反應 - 如何使用最新輸入內容？ * Critblade抱住Mayla說「這間房裡面的人，一定會幫你找到你的父親，生要見人死要見屍。沒有人會放棄你。」然後大聲對房內的人說「對吧？」最後對Mayla說「你要這個任務成功，你首先要說服其他眷屬你有能力去lead我們去完成。你這個模樣，整天愁眉苦臉，你要其他人怎樣跟著你走？」 * 這段話要完整復述，不能省略，是Critblade的核心發言 - 回顧角色性格特質 * Mayla：極度依賴Critblade，內心有強烈不安全感，但她其實智力262，是影之軍師，只是現在被恐懼壓垮了 * Kashier：精明商人，對Critblade絕對忠誠，會第一個響應 * Fern：裝傻賣萌但內心精明，會用撒嬌方式響應 * Engni：病態M，嫉妒Mayla但表面會裝得很虔誠 * Lia：病嬌刺客，冷漠但對Critblade忠誠 * Valerie：魔王之女，不懂人類情感，可能會說出很直接但不得體的話 * 索拉雅：極度寡言，宿命論者，正在忍受淫紋折磨 - 角色之間的化學反應 * Mayla vs Engni：兩個都想獨佔Critblade，但Mayla剛剛贏了床位爭奪戰，Engni心裡肯定在咒罵 * Kashier + Fern：兩個精明人結盟，會用最得體的方式響應 * Lia：病嬌本質會讓她用極端方式表達忠誠 * Valerie：完全狀況外，可能會問「找父親很難嗎？殺掉擋路的人就好了」 * 索拉雅：她會用最簡短的方式回應（如果回應的話），但主要心思在壓制淫紋 - 參考NSFW，如何處理色色？ * 這一段重點在情感衝擊和團隊凝聚，不適合直接NSFW * 但可以暗示：索拉雅在角落的生理反應，Engni嫉妒到乳頭硬挺，Mayla緊貼Critblade時巨乳的觸感 - 如何混合writing_style？ * 用日輕文風：自然流暢，長短句交錯，心理描寫用單星號 * 用男性視覺小說風格：口述畫面，分鏡感，對話獨立成段 * 避免ban詞：不用「共犯」「極其」「Master」「一絲」等垃圾詞 - 如何嚴格符合字數？ * 目標：大於800字小於1500字 * 策略：詳細描寫每個眷屬的反應（內心+表面），Mayla的情緒轉變，Critblade的霸氣宣言 - 還有什麼必須注意的正文規則？ 1. 必須以Critblade以外角色的動作或對話作為結尾 2. 不能重複上次內容 3. 用繁體中文輸出 4. 對白要完整復述輸入內容 5. 角色思維要符合各自腦回路 6. 必須有分鏡感和流暢的時間推進 - 如何衔接上次内容？ * 上次結尾是Mayla崩潰痛哭，索拉雅在角落壓抑淫紋 * 這次從Critblade摟緊Mayla開始，然後說出那段核心對白 - 給自己鼓勁！ *
-[Qdrant] extractQueryKeywords CJK pass → 597 unique tokens (showing top 50): 如何, 這個, 所有, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 新大陸, 房間, 角落, 反應, 你要, 其他, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 一個, 方式, 掃過, 女人, 那個, 怎樣, 這次, 套房, 單獨, 崩潰, 現在, 都會, 點醒, 能力, 整天, 愁眉苦臉, 表面, 內容, 這間, 沒有, 完整, 響應, 一絲, 每個, 上次, 顫抖
-[Qdrant] extractQueryKeywords Latin pass → 45 unique tokens (showing top 10): mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] extractQueryKeywords final → 60 tokens (fullCJK=true): 如何, 這個, 所有, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 新大陸, 房間, 角落, 反應, 你要, 其他, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 一個, 方式, 掃過, 女人, 那個, 怎樣, 這次, 套房, 單獨, 崩潰, 現在, 都會, 點醒, 能力, 整天, 愁眉苦臉, 表面, 內容, 這間, 沒有, 完整, 響應, 一絲, 每個, 上次, 顫抖, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] extractQueryKeywords → 60 tokens: 如何, 這個, 所有, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 新大陸, 房間, 角落, 反應, 你要, 其他, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 一個, 方式, 掃過, 女人, 那個, 怎樣, 這次, 套房, 單獨, 崩潰, 現在, 都會, 點醒, 能力, 整天, 愁眉苦臉, 表面, 內容, 這間, 沒有, 完整, 響應, 一絲, 每個, 上次, 顫抖, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] Hybrid query START: collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, keywords=60, topK=16
-[Qdrant] Hybrid options: vectorWeight=0.5, keywordWeight=0.5, fusion=rrf
-[Hdrant-backend] Hybrid query keywords (60): 如何, 這個, 所有, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 新大陸, 房間, 角落, 反應, 你要, 其他, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 一個, 方式, 掃過, 女人, 那個, 怎樣, 這次, 套房, 單獨, 崩潰, 現在, 都會, 點醒, 能力, 整天, 愁眉苦臉, 表面, 內容, 這間, 沒有, 完整, 響應, 一絲, 每個, 上次, 顫抖, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] Collection vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 exists, proceeding with hybrid search
-[Qdrant] Vector search complete: 32 results
-[Qdrant] Starting keyword search with 60 keywords: 如何, 這個, 所有, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 新大陸, 房間, 角落, 反應, 你要, 其他, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 一個, 方式, 掃過, 女人, 那個, 怎樣, 這次, 套房, 單獨, 崩潰, 現在, 都會, 點醒, 能力, 整天, 愁眉苦臉, 表面, 內容, 這間, 沒有, 完整, 響應, 一絲, 每個, 上次, 顫抖, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] Keyword search complete: 868 results
-[Qdrant] Starting fusion: 32 vector + 868 keyword results
-[Hdrant-backend] [0] finalScore=0.010266, vectorScore=0.692119, keywordScore=0.062500, vectorRank=19, keywordRank=67, matchedKeywordList=所有:text, 眷屬:text, 崩潰:text, mayla:text, critblade:text
-[Hdrant-backend] [1] finalScore=0.010007, vectorScore=0.778928, keywordScore=0.062500, vectorRank=5, keywordRank=156, matchedKeywordList=房間:text, 內心:text, 恐懼:text, mayla:text, critblade:text
-[Hdrant-backend] [2] finalScore=0.009518, vectorScore=0.715420, keywordScore=0.137500, vectorRank=11, keywordRank=142, matchedKeywordList=房間:text, 其他:text, 眷屬:text, 恐懼:text, mayla:text, critblade:text, engni:text, kashier:text, lia:text, fern:text, master:text
-[Hdrant-backend] [3] finalScore=0.009463, vectorScore=0.721112, keywordScore=0.087500, vectorRank=8, keywordRank=177, matchedKeywordList=恐懼:text, 崩潰:text, 都會:text, mayla:text, mayla:payload, critblade:text
-[Hdrant-backend] [4] finalScore=0.008856, vectorScore=0.797585, keywordScore=0.137500, vectorRank=2, keywordRank=572, matchedKeywordList=找到:text, 房間:text, 眷屬:text, 眷屬:payload, 內心:text, 恐懼:text, 都會:text, mayla:text, critblade:text, master:text
-[Hdrant-backend] [5] finalScore=0.008845, vectorScore=0.828558, keywordScore=0.162500, vectorRank=1, keywordRank=711, matchedKeywordList=所有:text, 父親:text, 房間:text, 其他:text, 套房:text, 能力:text, 愁眉苦臉:text, mayla:text, critblade:text, engni:text, kashier:text, lia:text, fern:text
-[Hdrant-backend] [6] finalScore=0.008826, vectorScore=0.797503, keywordScore=0.112500, vectorRank=3, keywordRank=502, matchedKeywordList=房間:text, 軍師:text, 恐懼:text, 恐懼:payload, 忠誠:text, mayla:text, critblade:text, lia:text
-[Hdrant-backend] [7] finalScore=0.008756, vectorScore=0.683012, keywordScore=0.075000, vectorRank=25, keywordRank=114, matchedKeywordList=父親:text, 父親:payload, mayla:text, critblade:text, valerie:text
-[Hdrant-backend] [8] finalScore=0.008530, vectorScore=0.758757, keywordScore=0.150000, vectorRank=6, keywordRank=464, matchedKeywordList=父親:text, 新大陸:text, 新大陸:payload, 房間:text, 軍師:text, 套房:text, 點醒:text, 顫抖:text, mayla:text, critblade:text, kashier:text
-[Hdrant-backend] [9] finalScore=0.008360, vectorScore=0.794465, keywordScore=0.137500, vectorRank=4, keywordRank=853, matchedKeywordList=找到:text, 新大陸:text, 房間:text, 內心:text, 恐懼:text, 恐懼:payload, 表面:text, mayla:text, critblade:text, master:text
-[Qdrant] Hybrid query: 32 vector + 868 keyword = 16 fused results
-New connection from 10.0.1.249 (forwarded: 162.158.216.157); User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36
-
-ForbiddenError: Invalid CSRF token. Please refresh the page and try again.
-New connection from 10.0.1.249 (forwarded: 172.71.178.109); User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
-
-
-
-
-------------------------------
-
-after stop word fix
-
-[similharity] LanceDB folder not found or not accessible: ENOENT: no such file or directory, access 'data/default-user/vectors/lancedb'
->>> [Qdrant] Listed 1058 items from vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
->>> [Qdrant] Listed 1058 items from vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
-Discovered Qdrant Collection: vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 1058 items
->>> [Qdrant] Listed 1090 items from vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
-Discovered Qdrant Collection: vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 1090 items
->>> [Qdrant] Listed 1058 items from vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
-Instantiated the tokenizer for gemma
->>> [Qdrant] Listed 1090 items from vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
->>> [Qdrant] Listed 1090 items from vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
-[Qdrant] hybrid searchText snippet (~100 words, 4452 chars, 212 whitespace words): 我對 Mayla 説 "你記得我當時怎樣為你贖身的嗎?" 好，來仔細思考一下這次的劇情！ - 回顧當前情況 * 時間：20:15，晚上 * 位置：新大陸.流沙之國.扎赫拉巴德.星月綠洲頂層皇家套房，9個人分配好床位（Critblade+Mayla一張，索拉雅單獨，阿斯蒙蒂斯單獨，Kashier+Fern，Valerie單獨，Engni+Lia） * 人物關係：Mayla剛剛崩潰大哭，擔心Critblade會像她父親影翼一樣消失。Critblade現在要鼓勵她，並對房間內所有人喊話 - 當前劇情的主線是？暗線是？ * 主線：Critblade安撫Mayla，告訴她所有人都會幫她找父親，但同時點醒她——她需要展現領導能力，不能整天愁眉苦臉 * 暗線：索拉雅在角落忍受淫紋發作，Engni和Lia表面裝睡但其實在偷聽，Kashier和Fern也在聽，所有人對Mayla的崩潰都有不同反應 - 如何使用最新輸入內容？ * Critblade抱住Mayla說「這間房裡面的人，一定會幫你找到你的父親，生要見人死要見屍。沒有人會放棄你。」然後大聲對房內的人說「對吧？」最後對Mayla說「你要這個任務成功，你首先要說服其他眷屬你有能力去lead我們去完成。你這個模樣，整天愁眉苦臉，你要其他人怎樣跟著你走？」 * 這段話要完整復述，不能省略，是Critblade的核心發言 - 回顧角色性格特質 * Mayla：極度依賴Critblade，內心有強烈不安全感，但她其實智力262，是影之軍師，只是現在被恐懼壓垮了 * Kashier：精明商人，對Critblade絕對忠誠，會第一個響應 * Fern：裝傻賣萌但內心精明，會用撒嬌方式響應 * Engni：病態M，嫉妒Mayla但表面會裝得很虔誠 * Lia：病嬌刺客，冷漠但對Critblade忠誠 * Valerie：魔王之女，不懂人類情感，可能會說出很直接但不得體的話 * 索拉雅：極度寡言，宿命論者，正在忍受淫紋折磨 - 角色之間的化學反應 * Mayla vs Engni：兩個都想獨佔Critblade，但Mayla剛剛贏了床位爭奪戰，Engni心裡肯定在咒罵 * Kashier + Fern：兩個精明人結盟，會用最得體的方式響應 * Lia：病嬌本質會讓她用極端方式表達忠誠 * Valerie：完全狀況外，可能會問「找父親很難嗎？殺掉擋路的人就好了」 * 索拉雅：她會用最簡短的方式回應（如果回應的話），但主要心思在壓制淫紋 - 參考NSFW，如何處理色色？ * 這一段重點在情感衝擊和團隊凝聚，不適合直接NSFW * 但可以暗示：索拉雅在角落的生理反應，Engni嫉妒到乳頭硬挺，Mayla緊貼Critblade時巨乳的觸感 - 如何混合writing_style？ * 用日輕文風：自然流暢，長短句交錯，心理描寫用單星號 * 用男性視覺小說風格：口述畫面，分鏡感，對話獨立成段 * 避免ban詞：不用「共犯」「極其」「Master」「一絲」等垃圾詞 - 如何嚴格符合字數？ * 目標：大於800字小於1500字 * 策略：詳細描寫每個眷屬的反應（內心+表面），Mayla的情緒轉變，Critblade的霸氣宣言 - 還有什麼必須注意的正文規則？ 1. 必須以Critblade以外角色的動作或對話作為結尾 2. 不能重複上次內容 3. 用繁體中文輸出 4. 對白要完整復述輸入內容 5. 角色思維要符合各自腦回路 6. 必須有分鏡感和流暢的時間推進 - 如何衔接上次内容？ * 上次結尾是Mayla崩潰痛哭，索拉雅在角落壓抑淫紋 * 這次從Critblade摟緊Mayla開始，然後說出那段核心對白 - 給自己鼓勁！ *
-[Qdrant] extractQueryKeywords anchor CJK pass → 37 unique tokens (showing top 15): 單獨, 我對, 記得, 當時, 為你, 贖身, 仔細, 思考, 一下, 劇情, 回顧, 當前, 情況, 時間, 晚上
-[Qdrant] extractQueryKeywords context CJK pass → 591 unique tokens (showing top 35): 她的, 聲音, 微微, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 我的, 新大陸, 房間, 需要, 角落, 反應, 你要, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 方式, 掃過, 女人, 套房, 崩潰, 現在, 都會, 點醒, 能力, 整天
-[Qdrant] extractQueryKeywords Latin pass → 45 unique tokens (showing top 10): mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] extractQueryKeywords final → 60 tokens (fullCJK=true): 單獨, 我對, 記得, 當時, 為你, 贖身, 仔細, 思考, 一下, 劇情, 回顧, 當前, 情況, 時間, 晚上, 她的, 聲音, 微微, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 我的, 新大陸, 房間, 需要, 角落, 反應, 你要, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 方式, 掃過, 女人, 套房, 崩潰, 現在, 都會, 點醒, 能力, 整天, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] extractQueryKeywords → 60 tokens: 單獨, 我對, 記得, 當時, 為你, 贖身, 仔細, 思考, 一下, 劇情, 回顧, 當前, 情況, 時間, 晚上, 她的, 聲音, 微微, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 我的, 新大陸, 房間, 需要, 角落, 反應, 你要, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 方式, 掃過, 女人, 套房, 崩潰, 現在, 都會, 點醒, 能力, 整天, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] Hybrid query START: collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, keywords=60, topK=16
-[Qdrant] Hybrid options: vectorWeight=0.5, keywordWeight=0.5, fusion=rrf
-[Hdrant-backend] Hybrid query keywords (60): 單獨, 我對, 記得, 當時, 為你, 贖身, 仔細, 思考, 一下, 劇情, 回顧, 當前, 情況, 時間, 晚上, 她的, 聲音, 微微, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 我的, 新大陸, 房間, 需要, 角落, 反應, 你要, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 方式, 掃過, 女人, 套房, 崩潰, 現在, 都會, 點醒, 能力, 整天, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] Collection vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 exists, proceeding with hybrid search
-[Qdrant] Vector search complete: 32 results
-[Qdrant] Starting keyword search with 60 keywords: 單獨, 我對, 記得, 當時, 為你, 贖身, 仔細, 思考, 一下, 劇情, 回顧, 當前, 情況, 時間, 晚上, 她的, 聲音, 微微, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 我的, 新大陸, 房間, 需要, 角落, 反應, 你要, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 方式, 掃過, 女人, 套房, 崩潰, 現在, 都會, 點醒, 能力, 整天, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
-[Qdrant] hybrid searchText snippet (~100 words, 28 chars, 4 whitespace words): 我對 Mayla 説 "你記得我當時怎樣為你贖身的嗎?"
-[Qdrant] extractQueryKeywords anchor CJK pass → 5 unique tokens (showing top 5): 我對, 記得, 當時, 為你, 贖身
-[Qdrant] extractQueryKeywords context CJK pass → 5 unique tokens (showing top 0): (none)
-[Qdrant] extractQueryKeywords Latin pass → 1 unique tokens (showing top 1): mayla
-[Qdrant] extractQueryKeywords final → 6 tokens (fullCJK=false): 我對, 記得, 當時, 為你, 贖身, mayla
-[Qdrant] extractQueryKeywords → 6 tokens: 我對, 記得, 當時, 為你, 贖身, mayla
-[Qdrant] Hybrid query START: collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, keywords=6, topK=16
-[Qdrant] Hybrid options: vectorWeight=0.5, keywordWeight=0.5, fusion=rrf
-[Hdrant-backend] Hybrid query keywords (6): 我對, 記得, 當時, 為你, 贖身, mayla
-[Qdrant] Collection vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 exists, proceeding with hybrid search
-[Qdrant] Vector search complete: 32 results
-[Qdrant] Starting keyword search with 6 keywords: 我對, 記得, 當時, 為你, 贖身, mayla
-[Qdrant] Keyword search complete: 112 results
-[Qdrant] Starting fusion: 32 vector + 112 keyword results
-[Hdrant-backend] [0] finalScore=0.014662, vectorScore=0.505073, keywordScore=0.125000, vectorRank=13, keywordRank=4, matchedKeywordList=mayla:text
-[Hdrant-backend] [1] finalScore=0.014149, vectorScore=0.614627, keywordScore=0.125000, vectorRank=1, keywordRank=24, matchedKeywordList=mayla:text
-[Hdrant-backend] [2] finalScore=0.013691, vectorScore=0.476803, keywordScore=0.375000, vectorRank=31, keywordRank=1, matchedKeywordList=贖身:text, 贖身:payload
-[Hdrant-backend] [3] finalScore=0.013292, vectorScore=0.489285, keywordScore=0.125000, vectorRank=20, keywordRank=11, matchedKeywordList=mayla:text
-[Hdrant-backend] [4] finalScore=0.013145, vectorScore=0.481535, keywordScore=0.375000, vectorRank=28, keywordRank=7, matchedKeywordList=mayla:text, mayla:payload
-[Hdrant-backend] [5] finalScore=0.013072, vectorScore=0.496955, keywordScore=0.125000, vectorRank=16, keywordRank=17, matchedKeywordList=mayla:text
-[Hdrant-backend] [6] finalScore=0.013025, vectorScore=0.482032, keywordScore=0.125000, vectorRank=25, keywordRank=10, matchedKeywordList=mayla:text
-[Hdrant-backend] [7] finalScore=0.012802, vectorScore=0.478249, keywordScore=0.125000, vectorRank=30, keywordRank=9, matchedKeywordList=mayla:text
-[Hdrant-backend] [8] finalScore=0.012413, vectorScore=0.551119, keywordScore=0.125000, vectorRank=7, keywordRank=41, matchedKeywordList=mayla:text
-[Hdrant-backend] [9] finalScore=0.012249, vectorScore=0.552797, keywordScore=0.125000, vectorRank=6, keywordRank=47, matchedKeywordList=mayla:text
-[Qdrant] Hybrid query: 32 vector + 112 keyword = 16 fused results
-[Qdrant] Keyword search complete: 870 results
-[Qdrant] Starting fusion: 32 vector + 870 keyword results
+chat-vectorization.js:1839 🐰 VectHare: rearrangeChat called (type: normal, chat length: 14)
+chat-vectorization.js:1902 VectHare: Will query 26 collections: (26) ['vecthare_chat_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a', 'vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:file_6874291738164587', 'vectra:openrouter:vectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenrouterfile_6874291738164587', 'vectra:openrouter:file_1550022531650929', 'vectra:openrouter:file_6367860815642341', 'vectra:openrouter:file_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6874291738164587', 'vectra:openrouter:vectraopenroutervectraopenrouter…erYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587', 'vectra:openrouter:vectraopenroutervectraopenrouter…erYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6874291738164587']
+chat-vectorization.js:1921 VectHare: Extracted 8 keywords from query: (8) ['cup', 'echidna', 'kamira', 'satella', 'vex', 'alpha', '阿爾法', '聽完']
+collection-metadata.js:930 [VectHare Activation Filter] Collection vecthare_chat_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a: ✗ NOT_LOCKED_TO_CURRENT_CHAT
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:930 [VectHare Activation Filter] Collection vectra:openrouter:file_6874291738164587: ✗ NOT_LOCKED_TO_CURRENT_CHAT
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterfile_1550022531650929: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterfile_1550022531650929: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterfile_6367860815642341: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterfile_6367860815642341: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterfile_6497716132830194: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterfile_6497716132830194: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterfile_6874291738164587: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenrouterfile_6874291738164587: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:937 [VectHare Activation Filter] Collection vectra:openrouter:file_1550022531650929: ✓ LOCKED_TO_CURRENT_CHAT (異世界學校 - 2025-12-16@09h56m28s)
+collection-metadata.js:937 [VectHare Activation Filter] Collection vectra:openrouter:file_6367860815642341: ✓ LOCKED_TO_CURRENT_CHAT (異世界學校 - 2025-12-16@09h56m28s)
+collection-metadata.js:937 [VectHare Activation Filter] Collection vectra:openrouter:file_6497716132830194: ✓ LOCKED_TO_CURRENT_CHAT (異世界學校 - 2025-12-16@09h56m28s)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterfile_1550022531650929: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterfile_1550022531650929: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterfile_6367860815642341: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterfile_6367860815642341: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterfile_6497716132830194: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterfile_6497716132830194: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterfile_6874291738164587: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenrouterfile_6874291738164587: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:951 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587: hasTriggers=false, hasConditions=false
+collection-metadata.js:982 [VectHare Activation Filter] Collection vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:1002 [VectHare Activation Filter] Summary: 26 collections → 24 active
+collection-metadata.js:1004 [VectHare Activation Filter] Active collections: (24) ['vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenrouterfile_6874291738164587', 'vectra:openrouter:file_1550022531650929', 'vectra:openrouter:file_6367860815642341', 'vectra:openrouter:file_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6874291738164587', 'vectra:openrouter:vectraopenroutervectraopenrouter…erYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587', 'vectra:openrouter:vectraopenroutervectraopenrouter…erYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6874291738164587']
+chat-vectorization.js:1945 ✅ VectHare: 24 collections passed activation filters: (24) ['vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenrouterfile_6874291738164587', 'vectra:openrouter:file_1550022531650929', 'vectra:openrouter:file_6367860815642341', 'vectra:openrouter:file_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouterfile_6874291738164587', 'vectra:openrouter:vectraopenroutervectraopenrouter…erYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587', 'vectra:openrouter:vectraopenroutervectraopenrouter…erYour Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_1550022531650929', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6367860815642341', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6497716132830194', 'vectra:openrouter:vectraopenroutervectraopenrouter…raopenroutervectraopenrouterfile_6874291738164587']
+backend-manager.js:278 VectHare: Health cache stale for standard, re-verifying...
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 744ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 644ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 765ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenrouterfile_1550022531650929
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 588ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenrouterfile_6367860815642341
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 645ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenrouterfile_6497716132830194
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 834ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenrouterfile_6874291738164587
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 465ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:file_1550022531650929
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 827ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:file_6367860815642341
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 394ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:file_6497716132830194
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 466ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 1050ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenrouterfile_1550022531650929
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 474ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenrouterfile_6367860815642341
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 465ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenrouterfile_6497716132830194
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 1427ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenrouterfile_6874291738164587
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 1620ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 362ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 672ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 796ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 405ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 1452ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterYour Wives - 2026-04-28@19h07m24s830ms imported
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 536ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_1550022531650929
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 1182ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6367860815642341
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 484ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6497716132830194
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 755ms, scores=[]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+chat-vectorization.js:862 VectHare: Retrieved 0 chunks from vectra:openrouter:vectraopenroutervectraopenroutervectraopenroutervectraopenrouterfile_6874291738164587
+chat-vectorization.js:2065 VectHare: Retrieved 0 total chunks from 24 collections
+chat-vectorization.js:2118 VectHare: Stored 0 chunks for visualizer
+chat-vectorization.js:2121 [VectHare Deduplication] Starting with 0 chunks before deduplication
+chat-vectorization.js:2122 [VectHare Deduplication] Current chat has 14 messages
+chat-vectorization.js:1491 [VectHare Dedup] Building hash set from 14 recent messages (depth: 50)
+chat-vectorization.js:1492 [VectHare Dedup] Total chat length: 14, checking duplicates in last 14 messages
+chat-vectorization.js:1518 [VectHare Dedup] Built hash set with 10 unique message hashes from recent context
+chat-vectorization.js:1556 [VectHare Dedup] FINAL: 0 will inject, 0 skipped as duplicates
+chat-vectorization.js:2126 [VectHare Deduplication] After deduplication: 0 to inject, 0 skipped
+chat-vectorization.js:2135 ℹ️ VectHare: All retrieved chunks already in context, nothing to inject
+chat-vectorization.js:2136    0 chunks were skipped (already in current chat)
+chat-vectorization.js:2137 [VectHare] Injection blocked: All retrieved chunks are already present in the current chat context. Adjust temporal decay or query depth if you want older messages.
+search-debug.js:148 VectHare Debug: Stored search debug data {query: '.\n阿爾法聽完關於「雪兔姬」的描述，那雙冰藍色的眸子微微收縮。她伸出食指，在虛空中輕點，幾條代表龍脈...', stages: {…}, historyCount: 6}
+script.js:4547 Core/all messages: 14/731
+world-info.js:5159 [WI] Adding 38 entries to prompt (38) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index.js:19 [QR2] calling {args: Array(1), functionToCall: ƒ}
+script.js:4606 skipWIAN not active, adding WIAN
+handler.ts:225 [Prompt Template] start generate after 38 messages
+handler.ts:395 [Prompt Template] processing 38 messages in 12ms
+index.js:1524 [shujuku_v91] ACU GENERATION_ENDED event for message_id: 731
+index.js:1524 [shujuku_v91] New message event (GENERATION_ENDED) detected for ACU, debouncing for 500ms...
+index.js:1524 [shujuku_v91] [剧情推进] [Plot] savePlotToLatestMessage_ACU 被调用
+index.js:1524 [shujuku_v91] [剧情推进] [Plot] planningGuard_ACU.inProgress: false
+index.js:1524 [shujuku_v91] [剧情推进] [Plot] planningGuard_ACU.ignoreNextGenerationEndedCount: 0
+index.js:1524 [shujuku_v91] [剧情推进] [Plot] tempPlotToSave_ACU: (空)
+index.js:1524 [shujuku_v91] [剧情推进] [Plot] tempPlotToSave_ACU 为空，无需保存
+script.js:5538 AbortError: signal is aborted without reason
+    at StreamingProcessor.onStopStreaming (script.js:3789:30)
+    at stopGeneration (script.js:5551:28)
+    at S (PromptViewer.vue:273:5)
+    at EventEmitter.<anonymous> (PromptViewer.vue:367:3)
+    at EventEmitter.emit (eventemitter.js:146:36)
+    at async sendOpenAIRequest (openai.js:3052:5)
+    at async sendStreamingRequest (script.js:6095:20)
+    at async finishGenerating (script.js:5334:44)
+prompts.ts:72 [Prompt Template] processing send result: 27547 tokens and 39750 chars
+script.js:3789 Uncaught (in promise) AbortError: signal is aborted without reason
+    at StreamingProcessor.onStopStreaming (script.js:3789:30)
+    at stopGeneration (script.js:5551:28)
+    at S (PromptViewer.vue:273:5)
+    at EventEmitter.<anonymous> (PromptViewer.vue:367:3)
+    at EventEmitter.emit (eventemitter.js:146:36)
+    at async sendOpenAIRequest (openai.js:3052:5)
+    at async sendStreamingRequest (script.js:6095:20)
+    at async finishGenerating (script.js:5334:44)
+onStopStreaming @ script.js:3789
+stopGeneration @ script.js:5551
+collectPrompts @ PromptViewer.vue:273
+(anonymous) @ PromptViewer.vue:367
+EventEmitter.emit @ eventemitter.js:146
+await in EventEmitter.emit
+sendOpenAIRequest @ openai.js:3052
+await in sendOpenAIRequest
+sendStreamingRequest @ script.js:6095
+finishGenerating @ script.js:5334
+await in finishGenerating
+Generate @ script.js:5394
+index.js:1524 [shujuku_v91] Debounced new message processing triggered for ACU.
+index.js:1524 [shujuku_v91] ACU Loaded 731 messages for: 異世界學校 - 2025-12-16@09h56m28s.
+index.js:1524 [shujuku_v91] ACU Auto-Trigger: Starting independent check...
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 全局数据表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 主角信息, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 重要人物表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 主角技能表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 支援角色, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 背包物品表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 任务与事件表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 总结表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 总体大纲, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 选项表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
+index.js:1524 [shujuku_v91] [Trigger Check] Table: 世界資訊, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1

@@ -104,14 +104,17 @@ const defaultSettings = {
     // Deduplication settings
     deduplication_depth: 50, // Number of recent messages to check for duplicates (0 = check all)
 
-    // Keyword scoring method
-    keyword_scoring_method: 'bm25', // 'keyword', 'bm25', or 'hybrid'
+    // Keyword scoring method for retrieval (standard backend only; ignored when native hybrid active)
+    keyword_scoring_method: 'bm25', // 'bm25' (fast re-rank of ANN top-K) | 'hybrid' (full corpus scan)
 
     // BM25 parameters
     bm25_k1: 1.5,  // Term frequency saturation (1.2-2.0 typical)
     bm25_b: 0.75,  // Length normalization (0-1, 0.75 typical)
 
-    // Keyword extraction level for chat messages
+    // Query keyword budget for retrieval (A1 and A2 paths)
+    hybrid_keyword_level: 'balance', // 'minimal' (30) | 'balance' (50) | 'maximum' (70)
+
+    // Keyword extraction level for INGESTION (chat history vectorization) — not retrieval
     keyword_extraction_level: 'balanced', // 'off', 'minimal', 'balanced', 'aggressive'
 
     // Summarization before vectorization
@@ -122,13 +125,12 @@ const defaultSettings = {
     summarize_vllm_api_key: '',       // vLLM API key (stored in extension settings, not ST secrets)
     summarize_prompt: '',             // Custom prompt template (empty = use built-in default)
 
-    // Hybrid Search settings (combines vector + full-text search)
-    hybrid_search_enabled: true,        // Enable hybrid search mode
+    // Hybrid Search fusion settings (apply to A2 client-side hybrid and A3 native hybrid)
     hybrid_fusion_method: 'rrf',        // 'rrf' (Reciprocal Rank Fusion) or 'weighted'
-    hybrid_vector_weight: 0.5,          // Weight for vector scores (0-1) - used in weighted mode
-    hybrid_text_weight: 0.5,            // Weight for text/BM25 scores (0-1) - used in weighted mode
+    hybrid_vector_weight: 0.5,          // Weight for vector scores (0-1) — used in weighted mode
+    hybrid_text_weight: 0.5,            // Weight for text/BM25 scores (0-1) — used in weighted mode
     hybrid_rrf_k: 60,                   // RRF constant (higher = more weight to top results)
-    hybrid_native_prefer: true,         // Prefer native backend hybrid if available (Qdrant/Milvus)
+    hybrid_native_prefer: true,         // Prefer native backend hybrid if available (Qdrant/Milvus default: A3)
 
     // Advanced features
     temporal_decay: getDefaultDecaySettings(),

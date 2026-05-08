@@ -40,14 +40,14 @@ export const EXTRACTION_LEVELS = {
 };
 ```
 
-## 2) Default Summarizer Token/Timeout Constants
+## 2) Default Summarizer Token/Timeout Constants 
 Located in: `core/summarizer.js`
 
 Exact constant names:
 - `DEFAULT_MAX_TOKENS`
 - `DEFAULT_TIMEOUT_MS`
 
-## 3) Group Batch Message Settings
+## 3) Group Batch Message Settings (going to demise as this is chunk based logic)
 Located in: `core/summarizer.js`
 
 Exact variable names used in grouped summarize flow:
@@ -175,42 +175,57 @@ Analysis of whether non-EventBase modules should be integrated into the EventBas
 
 Additionally, EventBase already has its own `_recencyBonus` — an exponential decay term computed from `source_window_end` and `chatLength` — baked into the 4-weight re-ranker formula in [`eventbase-store.js`](core/eventbase-store.js). Applying `temporal-decay.js` would be redundant and silently do nothing.
 
-### hybrid-search.js — NOT compatible
+### hybrid-search.js — Used indirectly (do not wire directly)
 
 **Module:** [`core/hybrid-search.js`](core/hybrid-search.js)
-**Decision:** ❌ Do not add to EventBase.
+**Decision:** ✅ EventBase benefits from it — but through `queryCollection()`, not by direct call.
 
-`hybridSearch()` takes a `collectionId` and queries it with both vector + BM25/text fusion. It operates at the backend/collection layer directly — it queries the collection and returns `{ hashes, metadata }` like a raw backend call, completely bypassing [`queryEvents()`](core/eventbase-store.js) and the EventBase store layer.
+EventBase calls `queryEvents()` → `queryCollection()`. Inside `queryCollection()`, the A1/A2/A3 routing decides whether to invoke `clientSideHybridSearch()` (A2) or the backend's native hybrid (A3) from `hybrid-search.js`. So EventBase automatically inherits hybrid search without any additional wiring.
 
-Plugging it in would require duplicating the store resolution logic (collection ID mapping, schema-aware hydration, score normalization). It would also fail to populate EventBase-specific fields (`score`, `importance`, etc.) correctly. The keyword boost already added to the retrieval pipeline covers the "term frequency matters" use case without this plumbing complexity.
+Do **not** call `hybridSearch()` directly from `eventbase-retrieval.js` or `eventbase-workflow.js`. It operates at the backend/collection layer — returns raw `{ hashes, metadata }` and bypasses `queryEvents()`, the store schema hydration, and EventBase-specific field population (`score`, `importance`, etc.).
 
 ### Summary table
 
-| Module | Add to EventBase? | Reason |
+| Module | Add directly to EventBase? | Reason |
 |---|---|---|
 | [`temporal-decay.js`](core/temporal-decay.js) | No | Already covered by `_recencyBonus` in the 4-weight formula; `applyDecayToResults` would silently skip all events due to missing `source: 'chat'` / `messageId` fields |
-| [`hybrid-search.js`](core/hybrid-search.js) | No | Operates at the backend/collection layer, bypasses EventBase store; keyword boost (just added) already covers term-frequency relevance |
+| [`hybrid-search.js`](core/hybrid-search.js) | No (used indirectly) | EventBase inherits A2/A3 hybrid automatically via `queryCollection()`. Direct calls would bypass `queryEvents()` and the store layer. |
 
 ---
 
 ## 9) EventBase Settings Impact Table
 
-After wiring EventBase to use hydrant native hybrid search, these settings affect EventBase as follows:
+Three retrieval paths exist after the keyword-level simplification. All paths are chosen inside `queryCollection()` — EventBase inherits whichever applies to the active backend.
+
+| Path | When | Loads all chunks? |
+|---|---|---|
+| A1 — BM25 re-rank | Default for standard/LanceDB; or Qdrant/Milvus with `hybrid_native_prefer=false` and `keyword_scoring_method=bm25` | No |
+| A2 — client-side hybrid full scan | `keyword_scoring_method=hybrid` (non-native) | **Yes** — slow on large collections |
+| A3 — native hybrid | Qdrant/Milvus with `hybrid_native_prefer=true` (default) | No |
 
 | Setting | Affects EventBase? | Notes |
 |---|---|---|
-| `hybrid_search_enabled` | Yes | Directly toggles hybrid retrieval for EventBase. When enabled, EventBase uses hybrid search; when disabled, it falls back to pure vector search plus simple keyword boost. |
-| `hybrid_fusion_method` (`rrf` / `weighted`) | Yes | Controls the fusion strategy used by EventBase when hybrid search is enabled. |
-| `prefer_native_backend_hybrid` | Yes | If enabled and the backend supports native hybrid (for example Qdrant / Milvus), EventBase uses the backend-native hybrid path. |
-| `bm25_k1`, `bm25_b` | Yes | Used by the client-side BM25 fallback when native hybrid is unavailable. |
-| `hybrid_vector_weight`, `hybrid_text_weight` | Yes | Used only when fusion method is `weighted`. |
-| `hybrid_rrf_k` | Yes | Used only when fusion method is `rrf`. |
-| `keyword_scoring_method` (`keyword`, `bm25`, `hybrid`) | No | This setting affects the main chat chunk pipeline, not EventBase. EventBase is controlled by `hybrid_search_enabled` instead. |
-| `keyword_extraction_level`, `keyword_boost_base_weight` | Only when hybrid is disabled | These affect the fallback `applyKeywordBoost()` path when EventBase hybrid search is off. |
-| `deduplication_depth` | Yes | Used by EventBase context deduplication to suppress events that are already visible in the recent chat window. |
-| `eventbase_retrieval_top_k`, `eventbase_retrieval_min_importance`, EventBase rerank weights | Yes | Still active for both hybrid and non-hybrid EventBase retrieval. |
+| `keyword_scoring_method` (`bm25` \| `hybrid`) | Yes | `bm25` = A1 fast re-rank; `hybrid` = A2 full corpus scan. Ignored when A3 active. |
+| `hybrid_keyword_level` (`minimal` / `balance` / `maximum`) | Yes (A1 and A2) | Controls how many keywords (30/50/70) are extracted from the query for BM25 scoring. Ignored under A3. |
+| `hybrid_native_prefer` | Yes | `true` (default for Qdrant/Milvus) → A3 native path. `false` → falls back to A1/A2 by `keyword_scoring_method`. |
+| `hybrid_fusion_method` (`rrf` / `weighted`) | Yes (A2 and A3) | Fusion strategy for client-side or native hybrid. Not used in A1. |
+| `hybrid_vector_weight`, `hybrid_text_weight` | Yes (A2/A3 weighted mode) | Used only when `hybrid_fusion_method = weighted`. |
+| `hybrid_rrf_k` | Yes (A2/A3 RRF mode) | Used only when `hybrid_fusion_method = rrf`. |
+| `bm25_k1`, `bm25_b` | Yes (A1 and A2) | BM25 parameters for both re-rank (A1) and full corpus scan (A2). |
+| `keyword_extraction_level`, `keyword_boost_base_weight` | No | Ingestion-only settings. No longer used in any retrieval path. |
+| `hybrid_search_enabled` | Removed | Setting deleted. Hybrid is now always available; path chosen by `keyword_scoring_method` + `hybrid_native_prefer`. |
+| `deduplication_depth` | Yes | EventBase context deduplication — suppress events already visible in recent chat window. |
+| `eventbase_retrieval_top_k`, `eventbase_retrieval_min_importance`, EventBase rerank weights | Yes | Active for all three retrieval paths. |
 
-### Key takeaway
-- Use `hybrid_search_enabled`, `hybrid_fusion_method`, and `prefer_native_backend_hybrid` to control EventBase hybrid retrieval.
-- `keyword_scoring_method` does **not** control EventBase.
-- If hybrid is disabled, EventBase falls back to its original pure-vector-plus-keyword-boost path.
+---
+
+## 10) Mirrored Function — `extractQueryKeywords`
+
+| Item | Value |
+|---|---|
+| Origin | `similharity/index.js` lines 54–146 |
+| VectHare copy | `core/query-keyword-extractor.js` |
+| Exports | `extractQueryKeywords(text, maxKeywords)`, `isCJKToken(token)`, `RETRIEVAL_KEYWORD_LEVELS`, `DEFAULT_RETRIEVAL_KEYWORD_LEVEL` |
+| Stop-word source | Imports `DEFAULT_STOP_WORD_SET` from `./stop-words.js` (full multi-language list, English + CJK; mirrored from `similharity/stop-words.js`) |
+
+**Keep-in-sync note:** if the extraction algorithm changes in `similharity/index.js` (e.g. anchor budget, bigram fallback, Latin regex), update `core/query-keyword-extractor.js` to match. The console log prefix was changed from `[Qdrant]` to `[VectHare]` — that difference is intentional.

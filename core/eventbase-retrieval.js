@@ -15,7 +15,6 @@
 
 import { queryEvents } from './eventbase-store.js';
 import { getChatUUID } from './collection-ids.js';
-import { extractChatKeywords, applyKeywordBoost } from './keyword-boost.js';
 
 // ---------------------------------------------------------------------------
 // Default re-rank weights (tuned for long-form SillyTavern RP)
@@ -104,17 +103,10 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     const topK = (settings.eventbase_retrieval_top_k || 8) * 2; // overfetch for re-rank
     const minImportance = settings.eventbase_retrieval_min_importance || 1;
 
-    // keywordQuery: focused text for keyword extraction (user's last message).
-    // Falls back to full searchText if not provided.
-    const effectiveKeywordQuery = keywordQuery || searchText;
-
-    // Hybrid search flag: when true, queryEvents() routes through hybridSearch() internally
-    // (native Qdrant/Milvus hybrid or client-side BM25+fusion fallback). Keyword boost is
-    // skipped in this branch since BM25 fusion already ran inside queryCollection().
-    const useHybrid = settings.hybrid_search_enabled ?? false;
-
     if (debugLog) {
-        console.log(`[EventBase] Retrieval start — topK overfetch=${topK}, minImportance=${minImportance}, hybrid=${useHybrid}`);
+        const method = settings.keyword_scoring_method || 'bm25';
+        const nativePrefer = settings.hybrid_native_prefer !== false;
+        console.log(`[EventBase] Retrieval start — topK overfetch=${topK}, minImportance=${minImportance}, method=${method}, nativePrefer=${nativePrefer}`);
     }
 
     // 1. Dual vector query — fire both in parallel (each is an independent HTTP fetch).
@@ -165,31 +157,9 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         }
     }
 
-    // 2. Keyword boost — honour the same Core-tab settings as the legacy pipeline.
-    //    Use the full searchText (user + AI messages) for term matching so that keywords
-    //    mentioned in the AI reply also boost matching events. Term-level keyword matching
-    //    doesn't suffer from the "AI text dominates embedding" problem that the vector query
-    //    had, so the full context is strictly better here.
-    //    The effectiveKeywordQuery (user's last message) is still used as a fallback guard
-    //    when searchText is absent.
-    const boostText = searchText || effectiveKeywordQuery;
-    const extractionLevel = settings.keyword_extraction_level || 'balanced';
-    const baseWeight = settings.keyword_boost_base_weight || 1.5;
-    const queryKeywords = extractChatKeywords(boostText, { level: extractionLevel, baseWeight });
-    const queryKeywordTexts = queryKeywords.map(k => k.text);
-    let boostedCandidates = rawCandidates;
-    if (!useHybrid && queryKeywords.length > 0) {
-        // Non-hybrid path: apply term-level keyword boost on top of raw cosine results.
-        // Skipped when hybrid_search_enabled — BM25 fusion already ran inside queryCollection().
-        boostedCandidates = applyKeywordBoost(rawCandidates, boostText, { diminishingReturns: true, perKeywordCap: true });
-        if (debugLog) {
-            const boostedCount = boostedCandidates.filter(c => c.keywordBoosted).length;
-            console.log(`[EventBase] Keyword boost: ${queryKeywords.length} keyword(s) from full context, ${boostedCount}/${boostedCandidates.length} events boosted`);
-        }
-    } else if (useHybrid && debugLog) {
-        console.log(`[EventBase] Keyword boost skipped — hybrid search (${settings.hybrid_fusion_method || 'rrf'}) already includes BM25 scoring`);
-        console.log(`[EventBase] Hybrid keyword debug — extracted ${queryKeywords.length} keyword(s) from boostText: ${queryKeywordTexts.length ? queryKeywordTexts.join(', ') : '(none)'}`);
-    }
+    // Keyword re-ranking is handled inside queryCollection() (A1/A2/A3 routing).
+    // EventBase only needs to pass rawCandidates through to the importance filter.
+    const boostedCandidates = rawCandidates;
 
     // 3. Filter by minimum importance
     const importanceFiltered = boostedCandidates.filter(m => {
@@ -283,11 +253,10 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         events: finalEvents,
         debug: {
             dualQuery,
-            hybridUsed: useHybrid,
-            fusionMethod: useHybrid ? (settings.hybrid_fusion_method || 'rrf') : undefined,
+            keywordScoringMethod: settings.keyword_scoring_method || 'bm25',
+            nativeHybridPrefer: settings.hybrid_native_prefer !== false,
+            fusionMethod: settings.hybrid_fusion_method || 'rrf',
             rawCount: rawCandidates.length,
-            keywordsBoosted: boostedCandidates.filter(c => c.keywordBoosted).length,
-            queryKeywords: queryKeywords.map(k => k.text),
             afterImportanceFilter: importanceFiltered.length,
             afterDedup: dedupedEvents.length,
             afterContextDedup: contextDedupedEvents.length,

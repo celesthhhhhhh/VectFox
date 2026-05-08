@@ -425,19 +425,34 @@ export function renderSettings(containerId, settings, callbacks) {
                             <input type="range" id="vecthare_score_threshold" class="vecthare-slider" min="0" max="1" step="0.05" />
                             <small class="vecthare_hint">Minimum relevance score for retrieval</small>
 
-                            <!-- Keyword Scoring Method -->
-                            <label style="margin-top: 16px;">
-                                <small>Keyword Scoring Method</small>
-                            </label>
-                            <select id="vecthare_keyword_scoring_method" class="vecthare-select">
-                                <option value="keyword">Keyword Boost</option>
-                                <option value="bm25">BM25 (Langchain)</option>
-                                <option value="hybrid">Hybrid (Both)</option>
-                            </select>
-                            <small class="vecthare_hint">Algorithm for keyword-based relevance scoring</small>
+                            <!-- Keyword Scoring Method (hidden when native hybrid active) -->
+                            <div id="vecthare_keyword_method_section" style="margin-top: 16px;">
+                                <label>
+                                    <small>Keyword Scoring Method</small>
+                                </label>
+                                <select id="vecthare_keyword_scoring_method" class="vecthare-select">
+                                    <option value="bm25">BM25 (fast re-rank of top-K)</option>
+                                    <option value="hybrid">Hybrid (full corpus scan)</option>
+                                </select>
+                                <small class="vecthare_hint">BM25 re-ranks the vector top-K candidates (fast, no bulk load). Hybrid scores the full corpus then fuses with vector results (slower on large collections).</small>
 
-                            <!-- BM25 Parameters (shown when BM25 or Hybrid is selected) -->
-                            <div id="vecthare_bm25_params" style="display: none; margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.1); border-radius: 8px;">
+                                <label style="margin-top: 8px;">
+                                    <small>Query Keyword Budget</small>
+                                </label>
+                                <select id="vecthare_hybrid_keyword_level" class="vecthare-select">
+                                    <option value="minimal">30</option>
+                                    <option value="balance">50</option>
+                                    <option value="maximum">70</option>
+                                </select>
+                                <small class="vecthare_hint">Max keywords extracted from your query for BM25 scoring (CJK priority; +10 English overflow when CJK fills budget)</small>
+                            </div>
+                            <!-- Shown instead of above when native hybrid (A3) is active -->
+                            <div id="vecthare_native_hybrid_info" style="display: none; margin-top: 16px;">
+                                <small class="vecthare_hint"><i class="fa-solid fa-bolt"></i> Native hybrid active: server uses 50 keywords (CJK priority + English overflow)</small>
+                            </div>
+
+                            <!-- BM25 Parameters -->
+                            <div id="vecthare_bm25_params" style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.1); border-radius: 8px;">
                                 <label for="vecthare_bm25_k1">
                                     <small>BM25 k1 (TF saturation): <span id="vecthare_bm25_k1_value">1.5</span></small>
                                 </label>
@@ -451,15 +466,9 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <small class="vecthare_hint">Controls document length normalization (0.75 typical)</small>
                             </div>
 
-                            <!-- Hybrid Search (Vector + Full-Text) -->
+                            <!-- Hybrid Search params (always visible, apply to A2/A3) -->
                             <div style="margin-top: 16px; padding: 12px; background: rgba(0,100,200,0.1); border-radius: 8px; border: 1px solid rgba(0,100,200,0.2);">
-                                <label class="checkbox_label" for="vecthare_hybrid_search_enabled" style="margin-bottom: 8px;">
-                                    <input id="vecthare_hybrid_search_enabled" type="checkbox" />
-                                    <span><small><b>Enable Hybrid Search</b></small></span>
-                                </label>
-                                <small class="vecthare_hint">Combines vector similarity with full-text (BM25) search using rank fusion</small>
-
-                                <div id="vecthare_hybrid_params" style="display: none; margin-top: 12px;">
+                                <div id="vecthare_hybrid_params" style="margin-top: 4px;">
                                     <label style="margin-top: 8px;">
                                         <small>Fusion Method</small>
                                     </label>
@@ -489,11 +498,14 @@ export function renderSettings(containerId, settings, callbacks) {
                                         <small class="vecthare_hint">Higher K = more weight to top-ranked results (60 is typical)</small>
                                     </div>
 
-                                    <label class="checkbox_label" for="vecthare_hybrid_native_prefer" style="margin-top: 12px;">
-                                        <input id="vecthare_hybrid_native_prefer" type="checkbox" checked />
-                                        <span><small>Prefer Native Backend Hybrid</small></span>
-                                    </label>
-                                    <small class="vecthare_hint">Use Qdrant/Milvus native hybrid if available (faster)</small>
+                                    <!-- Only shown when backend supports native hybrid (qdrant/milvus) -->
+                                    <div id="vecthare_native_prefer_section" style="display: none; margin-top: 12px;">
+                                        <label class="checkbox_label" for="vecthare_hybrid_native_prefer">
+                                            <input id="vecthare_hybrid_native_prefer" type="checkbox" checked />
+                                            <span><small>Prefer Native Backend Hybrid</small></span>
+                                        </label>
+                                        <small class="vecthare_hint">Use backend-native hybrid search (Qdrant/Milvus). When active, keyword scoring method and budget are handled server-side.</small>
+                                    </div>
                                 </div>
                             </div>
 
@@ -2126,6 +2138,24 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
+    // Helper: update visibility of native-hybrid-dependent UI elements
+    function updateNativeHybridUI() {
+        const backend = settings.vector_backend || 'standard';
+        const supportsNative = backend === 'qdrant' || backend === 'milvus';
+        const preferNative = settings.hybrid_native_prefer !== false;
+        const nativeActive = supportsNative && preferNative;
+
+        // native prefer checkbox only visible when backend supports it
+        $('#vecthare_native_prefer_section').toggle(supportsNative);
+
+        // keyword method section vs static "native active" text
+        $('#vecthare_keyword_method_section').toggle(!nativeActive);
+        $('#vecthare_native_hybrid_info').toggle(nativeActive);
+
+        // BM25 params: visible when A1 or A2 (not A3)
+        $('#vecthare_bm25_params').toggle(!nativeActive);
+    }
+
     // Vector backend selection
     $('#vecthare_vector_backend')
         .val(settings.vector_backend || 'qdrant')
@@ -2146,6 +2176,7 @@ function bindSettingsEvents(settings, callbacks) {
                 $('#vecthare_milvus_settings').hide();
             }
 
+            updateNativeHybridUI();
             console.log(`VectHare: Vector backend changed to ${settings.vector_backend}`);
             // Reset health cache so new backend gets properly initialized
             resetBackendHealth();
@@ -2340,27 +2371,25 @@ function bindSettingsEvents(settings, callbacks) {
         });
     $('#vecthare_deduplication_depth_value').text(settings.deduplication_depth ?? 50);
 
-    // Keyword scoring method
+    // Keyword scoring method (bm25 = A1 fast re-rank; hybrid = A2 full corpus scan)
     $('#vecthare_keyword_scoring_method')
-        .val(settings.keyword_scoring_method || 'keyword')
+        .val(settings.keyword_scoring_method || 'bm25')
         .on('change', function() {
             settings.keyword_scoring_method = String($(this).val());
             Object.assign(extension_settings.vecthareplus, settings);
             saveSettingsDebounced();
-
-            // Show/hide BM25 parameters
-            if (settings.keyword_scoring_method === 'bm25' || settings.keyword_scoring_method === 'hybrid') {
-                $('#vecthare_bm25_params').show();
-            } else {
-                $('#vecthare_bm25_params').hide();
-            }
             console.log(`VectHare: Keyword scoring method changed to ${settings.keyword_scoring_method}`);
         });
 
-    // Show/hide BM25 params based on initial setting
-    if (settings.keyword_scoring_method === 'bm25' || settings.keyword_scoring_method === 'hybrid') {
-        $('#vecthare_bm25_params').show();
-    }
+    // Hybrid keyword level
+    $('#vecthare_hybrid_keyword_level')
+        .val(settings.hybrid_keyword_level || 'balance')
+        .on('change', function() {
+            settings.hybrid_keyword_level = String($(this).val());
+            Object.assign(extension_settings.vecthareplus, settings);
+            saveSettingsDebounced();
+            console.log(`VectHare: Hybrid keyword level changed to ${settings.hybrid_keyword_level}`);
+        });
 
     // BM25 k1 parameter
     $('#vecthare_bm25_k1')
@@ -2389,20 +2418,6 @@ function bindSettingsEvents(settings, callbacks) {
     $('#vecthare_bm25_b_value').text((settings.bm25_b || 0.75).toFixed(2));
 
     // ========== Hybrid Search Settings ==========
-
-    // Enable Hybrid Search checkbox
-    $('#vecthare_hybrid_search_enabled')
-        .prop('checked', settings.hybrid_search_enabled || false)
-        .on('change', function() {
-            const enabled = $(this).prop('checked');
-            settings.hybrid_search_enabled = enabled;
-            Object.assign(extension_settings.vecthareplus, settings);
-            saveSettingsDebounced();
-            $('#vecthare_hybrid_params').toggle(enabled);
-            console.log(`VectHare: Hybrid search ${enabled ? 'enabled' : 'disabled'}`);
-        });
-    // Initialize visibility
-    $('#vecthare_hybrid_params').toggle(settings.hybrid_search_enabled || false);
 
     // Fusion method selector
     $('#vecthare_hybrid_fusion_method')
@@ -2468,7 +2483,11 @@ function bindSettingsEvents(settings, callbacks) {
             settings.hybrid_native_prefer = $(this).prop('checked');
             Object.assign(extension_settings.vecthareplus, settings);
             saveSettingsDebounced();
+            updateNativeHybridUI();
         });
+
+    // Initialize native-hybrid-dependent visibility
+    updateNativeHybridUI();
 
     // Query depth (how many recent messages to include in search query)
     $('#vecthare_query_depth')

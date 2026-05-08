@@ -1,0 +1,130 @@
+// Mirrors similharity/index.js extractQueryKeywords — keep in sync when algorithm changes.
+
+import { DEFAULT_STOP_WORD_SET as STOP_WORDS } from './stop-words.js';
+
+// Matches CJK ideographs + Kana + Hangul spans. Used with .match() for all-hits extraction.
+const _CJK_SPAN_RE = /[㐀-鿿豈-﫿぀-ヿ가-힯]+/g;
+// Non-global variant for single-token test (avoids stateful lastIndex with .test()).
+const _CJK_CHAR_RE = /[㐀-鿿豈-﫿぀-ヿ가-힯]/;
+
+export const RETRIEVAL_KEYWORD_LEVELS = {
+    minimal: { label: 'Minimal — 30 keywords', maxKeywords: 30 },
+    balance: { label: 'Balance — 50 keywords', maxKeywords: 50 },
+    maximum: { label: 'Maximum — 70 keywords', maxKeywords: 70 },
+};
+
+export const DEFAULT_RETRIEVAL_KEYWORD_LEVEL = 'balance';
+
+/**
+ * Extract search keywords from a mixed Latin/CJK query string.
+ *
+ * CJK tokens take priority. If CJK fills the primary budget (maxKeywords),
+ * +10 overflow slots are given to Latin tokens. Frequency-ranked within
+ * separate anchor (first 240 chars) and context (full text) budgets.
+ *
+ * @param {string} searchText
+ * @param {number} [maxKeywords=50]
+ * @returns {string[]}
+ */
+export function extractQueryKeywords(searchText, maxKeywords = 50) {
+    const text = searchText.toLowerCase();
+
+    function tallyTokens(sourceText) {
+        const cjkFreq = new Map();
+        const latinFreq = new Map();
+
+        const spans = sourceText.match(_CJK_SPAN_RE) || [];
+        for (const span of spans) {
+            let usedSegmenter = false;
+
+            if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+                try {
+                    const seg = new Intl.Segmenter('zh', { granularity: 'word' });
+                    const segs = Array.from(seg.segment(span));
+                    const multiChar = segs.filter(s => s.isWordLike && s.segment.length >= 2);
+                    if (multiChar.length > 0) {
+                        for (const { segment } of multiChar) {
+                            if (!STOP_WORDS.has(segment)) {
+                                cjkFreq.set(segment, (cjkFreq.get(segment) || 0) + 1);
+                            }
+                        }
+                        usedSegmenter = true;
+                    }
+                } catch (_) { /* fallthrough */ }
+            }
+
+            if (!usedSegmenter) {
+                for (let i = 0; i + 1 < span.length; i++) {
+                    const bigram = span.slice(i, i + 2);
+                    if (!STOP_WORDS.has(bigram)) {
+                        cjkFreq.set(bigram, (cjkFreq.get(bigram) || 0) + 1);
+                    }
+                }
+            }
+        }
+
+        const latinMatches = sourceText.match(/[a-z][a-z0-9'_-]{2,}/g) || [];
+        for (const tok of latinMatches) {
+            if (!STOP_WORDS.has(tok)) {
+                latinFreq.set(tok, (latinFreq.get(tok) || 0) + 1);
+            }
+        }
+
+        return { cjkFreq, latinFreq };
+    }
+
+    function sortFreqMap(freqMap) {
+        return [...freqMap.entries()].sort((a, b) => b[1] - a[1]);
+    }
+
+    const anchorCharBudget = Math.min(text.length, 240);
+    const anchorText = text.slice(0, anchorCharBudget);
+    const anchorCJKBudget = Math.min(15, maxKeywords);
+    const contextCJKBudget = Math.max(0, maxKeywords - anchorCJKBudget);
+
+    const { cjkFreq: anchorCJKFreq, latinFreq: anchorLatinFreq } = tallyTokens(anchorText);
+    const { cjkFreq: fullCJKFreq, latinFreq: fullLatinFreq } = tallyTokens(text);
+
+    const sortedAnchorCJK = sortFreqMap(anchorCJKFreq);
+    const sortedFullCJK = sortFreqMap(fullCJKFreq);
+
+    const anchorCJKTokens = sortedAnchorCJK.slice(0, anchorCJKBudget).map(([t]) => t);
+    const seenCJK = new Set(anchorCJKTokens);
+    const contextCJKTokens = [];
+    for (const [token] of sortedFullCJK) {
+        if (!seenCJK.has(token)) {
+            contextCJKTokens.push(token);
+            seenCJK.add(token);
+            if (contextCJKTokens.length >= contextCJKBudget) break;
+        }
+    }
+    const cjkTokens = [...anchorCJKTokens, ...contextCJKTokens];
+
+    const mergedLatinFreq = new Map(fullLatinFreq);
+    for (const [token, count] of anchorLatinFreq) {
+        mergedLatinFreq.set(token, (mergedLatinFreq.get(token) || 0) + count);
+    }
+    const sortedLatin = sortFreqMap(mergedLatinFreq);
+
+    const fullCJK = cjkTokens.length >= maxKeywords;
+    const latinBudget = fullCJK ? 10 : (maxKeywords - cjkTokens.length);
+    const latinTokens = sortedLatin.slice(0, latinBudget).map(([t]) => t);
+
+    const result = [...cjkTokens, ...latinTokens];
+
+    console.log(`[VectHare] extractQueryKeywords anchor CJK -> ${sortedAnchorCJK.length} unique (top ${anchorCJKTokens.length}): ${anchorCJKTokens.join(', ') || '(none)'}`);
+    console.log(`[VectHare] extractQueryKeywords context CJK -> ${sortedFullCJK.length} unique (top ${contextCJKTokens.length}): ${contextCJKTokens.join(', ') || '(none)'}`);
+    console.log(`[VectHare] extractQueryKeywords Latin -> ${sortedLatin.length} unique (top ${latinTokens.length}): ${latinTokens.join(', ') || '(none)'}`);
+    console.log(`[VectHare] extractQueryKeywords final -> ${result.length} tokens (fullCJK=${fullCJK}): ${result.join(', ')}`);
+
+    return result;
+}
+
+/**
+ * Returns true if the token contains CJK/Kana/Hangul characters.
+ * @param {string} token
+ * @returns {boolean}
+ */
+export function isCJKToken(token) {
+    return _CJK_CHAR_RE.test(token);
+}

@@ -38,9 +38,10 @@ import {
     requiresUrl,
     getUrlProviders
 } from './providers.js';
-import { applyKeywordBoosts, getOverfetchAmount } from './keyword-boost.js';
-import { applyBM25Scoring } from './bm25-scorer.js';
+import { getOverfetchAmount } from './keyword-boost.js';
+import { applyBM25Scoring, porterStemmer } from './bm25-scorer.js';
 import { hybridSearch } from './hybrid-search.js';
+import { extractQueryKeywords, RETRIEVAL_KEYWORD_LEVELS, isCJKToken } from './query-keyword-extractor.js';
 import AsyncUtils from '../utils/async-utils.js';
 import StringUtils from '../utils/string-utils.js';
 import {
@@ -857,10 +858,18 @@ export async function queryCollection(collectionId, searchText, topK, settings) 
         }
     }
 
-    // Check if hybrid search is enabled
-    if (settings.hybrid_search_enabled) {
+    // Three-case routing:
+    //   A3 — native hybrid (Qdrant/Milvus with prefer_native ON)
+    //   A2 — client-side hybrid full scan (standard backend, method = 'hybrid')
+    //   A1 — BM25 re-rank of ANN top-K (standard backend default, method = 'bm25')
+    const nativeHybridAvailable = backend?.supportsHybridSearch?.() === true;
+    const preferNative = settings.hybrid_native_prefer !== false;
+    const useHybridPath = (nativeHybridAvailable && preferNative) || settings.keyword_scoring_method === 'hybrid';
+
+    if (useHybridPath) {
         if (settings.eventbase_debug_logging) {
-            console.log('[VectHare] Hybrid search enabled, dispatching to hybrid search module');
+            const reason = nativeHybridAvailable && preferNative ? 'native' : 'client-side';
+            console.log(`[VectHare] Hybrid search (${reason}), dispatching to hybrid search module`);
         }
         const queryStart = Date.now();
         try {
@@ -870,11 +879,10 @@ export async function queryCollection(collectionId, searchText, topK, settings) 
             if (settings.eventbase_debug_logging) {
                 const scores = (result.metadata || []).map(m => (m.score ?? 0).toFixed(4));
                 const fusionMethod = (settings.hybrid_fusion_method || 'rrf').toUpperCase();
-                console.log(`[EventBase] Hybrid search (${fusionMethod}) response: ${result.hashes?.length ?? 0} result(s) in ${queryLatency}ms, scores=[${scores.join(', ')}]`);
+                console.log(`[VectHare] Hybrid search (${fusionMethod}) response: ${result.hashes?.length ?? 0} result(s) in ${queryLatency}ms, scores=[${scores.join(', ')}]`);
             }
             return result;
         } catch (error) {
-            // VEC-18: Record query error
             recordError(settings?.vector_backend || 'standard', error);
             throw error;
         }
@@ -908,13 +916,11 @@ export async function queryCollection(collectionId, searchText, topK, settings) 
         text: meta.text || ''
     }));
 
-    let finalResults = scoreResults(resultsForBoost, searchText, topK, settings, overfetchAmount);
+    let finalResults = scoreResults(resultsForBoost, searchText, topK, settings);
 
     if (settings.eventbase_debug_logging) {
-        const method = settings.keyword_scoring_method || 'keyword';
         finalResults.forEach((r, i) => {
-            const keywords = r.matchedKeywords?.length ? r.matchedKeywords.join(', ') : 'none';
-            console.log(`[EventBase] #${i + 1} final=${r.score?.toFixed(4)} vector=${r.vectorScore?.toFixed(4) ?? 'n/a'} bm25=${r.bm25Score?.toFixed(4) ?? 'n/a'} boost=${r.keywordBoost?.toFixed(4) ?? 'n/a'} boosted=${r.keywordBoosted ? 'yes' : 'no'} keywords=[${keywords}] method=${method}`);
+            console.log(`[VectHare] #${i + 1} final=${r.score?.toFixed(4)} vector=${r.vectorScore?.toFixed(4) ?? 'n/a'} bm25=${r.bm25Score?.toFixed(4) ?? 'n/a'} (A1 BM25 re-rank)`);
         });
     }
 
@@ -936,44 +942,21 @@ export async function queryCollection(collectionId, searchText, topK, settings) 
     };
 }
 
-function scoreResults(resultsForBoost, searchText, topK, settings, overfetchAmount = null) {
-    let finalResults;
+function scoreResults(resultsForBoost, searchText, topK, settings) {
+    // A1 — BM25 re-rank over ANN top-K candidates only (no full corpus scan)
+    const level = settings?.hybrid_keyword_level || 'balance';
+    const maxKeywords = RETRIEVAL_KEYWORD_LEVELS[level]?.maxKeywords ?? 50;
+    const rawKeywords = extractQueryKeywords(searchText, maxKeywords);
+    const queryTokens = rawKeywords.map(token => isCJKToken(token) ? token : porterStemmer(token));
 
-    // VEC-24: Ensure overfetchAmount has a valid fallback to prevent ReferenceError
-    const safeOverfetchAmount = overfetchAmount ?? resultsForBoost.length;
-
-    // Determine scoring method from settings
-    const scoringMethod = settings.keyword_scoring_method || 'keyword'; // 'keyword', 'bm25', or 'hybrid'
-    if (scoringMethod === 'bm25') {
-        // Use BM25 scoring only
-        const bm25Results = applyBM25Scoring(resultsForBoost, searchText, {
-            k1: settings.bm25_k1 || 1.5,
-            b: settings.bm25_b || 0.75,
-            alpha: 0.5,
-            beta: 0.5
-        });
-        finalResults = bm25Results.slice(0, topK);
-    } else if (scoringMethod === 'hybrid') {
-        // Use both keyword boost and BM25
-        // VEC-24: Use safe overfetch amount
-        const keywordBoostLimit = safeOverfetchAmount;
-        const keywordBoosted = applyKeywordBoosts(resultsForBoost, searchText, keywordBoostLimit, {
-            debug: settings.eventbase_debug_logging,
-        });
-        const hybridResults = applyBM25Scoring(keywordBoosted, searchText, {
-            k1: settings.bm25_k1 || 1.5,
-            b: settings.bm25_b || 0.75,
-            alpha: 0.6,
-            beta: 0.4
-        });
-        finalResults = hybridResults.slice(0, topK);
-    } else {
-        // Use traditional keyword boost (default)
-        finalResults = applyKeywordBoosts(resultsForBoost, searchText, topK, {
-            debug: settings.eventbase_debug_logging,
-        });
-    }
-    return finalResults;
+    const bm25Results = applyBM25Scoring(resultsForBoost, searchText, {
+        k1: settings.bm25_k1 || 1.5,
+        b: settings.bm25_b || 0.75,
+        alpha: 0.5,
+        beta: 0.5,
+        queryTokens
+    });
+    return bm25Results.slice(0, topK);
 }
 
 /**
@@ -1011,10 +994,17 @@ export async function queryMultipleCollections(collectionIds, searchText, topK, 
         }
     }
 
-    // Check if hybrid search is enabled - process each collection with hybrid search
-    if (settings.hybrid_search_enabled) {
+    // Three-case routing (mirrors queryCollection):
+    //   A3/A2 — native or client-side hybrid per collection
+    //   A1    — BM25 re-rank after bulk ANN (below)
+    const nativeHybridAvailable = backend?.supportsHybridSearch?.() === true;
+    const preferNative = settings.hybrid_native_prefer !== false;
+    const useHybridPath = (nativeHybridAvailable && preferNative) || settings.keyword_scoring_method === 'hybrid';
+
+    if (useHybridPath) {
         if (settings.eventbase_debug_logging) {
-            console.log('[VectHare] Hybrid search enabled for multi-collection query');
+            const reason = nativeHybridAvailable && preferNative ? 'native' : 'client-side';
+            console.log(`[VectHare] Hybrid search (${reason}) for multi-collection query`);
         }
         const processedResults = {};
         for (const collectionId of collectionIds) {
@@ -1025,7 +1015,6 @@ export async function queryMultipleCollections(collectionIds, searchText, topK, 
                 recordQuery(settings?.vector_backend || 'standard', queryLatency);
             } catch (error) {
                 console.warn(`[VectHare] Hybrid search failed for ${collectionId}:`, error.message);
-                // VEC-18: Record error
                 recordError(settings?.vector_backend || 'standard', error);
                 processedResults[collectionId] = { hashes: [], metadata: [] };
             }
@@ -1066,7 +1055,7 @@ export async function queryMultipleCollections(collectionIds, searchText, topK, 
             text: meta.text || ''
         }));
 
-        let finalResults = scoreResults(resultsForBoost, searchText, topK, settings, overfetchAmount);
+        let finalResults = scoreResults(resultsForBoost, searchText, topK, settings);
 
         // Convert back to expected format
         processedResults[collectionId] = {

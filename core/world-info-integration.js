@@ -46,9 +46,12 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
     console.log(`VectHare: Querying vectorized lorebooks for semantic WI activation...`);
 
     const semanticEntries = [];
-    // Lower threshold for hybrid search since RRF fusion produces lower absolute scores
+    // Lower threshold for hybrid retrieval since RRF/weighted fusion produces lower absolute scores
     const baseThreshold = settings.world_info_threshold || 0.3;
-    const threshold = settings.hybrid_search_enabled ? baseThreshold * 0.8 : baseThreshold;
+    const supportsNativeHybrid = settings.vector_backend === 'qdrant' || settings.vector_backend === 'milvus';
+    const preferNative = settings.hybrid_native_prefer !== false;
+    const hybridActive = (supportsNativeHybrid && preferNative) || settings.keyword_scoring_method === 'hybrid';
+    const threshold = hybridActive ? baseThreshold * 0.8 : baseThreshold;
     const topK = settings.world_info_top_k || 3;
 
     // Build search context for activation filter evaluation

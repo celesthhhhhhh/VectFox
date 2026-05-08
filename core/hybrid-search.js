@@ -13,7 +13,8 @@
  */
 
 import { getBackend } from '../backends/backend-manager.js';
-import { createBM25Scorer, tokenize as bm25Tokenize } from './bm25-scorer.js';
+import { createBM25Scorer, porterStemmer } from './bm25-scorer.js';
+import { extractQueryKeywords, RETRIEVAL_KEYWORD_LEVELS, isCJKToken } from './query-keyword-extractor.js';
 
 /** Default RRF constant (prevents division by zero, balances contribution) */
 export const DEFAULT_RRF_K = 60;
@@ -138,7 +139,8 @@ async function clientSideHybridSearch(backend, collectionId, searchText, topK, s
     const bm25Results = performBM25Search(resultsWithText, searchText, {
         k1: settings.bm25_k1 || 1.5,
         b: settings.bm25_b || 0.75,
-        fieldBoosting: true  // Enable title (3x) and tags (2x) boosting
+        fieldBoosting: true,  // Enable title (3x) and tags (2x) boosting
+        settings
     });
 
     // 4. Fuse results
@@ -404,15 +406,18 @@ function performBM25Search(results, query, options = {}) {
         return results;
     }
 
-    const scorer = createBM25Scorer(results, options);
+    const { settings, ...scorerOptions } = options;
+    const scorer = createBM25Scorer(results, scorerOptions);
     if (!scorer || scorer.totalDocs === 0) {
         console.warn('[HybridSearch] Failed to create BM25 scorer or no documents indexed');
         return results;
     }
 
-    // Get BM25 scores for all results
-    // Use the CJK-aware tokenizer from bm25-scorer (handles Simplified + Traditional Chinese)
-    const queryTokens = bm25Tokenize(query, { stem: true, removeStopWords: true, minLength: 2 });
+    // Extract CJK-prioritized keywords then stem Latin tokens to match indexed form
+    const level = settings?.hybrid_keyword_level || 'balance';
+    const maxKeywords = RETRIEVAL_KEYWORD_LEVELS[level]?.maxKeywords ?? 50;
+    const rawKeywords = extractQueryKeywords(query, maxKeywords);
+    const queryTokens = rawKeywords.map(token => isCJKToken(token) ? token : porterStemmer(token));
     const scoredResults = results.map((result, idx) => {
         const bm25Score = scorer.scoreDocument(queryTokens, idx);
         return {

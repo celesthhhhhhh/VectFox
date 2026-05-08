@@ -152,7 +152,9 @@ describe('getSemanticWorldInfoEntries', () => {
         const settings = {
             enabled_world_info: true,
             world_info_threshold: 0.5,
-            hybrid_search_enabled: true,
+            // Trigger hybridActive: native-capable backend + prefer_native
+            vector_backend: 'qdrant',
+            hybrid_native_prefer: true,
             world_info_top_k: 3,
             vecthare_collection_registry: ['lorebook_global_test'],
         };

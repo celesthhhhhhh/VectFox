@@ -1,8 +1,8 @@
-# EventBase Keyword-Level Fix Plan
+# Hybrid Keyword Retrieval — Simplification & Alignment Plan
 
-Make the **Keyword Scoring Method**, **Enable Hybrid Search**, **Prefer Native Backend Hybrid**, and the EventBase keyword-level dropdown behave consistently and according to a single mental model across all three retrieval paths.
+Simplify retrieval to **three clean paths**: **Case A1** (client-side BM25 re-rank, standard backend default), **Case A2** (client-side hybrid full scan, opt-in for standard backend), and **Case A3** (native hybrid, Qdrant/Milvus default). Drop the `hybrid_search_enabled` toggle and the old keyword-boost-only path. Keep a `keyword_scoring_method` dropdown for the standard backend with two values: `bm25` and `hybrid`.
 
-Scope is limited to the **EventBase chat retrieval** path (the only chat path now). Future supported backends are **Standard** (`backends/standard.js`) and **Qdrant** (`qdrant-backend.js`); LanceDB and Milvus will be removed eventually but should not be broken in this change.
+Scope: **all retrieval paths** (EventBase + legacy chunk-based). Ingestion-side keyword extraction is **not touched**. LanceDB falls under the standard-backend rules.
 
 ---
 
@@ -10,112 +10,286 @@ Scope is limited to the **EventBase chat retrieval** path (the only chat path no
 
 | Case | Hybrid | Native | Code path | Keyword extraction |
 |------|--------|--------|-----------|--------------------|
-| 1 | OFF | n/a | [eventbase-retrieval.js:178](../core/eventbase-retrieval.js#L178) → `extractChatKeywords(boostText, { level, baseWeight })` | **Hardcoded cap = 8** — `extractChatKeywords` ignores `level` and falls back to its own `maxKeywords = 8` default ([keyword-boost.js:669](../core/keyword-boost.js#L669)) |
-| 2 | ON | OFF | [hybrid-search.js:89](../core/hybrid-search.js#L89) `clientSideHybridSearch` → [hybrid-search.js:415](../core/hybrid-search.js#L415) `bm25Tokenize(query, …)` | **No cap** — entire query is tokenized; ignores GUI level entirely |
-| 3 | ON | ON | [qdrant.js:736](../backends/qdrant.js#L736) → POSTs `searchText` to `/chunks/hybrid-query` → [similharity/index.js:54](../../similharity/index.js#L54) `extractQueryKeywords(text, 50)` | **50 CJK + 10 English overflow**, anchor + context split. Keyword level dropdown has no effect. |
+| 1 | OFF | n/a | [eventbase-retrieval.js:178](../core/eventbase-retrieval.js#L178) `extractChatKeywords` + [core-vector-api.js:939](../core/core-vector-api.js#L939) `scoreResults()` | Hardcoded cap=8, ignores GUI level. `scoreResults()` branches on `keyword_scoring_method` (keyword/bm25/hybrid) |
+| 2 | ON | OFF | [hybrid-search.js:89](../core/hybrid-search.js#L89) `clientSideHybridSearch` → [hybrid-search.js:415](../core/hybrid-search.js#L415) `bm25Tokenize(query)` | No cap — entire query tokenized; ignores GUI level |
+| 3 | ON | ON | [qdrant.js:736](../backends/qdrant.js#L736) → POST to server → [similharity/index.js:54](../../similharity/index.js#L54) `extractQueryKeywords(text, 50)` | 50 CJK + 10 English overflow, anchor + context split. GUI level has no effect |
 
-Three different mental models. The dropdown the user clicks (`keyword_extraction_level`: minimal=5 / balanced=12 / aggressive=15) drives **none** of them at runtime in EventBase retrieval.
+Three different mental models. The `keyword_extraction_level` dropdown (off/minimal 5/balanced 12/aggressive 15) drives **none** of them at runtime. The `keyword_scoring_method` dropdown (keyword/bm25/hybrid) only drives Case 1's `scoreResults()` path.
+
+**Performance note (the reason A1 exists):** [bm25-scorer.js:739](../core/bm25-scorer.js#L739) `applyBM25Scoring()` only operates on the K ANN candidates — fast, no bulk corpus load. [hybrid-search.js:89](../core/hybrid-search.js#L89) `clientSideHybridSearch()` builds a BM25 index over **all chunks** in the collection — slow on large corpora (e.g. 5000+ chunks shows the chunk-load progress prompt on every reply). Native hybrid (Case 3) avoids both because the backend has its own text index.
 
 ---
 
 ## 2. Desired behavior
 
-Single mental model: **the GUI keyword-level dropdown must be authoritative whenever VectHare controls the keyword set; otherwise it must be hidden.**
+Three paths:
 
-| Case | Hybrid | Native | Keyword set comes from | Cap |
-|------|--------|--------|------------------------|-----|
-| 1 | OFF | n/a | `extractChatKeywords` driven by selected level | minimal=5 / balanced=12 / aggressive=15 |
-| 2 | ON | OFF | Same VectHare keyword extractor, fed into BM25 side of fusion | Same as Case 1 |
-| 3 | ON | ON | Server `extractQueryKeywords` (CJK pass → English pass) | Fixed 50 + 10 — dropdown hidden in GUI |
+| Path | When | Keyword extraction | Loads all chunks? | GUI |
+|------|------|--------------------|-------------------|-----|
+| **A1 — client-side BM25 re-rank** | Standard backend, `keyword_scoring_method = bm25` (default) | Copied `extractQueryKeywords` (CJK > English), capped by `hybrid_keyword_level` | No — only ranks K ANN candidates | `keyword_scoring_method` dropdown shown; level dropdown shown |
+| **A2 — client-side hybrid full scan** | Standard backend, `keyword_scoring_method = hybrid` | Copied `extractQueryKeywords`, capped by `hybrid_keyword_level` | **Yes** — full corpus BM25 index | `keyword_scoring_method` dropdown shown; level dropdown shown |
+| **A3 — native hybrid** | Backend supports native AND `hybrid_native_prefer = true` (default for Qdrant/Milvus) | Server-side `extractQueryKeywords(text, 50)` — unchanged | No — backend handles it | `keyword_scoring_method` and level dropdowns hidden; static text "50 keywords" |
+
+Overflow is always +10 English when CJK fills the primary budget. Not shown in dropdown labels.
+
+**Defaults:**
+- Standard / LanceDB: A1 (BM25 re-rank). User can opt into A2 if they want full hybrid quality and accept the corpus-scan cost.
+- Qdrant / Milvus: A3 (native hybrid via `hybrid_native_prefer = true`). If a user unchecks `hybrid_native_prefer`, the backend falls back to A1/A2 selection like the standard backend.
 
 ---
 
-## 3. File-level change list
+## 3. What gets removed
 
-### 3.1 `core/keyword-boost.js` — make `extractChatKeywords` respect level
+### 3.1 `hybrid_search_enabled` toggle — remove entirely
 
-[keyword-boost.js:665-712](../core/keyword-boost.js#L665-L712) — `extractChatKeywords(text, options)`:
+**Setting:** `hybrid_search_enabled` in [index.js:~108](../index.js) — delete default.
 
-- Resolve `maxKeywords` from `options.level` via `EXTRACTION_LEVELS[level].maxKeywords` (5 / 12 / 15) when `options.level` is set.
-- Existing `options.maxKeywords` override still wins (used by ad-hoc callers).
-- Fall back to current default of 8 only when neither is provided (preserves callers like `extractChatKeywords(text)` with no options).
-- If `level === 'off'` (config `enabled === false`), return `[]` immediately.
+**UI:** `#vecthare_hybrid_search_enabled` checkbox in [ui-manager.js:456-460](../ui/ui-manager.js#L456-L460) — remove HTML + event listener at [ui-manager.js:2394-2405](../ui/ui-manager.js#L2394-L2405). The `#vecthare_hybrid_params` container it toggles should now always be visible (its contents — fusion method, weights, RRF K — apply to A2 and A3).
 
-### 3.2 `core/eventbase-retrieval.js` — Case 1 path is now correct by transitivity
+**Routing:** [core-vector-api.js:~870](../core/core-vector-api.js) — `queryCollection()` currently checks `if (settings.hybrid_search_enabled)` to decide between `hybridSearch()` and `scoreResults()`. New routing logic (see §4.5):
 
-[eventbase-retrieval.js:176-178](../core/eventbase-retrieval.js#L176-L178) already passes `level` and `baseWeight`, so once 3.1 lands, Case 1 works. Verify that:
+```javascript
+if (backendSupportsNative && settings.hybrid_native_prefer) {
+    return hybridSearch(...);  // A3 — native via hybridSearch's native path
+}
+if (settings.keyword_scoring_method === 'hybrid') {
+    return hybridSearch(...);  // A2 — client-side hybrid
+}
+return scoreResults(...);       // A1 — BM25 re-rank
+```
 
-- Boost is still skipped when `useHybrid === true` (Case 2/3) — current logic at [eventbase-retrieval.js:181](../core/eventbase-retrieval.js#L181) is correct.
-- Debug log on [line 189-191](../core/eventbase-retrieval.js#L189-L191) keeps printing extracted keywords so the user can confirm the cap took effect.
+**EventBase:** [eventbase-retrieval.js:~155](../core/eventbase-retrieval.js) — `useHybrid` variable currently derived from `settings.hybrid_search_enabled`. Replace with the same routing logic so EventBase picks A1/A2/A3 the same way as `queryCollection()`.
 
-No structural changes needed beyond a comment update if desired.
+### 3.2 `keyword_scoring_method` dropdown — trim, not remove
 
-### 3.3 `core/hybrid-search.js` — Case 2 path: replace `bm25Tokenize(query)` with level-driven keywords
+**Setting:** `keyword_scoring_method` in [index.js:~108](../index.js) — keep, but only `bm25` and `hybrid` are valid values. Default `bm25`.
+
+**UI:** `#vecthare_keyword_scoring_method` dropdown in [ui-manager.js:428-437](../ui/ui-manager.js#L428-L437) — remove the `keyword` option. Keep `bm25` and `hybrid`. Update label/hint text to reflect the new meaning ("BM25 re-ranks ANN top-K (fast); Hybrid scores the full corpus (slow on large collections)").
+
+**Visibility:** show only when A3 is NOT in effect (i.e. backend doesn't support native hybrid, or `hybrid_native_prefer` is false). When A3 is in effect, hide and replace with static text "Native hybrid: 50 keywords (CJK priority + English overflow)".
+
+**Code:** `scoreResults()` function in [core-vector-api.js:939-977](../core/core-vector-api.js#L939-L977) — keep, but simplify to only the BM25 branch (the `keyword` branch is removed; the `hybrid` branch is unreachable here since `hybrid` routing now goes to `hybridSearch()`).
+
+`#vecthare_bm25_params` (k1/b sliders) visibility now follows: visible when A1 or A2 active; hidden under A3.
+
+### 3.3 Case 1 keyword boost in EventBase — remove
+
+[eventbase-retrieval.js:168-192](../core/eventbase-retrieval.js#L168-L192) — the block that calls `extractChatKeywords(boostText, ...)` then `applyKeywordBoost(rawCandidates, ...)`. Remove the entire block. The new routing replaces it.
+
+Callers of `extractChatKeywords` in other files ([chat-vectorization.js:1916](../core/chat-vectorization.js#L1916)) are **not touched** — legacy chunk pipeline's Stage 4.3 still uses it for ingestion-side metadata. The function stays in `keyword-boost.js`.
+
+### 3.4 Dead code candidates (remove or leave)
+
+- `applyKeywordBoost()` / `applyKeywordBoosts()` / `getOverfetchAmount()` in [keyword-boost.js:1213-1318](../core/keyword-boost.js#L1213-L1318) — only called from the `keyword` branch of `scoreResults()` and from EventBase's removed boost block. **Safe to delete from retrieval paths after §3.2 + §3.3.** Confirm no other caller before deleting.
+- `applyBM25Scoring()` in [bm25-scorer.js:739-792](../core/bm25-scorer.js#L739-L792) — **kept**, still used by A1.
+
+---
+
+## 4. What gets added / changed
+
+### 4.1 Copy `extractQueryKeywords` into VectHare
+
+Copy `extractQueryKeywords()` (~90 lines) from [similharity/index.js:54-146](../../similharity/index.js#L54-L146) into a new file `core/query-keyword-extractor.js`. Include:
+
+- The function itself
+- `_CJK_SPAN_RE` regex
+- Stop-word import (reuse `DEFAULT_STOP_WORD_SET` — check if VectHare already has a compatible set in [bm25-scorer.js](../core/bm25-scorer.js); otherwise copy from [similharity/stop-words.js](../../similharity/stop-words.js))
+
+Export: `extractQueryKeywords(text, maxKeywords)` → returns `string[]`.
+
+Tag file header: `// Mirrors similharity/index.js extractQueryKeywords — keep in sync when algorithm changes.`
+
+Add note in [Doc/dev_helper.md](../Doc/dev_helper.md) documenting the mirrored function and its origin.
+
+### 4.2 New retrieval keyword level config
+
+New constant in `core/query-keyword-extractor.js`:
+
+```javascript
+export const RETRIEVAL_KEYWORD_LEVELS = {
+    minimal: { label: 'Minimal — 30 keywords', maxKeywords: 30 },
+    balance: { label: 'Balance — 50 keywords', maxKeywords: 50 },
+    maximum: { label: 'Maximum — 70 keywords', maxKeywords: 70 },
+};
+export const DEFAULT_RETRIEVAL_KEYWORD_LEVEL = 'balance';
+```
+
+New setting in [index.js](../index.js) defaults:
+
+```javascript
+hybrid_keyword_level: 'balance',  // 'minimal' (30), 'balance' (50), 'maximum' (70)
+keyword_scoring_method: 'bm25',   // trimmed: 'bm25' | 'hybrid'
+```
+
+Existing `EXTRACTION_LEVELS` (off/minimal 5/balanced 12/aggressive 15) and `keyword_extraction_level` setting are **untouched** — they serve ingestion only.
+
+The `hybrid_keyword_level` dropdown applies to **both A1 and A2** (both are client-side and benefit from CJK-priority extraction). A3 uses its own server-side fixed cap of 50.
+
+### 4.3 `core/hybrid-search.js` — A2 (client-side hybrid): use `extractQueryKeywords` + stem Latin tokens
 
 [hybrid-search.js:415](../core/hybrid-search.js#L415) inside `performBM25Search`:
 
-- Replace the unbounded `bm25Tokenize(query, { stem, removeStopWords, minLength: 2 })` with a level-driven extractor that produces the same surface form the BM25 scorer expects (lowercased token strings).
-- Two implementation options:
-  1. **Reuse `extractChatKeywords`** with the chosen level → `.map(kw => kw.text)`. Simplest and stays consistent with Case 1.
-  2. **Reuse `bm25Tokenize`** then truncate by frequency to `EXTRACTION_LEVELS[level].maxKeywords`. Slightly more BM25-native but adds a second tokenization concept.
-- **Recommended:** option 1. The two paths must produce the same set of keywords for the same query; sharing the extractor is the only way to guarantee that without ongoing drift.
-- Threading: `performBM25Search` currently has no access to `settings`. It is called from `clientSideHybridSearch` which does (via outer scope). Pass `settings` through `performBM25Search`'s options arg ([hybrid-search.js:138-142](../core/hybrid-search.js#L138-L142)) so the level can be read.
+**Before:**
+```javascript
+const queryTokens = bm25Tokenize(query, { stem: true, removeStopWords: true, minLength: 2 });
+```
 
-### 3.4 `ui/ui-manager.js` — Case 3 GUI: hide level dropdown when native hybrid is active
+**After:**
+```javascript
+const maxKeywords = RETRIEVAL_KEYWORD_LEVELS[settings.hybrid_keyword_level || 'balance'].maxKeywords;
+const rawKeywords = extractQueryKeywords(query, maxKeywords);
+const queryTokens = rawKeywords.map(token => isCJK(token) ? token : porterStemmer(token));
+```
 
-The keyword-level dropdown lives in the **content vectorizer** UI ([content-vectorizer.js:866-905](../ui/content-vectorizer.js#L866-L905)) — that is the ingestion-side level selector, **not** the retrieval-side one. The retrieval-side level is `settings.keyword_extraction_level`, which is currently **not exposed** as a separate GUI control on the Core tab; it only exists in `extension_settings`.
+- `extractQueryKeywords` selects **which** words matter (CJK priority, anchor/context, frequency).
+- Porter stemmer normalizes Latin tokens to match the BM25 document index (which was built with stemming). CJK tokens are not stemmed (same as `bm25Tokenize` behavior).
+- `porterStemmer` needs to be exported from [bm25-scorer.js](../core/bm25-scorer.js) (currently internal). Add export.
+- `isCJK` helper: reuse `_CJK_SPAN_RE` test or import from the extractor.
 
-Two options:
+**Threading:** `performBM25Search` currently receives only `{ k1, b, fieldBoosting }`. Extend to also pass `settings` from `clientSideHybridSearch` (which already has it in scope) at [hybrid-search.js:138-142](../core/hybrid-search.js#L138-L142).
 
-1. **Expose it.** Add a new dropdown next to "Keyword Scoring Method" on the Core tab (in [ui-manager.js:428-437](../ui/ui-manager.js#L428-L437) area), bound to `settings.keyword_extraction_level`, options off / minimal / balanced / aggressive, with the maxKeyword count shown in the label (5 / 12 / 15).
-2. **Don't expose it.** Keep the setting hidden and only enforce the cap in code. Users who want a different level edit `extension_settings` directly.
+### 4.4 `core/bm25-scorer.js` — A1 (BM25 re-rank): align query tokenization
 
-**Recommended:** option 1. Otherwise users have no way to actually trigger Case 1's `aggressive`/`minimal` modes from the GUI.
+In `applyBM25Scoring()` at [bm25-scorer.js:756](../core/bm25-scorer.js#L756):
 
-Conditional visibility for Case 3:
-- When `hybrid_search_enabled === true` **and** `hybrid_native_prefer === true` **and** the active backend reports `supportsHybridSearch()`, hide the new dropdown and show static explanatory text in its place:
-  - "Native hybrid query keywords: up to 50 main keywords; if CJK fills the budget, up to 10 extra English keywords may be added."
-- This piggybacks on the existing visibility wiring for `vecthare_hybrid_params` / `vecthare_hybrid_native_prefer`. Add a new sibling `<small>` element and toggle it from the same change handler that shows/hides hybrid params.
+**Before:**
+```javascript
+const queryTokens = tokenize(query);
+```
 
-### 3.5 `core/chat-vectorization.js` — already correct, double-check
+**After:**
+```javascript
+const maxKeywords = RETRIEVAL_KEYWORD_LEVELS[options.hybridKeywordLevel || 'balance'].maxKeywords;
+const rawKeywords = extractQueryKeywords(query, maxKeywords);
+const queryTokens = rawKeywords.map(token => isCJK(token) ? token : porterStemmer(token));
+```
 
-[chat-vectorization.js:1915-1919](../core/chat-vectorization.js#L1915-L1919) already passes `level` to `extractChatKeywords` for the legacy chat chunk path. Once 3.1 lands, this caller automatically gets the correct cap too. No change needed.
+The candidate documents passed into `createBM25Scorer(results, ...)` are tokenized inside `BM25Scorer.indexDocuments()` using the existing `tokenize()` (which already stems Latin). So query tokenization must match — that's why we still stem after `extractQueryKeywords`.
 
-### 3.6 Backend cleanup — out of scope here
+Thread `hybridKeywordLevel` through the options object from the caller (`scoreResults()`).
 
-The "keep only `backends/standard.js` + `qdrant-backend.js`" cleanup is a larger separate change tracked in [remove_legacy.md](remove_legacy.md). This plan stays orthogonal to that — it must not break LanceDB / Milvus paths today, but does not need to ship cleanup of those files.
+### 4.5 `core/core-vector-api.js` — three-case routing
+
+[core-vector-api.js:~870](../core/core-vector-api.js) — `queryCollection()`:
+
+**New logic:**
+```javascript
+const backend = getBackendForCollection(collectionId);
+const nativeHybridAvailable = backend?.supportsHybridSearch?.() === true;
+const useNative = nativeHybridAvailable && settings.hybrid_native_prefer;
+
+if (useNative || settings.keyword_scoring_method === 'hybrid') {
+    return await hybridSearch(collectionId, searchText, topK, settings, { queryVector });
+    // hybridSearch internally picks native vs client-side based on the same flags
+}
+
+// A1 — BM25 re-rank
+const annResults = await backend.search(collectionId, queryVector, topK * overfetch);
+return scoreResults(annResults, searchText, settings);
+```
+
+`scoreResults()` is simplified to only the BM25 branch (uses `applyBM25Scoring()` updated per §4.4).
+
+### 4.6 `core/eventbase-retrieval.js` — same three-case routing
+
+Replace the existing `useHybrid` block with the same routing as §4.5. EventBase calls into the appropriate path based on `keyword_scoring_method` and `hybrid_native_prefer`.
+
+Remove:
+- `extractChatKeywords` import (if only used here)
+- `applyKeywordBoost` import
+- The Case 1 keyword-boost-only block (lines ~168-192)
+- References to `keyword_extraction_level` / `keyword_boost_base_weight` in this file
+
+### 4.7 `ui/ui-manager.js` — GUI changes
+
+#### Remove:
+- `#vecthare_hybrid_search_enabled` checkbox + label + hint
+- The `keyword` option from `#vecthare_keyword_scoring_method` (keep the dropdown itself with `bm25` + `hybrid`)
+- Event listeners for the removed checkbox
+
+#### Make always visible:
+- `#vecthare_hybrid_params` container (fusion method, weights, RRF K) — was toggled by `hybrid_search_enabled`, now always shown (applies to A2/A3).
+
+#### Conditional visibility:
+- `#vecthare_hybrid_native_prefer` checkbox: show only when active backend reports `supportsHybridSearch()`. For now: show when `vector_backend` is `qdrant` or `milvus`; hide for `standard` / `lancedb`. Wire to `#vecthare_vector_backend` change handler at [ui-manager.js:2130-2152](../ui/ui-manager.js#L2130-L2152).
+- `#vecthare_keyword_scoring_method` dropdown + `#vecthare_hybrid_keyword_level` dropdown + `#vecthare_bm25_params`: visible when A3 is NOT in effect (i.e. `!(nativeHybridAvailable && hybrid_native_prefer)`). Hidden under A3.
+- A3 static text: when A3 is active, show `"Native hybrid: 50 keywords (CJK priority + English overflow)"` in place of the dropdowns.
+
+#### New `#vecthare_hybrid_keyword_level` dropdown:
+- Options: `minimal` — "Minimal — 30 keywords", `balance` — "Balance — 50 keywords", `maximum` — "Maximum — 70 keywords"
+- Bound to `settings.hybrid_keyword_level`, default `'balance'`.
+- Place near hybrid params section.
+- Applies to both A1 and A2.
+
+Visibility recomputes on changes to: `vector_backend`, `hybrid_native_prefer`, `keyword_scoring_method`.
+
+### 4.8 `Doc/dev_helper.md` — update
+
+- Update the settings table (section starting at [line 198](../Doc/dev_helper.md#L198)):
+  - Remove `hybrid_search_enabled` row — toggle is gone.
+  - Update `keyword_scoring_method` row — values are now `bm25` (default, A1 fast re-rank) / `hybrid` (A2 full scan, slow on large corpora). Standard backend only; ignored when A3 active.
+  - Remove `keyword_extraction_level` / `keyword_boost_base_weight` "only when hybrid disabled" row — Case 1 keyword-boost path is gone.
+  - Add `hybrid_keyword_level` row: controls query keyword extraction for A1 and A2. Values: minimal (30) / balance (50) / maximum (70). Ignored under A3.
+  - Add note: `hybrid_native_prefer` only meaningful when backend supports native hybrid (Qdrant/Milvus).
+- Add new section documenting the mirrored `extractQueryKeywords` function:
+  - Origin: `similharity/index.js:54`
+  - Location: `core/query-keyword-extractor.js`
+  - Keep-in-sync note: if the algorithm changes in similharity, update VectHare's copy.
 
 ---
 
-## 4. Behavior matrix after the fix
+## 5. Behavior matrix after the fix
 
-| User picks | Hybrid OFF | Hybrid ON, Native OFF | Hybrid ON, Native ON |
-|------------|-----------|----------------------|----------------------|
-| `off` | no keyword boost | client-side hybrid skipped, cosine-only | (dropdown hidden) — 50 + 10 |
-| `minimal` | 5 keywords | 5 keywords on text side | (dropdown hidden) — 50 + 10 |
-| `balanced` | 12 keywords | 12 keywords on text side | (dropdown hidden) — 50 + 10 |
-| `aggressive` | 15 keywords | 15 keywords on text side | (dropdown hidden) — 50 + 10 |
+| Backend | Native prefer | `keyword_scoring_method` | Active path | Loads all chunks? | GUI |
+|---------|--------------|--------------------------|-------------|-------------------|-----|
+| Standard | n/a (hidden) | `bm25` (default) | A1 — BM25 re-rank | No | Method dropdown shown; level dropdown shown |
+| Standard | n/a (hidden) | `hybrid` | A2 — client-side hybrid | **Yes** | Method dropdown shown; level dropdown shown |
+| Qdrant | ON (default) | ignored | A3 — native | No | Method + level dropdowns hidden; "50 keywords" text |
+| Qdrant | OFF | `bm25` | A1 | No | Method + level dropdowns shown |
+| Qdrant | OFF | `hybrid` | A2 | **Yes** | Method + level dropdowns shown |
+| Milvus | ON | ignored | A3 — native | No | Method + level dropdowns hidden |
+| Milvus | OFF | `bm25` | A1 | No | Method + level dropdowns shown |
+| LanceDB | n/a (hidden) | `bm25` (default) | A1 | No | Same as Standard |
 
 ---
 
-## 5. Verification
+## 6. Ingestion — explicitly NOT touched
+
+These are separate concerns and stay as-is:
+
+| Component | Setting | Values | Function |
+|-----------|---------|--------|----------|
+| Chat history ingestion | `keyword_extraction_level` | off / minimal(5) / balanced(12) / aggressive(15) | `extractBM25Keywords()` |
+| Lorebook/content ingestion | UI `keywordLevel` | off / minimal(5) / balanced(12) / aggressive(15) | `extractTextKeywords()` |
+| Content-vectorizer dropdown | `#vecthare_cv_keyword_level` | off / minimal / balanced / aggressive | Unchanged |
+| `EXTRACTION_LEVELS` constant | in `keyword-boost.js` | off / minimal / balanced / aggressive | Unchanged |
+
+---
+
+## 7. Verification
 
 Manual:
 
-1. **Case 1** — Hybrid OFF, set level to `aggressive`. Look for the debug log line:
-   `[VectHare Keyword Extraction] Extracted chat keywords: [...]` — it should now contain up to 15 entries (was 8).
-2. **Case 2** — Hybrid ON, Native OFF (or pick a non-Qdrant backend). Look at the console: `[HybridSearch] Computing BM25 scores for N results…` followed by the new debug log showing the level-derived keyword list rather than full tokenized query.
-3. **Case 3** — Hybrid ON, Native ON, Qdrant. Confirm the keyword-level dropdown is hidden in the GUI and the explanatory text is shown. Check the server log for `[Qdrant] extractQueryKeywords final → N tokens` (should be ≤ 60).
-
-Automated (`tests/hybrid-search.test.js` already exists):
-
-- Add a test that calls `clientSideHybridSearch` with a fake backend, settings `{ keyword_extraction_level: 'minimal' }`, and asserts the BM25 path saw at most 5 query terms.
-- Add a test that calls `extractChatKeywords(text, { level: 'aggressive' })` and asserts up to 15 results — guards 3.1 from regressing.
+1. **A1 — Standard backend, BM25 (default).** Open console. Send a chat message with a 5000-chunk collection active. Confirm **no** chunk-load progress prompt appears. Confirm log shows `[BM25] Applying BM25 scoring to N results` where N ≈ topK overfetch (e.g. 50–100), not the full corpus. Confirm extracted query tokens come from `extractQueryKeywords` and respect the level dropdown.
+2. **A2 — Standard backend, switch to Hybrid.** Send a query. Confirm log shows `[HybridSearch] Using client-side ... fusion`. Confirm chunk-load happens (this is expected for A2). Verify keyword level dropdown still respected.
+3. **A3 — Qdrant, native prefer ON.** Confirm both `keyword_scoring_method` and `hybrid_keyword_level` dropdowns are hidden, static "50 keywords" text shown. Server log shows `[Qdrant] extractQueryKeywords final → N tokens` (≤ 60).
+4. **A3 fallback — Qdrant, native prefer OFF.** Both dropdowns reappear. Behavior matches A1/A2 by user's choice.
+5. **GUI — Standard backend.** `hybrid_native_prefer` checkbox is hidden. Method + level dropdowns visible.
+6. **GUI — Qdrant backend.** `hybrid_native_prefer` checkbox visible. When checked: method + level dropdowns hidden, static text shown. When unchecked: dropdowns shown.
+7. **No regression — hybrid params.** Fusion method, vector/text weights, RRF K, BM25 k1/b are visible whenever A2 or A3 is active.
+8. **No regression — ingestion.** Content vectorizer dropdown still shows off/minimal/balanced/aggressive. Lorebook vectorization still uses `extractTextKeywords` with old levels.
 
 ---
 
-## 6. Open questions
+## 8. File change summary
 
-1. **"Keyword Scoring Method" dropdown** ([ui-manager.js:432-436](../ui/ui-manager.js#L432-L436), values `keyword` / `bm25` / `hybrid`) per [dev_helper.md:208](../Doc/dev_helper.md#L208) only affects the legacy chat-chunk pipeline, which EventBase has replaced. Does it still drive any current code path? If not, candidate to hide on the Core tab now and remove with the legacy cleanup. Confirm before touching.
-2. **`maxKeywords` source for Case 3 explanatory text:** the 50 / 10 numbers are hardcoded in [similharity/index.js:54](../../similharity/index.js#L54) and [line 135](../../similharity/index.js#L135). If the user expects to tune these later, they should become server-config or query-param. For now, hardcode the same numbers in the GUI label and accept that the two stay in sync manually.
-3. **Should `level === 'off'` in Case 2** disable the BM25 side of fusion entirely (degrading hybrid back to cosine-only) or fall back to a sensible default (e.g. `balanced`)? Disabling is more honest to the user's choice; falling back is more forgiving. Recommend: disable, log a warning explaining the consequence.
+| File | Action |
+|------|--------|
+| `core/query-keyword-extractor.js` | **New** — copied `extractQueryKeywords` + `RETRIEVAL_KEYWORD_LEVELS` |
+| `core/hybrid-search.js` | **Modify** — A2: replace `bm25Tokenize(query)` with `extractQueryKeywords` + stem; thread settings |
+| `core/bm25-scorer.js` | **Modify** — A1: `applyBM25Scoring` uses `extractQueryKeywords` + stem; export `porterStemmer` |
+| `core/core-vector-api.js` | **Modify** — three-case routing in `queryCollection()`; simplify `scoreResults()` to BM25-only |
+| `core/eventbase-retrieval.js` | **Modify** — same three-case routing; remove Case 1 keyword-boost block |
+| `ui/ui-manager.js` | **Modify** — remove `hybrid_search_enabled` toggle; trim `keyword_scoring_method` to 2 options; add `hybrid_keyword_level` dropdown; conditional visibility for A3 |
+| `index.js` | **Modify** — remove `hybrid_search_enabled` default; trim `keyword_scoring_method` (default `bm25`); add `hybrid_keyword_level` |
+| `Doc/dev_helper.md` | **Modify** — update settings table, add mirrored-function note, document A1/A2/A3 |

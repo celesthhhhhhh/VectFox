@@ -775,6 +775,11 @@ function gatherCollectionsToQuery(settings) {
             continue;
         }
 
+        // DOCUMENT (Archive Chat History) collections route to Phase A when EventBase is on.
+        if (settings?.eventbase_enabled && collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_DOCUMENT)) {
+            continue;
+        }
+
         // Skip if this is the current chat collection (already handled above)
         if (collectionId === chatCollectionId) {
             continue;

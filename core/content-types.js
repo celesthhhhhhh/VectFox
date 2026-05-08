@@ -322,9 +322,9 @@ export const CONTENT_TYPES = {
 
     document: {
         id: 'document',
-        name: 'Custom Document',
+        name: 'Archive Chat History',
         icon: 'fa-file-lines',
-        description: 'Paste text or upload files (.txt, .md, .json)',
+        description: 'Upload saved chat logs — retrieved via EventBase alongside live chat history',
 
         features: {
             temporalDecay: false,

@@ -742,7 +742,7 @@ async function discoverViaFallback(settings) {
     const contentPatterns = [
         // Lorebook patterns
         `${COLLECTION_PREFIXES.VECTHARE_LOREBOOK}`,
-        // Document patterns
+        // Archive Chat History patterns
         `${COLLECTION_PREFIXES.VECTHARE_DOCUMENT}`,
         // File patterns (legacy)
         `${COLLECTION_PREFIXES.FILE}`,

@@ -13,7 +13,9 @@
 
 import { setExtensionPrompt, extension_prompts, getCurrentChatId, substituteParams } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { getChatUUID } from './collection-ids.js';
+import { getChatUUID, parseRegistryKey, COLLECTION_PREFIXES } from './collection-ids.js';
+import { getCollectionRegistry } from './collection-loader.js';
+import { queryCollection } from './core-vector-api.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { EventBaseFatalError, EventBaseExtractionError } from './eventbase-schema.js';
 import { extractEvents } from './eventbase-extractor.js';
@@ -269,6 +271,69 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
 // ---------------------------------------------------------------------------
 
 /**
+ * Scan the registry for DOCUMENT-type collections that are enabled and locked
+ * to the current chat. These are "Archive Chat History" collections that belong
+ * in Phase A (EventBase) retrieval.
+ * @param {string} currentChatId
+ * @param {boolean} debugLog
+ * @returns {{ collectionId: string, registryKey: string }[]}
+ */
+function _gatherArchiveChatCollections(currentChatId, debugLog) {
+    if (!currentChatId) return [];
+    const registry = getCollectionRegistry();
+    const results = [];
+    for (const registryKey of registry) {
+        const parsed = parseRegistryKey(registryKey);
+        const colId = parsed.collectionId;
+        if (!colId?.startsWith(COLLECTION_PREFIXES.VECTHARE_DOCUMENT)) continue;
+        if (!isCollectionEnabled(registryKey)) {
+            if (debugLog) console.log(`[EventBase] Archive collection skipped (paused): ${colId}`);
+            continue;
+        }
+        if (!isCollectionLockedToChat(registryKey, currentChatId)) {
+            if (debugLog) console.log(`[EventBase] Archive collection skipped (not locked to chat): ${colId}`);
+            continue;
+        }
+        results.push({ collectionId: colId, registryKey });
+    }
+    return results;
+}
+
+/**
+ * Convert a chunk result from queryCollection into an event-like object
+ * that the EventBase re-ranker can score alongside real events.
+ * @param {object} meta - Metadata from queryCollection
+ * @param {number} hash - Chunk hash
+ * @param {string} sourceCollectionId - Which DOCUMENT collection it came from
+ * @returns {object}
+ */
+function _chunkToEventCandidate(meta, hash, sourceCollectionId) {
+    return {
+        event_type: 'archive_chat_chunk',
+        importance: 5,
+        should_persist: false,
+        source_window_end: -1,
+        characters: [],
+        locations: [],
+        factions: [],
+        items: [],
+        concepts: [],
+        keywords: meta.keywords || [],
+        open_threads: [],
+        summary: meta.text || meta.content || '',
+        DateTime: null,
+        cause: '',
+        result: '',
+        score: meta.score ?? 0,
+        vectorScore: meta.vectorScore ?? meta.score ?? 0,
+        event_id: `archive_${sourceCollectionId}_${hash}`,
+        _hash: hash,
+        _isArchiveChunk: true,
+        _sourceCollection: sourceCollectionId,
+    };
+}
+
+/**
  * Run the EventBase retrieval pipeline and inject the result into the prompt.
  *
  * @param {object} params
@@ -281,54 +346,45 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
 export async function runEventBaseRetrieval({ chat, searchText, settings, chatUUID }) {
     const debugLog = settings.eventbase_debug_logging;
     const uuid = chatUUID || getChatUUID();
-
-    // Respect the "Active for current chat" toggle in Collection Settings.
-    const collectionId = buildEventBaseCollectionId(uuid, settings?.vector_backend);
-
-    // 1. Global enabled flag (collection card pause/resume toggle).
-    //    Stored under registry key (backend:source:id) so check all key variants.
+    const currentChatId = getCurrentChatId();
     const backend = settings?.vector_backend || 'standard';
     const source = settings?.source || 'transformers';
+
+    // --- Determine if the live EventBase collection should be queried ---
+    const collectionId = buildEventBaseCollectionId(uuid, settings?.vector_backend);
     const candidateKeys = [
         collectionId,
         `${source}:${collectionId}`,
         `${backend}:${source}:${collectionId}`,
     ].filter(Boolean);
-    const disabledKey = candidateKeys.find(key => key && !isCollectionEnabled(key));
-    if (disabledKey) {
-        if (debugLog) {
-            console.log(`[EventBase] Collection paused (key="${disabledKey}") — skipping retrieval`);
+
+    const eventbasePaused = candidateKeys.find(key => key && !isCollectionEnabled(key));
+    const eventbaseLocked = currentChatId && candidateKeys.some(key => isCollectionLockedToChat(key, currentChatId));
+    const queryEventbase = !eventbasePaused && eventbaseLocked;
+
+    if (debugLog) {
+        if (eventbasePaused) console.log(`[EventBase] Live collection paused (key="${eventbasePaused}")`);
+        if (!eventbaseLocked) {
+            const collectionsMeta = extension_settings?.vecthareplus?.collections || {};
+            const lockMetaKey = candidateKeys.find(key =>
+                collectionsMeta[key] && Object.prototype.hasOwnProperty.call(collectionsMeta[key], 'lockedToChatIds')
+            );
+            const lockedChats = lockMetaKey ? collectionsMeta[lockMetaKey]?.lockedToChatIds : [];
+            console.log(`[EventBase] Live collection not locked to chat (${currentChatId || 'none'}), lockedChats=${JSON.stringify(lockedChats)}`);
         }
-        setExtensionPrompt(EVENTBASE_PROMPT_TAG, '', settings.position, settings.depth, false);
-        return;
     }
 
-    // 2. "Active for current chat" checkbox in Collection Settings.
-    //    EventBase collections are chat-scoped, so retrieval must only run when
-    //    the matching EventBase collection is explicitly locked to the current
-    //    chat. The UI may save metadata under plain, source-scoped, or full
-    //    registry keys, so inspect all candidate keys instead of only plain ID.
-    const currentChatId = getCurrentChatId();
-    const collectionsMeta = extension_settings?.vecthareplus?.collections || {};
-    const lockMetaKey = candidateKeys.find(key =>
-        collectionsMeta[key] && Object.prototype.hasOwnProperty.call(collectionsMeta[key], 'lockedToChatIds')
-    );
-    const lockedToCurrentChat = currentChatId && candidateKeys.some(key => isCollectionLockedToChat(key, currentChatId));
+    // --- Find DOCUMENT (Archive Chat History) collections locked to this chat ---
+    const archiveCollections = _gatherArchiveChatCollections(currentChatId, debugLog);
 
-    if (!lockedToCurrentChat) {
-        if (debugLog) {
-            const lockedChats = lockMetaKey ? collectionsMeta[lockMetaKey]?.lockedToChatIds : [];
-            console.log(
-                `[EventBase] Not active for current chat (${currentChatId || 'none'}), ` +
-                `lockMetaKey=${lockMetaKey || 'none'}, lockedChats=${JSON.stringify(lockedChats)} — skipping retrieval`
-            );
-        }
+    if (!queryEventbase && archiveCollections.length === 0) {
+        if (debugLog) console.log('[EventBase] No live collection and no archive collections — skipping Phase A');
         setExtensionPrompt(EVENTBASE_PROMPT_TAG, '', settings.position, settings.depth, false);
         return;
     }
 
     if (debugLog) {
-        console.log('[EventBase] Retrieval start, searchText length:', searchText?.length);
+        console.log(`[EventBase] Phase A: live=${queryEventbase}, archiveCollections=${archiveCollections.length}, searchText length=${searchText?.length}`);
     }
 
     if (settings.retrieval_popup_on_start) {
@@ -336,9 +392,6 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     }
 
     // Extract the user's most recent message for focused keyword extraction.
-    // The full searchText (last N messages joined) is still used for vector search
-    // so semantic context is preserved — but keywords come from the user's actual
-    // intent, not from the dominant AI response text that follows it in the blob.
     const lastUserMessage = [...(chat || [])]
         .reverse()
         .find(m => !m.is_system && m.is_user);
@@ -348,12 +401,35 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
         console.log(`[EventBase] Keyword query (user last message, ${keywordQuery.length} chars):`, keywordQuery.slice(0, 120));
     }
 
+    // --- Query archive (DOCUMENT) collections in parallel, convert to event-like format ---
+    const archiveChunkPromises = archiveCollections.map(async ({ collectionId: archColId, registryKey }) => {
+        try {
+            const topK = (settings.eventbase_retrieval_top_k || 8);
+            const { hashes, metadata } = await queryCollection(archColId, searchText, topK, settings);
+            if (!hashes?.length) return [];
+            return metadata.map((meta, i) => _chunkToEventCandidate(meta, hashes[i], archColId));
+        } catch (err) {
+            console.error(`[EventBase] Archive collection query failed (${archColId}):`, err);
+            return [];
+        }
+    });
+
+    // Fire archive queries; retrieveEvents will handle the EventBase query internally
+    const archiveResults = await Promise.all(archiveChunkPromises);
+    const additionalCandidates = archiveResults.flat();
+
+    if (debugLog && additionalCandidates.length > 0) {
+        console.log(`[EventBase] Queried ${archiveCollections.length} archive collection(s) → ${additionalCandidates.length} chunk(s)`);
+    }
+
     const { events, debug } = await retrieveEvents({
         searchText,
         keywordQuery,
         chatLength: chat?.length || 0,
         settings,
         chatUUID: uuid,
+        additionalCandidates,
+        skipLiveQuery: !queryEventbase,
     });
 
     if (debugLog) {

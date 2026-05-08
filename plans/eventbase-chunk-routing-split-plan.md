@@ -40,7 +40,7 @@ rearrangeChat
 ├── Phase A — EventBase (chat history)
 │     ├── always invoked; internally skips when no event collection
 │     │   is locked to current chat
-│     └── covers: CHAT + DOCUMENT (Archive Chat History)
+│     └── covers: CHAT + DOCUMENT (will rename to Archive Chat History)
 │
 └── Phase B — Chunk-based content
       ├── always invoked when at least one eligible non-chat collection

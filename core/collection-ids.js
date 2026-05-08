@@ -32,7 +32,7 @@ export const COLLECTION_PREFIXES = {
     VECTHARE_CHAT: 'vecthare_chat_',
     VECTHARE_LOREBOOK: 'vecthare_lorebook_',
     VECTHARE_CHARACTER: 'vecthare_character_',
-    VECTHARE_DOCUMENT: 'vecthare_document_',
+    VECTHARE_DOCUMENT: 'vecthare_archivechat_',
     VECTHARE_EVENTBASE: 'vecthare_eventbase_',
 
     // Legacy/external formats
@@ -301,7 +301,7 @@ export function parseCollectionId(collectionId) {
         };
     }
 
-    // VectHare document format: vecthare_document_*
+    // VectHare archive chat format: vecthare_archivechat_*
     if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_DOCUMENT)) {
         return {
             type: COLLECTION_TYPES.DOCUMENT,

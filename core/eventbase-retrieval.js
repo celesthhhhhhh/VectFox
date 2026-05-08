@@ -94,9 +94,14 @@ function _normalizeWeights(w) {
  * @param {number} params.chatLength    - Current total chat message count (for recency)
  * @param {object} params.settings      - VectHare settings
  * @param {string} [params.chatUUID]    - Override chat UUID
+ * @param {object[]} [params.additionalCandidates] - Pre-queried results (e.g. DOCUMENT chunks)
+ *        already converted to event-like format. Merged into raw candidates before re-ranking.
+ * @param {boolean}  [params.skipLiveQuery] - When true, skip the EventBase collection query
+ *        and rely solely on additionalCandidates. Used when the live collection is paused/not locked
+ *        but archive collections are available.
  * @returns {Promise<{ events: object[], debug: object }>}
  */
-export async function retrieveEvents({ searchText, keywordQuery, chatLength, settings, chatUUID }) {
+export async function retrieveEvents({ searchText, keywordQuery, chatLength, settings, chatUUID, additionalCandidates, skipLiveQuery }) {
     const debugLog = settings.eventbase_debug_logging;
     const uuid = chatUUID || getChatUUID();
 
@@ -114,10 +119,14 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     //    searchText → full multi-message context: broad narrative coverage
     //    When both strings are identical (no user message extracted) fall back to a
     //    single query to avoid paying double cost for the same embedding.
+    //    Skipped entirely when the live EventBase collection is unavailable.
     let rawCandidates;
     const dualQuery = keywordQuery && keywordQuery !== searchText;
 
-    if (dualQuery) {
+    if (skipLiveQuery) {
+        rawCandidates = [];
+        if (debugLog) console.log('[EventBase] Live query skipped (collection paused or not locked)');
+    } else if (dualQuery) {
         const [userResults, contextResults] = await Promise.all([
             queryEvents(keywordQuery, topK, settings, uuid).catch(err => {
                 console.error('[EventBase] User-query failed:', err);
@@ -159,7 +168,14 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
 
     // Keyword re-ranking is handled inside queryCollection() (A1/A2/A3 routing).
     // EventBase only needs to pass rawCandidates through to the importance filter.
-    const boostedCandidates = rawCandidates;
+    // Merge in DOCUMENT (Archive Chat History) chunks queried by the caller.
+    const boostedCandidates = additionalCandidates?.length
+        ? [...rawCandidates, ...additionalCandidates]
+        : rawCandidates;
+
+    if (debugLog && additionalCandidates?.length) {
+        console.log(`[EventBase] Merged ${additionalCandidates.length} archive-chat chunk(s) into ${rawCandidates.length} event candidates`);
+    }
 
     // 3. Filter by minimum importance
     const importanceFiltered = boostedCandidates.filter(m => {
@@ -257,6 +273,7 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
             nativeHybridPrefer: settings.hybrid_native_prefer !== false,
             fusionMethod: settings.hybrid_fusion_method || 'rrf',
             rawCount: rawCandidates.length,
+            archiveCandidates: additionalCandidates?.length || 0,
             afterImportanceFilter: importanceFiltered.length,
             afterDedup: dedupedEvents.length,
             afterContextDedup: contextDedupedEvents.length,

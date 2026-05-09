@@ -400,6 +400,8 @@ async function discoverViaPlugin(settings) {
 
             let skippedCorruption = 0;
             let skippedStFile = 0;
+            let skippedEmpty = 0;
+            const skippedEmptyList = [];
             for (const collection of data.collections) {
                 const backend = collection.backend || 'standard';
 
@@ -425,7 +427,8 @@ async function discoverViaPlugin(settings) {
                 // Skip empty collections — no data to serve, treat as stale so the registry
                 // entry gets removed and retrieval stops wasting a round-trip on them.
                 if (!collection.chunkCount) {
-                    console.debug(`   ⚠️ Skipping 0-chunk collection ${backend}:${collectionId} (empty on disk)`);
+                    skippedEmpty++;
+                    skippedEmptyList.push(`${backend}:${collectionId}`);
                     continue;
                 }
 
@@ -456,6 +459,10 @@ async function discoverViaPlugin(settings) {
 
             if (skippedCorruption > 0 || skippedStFile > 0) {
                 console.log(`   🛡️ Discovery filter skipped ${skippedCorruption} corrupted + ${skippedStFile} ST-native file collection(s) — use Cleanup Corrupted to delete them from disk`);
+            }
+            if (skippedEmpty > 0) {
+                console.log(`   🗑️ Skipped ${skippedEmpty} empty collection(s) with 0 chunks (not added to registry):`);
+                skippedEmptyList.forEach(id => console.log(`      - ${id}`));
             }
 
             console.debug(`\n📋 VectHare: Updating registry...`);

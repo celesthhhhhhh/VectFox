@@ -337,20 +337,70 @@ export class StandardBackend extends VectorBackend {
      * Uses native ST API
      */
     async queryCollection(collectionId, searchText, topK, settings, queryVector = null) {
-        const providerParams = getProviderSpecificParams(settings, true);
         const model = getModelFromSettings(settings);
+        const source = settings.source || 'transformers';
+        const threshold = settings.score_threshold || 0.0;
 
+        // When the Similharity plugin is available, data was inserted via the plugin's
+        // path: vectors/{source}/{collectionId}/{model}/
+        // The native ST /api/vector/query does NOT include the model subfolder, so it
+        // looks at the wrong path and always returns 0 results.
+        // Route queries through the plugin so they use the same storage path.
+        if (this.pluginAvailable) {
+            const pluginBody = {
+                backend: 'vectra',
+                collectionId,
+                topK,
+                threshold,
+                source,
+                model,
+            };
+            // Pass pre-computed vector when available; otherwise let the plugin generate it
+            if (queryVector) {
+                pluginBody.queryVector = queryVector;
+            } else {
+                pluginBody.searchText = searchText;
+            }
+
+            const response = await fetch('/api/plugins/similharity/chunks/query', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify(pluginBody),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text().catch(() => 'No response body');
+                throw new Error(`Failed to query collection (plugin): ${response.status} ${response.statusText} - ${errorBody}`);
+            }
+
+            const data = await response.json();
+            // Plugin returns { success, results: [{ hash, score, text, metadata }] }
+            const results = data.results || [];
+            return {
+                hashes: results.map(r => r.hash),
+                metadata: results.map(r => ({
+                    ...r.metadata,
+                    hash: r.hash,
+                    text: r.text ?? r.metadata?.text,
+                    score: r.score || 0,
+                })),
+            };
+        }
+
+        // Fallback: native ST API (used when plugin is not available)
+        // Note: does NOT include model subfolder — only works for collections
+        // vectorized via the native API.
+        const providerParams = getProviderSpecificParams(settings, true);
         const requestBody = {
-            collectionId: collectionId,
-            searchText: searchText,
-            topK: topK,
-            threshold: settings.score_threshold || 0.0,
-            source: settings.source || 'transformers',
-            model: model,
+            collectionId,
+            searchText,
+            topK,
+            threshold,
+            source,
+            model,
             ...providerParams,
         };
 
-        // If we have a pre-computed query vector (for webllm, koboldcpp, bananabread)
         if (queryVector) {
             requestBody.embeddings = { [searchText]: queryVector };
         }

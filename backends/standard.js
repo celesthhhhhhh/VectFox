@@ -362,18 +362,25 @@ export class StandardBackend extends VectorBackend {
                 pluginBody.searchText = searchText;
             }
 
+            console.log(`[VectHare] queryCollection via plugin: collectionId=${collectionId}, source=${source}, model=${model}, topK=${topK}, threshold=${threshold}, hasQueryVector=${!!queryVector}`);
+
             const response = await fetch('/api/plugins/similharity/chunks/query', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify(pluginBody),
             });
 
+            console.log(`[VectHare] plugin query response: status=${response.status} ok=${response.ok}`);
+
             if (!response.ok) {
                 const errorBody = await response.text().catch(() => 'No response body');
+                console.error(`[VectHare] plugin query failed: ${errorBody}`);
                 throw new Error(`Failed to query collection (plugin): ${response.status} ${response.statusText} - ${errorBody}`);
             }
 
             const data = await response.json();
+            console.log(`[VectHare] plugin query result: count=${data.count}, results.length=${data.results?.length}, error=${data.error || 'none'}`);
+
             // Plugin returns { success, results: [{ hash, score, text, metadata }] }
             const results = data.results || [];
             return {

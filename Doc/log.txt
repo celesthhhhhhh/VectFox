@@ -12,9 +12,9 @@ collection-metadata.js:937 [VectHare Activation Filter] Collection vectra:openro
 collection-metadata.js:1002 [VectHare Activation Filter] Summary: 3 collections → 2 active
 collection-metadata.js:1004 [VectHare Activation Filter] Active collections: (2) ['vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vecthare_lorebook_story1_1778254554854']
 chat-vectorization.js:1951 ✅ VectHare: 2 collections passed activation filters: (2) ['vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:openrouter:vecthare_lorebook_story1_1778254554854']
-core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 821ms, scores=[]
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 1884ms, scores=[]
 chat-vectorization.js:867 VectHare: Retrieved 0 chunks from vectra:openrouter:Your Wives - 2026-04-28@19h07m24s830ms imported
-core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 11781ms, scores=[]
+core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 516ms, scores=[]
 chat-vectorization.js:867 VectHare: Retrieved 0 chunks from vectra:openrouter:vecthare_lorebook_story1_1778254554854
 chat-vectorization.js:2071 VectHare: Retrieved 0 total chunks from 2 collections
 chat-vectorization.js:2124 VectHare: Stored 0 chunks for visualizer

@@ -419,7 +419,7 @@ async function discoverViaPlugin(settings) {
                     continue;
                 }
 
-                console.debug(`   - ${backend}:${collection.source}:${collectionId} (${collection.chunkCount} chunks)`);
+                console.debug(`   - ${backend}:${collectionId} (${collection.chunkCount} chunks)`);
 
                 const collectionData = {
                     chunkCount: collection.chunkCount,
@@ -429,15 +429,15 @@ async function discoverViaPlugin(settings) {
                     models: collection.models || []  // All available models
                 };
 
-                // Cache by "backend:source:id" to uniquely identify each collection
-                const cacheKey = `${backend}:${collection.source}:${collectionId}`;
+                // Cache by "backend:id" — embedding source is not part of the key
+                const cacheKey = `${backend}:${collectionId}`;
                 pluginCollectionData[cacheKey] = collectionData;
                 uniqueKeys.push(cacheKey);
 
                 // Also cache by sanitized version (for LanceDB lookups)
                 const sanitized = collectionId.replace(/[^a-zA-Z0-9_.-]/g, '_');
                 if (sanitized !== collectionId) {
-                    pluginCollectionData[`${backend}:${collection.source}:${sanitized}`] = collectionData;
+                    pluginCollectionData[`${backend}:${sanitized}`] = collectionData;
                 }
             }
 
@@ -454,45 +454,6 @@ async function discoverViaPlugin(settings) {
             console.debug(`   Current registry has ${currentRegistry.length} entries`);
             console.debug(`   Plugin discovered ${uniqueKeys.length} collections`);
 
-            // Migrate old registry entries (source:id or plain id) to new format (backend:source:id)
-            // Match them to plugin-discovered collections
-            const migratedEntries = [];
-            for (const oldKey of [...currentRegistry]) {
-                const parsed = parseRegistryKey(oldKey);
-
-                // If already in new format (has backend), keep it
-                if (parsed.backend) {
-                    continue;
-                }
-
-                // Old format - try to find matching collection from plugin
-                const collectionId = parsed.collectionId;
-                const oldSource = parsed.source;
-
-                // Find all plugin collections matching this ID
-                const matchingPluginKeys = uniqueKeys.filter(key => {
-                    const parts = key.split(':');
-                    const pluginId = parts.slice(2).join(':');  // backend:source:id -> id
-                    const pluginSource = parts[1];
-
-                    // Match by ID and source (if source was known)
-                    return pluginId === collectionId && (!oldSource || pluginSource === oldSource);
-                });
-
-                if (matchingPluginKeys.length > 0) {
-                    console.debug(`   🔄 Migrating: ${oldKey} -> ${matchingPluginKeys.join(', ')}`);
-                    unregisterCollection(oldKey);
-                    migratedEntries.push(oldKey);
-                    // Don't register here - will be registered in the main loop below
-                } else {
-                    console.debug(`   ❓ No matching plugin collection for old entry: ${oldKey}`);
-                }
-            }
-
-            if (migratedEntries.length > 0) {
-                console.log(`   ✅ Migrated ${migratedEntries.length} old registry entries to new format`);
-            }
-
             // Remove entries that no longer exist on disk
             const updatedRegistry = getCollectionRegistry();
             const staleEntries = updatedRegistry.filter(key => !pluginKeySet.has(key));
@@ -504,7 +465,7 @@ async function discoverViaPlugin(settings) {
                 }
             }
 
-            // Register all discovered collections with backend:source:id format
+            // Register all discovered collections with backend:id format
             let newRegistrations = 0;
             for (const key of uniqueKeys) {
                 if (!getCollectionRegistry().includes(key)) {

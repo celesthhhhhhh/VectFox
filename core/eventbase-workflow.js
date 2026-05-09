@@ -59,11 +59,9 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
     // ingestion, or insertion work. Pause is a hard stop regardless of chat locks.
     const collectionId = buildEventBaseCollectionId(uuid, settings?.vector_backend);
     const backend = settings?.vector_backend || 'standard';
-    const source = settings?.source || 'transformers';
     const candidateKeys = [
-        collectionId,
-        `${source}:${collectionId}`,
-        `${backend}:${source}:${collectionId}`,
+        `${backend}:${collectionId}`,
+        collectionId,  // fallback for bare-ID entries written by older versions
     ].filter(Boolean);
     const disabledKey = candidateKeys.find(key => key && !isCollectionEnabled(key));
     if (disabledKey) {
@@ -348,14 +346,12 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     const uuid = chatUUID || getChatUUID();
     const currentChatId = getCurrentChatId();
     const backend = settings?.vector_backend || 'standard';
-    const source = settings?.source || 'transformers';
 
     // --- Determine if the live EventBase collection should be queried ---
     const collectionId = buildEventBaseCollectionId(uuid, settings?.vector_backend);
     const candidateKeys = [
-        collectionId,
-        `${source}:${collectionId}`,
-        `${backend}:${source}:${collectionId}`,
+        `${backend}:${collectionId}`,
+        collectionId,  // fallback for bare-ID entries written by older versions
     ].filter(Boolean);
 
     const eventbasePaused = candidateKeys.find(key => key && !isCollectionEnabled(key));

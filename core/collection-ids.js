@@ -445,32 +445,20 @@ export function parseRegistryKey(registryKey) {
         return { backend: null, source: null, collectionId: '' };
     }
 
-    // Known backends and embedding sources
+    // Known storage backends
     const knownBackends = ['standard', 'lancedb', 'vectra', 'milvus', 'qdrant'];
-    const knownSources = ['transformers', 'openai', 'cohere', 'ollama', 'llamacpp',
-        'vllm', 'koboldcpp', 'webllm', 'bananabread', 'openrouter',
-        'electronhub', 'mistral', 'nomicai', 'palm', 'vertexai', 'togetherai', 'extras'];
 
     const parts = registryKey.split(':');
 
-    // New format: backend:source:collectionId (3+ parts)
-    if (parts.length >= 3 && knownBackends.includes(parts[0]) && knownSources.includes(parts[1])) {
+    // Current format: backend:collectionId (starts with a known backend)
+    if (parts.length >= 2 && knownBackends.includes(parts[0])) {
         return {
             backend: parts[0],
-            source: parts[1],
-            collectionId: parts.slice(2).join(':'),  // Rest is collection ID (may contain colons)
-        };
-    }
-
-    // Migration format: source:collectionId (2+ parts, starts with source)
-    if (parts.length >= 2 && knownSources.includes(parts[0])) {
-        return {
-            backend: null,  // Backend unknown in old format
-            source: parts[0],
+            source: null,
             collectionId: parts.slice(1).join(':'),
         };
     }
 
-    // Legacy format: just collectionId (no colons, or unknown prefix)
+    // Legacy format: just collectionId (no recognized prefix)
     return { backend: null, source: null, collectionId: registryKey };
 }

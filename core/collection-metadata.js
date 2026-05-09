@@ -217,21 +217,10 @@ export function getCollectionMeta(collectionId) {
 
     let stored = extension_settings.vecthareplus.collections[collectionId];
 
-    // Fallback: Try alternate key formats for backward compatibility
+    // Fallback: Try bare collectionId for entries written before backend: prefix was added
     if (!stored && collectionId) {
-        // If looking up with full key (backend:source:id), try without backend
         const parsed = parseRegistryKey(collectionId);
-        if (parsed.backend && parsed.source) {
-            // Try source:collectionId format
-            const legacyKey = `${parsed.source}:${parsed.collectionId}`;
-            stored = extension_settings.vecthareplus.collections[legacyKey];
-
-            // Try just collectionId
-            if (!stored) {
-                stored = extension_settings.vecthareplus.collections[parsed.collectionId];
-            }
-        } else if (parsed.source) {
-            // Already source:collectionId format, try just collectionId
+        if (parsed.backend) {
             stored = extension_settings.vecthareplus.collections[parsed.collectionId];
         }
     }

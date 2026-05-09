@@ -341,6 +341,15 @@ export class StandardBackend extends VectorBackend {
         const source = settings.source || 'transformers';
         const threshold = settings.score_threshold || 0.0;
 
+        // Registry keys arrive as "backend:collectionId". Strip the backend prefix
+        // to get the bare ID the Similharity plugin expects.
+        const knownBackends = ['standard', 'lancedb', 'vectra', 'milvus', 'qdrant'];
+        const parts = collectionId.split(':');
+        let bareCollectionId = collectionId;
+        if (parts.length >= 2 && knownBackends.includes(parts[0])) {
+            bareCollectionId = parts.slice(1).join(':');
+        }
+
         // When the Similharity plugin is available, data was inserted via the plugin's
         // path: vectors/{source}/{collectionId}/{model}/
         // The native ST /api/vector/query does NOT include the model subfolder, so it
@@ -349,7 +358,7 @@ export class StandardBackend extends VectorBackend {
         if (this.pluginAvailable) {
             const pluginBody = {
                 backend: 'vectra',
-                collectionId,
+                collectionId: bareCollectionId,
                 topK,
                 threshold,
                 source,
@@ -362,7 +371,7 @@ export class StandardBackend extends VectorBackend {
                 pluginBody.searchText = searchText;
             }
 
-            console.log(`[VectHare] queryCollection via plugin: collectionId=${collectionId}, source=${source}, model=${model}, topK=${topK}, threshold=${threshold}, hasQueryVector=${!!queryVector}`);
+            console.log(`[VectHare] queryCollection via plugin: collectionId=${bareCollectionId}, source=${source}, model=${model}, topK=${topK}, threshold=${threshold}, hasQueryVector=${!!queryVector}`);
 
             const response = await fetch('/api/plugins/similharity/chunks/query', {
                 method: 'POST',
@@ -399,7 +408,7 @@ export class StandardBackend extends VectorBackend {
         // vectorized via the native API.
         const providerParams = getProviderSpecificParams(settings, true);
         const requestBody = {
-            collectionId,
+            collectionId: bareCollectionId,
             searchText,
             topK,
             threshold,

@@ -659,12 +659,8 @@ export async function synchronizeChat(settings, batchSize = 5) {
 
                     // Register on first successful insert (prevents ghost collections)
                     if (!isRegistered) {
-                        // Construct proper registry key: backend:source:collectionId
                         const backend = settings.vector_backend || 'standard';
-                        const source = settings.source || 'transformers';
-                        const registryKey = `${backend}:${source}:${collectionId}`;
-                        console.log(`🔍 VectHare DEBUG: Registering collection with key: "${registryKey}"`);
-                        console.log(`🔍 VectHare DEBUG: Components: backend="${backend}", source="${source}", collectionId="${collectionId}"`);
+                        const registryKey = `${backend}:${collectionId}`;
                         registerCollection(registryKey);
                         isRegistered = true;
                         // Chat collections should be scoped to the current chat, not globally always-active.

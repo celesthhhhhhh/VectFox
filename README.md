@@ -79,7 +79,7 @@ Technical Requirement: Because of the high data throughput required, this system
 ### 🔀 Smarter Two-Search Recall (Qdrant)
 - VectHarePlus runs **two independent searches**: one using dense vector similarity (semantic meaning), and one using keyword matching against Qdrant payload text and keyword indexes
 - It then combines both result lists using RRF or weighted fusion and keeps the best match when duplicates appear
-- The keyword search retrieves all documents matching ≥1 query keyword via Qdrant payload indexes (not just the ANN top-K), so keyword-relevant results can surface even with low vector similarity
+- The keyword search retrieves **every document matching ≥1 query keyword** via Qdrant payload indexes (full corpus scan, no candidate cap — not just the ANN top-K), so keyword-relevant results can surface even with low vector similarity
 - If one search returns no results, the other still contributes — memory recall does not fully fail
 
 > ℹ️ **Architecture note:** This is server-side hybrid search implemented in the Similharity plugin, not Qdrant's native dense+sparse-vector hybrid API. No sparse vectors are stored in Qdrant. Keyword matching uses Qdrant payload text indexes and keyword arrays, with RRF/weighted fusion computed in plugin JavaScript.

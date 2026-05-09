@@ -146,6 +146,23 @@ export function validateEvent(raw) {
         return { ok: false, errors: ['summary is empty or missing'] };
     }
 
+    const concepts = ensureArray((/** @type {any} */ (raw)).concepts);
+    const rawKeywords = ensureArray((/** @type {any} */ (raw)).keywords);
+
+    // Merge concepts into keywords (case-insensitive dedup) so concept terms are
+    // always searchable via the keyword index even if the LLM forgot to copy them
+    // over. Characters/locations/items are NOT merged — they appear in the embed
+    // text already and would dominate keyword recall with generic name matches.
+    const seen = new Set(rawKeywords.map(k => k.toLowerCase()));
+    const mergedKeywords = [...rawKeywords];
+    for (const c of concepts) {
+        const key = c.toLowerCase();
+        if (!seen.has(key)) {
+            seen.add(key);
+            mergedKeywords.push(c);
+        }
+    }
+
     const event = {
         event_type,
         importance,
@@ -157,8 +174,8 @@ export function validateEvent(raw) {
         locations: ensureArray((/** @type {any} */ (raw)).locations),
         factions: ensureArray((/** @type {any} */ (raw)).factions),
         items: ensureArray((/** @type {any} */ (raw)).items),
-        concepts: ensureArray((/** @type {any} */ (raw)).concepts),
-        keywords: ensureArray((/** @type {any} */ (raw)).keywords),
+        concepts,
+        keywords: mergedKeywords,
         open_threads: ensureArray((/** @type {any} */ (raw)).open_threads),
         should_persist: (/** @type {any} */ (raw)).should_persist === true,
     };
@@ -242,7 +259,7 @@ Each event object MUST have these fields:
 - DateTime: in the format of ISO 8601 string (e.g., "2024-01-01T12:00:00Z") representing when the event occurred in the story timeline, if it can be determined from the excerpt; otherwise, this field can be omitted or set to null. 
 - items: array of strings, EXACT ORIGINAL SCRIPT
 - concepts: array of strings, SAME LANGUAGE AS EXCERPT
-- keywords: array of strings, SAME LANGUAGE AS EXCERPT (search aids)
+- keywords: array of 8-15 strings, SAME LANGUAGE AS EXCERPT. These are search aids used by a keyword retrieval engine — be GENEROUS and INCLUSIVE. Include every distinctive term that a future query about this event might use: key actions/verbs (e.g. 贖身/誓言/背叛 or "ransom"/"oath"/"betray"), distinctive objects/items mentioned, emotional or thematic tags (e.g. 崩潰/忠誠/恐懼 or "breakdown"/"loyalty"/"fear"), unique concepts, and any rare/specific noun that isn't generic filler. DO NOT pad with generic words (the/and/then/我/你). Quality matters but err on the side of MORE rather than fewer — sparse keywords cause retrieval misses. NOTE: the Chinese terms above are only illustrative — the example below is in Traditional Chinese, but if the excerpt is in English/Japanese/Korean/etc., write keywords in that language. NEVER mix Chinese keywords into a non-Chinese excerpt's output.
 - open_threads: array of strings, SAME LANGUAGE AS EXCERPT (unresolved questions/promises)
 - should_persist: boolean (false for ephemeral moments unlikely to matter later)
 
@@ -253,7 +270,7 @@ Zero events (filler scene):
 []
 
 One event (Traditional Chinese excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"師傅承諾幫梅拉尋找失蹤的父親暗影之翼。","cause":"梅拉在房間中央哭著請求幫助。","result":"尋找暗影之翼成為隊伍的核心目標。","characters":["梅拉","師父"],"locations":["星月綠洲頂樓公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失蹤的父親"],"keywords":["暗影之翼","尋找父親"],"open_threads":["確定暗影之翼是生是死"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"師傅承諾幫梅拉尋找失蹤的父親暗影之翼。","cause":"梅拉在房間中央哭著請求幫助。","result":"尋找暗影之翼成為隊伍的核心目標。","characters":["梅拉","師父"],"locations":["星月綠洲頂樓公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失蹤的父親"],"keywords":["暗影之翼","尋找父親","承諾","哭泣","請求","失蹤","核心目標","隊伍任務","誓言","親情"],"open_threads":["確定暗影之翼是生是死"],"should_persist":true}]
 
 =========================
 EXCERPT

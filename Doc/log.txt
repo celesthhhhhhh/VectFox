@@ -1,74 +1,30 @@
-Generate entered
-index.js:19 [QR2] calling {args: Array(3), functionToCall: ƒ}
-chat-vectorization.js:1841 🐰 VectHare: rearrangeChat called (type: normal, chat length: 3)
-eventbase-workflow.js:345 [EventBase] Live collection skipped (not locked to chat): vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a
-eventbase-workflow.js:345 [EventBase] Live collection skipped (not locked to chat): vecthare_eventbase_qdrant_critblade_異世界學校_60d40b35-fa7a-4f30-8485-805303f4916a
-eventbase-workflow.js:378 [EventBase] Live retrieval: uuid=41879811-a1ae-442b-bae0-d376b2ceda33, lockedLiveCollections=1, ids=["vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0"]
-eventbase-workflow.js:391 [EventBase] Phase A: live=true, archiveCollections=0, searchText length=1803
-eventbase-workflow.js:405 [EventBase] Keyword query (user last message, 4 chars): 我在那?
-eventbase-retrieval.js:113 [EventBase] Retrieval start — topK overfetch=16, minImportance=1, method=bm25, nativePrefer=true, liveCollections=1
-2core-vector-api.js:878 [VectHare] Hybrid search (native), dispatching to hybrid search module
-hybrid-search.js:48 [HybridSearch] Using native hybrid search (QdrantBackend)
-qdrant.js:785 [EventBase] Native hybrid request payload: backend=qdrant, collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, source=openrouter, model=qwen/qwen3-embedding-8b, topK=16, threshold=0, vectorWeight=0.5, textWeight=0.5, fusion=rrf, rrfK=60, searchTextLen=4, searchTextPreview="我在那?"
-hybrid-search.js:48 [HybridSearch] Using native hybrid search (QdrantBackend)
-qdrant.js:785 [EventBase] Native hybrid request payload: backend=qdrant, collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, source=openrouter, model=qwen/qwen3-embedding-8b, topK=16, threshold=0, vectorWeight=0.5, textWeight=0.5, fusion=rrf, rrfK=60, searchTextLen=1803, searchTextPreview="[ 🕰️ 時間 08:00 AM | 🗓️ 星期二, 七月 7日, 1577年 聖輝歷 | 📍 地點 藍色瞭望村 - 村外破屋 | ☀️ 晴朗, 22°C ] 隨著你猛然睜開雙眼撐起身體，視野短暫地模糊後重新聚焦。小屋的木格子窗透進清晨的陽光，在草編蓆墊上勾出整齊的方格光斑。 牆角裡一個纖細的身影猛地一顫。那是一位穿著怪異的修女——銀白色長髮從黒色頭巾下瀉出，她的黒色半透明眼罩根本遮不住那雙粉色的狐媚眼，此時正睜得圓圓地望著你。她整個人跪坐在蓆墊上，緊身光澤的黑乳膠修女袍在晨光下反射出柔和的光暈，深V領露出的白皙巨乳因她急促的呼吸而起伏顫動。 「您"
-qdrant.js:798 [Qdrant] Native hybrid search returned 16 results
-core-vector-api.js:888 [VectHare] Hybrid search (RRF) response: 16 result(s) in 656ms, scores=[0.2559, 0.2501, 0.2390, 0.2376, 0.2351, 0.2346, 0.2343, 0.2333, 0.2326, 0.2311, 0.2302, 0.2295, 0.2290, 0.2286, 0.2285, 0.2277]
-qdrant.js:798 [Qdrant] Native hybrid search returned 16 results
-core-vector-api.js:888 [VectHare] Hybrid search (RRF) response: 16 result(s) in 1484ms, scores=[0.8531, 0.8508, 0.8400, 0.8345, 0.8338, 0.8288, 0.8242, 0.8232, 0.8115, 0.8049, 0.8045, 0.8019, 0.7909, 0.7895, 0.7839, 0.7797]
-eventbase-retrieval.js:161 [EventBase] Live query: 1 collection(s) × 2 query/queries → 32 unique events
-eventbase-retrieval.js:181 [EventBase] After importance filter (>=1): 32 candidates
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "relationship_change" source_window_end=1673 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "relationship_change" source_window_end=47 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "promise_or_oath" source_window_end=1673 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "side_quest_update" source_window_end=116 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "character_state_change" source_window_end=1676 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "revelation" source_window_end=788 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "character_state_change" source_window_end=98 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "revelation" source_window_end=1823 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "side_quest_update" source_window_end=758 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "main_quest_update" source_window_end=35 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "side_quest_update" source_window_end=680 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "relationship_change" source_window_end=1874 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "location_change" source_window_end=1223 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "location_change" source_window_end=1823 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "dialogue_significant" source_window_end=227 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "location_change" source_window_end=2096 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "discovery" source_window_end=482 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "side_quest_update" source_window_end=872 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "main_quest_update" source_window_end=443 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "character_state_change" source_window_end=902 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "side_quest_update" source_window_end=617 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:242 [EventBase] Dedup-depth skip: event "location_change" source_window_end=1730 is within last 50 messages (threshold=-47)
-eventbase-retrieval.js:248 [EventBase] Dedup depth (50) removed 22 event(s) already visible in context
-eventbase-retrieval.js:256 [EventBase] Final events after dedup + trim: 0
-eventbase-workflow.js:441 [EventBase] Retrieval debug: {dualQuery: true, keywordScoringMethod: 'bm25', nativeHybridPrefer: true, fusionMethod: 'rrf', rawCount: 32, …}
-eventbase-workflow.js:445 [EventBase] No events to inject
-chat-vectorization.js:1905 VectHare: Will query 1 collections: ['vectra:vecthare_lorebook_story1_1778288919954']
-chat-vectorization.js:1924 VectHare: Extracted 8 keywords from query: (8) ['plot', 'momentum', 'physics', 'critblade', 'slow', 'burn', 'location', '時間']
-collection-metadata.js:908 [VectHare Activation Filter] Collection vectra:vecthare_lorebook_story1_1778288919954: hasTriggers=false, hasConditions=false
-collection-metadata.js:945 [VectHare Activation Filter] Collection vectra:vecthare_lorebook_story1_1778288919954: ✗ NOT_ACTIVATED (no trigger match, no condition pass, not locked)
-collection-metadata.js:965 [VectHare Activation Filter] Summary: 1 collections → 0 active
-chat-vectorization.js:1951 ⚠️ VectHare: No collections passed activation conditions and World Info disabled - chunks cannot be injected!
-chat-vectorization.js:1952    💡 Check your collection activation conditions in VectHare settings
-script.js:4547 Core/all messages: 3/3
-world-info.js:623 [WI] Processing sticky entry ArtificRealm創世域.42 {hash: 5608283655957508, start: 3, end: 4, protected: false}
-world-info.js:627 [WI] Removing sticky entry ArtificRealm創世域.42 from timedWorldInfo: chat not advanced {hash: 5608283655957508, start: 3, end: 4, protected: false}
-world-info.js:722 [WI] Adding sticky entry ArtificRealm創世域.42: start=3, end=4, protected=false
-world-info.js:5159 [WI] Adding 42 entries to prompt (42) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-index.js:19 [QR2] calling {args: Array(1), functionToCall: ƒ}
-script.js:4606 skipWIAN not active, adding WIAN
-handler.ts:225 [Prompt Template] start generate after 20 messages
-handler.ts:395 [Prompt Template] processing 20 messages in 8ms
-stopGeneration @ script.js:5551
-collectPrompts @ PromptViewer.vue:273
-(anonymous) @ PromptViewer.vue:367
-EventEmitter.emit @ eventemitter.js:146
-await in EventEmitter.emit
-sendOpenAIRequest @ openai.js:3052
-await in sendOpenAIRequest
-sendStreamingRequest @ script.js:6095
-finishGenerating @ script.js:5334
-await in finishGenerating
-Generate @ script.js:5394
-prompts.ts:72 [Prompt Template] processing send result: 79474 tokens and 234269 chars
+>>> [Qdrant] Listed 1058 items from vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
+Discovered Qdrant Collection: vecthare_chat_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 1058 items
+>>> [Qdrant] Listed 1090 items from vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
+Discovered Qdrant Collection: vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 1090 items
+>>> [Qdrant] Listed 18 items from vecthare_eventbase_qdrant_critblade_異世界學校_60d40b35-fa7a-4f30-8485-805303f4916a
+Discovered Qdrant Collection: vecthare_eventbase_qdrant_critblade_異世界學校_60d40b35-fa7a-4f30-8485-805303f4916a 18 items
+[Qdrant] extractQueryKeywords anchor CJK pass → 5 unique tokens (showing top 5): 我對, 記得, 當時, 為你, 贖身
+[Qdrant] extractQueryKeywords context CJK pass → 5 unique tokens (showing top 0): (none)
+[Qdrant] extractQueryKeywords Latin pass → 1 unique tokens (showing top 1): mayla
+[Qdrant] extractQueryKeywords final → 6 tokens (fullCJK=false): 我對, 記得, 當時, 為你, 贖身, mayla
+[Qdrant] Hybrid query START: collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, keywords=6, topK=16
+[Qdrant] Hybrid options: vectorWeight=0.5, keywordWeight=0.5, fusion=rrf
+[Qdrant] Collection vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 exists, proceeding with hybrid search
+[Qdrant] Vector search complete: 32 results
+[Qdrant] Starting BM25 keyword search with 6 keywords: 我對, 記得, 當時, 為你, 贖身, mayla
+[Qdrant] BM25 scoring complete: 112 scored from 112 candidates (N=112, avgdl=30.2)
+[Qdrant] Starting fusion: 32 vector + 112 keyword results
+[Qdrant] Hybrid query: 32 vector + 112 keyword = 16 fused results
+[Qdrant] extractQueryKeywords anchor CJK pass → 35 unique tokens (showing top 15): 單獨, 我對, 記得, 當時, 為你, 贖身, 仔細, 思考, 劇情, 回顧, 當前, 情況, 時間, 晚上, 位置
+[Qdrant] extractQueryKeywords context CJK pass → 565 unique tokens (showing top 35): 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 新大陸, 房間, 角落, 反應, 你要, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 方式, 掃過, 女人, 套房, 崩潰, 都會, 點醒, 能力, 整天, 愁眉苦臉, 表面, 內容, 這間, 沒有, 完整
+[Qdrant] extractQueryKeywords Latin pass → 45 unique tokens (showing top 10): mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
+[Qdrant] extractQueryKeywords final → 60 tokens (fullCJK=true): 單獨, 我對, 記得, 當時, 為你, 贖身, 仔細, 思考, 劇情, 回顧, 當前, 情況, 時間, 晚上, 位置, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 新大陸, 房間, 角落, 反應, 你要, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 方式, 掃過, 女人, 套房, 崩潰, 都會, 點醒, 能力, 整天, 愁眉苦臉, 表面, 內容, 這間, 沒有, 完整, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
+[Qdrant] Hybrid query START: collection=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, keywords=60, topK=16
+[Qdrant] Hybrid options: vectorWeight=0.5, keywordWeight=0.5, fusion=rrf
+[Qdrant] Collection vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0 exists, proceeding with hybrid search
+[Qdrant] Vector search complete: 32 results
+[Qdrant] Starting BM25 keyword search with 60 keywords: 單獨, 我對, 記得, 當時, 為你, 贖身, 仔細, 思考, 劇情, 回顧, 當前, 情況, 時間, 晚上, 位置, 帶著, 起身, 兩個, 依然, 眼眸, 父親, 不能, 找到, 新大陸, 房間, 角落, 反應, 你要, 眷屬, 角色, 內心, 軍師, 恐懼, 精明, 忠誠, 方式, 掃過, 女人, 套房, 崩潰, 都會, 點醒, 能力, 整天, 愁眉苦臉, 表面, 內容, 這間, 沒有, 完整, mayla, critblade, engni, kashier, lia, fern, master, valerie, lead, nsfw
+[Qdrant] BM25 scoring complete: 869 scored from 869 candidates (N=869, avgdl=29.0)
+[Qdrant] Starting fusion: 32 vector + 869 keyword results
+[Qdrant] Hybrid query: 32 vector + 869 keyword = 16 fused results

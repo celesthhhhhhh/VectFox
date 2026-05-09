@@ -90,7 +90,7 @@ through to the A1 BM25 re-rank path.
    c. Runs dense vector search via POST `/points/search`
    d. Runs keyword candidate retrieval via POST `/points/scroll` using Qdrant
       payload text indexes (`match: { text }`) and keyword array indexes (`match: { any }`),
-      retrieving only documents that match ≥1 query keyword (capped at 1000)
+      paging through every document that matches ≥1 query keyword (full corpus scan, no candidate cap)
    e. Computes Okapi BM25 score (with IDF over the candidate set) per candidate in plugin JavaScript
    f. Fuses the two result lists using RRF or weighted combination in plugin code
    g. Returns fused results with `vectorScore`, `keywordScore`, `vectorRank`, `keywordRank`
@@ -103,10 +103,11 @@ Fusion happens in plugin JavaScript, not inside Qdrant itself.
 
 * **Single client round-trip** — from the browser's perspective, one HTTP call
   goes to the Similharity plugin (`/chunks/hybrid-query`); the plugin then issues
-  two separate requests to Qdrant internally (one vector search, one scroll)
-* **Keyword-candidate matching** — the scroll retrieves only documents matching ≥1
-  query keyword via Qdrant payload indexes (filtered by type/sourceId), not the full
-  collection; capped at 1000 candidates (10 scroll iterations × 100 limit)
+  one vector search plus N scroll pages to Qdrant internally
+* **Full keyword-candidate matching** — the scroll retrieves every document
+  matching ≥1 query keyword via Qdrant payload indexes (filtered by type/sourceId);
+  the scroll continues through 250-point pages until Qdrant returns no more
+  candidates (no candidate cap)
 * **Plugin-side fusion** — RRF or weighted combination is computed in the
   Similharity plugin's JavaScript, not by Qdrant internally
 * **No sparse vectors stored** — keyword matching uses Qdrant's payload text
@@ -170,16 +171,16 @@ touches Qdrant internals.
 
 | *A3 (server-side hybrid, what we have)*
 | Plugin JS, Okapi BM25 with IDF
-| Keyword-matching candidates via scroll (≤1000)
+| Full corpus of keyword-matching candidates via scroll (no cap)
 
 | True Qdrant sparse-vector hybrid
 | Qdrant engine, actual BM25/SPLADE sparse vectors
 | Full collection, single request
 |===
 
-*TL;DR:* Our A3 uses proper Okapi BM25 with IDF, scored over keyword-matching
-candidates fetched from Qdrant via payload-index scroll (not the full corpus —
-only docs matching ≥1 query keyword, capped at 1000). "True" Qdrant hybrid
+*TL;DR:* Our A3 uses proper Okapi BM25 with IDF, scored over the full set of
+keyword-matching candidates fetched from Qdrant via payload-index scroll —
+all docs matching ≥1 query keyword, no candidate cap. "True" Qdrant hybrid
 would store BM25 sparse vectors as actual vector fields and let Qdrant score
 them natively with full-corpus IDF.
 
@@ -189,40 +190,42 @@ them natively with full-corpus IDF.
 
 |===
 | Aspect | Client-Side Hybrid (A2) | Server-Side Hybrid (A3)
-| Keyword scope | ANN top-K only (topK × 3) | Keyword-matching candidates only (≤1000 via scroll)
+| Keyword scope | ANN top-K only (topK × 3) | All keyword-matching candidates (full corpus, no cap)
 | Can surface non-ANN results? | No | Yes, if they match ≥1 query keyword
-| Recall for keyword-specific queries | Limited by ANN recall | Broader than A1/A2 but not full recall — capped at 1000 candidates
+| Recall for keyword-specific queries | Limited by ANN recall | Full recall over keyword-matching docs — no cap
 |===
 
 This is the **most significant difference**. In the client-side path, a
 document with high keyword relevance but low vector similarity is never
-considered because it wasn't in the ANN result set. The server-side path can
-surface these documents via a keyword-filtered scroll — but only those
-matching ≥1 query keyword (up to 1000 candidates; further matches are dropped).
+considered because it wasn't in the ANN result set. The server-side path
+surfaces these documents via a keyword-filtered scroll over the full corpus —
+all docs matching ≥1 query keyword are retrieved (no candidate cap; the
+scroll continues until Qdrant returns no more pages).
 
 === 2. Keyword Matching Quality
 
 |===
 | Aspect | Client-Side Hybrid (A2) | Server-Side Hybrid (A3)
-| Keyword corpus scope | ANN top-K only (topK × 3) | Keyword-matching candidates only (≤1000 via scroll)
+| Keyword corpus scope | ANN top-K only (topK × 3) | All keyword-matching candidates (full corpus, no cap)
 | Scoring method | BM25 with IDF over ANN results | Okapi BM25 with IDF over keyword-matching candidates
-| IDF accuracy | Poor — IDF is based on a biased ANN subset | Candidate-subset IDF (broader than A1/A2, narrower than true full-corpus)
+| IDF accuracy | Poor — IDF is based on a biased ANN subset | Candidate-subset IDF over all docs matching ≥1 query keyword (broader than A1/A2; narrower than true full-corpus only because non-matching docs are excluded)
 | Keyword match type | BM25 term frequency × IDF | Okapi BM25: TF-saturation × IDF; payload keyword match adds +1 to TF
 |===
 
 The client-side BM25 computes IDF from only the ANN results. If those results
 are a biased sample, IDF values will be distorted.
 The server-side path uses Okapi BM25 (k1/b configurable) with IDF computed
-over the candidate set — docs that matched ≥1 keyword via Qdrant payload
-indexes. This gives better IDF accuracy than A1/A2 but is still narrower than
-a true full-corpus IDF.
+over the candidate set — every doc that matched ≥1 keyword via Qdrant payload
+indexes (full corpus scan, no cap). This gives much better IDF accuracy than
+A1/A2; it is still narrower than a true full-corpus IDF only because non-matching
+docs are excluded by definition.
 
 === 3. Round-Trips
 
 |===
 | Aspect | Client-Side Hybrid (A2) | Server-Side Hybrid (A3)
 | HTTP requests (client→plugin) | 1 (vector) + 0 (BM25 is client-side) | 1 (plugin handles both internally)
-| HTTP requests (plugin→Qdrant) | 1 (vector search) | 2 (vector search + scroll)
+| HTTP requests (plugin→Qdrant) | 1 (vector search) | 1 vector search + N scroll pages (250 candidates per page until exhausted)
 | Embedding generation | Server-side (or client-side for webllm/koboldcpp) | Server-side
 | Latency | Lower (no extra network call) | Slightly higher (plugin issues two Qdrant requests)
 |===
@@ -280,10 +283,11 @@ This means:
 
 == Summary: Why Server-Side Hybrid Is Better
 
-1. **Broader keyword recall** — The server-side path scrolls keyword-matching
-   candidates (docs matching ≥1 query keyword via Qdrant payload indexes, up to
-   1000), surfacing documents relevant by keyword but with low vector similarity.
-   The client-side path cannot recover documents outside the ANN top-K at all.
+1. **Full keyword recall** — The server-side path scrolls every keyword-matching
+   candidate (every doc matching ≥1 query keyword via Qdrant payload indexes,
+   no candidate cap), surfacing documents relevant by keyword but with low
+   vector similarity. The client-side path cannot recover documents outside the
+   ANN top-K at all.
 
 2. **No ANN bottleneck for keyword recall** — Dense and keyword searches run
    independently. The keyword scroll is not constrained by what the ANN
@@ -310,7 +314,7 @@ with IDF, computed over keyword-matching candidates (not the full corpus).
 2. **Semantically-focused queries** — If the query is well-captured by semantic
    similarity, the ANN results already contain the relevant documents.
 
-3. **No sparse vector support** — Backends like LanceDB or ST-native Vectra
+3. **No sparse vector support** — Backends like ST-native Vectra (Standard)
    don't support sparse vectors, so client-side hybrid is the only option.
 
 4. **Lower storage requirements** — No sparse vectors means less disk usage.

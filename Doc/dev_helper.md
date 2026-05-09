@@ -242,9 +242,9 @@ Three retrieval paths exist after the keyword-level simplification. All paths ar
 
 | Path | When | Loads all chunks? | Keyword scoring | Fusion |
 |---|---|---|---|---|
-| A1 — BM25 re-rank | Default for standard/LanceDB; or Qdrant/Milvus with `hybrid_native_prefer=false` and `keyword_scoring_method=bm25` | No | Okapi BM25 over ANN top-K only | Weighted linear: `α·vectorScore + β·bm25Score` (no RRF, no dual-signal bonus) |
+| A1 — BM25 re-rank | Default for standard backend; or Qdrant with `hybrid_native_prefer=false` and `keyword_scoring_method=bm25` | No | Okapi BM25 over ANN top-K only | Weighted linear: `α·vectorScore + β·bm25Score` (no RRF, no dual-signal bonus) |
 | A2 — client-side hybrid (ANN-bound) | `keyword_scoring_method=hybrid` (non-native) | No | Okapi BM25 over the ANN candidate set only — vector top-K × 3, capped at 100 (`hybrid-search.js` line 100) | **RRF** (default) or weighted; **min-max normalization** per batch; **dual-signal bonus** (up to +8% for docs matching both signals); single-signal penalty (×0.55 vector-only, ×0.60 text-only) |
-| A3 — server-side hybrid | Qdrant/Milvus with `hybrid_native_prefer=true` (default) | No | Okapi BM25 (k1/b configurable) over keyword-matching candidates via Qdrant scroll (≤1000 docs; IDF, avgdl, and N computed over these candidates only) | **RRF** (default) or weighted; **saturation normalization** (`score/(score+3.0)`); **dual-signal bonus** (up to +8% for docs matching both signals); single-signal penalty (×0.55 vector-only, ×0.60 keyword-only) |
+| A3 — server-side hybrid | Qdrant with `hybrid_native_prefer=true` (default) | No | Okapi BM25 (k1/b configurable) over the full corpus of keyword-matching candidates via Qdrant scroll (no candidate cap; scroll continues until exhausted; IDF, avgdl, and N computed over every doc matching ≥1 query keyword) | **RRF** (default) or weighted; **saturation normalization** (`score/(score+3.0)`); **dual-signal bonus** (up to +8% for docs matching both signals); single-signal penalty (×0.55 vector-only, ×0.60 keyword-only) |
 
 **Fusion method detail:**
 
@@ -256,14 +256,14 @@ Three retrieval paths exist after the keyword-level simplification. All paths ar
 | Saturation normalization `score/(score+k)` | ✗ | ✓ (BM25 side) | ✓ (BM25 side, k=3.0) |
 | Dual-signal bonus (explicit ×1.0–1.08) | ✗ | ✓ | ✓ |
 | Single-signal penalty | ✗ | ✓ | ✓ (×0.55 vector-only, ×0.60 keyword-only) |
-| BM25 corpus scope | ANN top-K (≤100, `topK*2`) | ANN top-K × 3 (≤100) | Keyword-matching candidates (≤1000 via scroll) |
-| BM25 IDF accuracy | Biased (ANN subset) | Biased (ANN subset, same scope as A1) | Candidate subset (broader than A1/A2, narrower than true full-corpus) |
+| BM25 corpus scope | ANN top-K (≤100, `topK*2`) | ANN top-K × 3 (≤100) | All keyword-matching candidates (full corpus, no cap) |
+| BM25 IDF accuracy | Biased (ANN subset) | Biased (ANN subset, same scope as A1) | Full set of docs matching ≥1 query keyword (broader than A1/A2; narrower than true full-corpus only because non-matching docs are excluded by definition) |
 
 | Setting | Affects EventBase? | Notes |
 |---|---|---|
 | `keyword_scoring_method` (`bm25` \| `hybrid`) | Yes | `bm25` = A1 fast re-rank; `hybrid` = A2 client-side hybrid fusion (still ANN-bound, capped at 100 candidates). Ignored when A3 active. |
 | `hybrid_keyword_level` (`minimal` / `balance` / `maximum`) | Yes (A1 and A2) | Controls how many keywords (30/50/70) are extracted from the query for BM25 scoring. Ignored under A3. |
-| `hybrid_native_prefer` | Yes | `true` (default for Qdrant/Milvus) → A3 server-side path. `false` → falls back to A1/A2 by `keyword_scoring_method`. |
+| `hybrid_native_prefer` | Yes | `true` (default for Qdrant) → A3 server-side path. `false` → falls back to A1/A2 by `keyword_scoring_method`. |
 | `hybrid_fusion_method` (`rrf` / `weighted`) | Yes (A2 and A3) | Fusion strategy. Both A2 and A3 apply explicit dual-signal bonus and single-signal penalty after the raw fusion score. A2 uses min-max normalization; A3 uses saturation normalization on the BM25 side. Not used in A1. |
 | `hybrid_vector_weight`, `hybrid_text_weight` | Yes (A2/A3 weighted mode) | Used only when `hybrid_fusion_method = weighted`. |
 | `hybrid_rrf_k` | Yes (A2/A3 RRF mode) | RRF constant k (default 60). Higher k flattens rank differences; lower k amplifies top-rank advantage. Used only when `hybrid_fusion_method = rrf`. |

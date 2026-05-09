@@ -1,6 +1,6 @@
 Generate entered
 index.js:19 [QR2] calling {args: Array(3), functionToCall: ƒ}
-chat-vectorization.js:1842 🐰 VectHare: rearrangeChat called (type: normal, chat length: 14)
+chat-vectorization.js:1843 🐰 VectHare: rearrangeChat called (type: normal, chat length: 14)
 eventbase-workflow.js:383 [EventBase] Phase A: live=true, archiveCollections=0, searchText length=2326
 eventbase-workflow.js:397 [EventBase] Keyword query (user last message, 400 chars): <最新互动>
 我説 "Alpha, 你的分析沒有錯.  不過, 我有一個你不知道的資訊可以跟你分享.  我們跟5龍族有很大的關聯, 我的龍脈之氣, 有2脈 (黃, 赤) 都是來自2個龍族公主, 御膳是跟Nikita.  而5龍族的守護神是一
@@ -10,7 +10,7 @@ backend-manager.js:278 VectHare: Health cache stale for standard, re-verifying..
 2standard.js:374 [VectHare] queryCollection via plugin: collectionId=vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a, source=openrouter, model=qwen/qwen3-embedding-8b, topK=32, threshold=0.25, hasQueryVector=false
 standard.js:382 [VectHare] plugin query response: status=200 ok=true
 standard.js:391 [VectHare] plugin query result: count=28, results.length=28, error=none
-core-vector-api.js:903 [EventBase] Embedding search response: 28 result(s) in 689ms, scores=[0.8069, 0.6900, 0.6742, 0.6141, 0.6132, 0.6111, 0.5997, 0.5844, 0.5805, 0.5773, 0.5715, 0.5682, 0.5677, 0.5526, 0.5447, 0.5306, 0.5291, 0.5210, 0.5105, 0.5012, 0.4993, 0.4978, 0.4929, 0.4798, 0.4775, 0.4565, 0.4168, 0.4156]
+core-vector-api.js:907 [EventBase] Embedding search response: 28 result(s) in 605ms, scores=[0.8069, 0.6900, 0.6742, 0.6141, 0.6132, 0.6111, 0.5997, 0.5844, 0.5805, 0.5773, 0.5715, 0.5682, 0.5677, 0.5526, 0.5447, 0.5306, 0.5291, 0.5210, 0.5105, 0.5012, 0.4993, 0.4978, 0.4929, 0.4798, 0.4775, 0.4565, 0.4168, 0.4156]
 query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 35 unique (top 15): 老人家, 笑着, 着説, 不要, 最新, 互动, 我説, 分析, 沒有, 我有, 不知道, 資訊, 分享, 很大, 關聯
 query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 60 unique (top 35): 輸入, 接下來, 劇情, 相關, 記憶, 龍脈, 都是, 公主, 御膳, 守護神, 深不可測, 老頑童, 雪兎, 有沒有, 打贏, 魔王, 光笑, 最好, 魔女, 也沒有, 必勝, 機會, 我笑, 對對, 就好, 今天, 晚上, 休息, 明天, 才會, 使用者, 以下, 代碼, 目的, 對應
 query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 5 unique (top 5): alpha, nikita, best_candidate_id, am01, am02
@@ -18,48 +18,48 @@ query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 55 token
 bm25-scorer.js:650 [BM25] Applying BM25 scoring to 28 results (k1=1.5, b=0.75, α=0.5, β=0.5)
 bm25-scorer.js:497 [BM25+] Indexed 28 documents, avg length: 67.2 tokens, sublinearTf=true, fieldBoosting=false
 bm25-scorer.js:689 [BM25] Top result: vector=0.8069, bm25=30.0664, combined=0.9034
-core-vector-api.js:923 [VectHare] #1 final=0.9034 vector=0.8069 bm25=30.0664 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #2 final=0.3832 vector=0.5844 bm25=5.4744 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #3 final=0.3780 vector=0.6900 bm25=1.9818 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #4 final=0.3776 vector=0.5773 bm25=5.3469 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #5 final=0.3664 vector=0.6742 bm25=1.7613 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #6 final=0.3613 vector=0.5997 bm25=3.6955 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #7 final=0.3606 vector=0.6132 bm25=3.2490 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #8 final=0.3597 vector=0.6111 bm25=3.2542 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #9 final=0.3589 vector=0.6141 bm25=3.1191 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #10 final=0.3338 vector=0.5715 bm25=2.8897 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #11 final=0.3236 vector=0.5805 bm25=2.0048 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #12 final=0.3135 vector=0.5677 bm25=1.7809 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #13 final=0.3050 vector=0.5447 bm25=1.9647 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #14 final=0.3023 vector=0.4775 bm25=3.8231 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #15 final=0.2926 vector=0.5306 bm25=1.6397 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #16 final=0.2914 vector=0.5682 bm25=0.4360 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #1 final=0.9034 vector=0.8069 bm25=30.0664 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #2 final=0.3832 vector=0.5844 bm25=5.4744 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #3 final=0.3780 vector=0.6900 bm25=1.9818 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #4 final=0.3776 vector=0.5773 bm25=5.3469 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #5 final=0.3664 vector=0.6742 bm25=1.7613 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #6 final=0.3613 vector=0.5997 bm25=3.6955 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #7 final=0.3606 vector=0.6132 bm25=3.2490 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #8 final=0.3597 vector=0.6111 bm25=3.2542 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #9 final=0.3589 vector=0.6141 bm25=3.1191 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #10 final=0.3338 vector=0.5715 bm25=2.8897 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #11 final=0.3236 vector=0.5805 bm25=2.0048 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #12 final=0.3135 vector=0.5677 bm25=1.7809 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #13 final=0.3050 vector=0.5447 bm25=1.9647 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #14 final=0.3023 vector=0.4775 bm25=3.8231 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #15 final=0.2926 vector=0.5306 bm25=1.6397 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #16 final=0.2914 vector=0.5682 bm25=0.4360 (A1 BM25 re-rank)
 standard.js:382 [VectHare] plugin query response: status=200 ok=true
 standard.js:391 [VectHare] plugin query result: count=28, results.length=28, error=none
-core-vector-api.js:903 [EventBase] Embedding search response: 28 result(s) in 1202ms, scores=[0.8808, 0.7479, 0.7351, 0.6935, 0.6876, 0.6776, 0.6754, 0.6746, 0.6743, 0.6739, 0.6688, 0.6677, 0.6591, 0.6532, 0.6441, 0.6379, 0.6316, 0.6215, 0.6176, 0.5985, 0.5805, 0.5748, 0.5423, 0.5162, 0.4834, 0.4672, 0.4299, 0.4081]
+core-vector-api.js:907 [EventBase] Embedding search response: 28 result(s) in 1465ms, scores=[0.8800, 0.7476, 0.7349, 0.6940, 0.6876, 0.6786, 0.6763, 0.6756, 0.6753, 0.6743, 0.6684, 0.6683, 0.6597, 0.6536, 0.6452, 0.6393, 0.6325, 0.6227, 0.6180, 0.5987, 0.5801, 0.5759, 0.5424, 0.5166, 0.4829, 0.4672, 0.4295, 0.4085]
 query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
 query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
 query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
 query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
 bm25-scorer.js:650 [BM25] Applying BM25 scoring to 28 results (k1=1.5, b=0.75, α=0.5, β=0.5)
 bm25-scorer.js:497 [BM25+] Indexed 28 documents, avg length: 67.2 tokens, sublinearTf=true, fieldBoosting=false
-bm25-scorer.js:689 [BM25] Top result: vector=0.8808, bm25=24.5326, combined=0.9404
-core-vector-api.js:923 [VectHare] #1 final=0.9404 vector=0.8808 bm25=24.5326 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #2 final=0.5944 vector=0.7479 bm25=10.8163 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #3 final=0.5196 vector=0.7351 bm25=7.4599 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #4 final=0.5043 vector=0.6776 bm25=8.1210 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #5 final=0.4801 vector=0.6677 bm25=7.1764 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #6 final=0.4736 vector=0.5805 bm25=8.9957 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #7 final=0.4601 vector=0.6591 bm25=6.4048 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #8 final=0.4569 vector=0.6876 bm25=5.5475 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #9 final=0.4387 vector=0.6935 bm25=4.5124 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #10 final=0.4378 vector=0.6743 bm25=4.9382 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #11 final=0.4350 vector=0.6688 bm25=4.9373 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #12 final=0.4316 vector=0.6532 bm25=5.1536 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #13 final=0.4171 vector=0.6316 bm25=4.9684 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #14 final=0.4142 vector=0.6739 bm25=3.7886 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #15 final=0.3962 vector=0.5162 bm25=6.7742 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #16 final=0.3954 vector=0.6746 bm25=2.8504 (A1 BM25 re-rank)
+bm25-scorer.js:689 [BM25] Top result: vector=0.8800, bm25=24.5326, combined=0.9400
+core-vector-api.js:927 [VectHare] #1 final=0.9400 vector=0.8800 bm25=24.5326 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #2 final=0.5942 vector=0.7476 bm25=10.8163 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #3 final=0.5195 vector=0.7349 bm25=7.4599 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #4 final=0.5048 vector=0.6786 bm25=8.1210 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #5 final=0.4805 vector=0.6684 bm25=7.1764 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #6 final=0.4734 vector=0.5801 bm25=8.9957 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #7 final=0.4604 vector=0.6597 bm25=6.4048 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #8 final=0.4569 vector=0.6876 bm25=5.5475 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #9 final=0.4389 vector=0.6940 bm25=4.5124 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #10 final=0.4385 vector=0.6756 bm25=4.9382 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #11 final=0.4348 vector=0.6683 bm25=4.9373 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #12 final=0.4318 vector=0.6536 bm25=5.1536 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #13 final=0.4175 vector=0.6325 bm25=4.9684 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #14 final=0.4143 vector=0.6743 bm25=3.7886 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #15 final=0.3964 vector=0.5166 bm25=6.7742 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #16 final=0.3957 vector=0.6753 bm25=2.8504 (A1 BM25 re-rank)
 eventbase-retrieval.js:154 [EventBase] Dual-query: user=16 + context=16 → merged=19 unique events
 eventbase-retrieval.js:187 [EventBase] After importance filter (>=1): 19 candidates
 eventbase-retrieval.js:248 [EventBase] Dedup-depth skip: event "main_quest_update" source_window_end=31 is within last 50 messages (threshold=-36)
@@ -82,26 +82,28 @@ eventbase-retrieval.js:254 [EventBase] Dedup depth (50) removed 17 event(s) alre
 eventbase-retrieval.js:262 [EventBase] Final events after dedup + trim: 0
 eventbase-workflow.js:432 [EventBase] Retrieval debug: {dualQuery: true, keywordScoringMethod: 'bm25', nativeHybridPrefer: false, fusionMethod: 'rrf', rawCount: 19, …}
 eventbase-workflow.js:436 [EventBase] No events to inject
-chat-vectorization.js:1906 VectHare: Will query 4 collections: (4) ['vectra:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a', 'vectra:vecthare_lorebook_story1_1778288919954', 'qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0']
-chat-vectorization.js:1925 VectHare: Extracted 8 keywords from query: (8) ['cup', 'echidna', 'kamira', 'satella', 'vex', 'alpha', '阿爾法', '聽完']
+chat-vectorization.js:1907 VectHare: Will query 5 collections: (5) ['vectra:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a', 'vectra:vecthare_lorebook_story1_1778288919954', 'qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0', 'vectra:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0']
+chat-vectorization.js:1926 VectHare: Extracted 8 keywords from query: (8) ['cup', 'echidna', 'kamira', 'satella', 'vex', 'alpha', '阿爾法', '聽完']
 collection-metadata.js:940 [VectHare Activation Filter] Collection vectra:Your Wives - 2026-04-28@19h07m24s830ms imported: hasTriggers=false, hasConditions=false
 collection-metadata.js:971 [VectHare Activation Filter] Collection vectra:Your Wives - 2026-04-28@19h07m24s830ms imported: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
 collection-metadata.js:926 [VectHare Activation Filter] Collection vectra:vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a: ✓ LOCKED_TO_CURRENT_CHAT (異世界學校 - 2025-12-16@09h56m28s)
 collection-metadata.js:926 [VectHare Activation Filter] Collection vectra:vecthare_lorebook_story1_1778288919954: ✓ LOCKED_TO_CURRENT_CHAT (異世界學校 - 2025-12-16@09h56m28s)
 collection-metadata.js:940 [VectHare Activation Filter] Collection qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0: hasTriggers=false, hasConditions=false
 collection-metadata.js:971 [VectHare Activation Filter] Collection qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
-collection-metadata.js:991 [VectHare Activation Filter] Summary: 4 collections → 4 active
-collection-metadata.js:993 [VectHare Activation Filter] Active collections: (4) ['vectra:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a', 'vectra:vecthare_lorebook_story1_1778288919954', 'qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0']
-chat-vectorization.js:1949 ✅ VectHare: 4 collections passed activation filters: (4) ['vectra:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a', 'vectra:vecthare_lorebook_story1_1778288919954', 'qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0']
+collection-metadata.js:940 [VectHare Activation Filter] Collection vectra:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0: hasTriggers=false, hasConditions=false
+collection-metadata.js:971 [VectHare Activation Filter] Collection vectra:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0: ✓ NO_TRIGGERS_OR_CONDITIONS (auto-activate)
+collection-metadata.js:991 [VectHare Activation Filter] Summary: 5 collections → 5 active
+collection-metadata.js:993 [VectHare Activation Filter] Active collections: (5) ['vectra:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a', 'vectra:vecthare_lorebook_story1_1778288919954', 'qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0', 'vectra:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0']
+chat-vectorization.js:1950 ✅ VectHare: 5 collections passed activation filters: (5) ['vectra:Your Wives - 2026-04-28@19h07m24s830ms imported', 'vectra:vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a', 'vectra:vecthare_lorebook_story1_1778288919954', 'qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0', 'vectra:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0']
 standard.js:374 [VectHare] queryCollection via plugin: collectionId=Your Wives - 2026-04-28@19h07m24s830ms imported, source=openrouter, model=qwen/qwen3-embedding-8b, topK=14, threshold=0.25, hasQueryVector=false
 standard.js:382 [VectHare] plugin query response: status=200 ok=true
 standard.js:391 [VectHare] plugin query result: count=0, results.length=0, error=none
-core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 1924ms, scores=[]
+core-vector-api.js:907 [EventBase] Embedding search response: 0 result(s) in 467ms, scores=[]
 chat-vectorization.js:865 VectHare: Retrieved 0 chunks from vectra:Your Wives - 2026-04-28@19h07m24s830ms imported
 standard.js:374 [VectHare] queryCollection via plugin: collectionId=vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a, source=openrouter, model=qwen/qwen3-embedding-8b, topK=14, threshold=0.25, hasQueryVector=false
 standard.js:382 [VectHare] plugin query response: status=200 ok=true
 standard.js:391 [VectHare] plugin query result: count=14, results.length=14, error=none
-core-vector-api.js:903 [EventBase] Embedding search response: 14 result(s) in 710ms, scores=[0.8800, 0.7476, 0.7349, 0.6940, 0.6876, 0.6786, 0.6763, 0.6756, 0.6753, 0.6743, 0.6684, 0.6683, 0.6597, 0.6536]
+core-vector-api.js:907 [EventBase] Embedding search response: 14 result(s) in 1443ms, scores=[0.8800, 0.7476, 0.7349, 0.6936, 0.6876, 0.6784, 0.6757, 0.6755, 0.6751, 0.6739, 0.6682, 0.6681, 0.6594, 0.6537]
 query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
 query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
 query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
@@ -109,56 +111,73 @@ query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 token
 bm25-scorer.js:650 [BM25] Applying BM25 scoring to 14 results (k1=1.5, b=0.75, α=0.5, β=0.5)
 bm25-scorer.js:497 [BM25+] Indexed 14 documents, avg length: 78.4 tokens, sublinearTf=true, fieldBoosting=false
 bm25-scorer.js:689 [BM25] Top result: vector=0.8800, bm25=20.5432, combined=0.9400
-core-vector-api.js:923 [VectHare] #1 final=0.9400 vector=0.8800 bm25=20.5432 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #2 final=0.5721 vector=0.7476 bm25=8.1478 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #3 final=0.4971 vector=0.7349 bm25=5.3277 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #4 final=0.4886 vector=0.6786 bm25=6.1354 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #5 final=0.4642 vector=0.6684 bm25=5.3420 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #6 final=0.4483 vector=0.6876 bm25=4.2957 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #7 final=0.4430 vector=0.6597 bm25=4.6495 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #1 final=0.9400 vector=0.8800 bm25=20.5432 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #2 final=0.5721 vector=0.7476 bm25=8.1478 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #3 final=0.4971 vector=0.7349 bm25=5.3277 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #4 final=0.4885 vector=0.6784 bm25=6.1354 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #5 final=0.4641 vector=0.6682 bm25=5.3420 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #6 final=0.4484 vector=0.6876 bm25=4.2957 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #7 final=0.4429 vector=0.6594 bm25=4.6495 (A1 BM25 re-rank)
 chat-vectorization.js:865 VectHare: Retrieved 7 chunks from vectra:vecthare_eventbase_standard_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a
 standard.js:374 [VectHare] queryCollection via plugin: collectionId=vecthare_lorebook_story1_1778288919954, source=openrouter, model=qwen/qwen3-embedding-8b, topK=14, threshold=0.25, hasQueryVector=false
 standard.js:382 [VectHare] plugin query response: status=200 ok=true
 standard.js:391 [VectHare] plugin query result: count=14, results.length=14, error=none
-core-vector-api.js:903 [EventBase] Embedding search response: 14 result(s) in 1203ms, scores=[0.6539, 0.6459, 0.6455, 0.6441, 0.6323, 0.6314, 0.6300, 0.6200, 0.6075, 0.6039, 0.6031, 0.6009, 0.5997, 0.5935]
+core-vector-api.js:907 [EventBase] Embedding search response: 14 result(s) in 613ms, scores=[0.6527, 0.6458, 0.6448, 0.6439, 0.6324, 0.6316, 0.6303, 0.6193, 0.6068, 0.6035, 0.6023, 0.6005, 0.5986, 0.5936]
 query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
 query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
 query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
 query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
 bm25-scorer.js:650 [BM25] Applying BM25 scoring to 14 results (k1=1.5, b=0.75, α=0.5, β=0.5)
 bm25-scorer.js:497 [BM25+] Indexed 14 documents, avg length: 87.1 tokens, sublinearTf=true, fieldBoosting=false
-bm25-scorer.js:689 [BM25] Top result: vector=0.6441, bm25=10.2196, combined=0.8220
-core-vector-api.js:923 [VectHare] #1 final=0.8220 vector=0.6441 bm25=10.2196 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #2 final=0.6640 vector=0.6300 bm25=7.1337 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #3 final=0.6508 vector=0.5935 bm25=7.2372 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #4 final=0.6357 vector=0.6539 bm25=6.3094 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #5 final=0.6198 vector=0.6323 bm25=6.2061 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #6 final=0.5623 vector=0.6455 bm25=4.8957 (A1 BM25 re-rank)
-core-vector-api.js:923 [VectHare] #7 final=0.5614 vector=0.6459 bm25=4.8736 (A1 BM25 re-rank)
+bm25-scorer.js:689 [BM25] Top result: vector=0.6439, bm25=10.2196, combined=0.8220
+core-vector-api.js:927 [VectHare] #1 final=0.8220 vector=0.6439 bm25=10.2196 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #2 final=0.6642 vector=0.6303 bm25=7.1337 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #3 final=0.6509 vector=0.5936 bm25=7.2372 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #4 final=0.6351 vector=0.6527 bm25=6.3094 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #5 final=0.6198 vector=0.6324 bm25=6.2061 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #6 final=0.5619 vector=0.6448 bm25=4.8957 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #7 final=0.5613 vector=0.6458 bm25=4.8736 (A1 BM25 re-rank)
 chat-vectorization.js:865 VectHare: Retrieved 7 chunks from vectra:vecthare_lorebook_story1_1778288919954
+backend-manager.js:278 VectHare: Health cache stale for qdrant, re-verifying...
+core-vector-api.js:907 [EventBase] Embedding search response: 14 result(s) in 632ms, scores=[0.6023, 0.5889, 0.5802, 0.5779, 0.5769, 0.5759, 0.5741, 0.5690, 0.5661, 0.5630, 0.5625, 0.5617, 0.5613, 0.5610]
+query-keyword-extractor.js:115 [VectHare] extractQueryKeywords anchor CJK -> 56 unique (top 15): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據
+query-keyword-extractor.js:116 [VectHare] extractQueryKeywords context CJK -> 397 unique (top 35): 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略
+query-keyword-extractor.js:117 [VectHare] extractQueryKeywords Latin -> 12 unique (top 10): cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+query-keyword-extractor.js:118 [VectHare] extractQueryKeywords final -> 60 tokens (fullCJK=true): 雪兔, 兔姬, 龍脈, 守護神, 聽完, 描述, 藍色, 眸子, 收縮, 伸出, 食指, 虛空, 代表, 能量, 數據, 感度, 職位, 眷屬, 明天, 魔女, 長髮, 正式, 主人, 語氣, 客廳, 休息, 那位, 老人家, 核心, 代碼, 看向, 校園, 都市, 九条, 一抹, 狸貓, 眼眸, 關懷, 準備, 今晚, 帶著, 紫羅蘭, 看著, 色慾, 魅惑, 魔羅, 安靜, 沒有, 精靈, 策略, cup, alpha, best_candidate_id, echidna, kamira, satella, ooc, vex, critblade, nikita
+bm25-scorer.js:650 [BM25] Applying BM25 scoring to 14 results (k1=1.5, b=0.75, α=0.5, β=0.5)
+bm25-scorer.js:497 [BM25+] Indexed 14 documents, avg length: 84.8 tokens, sublinearTf=true, fieldBoosting=false
+bm25-scorer.js:689 [BM25] Top result: vector=0.5625, bm25=6.1139, combined=0.7812
+core-vector-api.js:927 [VectHare] #1 final=0.7812 vector=0.5625 bm25=6.1139 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #2 final=0.6656 vector=0.5802 bm25=4.5914 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #3 final=0.6583 vector=0.5741 bm25=4.5395 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #4 final=0.6570 vector=0.5889 bm25=4.4335 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #5 final=0.6277 vector=0.5661 bm25=4.2145 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #6 final=0.5746 vector=0.5690 bm25=3.5472 (A1 BM25 re-rank)
+core-vector-api.js:927 [VectHare] #7 final=0.4973 vector=0.5610 bm25=2.6507 (A1 BM25 re-rank)
+chat-vectorization.js:865 VectHare: Retrieved 7 chunks from qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
 standard.js:374 [VectHare] queryCollection via plugin: collectionId=vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0, source=openrouter, model=qwen/qwen3-embedding-8b, topK=14, threshold=0.25, hasQueryVector=false
 standard.js:382 [VectHare] plugin query response: status=200 ok=true
 standard.js:391 [VectHare] plugin query result: count=0, results.length=0, error=none
-core-vector-api.js:903 [EventBase] Embedding search response: 0 result(s) in 499ms, scores=[]
-chat-vectorization.js:865 VectHare: Retrieved 0 chunks from qdrant:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
-chat-vectorization.js:2018 VectHare: Boosted 2/7 chunks with matching keywords to 100% score
-chat-vectorization.js:2069 VectHare: Retrieved 7 total chunks from 4 collections
-chat-vectorization.js:2122 VectHare: Stored 7 chunks for visualizer
-chat-vectorization.js:2125 [VectHare Deduplication] Starting with 7 chunks before deduplication
-chat-vectorization.js:2126 [VectHare Deduplication] Current chat has 14 messages
-chat-vectorization.js:1494 [VectHare Dedup] Building hash set from 14 recent messages (depth: 50)
-chat-vectorization.js:1495 [VectHare Dedup] Total chat length: 14, checking duplicates in last 14 messages
-chat-vectorization.js:1521 [VectHare Dedup] Built hash set with 10 unique message hashes from recent context
-chat-vectorization.js:1559 [VectHare Dedup] FINAL: 7 will inject, 0 skipped as duplicates
-chat-vectorization.js:2130 [VectHare Deduplication] After deduplication: 7 to inject, 0 skipped
-chat-vectorization.js:2153 [VectHare Deduplication] ✅ 7 chunks will proceed to injection
-chat-vectorization.js:2158 
-✅ VectHare: Successfully injected 7 chunk(s) into prompt
-chat-vectorization.js:2159    Verification: ✓ PASSED
-chat-vectorization.js:2160    Total characters injected: 2495
+core-vector-api.js:907 [EventBase] Embedding search response: 0 result(s) in 3404ms, scores=[]
+chat-vectorization.js:865 VectHare: Retrieved 0 chunks from vectra:vecthare_eventbase_qdrant_critblade_artificrealm_67d28099-167f-4c07-a7cb-1b62e44f43d0
+chat-vectorization.js:2019 VectHare: Boosted 2/21 chunks with matching keywords to 100% score
+chat-vectorization.js:2070 VectHare: Retrieved 21 total chunks from 5 collections
+chat-vectorization.js:2123 VectHare: Stored 21 chunks for visualizer
+chat-vectorization.js:2126 [VectHare Deduplication] Starting with 21 chunks before deduplication
+chat-vectorization.js:2127 [VectHare Deduplication] Current chat has 14 messages
+chat-vectorization.js:1495 [VectHare Dedup] Building hash set from 14 recent messages (depth: 50)
+chat-vectorization.js:1496 [VectHare Dedup] Total chat length: 14, checking duplicates in last 14 messages
+chat-vectorization.js:1522 [VectHare Dedup] Built hash set with 10 unique message hashes from recent context
+chat-vectorization.js:1560 [VectHare Dedup] FINAL: 21 will inject, 0 skipped as duplicates
+chat-vectorization.js:2131 [VectHare Deduplication] After deduplication: 21 to inject, 0 skipped
+chat-vectorization.js:2154 [VectHare Deduplication] ✅ 21 chunks will proceed to injection
+chat-vectorization.js:2159 
+✅ VectHare: Successfully injected 21 chunk(s) into prompt
+chat-vectorization.js:2160    Verification: ✓ PASSED
+chat-vectorization.js:2161    Total characters injected: 8051
 
-search-debug.js:148 VectHare Debug: Stored search debug data {query: '.\n阿爾法聽完關於「雪兔姬」的描述，那雙冰藍色的眸子微微收縮。她伸出食指，在虛空中輕點，幾條代表龍脈...', stages: {…}, historyCount: 1}
-chat-vectorization.js:2186 VectHare: ✅ Injected 7 chunks (0 skipped - already in context)
+search-debug.js:148 VectHare Debug: Stored search debug data {query: '.\n阿爾法聽完關於「雪兔姬」的描述，那雙冰藍色的眸子微微收縮。她伸出食指，在虛空中輕點，幾條代表龍脈...', stages: {…}, historyCount: 2}
+chat-vectorization.js:2187 VectHare: ✅ Injected 21 chunks (0 skipped - already in context)
 script.js:4547 Core/all messages: 14/731
 world-info.js:5159 [WI] Adding 38 entries to prompt (38) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
 index.js:19 [QR2] calling {args: Array(1), functionToCall: ƒ}
@@ -172,24 +191,6 @@ index.js:1524 [shujuku_v91] [剧情推进] [Plot] planningGuard_ACU.inProgress: 
 index.js:1524 [shujuku_v91] [剧情推进] [Plot] planningGuard_ACU.ignoreNextGenerationEndedCount: 0
 index.js:1524 [shujuku_v91] [剧情推进] [Plot] tempPlotToSave_ACU: (空)
 index.js:1524 [shujuku_v91] [剧情推进] [Plot] tempPlotToSave_ACU 为空，无需保存
-script.js:5538 AbortError: signal is aborted without reason
-    at StreamingProcessor.onStopStreaming (script.js:3789:30)
-    at stopGeneration (script.js:5551:28)
-    at S (PromptViewer.vue:273:5)
-    at EventEmitter.<anonymous> (PromptViewer.vue:367:3)
-    at EventEmitter.emit (eventemitter.js:146:36)
-    at async sendOpenAIRequest (openai.js:3052:5)
-    at async sendStreamingRequest (script.js:6095:20)
-    at async finishGenerating (script.js:5334:44)
-script.js:3789 Uncaught (in promise) AbortError: signal is aborted without reason
-    at StreamingProcessor.onStopStreaming (script.js:3789:30)
-    at stopGeneration (script.js:5551:28)
-    at S (PromptViewer.vue:273:5)
-    at EventEmitter.<anonymous> (PromptViewer.vue:367:3)
-    at EventEmitter.emit (eventemitter.js:146:36)
-    at async sendOpenAIRequest (openai.js:3052:5)
-    at async sendStreamingRequest (script.js:6095:20)
-    at async finishGenerating (script.js:5334:44)
 onStopStreaming @ script.js:3789
 stopGeneration @ script.js:5551
 collectPrompts @ PromptViewer.vue:273
@@ -202,11 +203,9 @@ sendStreamingRequest @ script.js:6095
 finishGenerating @ script.js:5334
 await in finishGenerating
 Generate @ script.js:5394
-prompts.ts:72 [Prompt Template] processing send result: 20932 tokens and 30325 chars
 index.js:1524 [shujuku_v91] Debounced new message processing triggered for ACU.
 index.js:1524 [shujuku_v91] ACU Loaded 731 messages for: 異世界學校 - 2025-12-16@09h56m28s.
 index.js:1524 [shujuku_v91] ACU Auto-Trigger: Starting independent check...
-index.js:1524 [shujuku_v91] ACU: AI Message count increased (0 -> 366). Waiting 2000ms...
 index.js:1524 [shujuku_v91] [Trigger Check] Table: 全局数据表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
 index.js:1524 [shujuku_v91] [Trigger Check] Table: 主角信息, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
 index.js:1524 [shujuku_v91] [Trigger Check] Table: 重要人物表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1

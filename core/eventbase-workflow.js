@@ -435,7 +435,11 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     if (!events?.length) {
         if (debugLog) console.log('[EventBase] No events to inject');
         if (settings.retrieval_popup_on_result) {
-            toastr.info('EventBase: no events matched', 'VectHarePlus Retrieval');
+            const rawCount = debug?.rawCount ?? 0;
+            const msg = rawCount > 0
+                ? `EventBase: ${rawCount} event(s) already in context`
+                : 'EventBase: no events matched';
+            toastr.info(msg, 'VectHarePlus Retrieval');
         }
         setExtensionPrompt(EVENTBASE_PROMPT_TAG, '', settings.position, settings.depth, false);
         return;

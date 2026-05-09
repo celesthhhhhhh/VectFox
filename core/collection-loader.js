@@ -422,6 +422,13 @@ async function discoverViaPlugin(settings) {
 
                 console.debug(`   - ${backend}:${collectionId} (${collection.chunkCount} chunks)`);
 
+                // Skip empty collections — no data to serve, treat as stale so the registry
+                // entry gets removed and retrieval stops wasting a round-trip on them.
+                if (!collection.chunkCount) {
+                    console.debug(`   ⚠️ Skipping 0-chunk collection ${backend}:${collectionId} (empty on disk)`);
+                    continue;
+                }
+
                 const collectionData = {
                     chunkCount: collection.chunkCount,
                     source: collection.source,
@@ -953,14 +960,6 @@ export async function loadAllCollections(settings, autoDiscover = true) {
                         chunkCount = 0;
                     }
                 }
-            }
-
-            // Skip empty collections (no point showing them)
-            if (chunkCount === 0) {
-                console.debug(`⚠️ VectHare: Skipping empty collection "${collectionId}" (0 chunks)`);
-                console.debug(`   💡 This collection exists but has no vectorized data`);
-                console.debug(`   💡 To see it in Database Browser, you need to vectorize some content first`);
-                continue;
             }
 
             const displayName = getCollectionDisplayName(collectionId, metadata);

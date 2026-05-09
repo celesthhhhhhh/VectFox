@@ -19,7 +19,7 @@ import { queryCollection } from './core-vector-api.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { EventBaseFatalError, EventBaseExtractionError } from './eventbase-schema.js';
 import { extractEvents } from './eventbase-extractor.js';
-import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearWindowCacheForChat, buildEventBaseCollectionId } from './eventbase-store.js';
+import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearWindowCacheForChat, buildEventBaseCollectionId, findEventBaseCollectionIdsForChat } from './eventbase-store.js';
 import { getSavedHashes } from './core-vector-api.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { formatEventsForInjectionDetailed } from './eventbase-injection.js';
@@ -327,17 +327,34 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     const backend = getRegistryBackend(settings?.vector_backend);
 
     // --- Determine if the live EventBase collection should be queried ---
-    const collectionId = buildEventBaseCollectionId(uuid, settings?.vector_backend);
-    const candidateKeys = [
-        `${backend}:${collectionId}`,
-        collectionId,  // fallback for bare-ID entries written by older versions
-    ].filter(Boolean);
+    // The registry is the source of truth for which collection ID belongs to
+    // this chat — buildEventBaseCollectionId can drift across sanitization
+    // rule changes, so we can't rely on it for lookups. Each registered
+    // collection contributes both its registry key (backend:id) and its bare
+    // collection ID since pause/lock metadata can be stored under either.
+    const registeredEventBases = findEventBaseCollectionIdsForChat(uuid, backend);
+    const candidateKeys = [];
+    for (const { registryKey, collectionId: colId } of registeredEventBases) {
+        if (registryKey && !candidateKeys.includes(registryKey)) candidateKeys.push(registryKey);
+        if (colId && !candidateKeys.includes(colId)) candidateKeys.push(colId);
+    }
+
+    // If nothing has been registered for this chat yet, seed candidateKeys
+    // with the would-be ID so first-run lock checks against the freshly
+    // created collection still work.
+    if (candidateKeys.length === 0) {
+        const seedId = buildEventBaseCollectionId(uuid, settings?.vector_backend);
+        if (seedId) {
+            candidateKeys.push(`${backend}:${seedId}`, seedId);
+        }
+    }
 
     const eventbasePaused = candidateKeys.find(key => key && !isCollectionEnabled(key));
     const eventbaseLocked = currentChatId && candidateKeys.some(key => isCollectionLockedToChat(key, currentChatId));
     const queryEventbase = !eventbasePaused && eventbaseLocked;
 
     if (debugLog) {
+        console.log(`[EventBase] Live retrieval: uuid=${uuid}, registeredEventBases=${registeredEventBases.length}, candidateKeys=${JSON.stringify(candidateKeys)}`);
         if (eventbasePaused) console.log(`[EventBase] Live collection paused (key="${eventbasePaused}")`);
         if (!eventbaseLocked) {
             const collectionsMeta = extension_settings?.vecthareplus?.collections || {};
@@ -345,7 +362,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
                 collectionsMeta[key] && Object.prototype.hasOwnProperty.call(collectionsMeta[key], 'lockedToChatIds')
             );
             const lockedChats = lockMetaKey ? collectionsMeta[lockMetaKey]?.lockedToChatIds : [];
-            console.log(`[EventBase] Live collection not locked to chat (${currentChatId || 'none'}), lockedChats=${JSON.stringify(lockedChats)}`);
+            console.log(`[EventBase] Live collection not locked to chat (${currentChatId || 'none'}), lockedChats=${JSON.stringify(lockedChats)}, lockMetaKey=${lockMetaKey || 'none'}`);
         }
     }
 

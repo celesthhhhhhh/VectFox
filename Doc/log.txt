@@ -1,4 +1,4 @@
-[VectHare DB Browser] Active-for-current-chat resolution for vecthare_eventbase_qdrant_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a: resolved=false, chatScopedActive=false, currentChatId=異世界學校 - 2025-12-16@09h56m28s
+[VectHare] saveActivation: alwaysActive checkbox=true, chatId=異世界學校 - 2025-12-16@09h56m28s, collection=vecthare_eventbase_qdrant_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a
 collection-metadata.js:261 VectHare: Updated metadata for collection vecthare_eventbase_qdrant_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a
 collection-metadata.js:541 VectHare: Collection vecthare_eventbase_qdrant_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a locks updated: ['異世界學校 - 2025-12-16@09h56m28s']
 collection-metadata.js:261 VectHare: Updated metadata for collection vecthare_eventbase_qdrant_critblade_chat_60d40b35-fa7a-4f30-8485-805303f4916a
@@ -29,6 +29,25 @@ index.js:1524 [shujuku_v91] [剧情推进] [Plot] planningGuard_ACU.inProgress: 
 index.js:1524 [shujuku_v91] [剧情推进] [Plot] planningGuard_ACU.ignoreNextGenerationEndedCount: 0
 index.js:1524 [shujuku_v91] [剧情推进] [Plot] tempPlotToSave_ACU: (空)
 index.js:1524 [shujuku_v91] [剧情推进] [Plot] tempPlotToSave_ACU 为空，无需保存
+script.js:5538 AbortError: signal is aborted without reason
+    at StreamingProcessor.onStopStreaming (script.js:3789:30)
+    at stopGeneration (script.js:5551:28)
+    at S (PromptViewer.vue:273:5)
+    at EventEmitter.<anonymous> (PromptViewer.vue:367:3)
+    at EventEmitter.emit (eventemitter.js:146:36)
+    at async sendOpenAIRequest (openai.js:3052:5)
+    at async sendStreamingRequest (script.js:6095:20)
+    at async finishGenerating (script.js:5334:44)
+prompts.ts:72 [Prompt Template] processing send result: 19104 tokens and 27830 chars
+script.js:3789 Uncaught (in promise) AbortError: signal is aborted without reason
+    at StreamingProcessor.onStopStreaming (script.js:3789:30)
+    at stopGeneration (script.js:5551:28)
+    at S (PromptViewer.vue:273:5)
+    at EventEmitter.<anonymous> (PromptViewer.vue:367:3)
+    at EventEmitter.emit (eventemitter.js:146:36)
+    at async sendOpenAIRequest (openai.js:3052:5)
+    at async sendStreamingRequest (script.js:6095:20)
+    at async finishGenerating (script.js:5334:44)
 onStopStreaming @ script.js:3789
 stopGeneration @ script.js:5551
 collectPrompts @ PromptViewer.vue:273
@@ -44,6 +63,7 @@ Generate @ script.js:5394
 index.js:1524 [shujuku_v91] Debounced new message processing triggered for ACU.
 index.js:1524 [shujuku_v91] ACU Loaded 731 messages for: 異世界學校 - 2025-12-16@09h56m28s.
 index.js:1524 [shujuku_v91] ACU Auto-Trigger: Starting independent check...
+index.js:1524 [shujuku_v91] ACU: AI Message count increased (0 -> 366). Waiting 2000ms...
 index.js:1524 [shujuku_v91] [Trigger Check] Table: 全局数据表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
 index.js:1524 [shujuku_v91] [Trigger Check] Table: 主角信息, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1
 index.js:1524 [shujuku_v91] [Trigger Check] Table: 重要人物表, TotalAI: 366, Skip: 0, LastUpdated: 366, Unrecorded: 0, Freq: 1

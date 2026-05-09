@@ -17,8 +17,8 @@ import {
 } from './core-vector-api.js';
 import { getCurrentChatId, chat_metadata, saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { getChatUUID, buildEventBaseCollectionId, getRegistryBackend, COLLECTION_PREFIXES } from './collection-ids.js';
-import { registerCollection } from './collection-loader.js';
+import { getChatUUID, buildEventBaseCollectionId, getRegistryBackend, COLLECTION_PREFIXES, parseRegistryKey } from './collection-ids.js';
+import { registerCollection, getCollectionRegistry } from './collection-loader.js';
 import { setCollectionLock } from './collection-metadata.js';
 import { buildEmbedText } from './eventbase-schema.js';
 
@@ -276,9 +276,51 @@ export async function isWindowAlreadyExtracted(sourceHashes, messageIds, setting
 }
 
 /**
- * Resolve which EventBase collection ID to read from.
- * Prefers new backend-scoped ID, but falls back to legacy no-backend ID
- * so existing users can still read old data without re-vectorizing.
+ * Find every EventBase collection registered for the given chat UUID.
+ *
+ * The registry — not `buildEventBaseCollectionId` — is the source of truth for
+ * which collection holds a chat's data. The collection ID embeds a sanitized
+ * form of `name1`/`name2`, and that sanitization can change over time
+ * (e.g. the CJK-name fix). Recomputing the ID at read-time therefore can't
+ * be trusted; the registry remembers the actual stored ID.
+ *
+ * Returned entries are ordered most-preferred first:
+ *   1. Backend-scoped IDs matching the current backend setting
+ *   2. Other backend-scoped IDs
+ *   3. Legacy (no backend) IDs
+ *
+ * @param {string} uuid Chat UUID
+ * @param {string} [preferredBackend] Backend to prefer (e.g. 'qdrant', 'vectra')
+ * @returns {{ registryKey: string, collectionId: string }[]}
+ */
+export function findEventBaseCollectionIdsForChat(uuid, preferredBackend) {
+    if (!uuid) return [];
+    const matches = [];
+    for (const registryKey of getCollectionRegistry()) {
+        const parsed = parseRegistryKey(registryKey);
+        const colId = parsed.collectionId;
+        if (!colId?.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE)) continue;
+        if (!colId.endsWith(uuid)) continue;
+        matches.push({ registryKey, collectionId: colId, backend: parsed.backend });
+    }
+
+    const wantBackend = String(preferredBackend || '').toLowerCase();
+    const rank = (m) => {
+        if (wantBackend && m.backend === wantBackend) return 0;
+        if (m.backend) return 1;
+        return 2;
+    };
+    matches.sort((a, b) => rank(a) - rank(b));
+    return matches.map(({ registryKey, collectionId }) => ({ registryKey, collectionId }));
+}
+
+/**
+ * Resolve which EventBase collection ID to read from for the given chat.
+ *
+ * Looks up the registered collection(s) by UUID and returns the first one
+ * that actually has data. When no collection has been registered yet (first
+ * ingestion), returns the freshly-computed backend-scoped ID so the write
+ * path has somewhere to insert.
  *
  * @param {object} settings
  * @param {string} [chatUUID]
@@ -288,29 +330,21 @@ async function _resolveEventBaseCollectionIdForRead(settings, chatUUID) {
     const uuid = chatUUID || getChatUUID();
     if (!uuid) return null;
 
-    const backendScopedId = buildEventBaseCollectionId(uuid, settings?.vector_backend);
-    const legacyId = buildEventBaseCollectionId(uuid);
+    const backend = getRegistryBackend(settings?.vector_backend);
+    const registered = findEventBaseCollectionIdsForChat(uuid, backend);
 
-    if (!backendScopedId) return legacyId || null;
-
-    try {
-        const scopedHashes = await getSavedHashes(backendScopedId, settings);
-        if (scopedHashes?.length > 0) return backendScopedId;
-    } catch {
-        // Ignore and try legacy fallback.
-    }
-
-    // If no backend-scoped data exists yet, read legacy collection if present.
-    if (legacyId && legacyId !== backendScopedId) {
+    for (const { collectionId } of registered) {
         try {
-            const legacyHashes = await getSavedHashes(legacyId, settings);
-            if (legacyHashes?.length > 0) return legacyId;
+            const hashes = await getSavedHashes(collectionId, settings);
+            if (hashes?.length > 0) return collectionId;
         } catch {
-            // Ignore; we'll return backend-scoped ID for future writes/reads.
+            // Try next candidate.
         }
     }
 
-    return backendScopedId;
+    // No registered collection has data yet — return the would-be ID so
+    // first-time writers have a target. May be null if no chat is active.
+    return buildEventBaseCollectionId(uuid, settings?.vector_backend);
 }
 
 // ---------------------------------------------------------------------------

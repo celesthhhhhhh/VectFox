@@ -1,84 +1,55 @@
-{
-"event_type":"revelation"
-"importance":9
-"summary":"阿爾法揭示最後一名失格聖女維茲在帝都市集開魔法雜貨店，為頂級魔法系使用者但商業笨拙濫好人。團隊決定先找維茲補齊7名聖女再處理雪兔姬與魔王族風險。九条光建議收購店鋪補完後勤。"
-"DateTime":
-NULL
-"cause":"勇希計算需3名聖女打贏魔王族，先找齊7名聖女。"
-"result":"確認維茲位置，帝都潛行計劃啟動。"
-"characters":[
-0:"阿爾法"
-1:"維茲"
-2:"勇希"
-]
-"locations":[
-0:"帝都"
-1:"維茲魔法雜貨店"
-]
-"factions":[]
-"items":[]
-"concepts":[
-0:"失格聖女"
-1:"魔王族"
-2:"魔法雜貨店"
-]
-"keywords":[
-0:"維茲"
-1:"第7名聖女"
-2:"魔法雜貨店"
-3:"帝都市集"
-4:"頂級魔法系"
-5:"濫好人"
-6:"收購店鋪"
-7:"補完拼圖"
-8:"魔王族實力"
-9:"3名聖女"
-10:"雪兔姬"
-11:"失格聖女"
-12:"魔王族"
-]
-"open_threads":[
-0:"找齊維茲"
-1:"減低魔王族風險"
-2:"雪兔姬位置"
-]
-"should_persist":true
-"event_id":"eb_1778367951521_8_1_gxzft"
-"source_message_ids":[
-0:8
-1:9
-2:10
-3:11
-]
-"source_message_hashes":[
-0:854669445
-1:1818565204
-2:1499091502
-3:2577320706
-]
-"source_window_start":8
-"source_window_end":11
-"created_at":1778367951521
-"schema_version":1
-"chat_uuid":"60d40b35-fa7a-4f30-8485-805303f4916a"
-"embed_text":"[revelation] 阿爾法揭示最後一名失格聖女維茲在帝都市集開魔法雜貨店，為頂級魔法系使用者但商業笨拙濫好人。團隊決定先找維茲補齊7名聖女再處理雪兔姬與魔王族風險。九条光建議收購店鋪補完後勤。 CAUSE: 勇希計算需3名聖女打贏魔王族，先找齊7名聖女。 RESULT: 確認維茲位置，帝都潛行計劃啟動。 CHARS: 阿爾法, 維茲, 勇希 LOCS: 帝都, 維茲魔法雜貨店 KEYS: 維茲, 第7名聖女, 魔法雜貨店, 帝都市集, 頂級魔法系, 濫好人, 收購店鋪, 補完拼圖, 魔王族實力, 3名聖女, 雪兔姬, 失格聖女, 魔王族 THREADS: 找齊維茲, 減低魔王族風險, 雪兔姬位置"
-"eventbase":true
-"eventbase_schema_version":1
-"customWeights":[]
-"disabledKeywords":[]
-"chunkGroup":
-NULL
-"conditions":
-NULL
-"isSummaryChunk":false
-"parentHash":
-NULL
-"text":"[revelation] 阿爾法揭示最後一名失格聖女維茲在帝都市集開魔法雜貨店，為頂級魔法系使用者但商業笨拙濫好人。團隊決定先找維茲補齊7名聖女再處理雪兔姬與魔王族風險。九条光建議收購店鋪補完後勤。 CAUSE: 勇希計算需3名聖女打贏魔王族，先找齊7名聖女。 RESULT: 確認維茲位置，帝都潛行計劃啟動。 CHARS: 阿爾法, 維茲, 勇希 LOCS: 帝都, 維茲魔法雜貨店 KEYS: 維茲, 第7名聖女, 魔法雜貨店, 帝都市集, 頂級魔法系, 濫好人, 收購店鋪, 補完拼圖, 魔王族實力, 3名聖女, 雪兔姬, 失格聖女, 魔王族 THREADS: 找齊維茲, 減低魔王族風險, 雪兔姬位置 [KEYWORDS: 維茲 第7名聖女 魔法雜貨店 帝都市集 頂級魔法系 濫好人 收購店鋪 補完拼圖 魔王族實力 3名聖女 雪兔姬 失格聖女 魔王族]"
-"hash":3025563852
-"type":"chat"
-"sourceId":"unknown"
-"embeddingSource":"openrouter"
-"embeddingModel":"qwen/qwen3-embedding-8b"
-"timestamp":1778367952313
-"messageIndex":9
-}
+[EventBase] _runEventBaseBackfill: starting...
+content-vectorizer.js:2734 [EventBase] Context chat length: 2116 EventBase enabled: true
+content-vectorizer.js:2763 [EventBase] Filtered messages: 2115
+content-vectorizer.js:2764 [EventBase] Starting ingestion with settings: {eventbase_enabled: true, eventbase_window_size: 3, eventbase_window_overlap: 0, eventbase_debug_logging: true, legacy_progress_strategy: 'per_message', …}
+eventbase-workflow.js:113 [EventBase] Ingestion: 2115 messages → 705 windows (size=3, overlap=0)
+progress-tracker.js:196 [ProgressTracker] updateEmbeddingProgress: 0/2115
+progress-tracker.js:413 [ProgressTracker] Progress bar: 0/2115 = 0%
+progress-tracker.js:445 [ProgressTracker] Updating chunks display with embedding progress: "0/2115 (2115 left)"
+eventbase-extractor.js:449 [EventBase] Extracting events — window=0, provider=openrouter, messages=3
+eventbase-extractor.js:449 [EventBase] Extracting events — window=1, provider=openrouter, messages=3
+eventbase-extractor.js:449 [EventBase] Extracting events — window=2, provider=openrouter, messages=3
+eventbase-extractor.js:464 [EventBase] Raw LLM reply (window=2): [{"event_type":"side_quest_update","importance":6,"summary":"英妮·維賽塔在薩卡恩的雜貨店內手握紫色晶體承受雷元素魔力測試三分鐘，穩定度達百分之八十七勉強合格。Critblade撐住虛脫的英妮並為她擦拭額頭汗珠，展現細微關懷。薩卡恩支付10枚銀幣與兩瓶中效魔力恢復藥作為報酬。兩人離開雜貨店前往海邊。","cause":"接受薩卡恩的裝備測試委託。","result":"完成SQ.13支線測試，獲得金錢與藥水獎勵，主線任務進度推進。","characters":["英妮·維賽塔","Critblade","薩卡恩"],"locations":["藍色瞭望村東側雜貨店"],"factions":[],"DateTime":"1577-07-08T09:45:00Z","items":["紫色晶體","10枚銀幣","中效魔力恢復藥"],"concepts":["雷元素魔力","魔力測試"],"keywords":["紫色晶體","雷元素","魔力測試","穩定度","銀幣","魔力恢復藥","擦汗","虛脫","SQ.13","報
+eventbase-extractor.js:117 [EventBase] Parser window=2: raw length=1545, preview: [{"event_type":"side_quest_update","importance":6,"summary":"英妮·維賽塔在薩卡恩的雜貨店內手握紫色晶體承受雷元素魔力測試三分鐘，穩定度達百分之八十七勉強合格。Critblade撐住虛脫的英妮並為她擦拭額頭汗珠，展現細微關懷。薩卡恩支付10
+eventbase-extractor.js:227 [EventBase] Parser window=2: 24 candidate array(s) found: (24) ['[0] len=3 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=3 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=3 firstType=string keys/val="英妮·維賽塔"', '[3] len=1 firstType=string keys/val="藍色瞭望村東側雜貨店"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=3 firstType=string keys/val="紫色晶體"', '[6] len=2 firstType=string keys/val="雷元素魔力"', '[7] len=11 firstType=string keys/val="紫色晶體"', '[8] len=1 firstType=string keys/val="下次測試委託"', '[9] len=2 firstType=string keys/val="Critblade"', '[10] len=1 firstType=string keys/val="藍色瞭望村東側海邊"', '[11] len=0 firstType=undefined keys/val=undefined', '[12] len=2 firstType=string keys/val="斯提爾之劍"', '[13] len=2 firstType=string keys/val="食腐蟹"', '[14] len=12 firstType=string keys/val="食腐蟹"', '[15] len=1 firstType=string keys/val="剩餘12隻食腐蟹"', '[16] len=2 firstType=string keys/val="英妮·維賽塔"', '[17] len=2 firstType=string keys/val="藍色瞭望村東側雜貨店"', '[18] len=0 firstType=undefined keys/val=undefined', '[19] len=0 firstType=undefined keys/val=undefined', '[20] len=2 firstType=string keys/val="情感依附"', '[21] len=8 firstType=string keys/val="擦汗"', '[22] len=0 firstType=undefined keys/val=undefined', '[23] len=3 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:266 [EventBase] Parser window=2: chose candidate[0] len=3
+eventbase-extractor.js:481 [EventBase] Window 2: parsed 3 event candidate(s)
+eventbase-extractor.js:491 [EventBase] Parsed array (window=2): 3 items, types: [object, object, object]
+eventbase-extractor.js:549 [EventBase] Window 2: extracted 3 valid events
+eventbase-store.js:96 [EventBase] Inserting 3 event(s) into collection "vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0"
+backend-manager.js:274 VectHare: Health cache stale for qdrant, re-verifying...
+core-vector-api.js:672 VectHare: Processing 3 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
+qdrant.js:295 VectHare Qdrant: Inserting 3 vectors in 1 batch(es) of up to 100 items
+qdrant.js:374 VectHare Qdrant: Batch 1/1 completed (3 vectors)
+collection-loader.js:104 VectHare: Registered collection: vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0
+qdrant.js:385 VectHare Qdrant: Inserted 3 vectors into vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0 (separate mode, content_type: vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0)
+collection-loader.js:104 VectHare: Registered collection: qdrant:vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0
+collection-metadata.js:261 VectHare: Updated metadata for collection vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0
+collection-metadata.js:541 VectHare: Collection vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0 locks updated: ['ArtificRealm創世域 - 2026-04-28@17h24m18s927ms imported']
+eventbase-store.js:116 [EventBase] Locked collection "vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0" to current chat "ArtificRealm創世域 - 2026-04-28@17h24m18s927ms imported"
+eventbase-store.js:121 [EventBase] Insert complete for collection "vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0"
+eventbase-extractor.js:464 [EventBase] Raw LLM reply (window=0): [{"event_type":"main_quest_update","importance":7,"summary":"不破勇希離開客棧後在藍色瞭望村冒險者公會門口與英妮·維賽塔匯合，兩人進入公會查看佈告欄。不破勇希接取清理淺灘附近15隻食腐蟹的F級委託，賞金10銀幣，看板娘蓋章確認。英妮提議先去村東雜貨店測試新型魔導石賺外快，不破勇希同意順道前往後直接去海邊。英妮表現強烈依附，緊貼勇希手臂，並提醒注意海邊潮汐異常。","cause":"不破勇希裝備斯提爾之劍與衛士皮鋼甲後準備接取首個委託。","result":"主線任務MQ.Ⅰ進展至接取完成，正準備前往任務地點；SQ.12清理食腐蟹進行中，SQ.13新型魔導石測試待觸發。","characters":["不破勇希","Critblade","英妮·維賽塔"],"locations":["藍色瞭望村","冒險者公會","無疆者之盟"],"factions":["無疆者之盟"],"DateTime":"1577-07-08T09:35:00Z","items":["斯提爾之劍","衛士皮鋼甲"],"concepts":["委託","食
+eventbase-extractor.js:117 [EventBase] Parser window=0: raw length=694, preview: [{"event_type":"main_quest_update","importance":7,"summary":"不破勇希離開客棧後在藍色瞭望村冒險者公會門口與英妮·維賽塔匯合，兩人進入公會查看佈告欄。不破勇希接取清理淺灘附近15隻食腐蟹的F級委託，賞金10銀幣，看板娘蓋章確認。英妮提議先去
+eventbase-extractor.js:227 [EventBase] Parser window=0: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=3 firstType=string keys/val="不破勇希"', '[3] len=3 firstType=string keys/val="藍色瞭望村"', '[4] len=1 firstType=string keys/val="無疆者之盟"', '[5] len=2 firstType=string keys/val="斯提爾之劍"', '[6] len=3 firstType=string keys/val="委託"', '[7] len=15 firstType=string keys/val="清理食腐蟹"', '[8] len=3 firstType=string keys/val="完成清理15隻食腐蟹"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:266 [EventBase] Parser window=0: chose candidate[0] len=1
+eventbase-extractor.js:481 [EventBase] Window 0: parsed 1 event candidate(s)
+eventbase-extractor.js:491 [EventBase] Parsed array (window=0): 1 items, types: [object]
+eventbase-extractor.js:549 [EventBase] Window 0: extracted 1 valid events
+eventbase-store.js:96 [EventBase] Inserting 1 event(s) into collection "vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0"
+core-vector-api.js:672 VectHare: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
+qdrant.js:295 VectHare Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
+qdrant.js:374 VectHare Qdrant: Batch 1/1 completed (1 vectors)
+qdrant.js:385 VectHare Qdrant: Inserted 1 vectors into vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0 (separate mode, content_type: vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0)
+collection-metadata.js:261 VectHare: Updated metadata for collection vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0
+collection-metadata.js:541 VectHare: Collection vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0 locks updated: ['ArtificRealm創世域 - 2026-04-28@17h24m18s927ms imported']
+eventbase-store.js:116 [EventBase] Locked collection "vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0" to current chat "ArtificRealm創世域 - 2026-04-28@17h24m18s927ms imported"
+eventbase-store.js:121 [EventBase] Insert complete for collection "vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0"
+eventbase-extractor.js:464 [EventBase] Raw LLM reply (window=1): [{"event_type":"side_quest_update","importance":7,"summary":"Critblade帶領英妮前往東側雜貨店「奧米加之屋」，要求英妮測試新型魔導石即魔力共振石。薩卡恩解釋測試需維持三分鐘穩定輸出魔力。英妮接觸晶體後身體劇烈顫抖，紫色魔力脈衝蔓延肌膚產生淺紫色紋路，並發出混合痛苦的吟聲。三分鐘後Critblade詢問薩卡恩是否完成，並為流汗的英妮擦拭額頭。","cause":"英妮發現的委託機會，Critblade反客為主指定她測試。","result":"SQ.13新型魔導石測試進行中並接近完成，英妮展現委屈但屈從姿態，身體產生強烈魔力反應。","characters":["Critblade","英妮·維賽塔","薩卡恩"],"locations":["藍色瞭望村","奧米加之屋"],"factions":[],"DateTime":"1577-07-08T09:40:00Z","items":["魔力共振石","新型魔導石"],"concepts":["魔力迴路","魔力脈衝"],"keywords":["魔力共振石","新型魔
+eventbase-extractor.js:117 [EventBase] Parser window=1: raw length=1487, preview: [{"event_type":"side_quest_update","importance":7,"summary":"Critblade帶領英妮前往東側雜貨店「奧米加之屋」，要求英妮測試新型魔導石即魔力共振石。薩卡恩解釋測試需維持三分鐘穩定輸出魔力。英妮接觸晶體後身體劇烈顫抖，紫色魔力脈衝蔓延肌
+eventbase-extractor.js:227 [EventBase] Parser window=1: 24 candidate array(s) found: (24) ['[0] len=3 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=3 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=3 firstType=string keys/val="Critblade"', '[3] len=2 firstType=string keys/val="藍色瞭望村"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=2 firstType=string keys/val="魔力共振石"', '[6] len=2 firstType=string keys/val="魔力迴路"', '[7] len=13 firstType=string keys/val="魔力共振石"', '[8] len=2 firstType=string keys/val="測試結果與報酬"', '[9] len=3 firstType=string keys/val="薩卡恩"', '[10] len=1 firstType=string keys/val="奧米加之屋"', '[11] len=0 firstType=undefined keys/val=undefined', '[12] len=1 firstType=string keys/val="黑木盒子"', '[13] len=2 firstType=string keys/val="流沙之國"', '[14] len=8 firstType=string keys/val="薩卡恩"', '[15] len=0 firstType=undefined keys/val=undefined', '[16] len=2 firstType=string keys/val="Critblade"', '[17] len=3 firstType=string keys/val="藍色瞭望村冒險者公會"', '[18] len=0 firstType=undefined keys/val=undefined', '[19] len=0 firstType=undefined keys/val=undefined', '[20] len=0 firstType=undefined keys/val=undefined', '[21] len=5 firstType=string keys/val="藍色瞭望村"', '[22] len=0 firstType=undefined keys/val=undefined', '[23] len=3 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:266 [EventBase] Parser window=1: chose candidate[0] len=3
+eventbase-extractor.js:481 [EventBase] Window 1: parsed 3 event candidate(s)
+eventbase-extractor.js:491 [EventBase] Parsed array (window=1): 3 items, types: [object, object, object]
+eventbase-extractor.js:549 [EventBase] Window 1: extracted 3 valid events
+eventbase-store.js:96 [EventBase] Inserting 3 event(s) into collection "vecthare_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0"
+core-vector-api.js:672 VectHare: Processing 3 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)

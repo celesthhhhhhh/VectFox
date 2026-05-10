@@ -252,6 +252,20 @@ function createModal() {
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Parallel Windows - EventBase/chat only -->
+                            <div class="vecthare-cv-slider-row" id="vecthare_cv_parallel_row" style="display:none;">
+                                <label>
+                                    Parallel Windows
+                                    <span class="vecthare-cv-value" id="vecthare_cv_parallel_val">1</span>
+                                </label>
+                                <input type="range" id="vecthare_cv_parallel_windows"
+                                       min="1" max="8" step="1" value="1">
+                                <div class="vecthare-cv-slider-hints">
+                                    <span>1 (safe)</span>
+                                    <span>8 (fast)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -815,6 +829,7 @@ function updateChunkingSection(type) {
         const globalSettings = extension_settings.vecthareplus || {};
         const hideChunking = activeTab === 'upload' && globalSettings.eventbase_enabled;
         $('.vecthare-cv-chunking-section').toggle(!hideChunking);
+        $('#vecthare_cv_parallel_row').toggle(!hideChunking);
         return;
     }
 
@@ -1293,6 +1308,11 @@ function bindEvents() {
         $(this).val(val);
         $('#vecthare_cv_group_batch_size_val').text(val);
         currentSettings.groupBatchSize = val;
+    });
+
+    $('#vecthare_cv_parallel_windows').on('input', function() {
+        const val = parseInt($(this).val());
+        $('#vecthare_cv_parallel_val').text(val);
     });
 
     // Scope selection
@@ -2770,11 +2790,14 @@ async function _runEventBaseBackfill() {
             legacy_total_chunks: legacyTotalChunks,
         });
 
+        const parallelWindows = parseInt($('#vecthare_cv_parallel_windows').val()) || 1;
+
         const result = await runEventBaseIngestion({
             messages,
             chatUUID,
             settings,
             abortSignal: activeVectorizeAbortController.signal,
+            parallelWindows,
             progressPlan: {
                 strategy: legacyStrategy,
                 batchSize: legacyBatchSize,

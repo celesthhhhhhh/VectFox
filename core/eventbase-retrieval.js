@@ -113,8 +113,13 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     const topK = (settings.eventbase_retrieval_top_k || 8) * 2; // overfetch for re-rank
     const minImportance = settings.eventbase_retrieval_min_importance || 1;
 
+    // EventBase always uses its own keyword scoring key so that ChunkBase's
+    // keyword_scoring_method setting never accidentally switches EventBase into
+    // client-side hybrid mode. Default is 'bm25'; override via eventbase_keyword_scoring_method.
+    const ebSettings = { ...settings, keyword_scoring_method: settings.eventbase_keyword_scoring_method || 'bm25' };
+
     if (debugLog) {
-        const method = settings.keyword_scoring_method || 'bm25';
+        const method = ebSettings.keyword_scoring_method;
         const nativePrefer = settings.hybrid_native_prefer !== false;
         console.log(`[EventBase] Retrieval start — topK overfetch=${topK}, minImportance=${minImportance}, method=${method}, nativePrefer=${nativePrefer}, liveCollections=${liveCollectionIds?.length || 0}`);
     }
@@ -136,7 +141,7 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         for (const colId of liveCollectionIds) {
             for (const queryText of queryTexts) {
                 promises.push(
-                    queryCollection(colId, queryText, topK, settings)
+                    queryCollection(colId, queryText, topK, ebSettings)
                         .then(({ hashes, metadata }) => {
                             if (!hashes?.length) return [];
                             return metadata.map((meta, i) => ({ ...meta, _hash: hashes[i] }));
@@ -287,7 +292,7 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         events: finalEvents,
         debug: {
             dualQuery,
-            keywordScoringMethod: settings.keyword_scoring_method || 'bm25',
+            keywordScoringMethod: ebSettings.keyword_scoring_method,
             nativeHybridPrefer: settings.hybrid_native_prefer !== false,
             fusionMethod: settings.hybrid_fusion_method || 'rrf',
             rawCount: rawCandidates.length,

@@ -174,8 +174,8 @@ After the Phase 2 GUI reorg, settings are grouped by which path consumes them:
 |---|---|---|---|
 | **Insert Batch Size** (default 50) | ChunkBase → Ingestion | **No** | Controls chunks-per-API-call during chunk vectorization. EventBase inserts tiny batches (2–10 events per window) so this has no meaningful effect on EventBase. |
 | **Dedup Depth** (default 50 messages) | Core | **Yes** | Used in `eventbase-retrieval.js` as `settings.deduplication_depth`. Filters out retrieved events whose source window falls within the last N messages of the current chat — avoids injecting content already visible in context. 0 = disabled. Also used by chunk-path retrieval in `chat-vectorization.js`. |
-| **Hybrid Search & BM25 block** (Keyword Scoring Method, BM25 k1/b, Fusion Method, RRF K, Prefer Native Backend Hybrid) | Core → Hybrid Search & BM25 | **Yes** | Read inside `queryCollection()` regardless of caller. Both EventBase and chunk paths inherit the A1/A2/A3 routing and its scoring parameters. See §13 for the full visibility matrix. |
-| **Query Keyword Budget** (`hybrid_keyword_level`) | ChunkBase → Keyword Budget | Yes — but indirect | Read inside `queryCollection()`'s A1 BM25 re-rank step (`scoreResults` at `core-vector-api.js:961`) and inside `hybridSearch()` at `hybrid-search.js:419`. So EventBase's queryCollection call does pick it up when running A1/A2. The control lives in ChunkBase because the chunk re-ranker is the primary consumer — EventBase has its own re-ranker on top that dominates final ordering. |
+| **Hybrid Search & BM25 block** (Keyword Scoring Method, BM25 k1/b, Fusion Method, RRF K, Prefer Native Backend Hybrid) | Core → Hybrid Search & BM25 | **Partial** | `keyword_scoring_method` (A1 vs A2 path selector) does **not** affect EventBase — EventBase callers inject `ebSettings` with `keyword_scoring_method` overridden from `eventbase_keyword_scoring_method` (internal, defaults `'bm25'`, not in UI). All other BM25 params (k1, b, fusion method, RRF K) are still shared via `ebSettings` spread. See §13 for the full matrix. |
+| **Query Keyword Budget** (`hybrid_keyword_level`) | ChunkBase → Keyword Budget | **No** | Read only by `scoreResults()` (A1) and `hybridSearch()` (A2) inside `queryCollection()`. EventBase's `ebSettings` forces `keyword_scoring_method='bm25'`, so it always takes A1 on Standard — but `hybrid_keyword_level` is still read in that A1 path. In practice the chunk re-ranker is its primary consumer; EventBase has its own importance/persist/recency re-ranker that dominates, so the effect is negligible. |
 
 ---
 
@@ -225,7 +225,7 @@ Additionally, EventBase already has its own `_recencyBonus` — an exponential d
 **Module:** [`core/hybrid-search.js`](core/hybrid-search.js)
 **Decision:** ✅ EventBase benefits from it — but through `queryCollection()`, not by direct call.
 
-EventBase calls `queryEvents()` → `queryCollection()`. Inside `queryCollection()`, the A1/A2/A3 routing decides whether to invoke `clientSideHybridSearch()` (A2) or the backend's native hybrid (A3) from `hybrid-search.js`. So EventBase automatically inherits hybrid search without any additional wiring.
+EventBase calls `queryEvents()` → `queryCollection()` (via an `ebSettings` shim that pins `keyword_scoring_method` to `eventbase_keyword_scoring_method || 'bm25'`). Inside `queryCollection()`, the A1/A2/A3 routing decides whether to invoke `clientSideHybridSearch()` (A2) or the backend's native hybrid (A3) from `hybrid-search.js`. On Standard backend, EventBase is always A1 unless `eventbase_keyword_scoring_method` is explicitly set to `'hybrid'`. On Qdrant with `hybrid_native_prefer=true`, A3 takes over regardless.
 
 Do **not** call `hybridSearch()` directly from `eventbase-retrieval.js` or `eventbase-workflow.js`. It operates at the backend/collection layer — returns raw `{ hashes, metadata }` and bypasses `queryEvents()`, the store schema hydration, and EventBase-specific field population (`score`, `importance`, etc.).
 
@@ -263,8 +263,9 @@ Three retrieval paths exist after the keyword-level simplification. All paths ar
 
 | Setting | Affects EventBase? | Notes |
 |---|---|---|
-| `keyword_scoring_method` (`bm25` \| `hybrid`) | Yes | `bm25` = A1 fast re-rank; `hybrid` = A2 client-side hybrid fusion (still ANN-bound, capped at 100 candidates). Ignored when A3 active. |
-| `hybrid_keyword_level` (`minimal` / `balance` / `maximum`) | Yes (A1 and A2) | Controls how many keywords (30/50/70) are extracted from the query for BM25 scoring. Ignored under A3. |
+| `keyword_scoring_method` (`bm25` \| `hybrid`) | **No** | ChunkBase path only. EventBase callers override this to `eventbase_keyword_scoring_method \|\| 'bm25'` before passing settings to `queryCollection()`, so the ChunkBase setting never reaches EventBase queries. |
+| `eventbase_keyword_scoring_method` | **Yes** | EventBase-only internal key. Defaults to `'bm25'`; not exposed in UI. Override in browser console if needed. `bm25` = A1 fast re-rank; `hybrid` = A2 (but A3 still takes precedence when `hybrid_native_prefer=true`). |
+| `hybrid_keyword_level` (`minimal` / `balance` / `maximum`) | Negligible | Controls keywords extracted for BM25 (30/50/70). EventBase is pinned to A1 on Standard — `scoreResults()` reads this — but EventBase's own 4-weight re-ranker dominates final ordering so the effect is minimal. Ignored under A3. |
 | `hybrid_native_prefer` | Yes | `true` (default for Qdrant) → A3 server-side path. `false` → falls back to A1/A2 by `keyword_scoring_method`. |
 | `hybrid_fusion_method` (`rrf` / `weighted`) | Yes (A2 and A3) | Fusion strategy. Both A2 and A3 apply explicit dual-signal bonus and single-signal penalty after the raw fusion score. A2 uses min-max normalization; A3 uses saturation normalization on the BM25 side. Not used in A1. |
 | `hybrid_vector_weight`, `hybrid_text_weight` | Yes (A2/A3 weighted mode) | Used only when `hybrid_fusion_method = weighted`. |
@@ -326,30 +327,36 @@ console.log({ chatUUID, handleId, charName });
 
 ## 13) Hybrid Search & BM25 — GUI Placement Matrix (Phase 2)
 
-Because content type and path are fully coupled (chat → EventBase, non-chat → ChunkBase) and both paths funnel through the same `queryCollection()` layer, the original 6-column matrix (ChunkBase × {A1, A2, A3} + EventBase × {A1, A2, A3}) collapses to **three behavioral cells**. Each cell applies identically regardless of which path invoked the query.
+Content type determines path; path determines which setting key controls A1/A2 routing:
 
-### Path scope reminder
+- **ChunkBase** owns non-chat content only: Lorebook / World Info, Character Cards, URLs / web pages, custom documents, wiki pages, YouTube transcripts. Uses `keyword_scoring_method`.
+- **EventBase** owns chat content only: Current Chat history and uploaded Archive Chat history (`.jsonl`). Uses `eventbase_keyword_scoring_method` (internal, not in UI, defaults `'bm25'`).
 
-- **ChunkBase** owns non-chat content only: Lorebook / World Info, Character Cards, URLs / web pages, custom documents, wiki pages, YouTube transcripts.
-- **EventBase** owns chat content only: Current Chat history and uploaded Archive Chat history (`.jsonl`).
+Both paths call `queryCollection()` but EventBase callers (`eventbase-retrieval.js`, `eventbase-workflow.js`, `eventbase-store.js`) always inject an `ebSettings` shim:
+```js
+const ebSettings = { ...settings, keyword_scoring_method: settings.eventbase_keyword_scoring_method || 'bm25' };
+```
+This ensures ChunkBase's `keyword_scoring_method` never leaks into EventBase queries.
 
 ### Settings × routing case
 
-| Setting | Storage key | **A1** — Standard + BM25 | **A2** — Standard + Hybrid | **A3** — Qdrant native |
-|---|---|---|---|---|
-| Keyword Scoring Method | `keyword_scoring_method` | ✅ selects A1 path | ✅ selects A2 path | ❌ ignored (server decides) |
-| BM25 k1 | `bm25_k1` | ✅ used | ✅ used | ❌ server-internal |
-| BM25 b | `bm25_b` | ✅ used | ✅ used | ❌ server-internal |
-| Query Keyword Budget | `hybrid_keyword_level` | ✅ used (chunk re-rank dominant consumer) | ❌ not used | ❌ not used |
-| Fusion Method (RRF / Weighted) | `hybrid_fusion_method` | ❌ not used | ✅ used | ✅ passed to server |
-| RRF K | `hybrid_rrf_k` | ❌ not used | ✅ used | ✅ passed to server |
-| Prefer Native Backend Hybrid | `hybrid_native_prefer` | n/a | n/a | toggles A3 vs falls back to A2 client-side |
+| Setting | Storage key | Applies to | **A1** — Standard + BM25 | **A2** — Standard + Hybrid | **A3** — Qdrant native |
+|---|---|---|---|---|---|
+| Keyword Scoring Method | `keyword_scoring_method` | **ChunkBase only** | ✅ selects A1 path | ✅ selects A2 path | ❌ ignored (server decides) |
+| EventBase Scoring Method | `eventbase_keyword_scoring_method` | **EventBase only** | ✅ selects A1 path | ✅ selects A2 path | ❌ ignored (A3 takes precedence) |
+| BM25 k1 | `bm25_k1` | Both | ✅ used | ✅ used | ❌ server-internal |
+| BM25 b | `bm25_b` | Both | ✅ used | ✅ used | ❌ server-internal |
+| Query Keyword Budget | `hybrid_keyword_level` | ChunkBase (dominant); EventBase negligible | ✅ used | ❌ not used | ❌ not used |
+| Fusion Method (RRF / Weighted) | `hybrid_fusion_method` | Both | ❌ not used | ✅ used | ✅ passed to server |
+| RRF K | `hybrid_rrf_k` | Both | ❌ not used | ✅ used | ✅ passed to server |
+| Prefer Native Backend Hybrid | `hybrid_native_prefer` | Both | n/a | n/a | toggles A3 vs falls back to A1/A2 |
 
 ### Key observations
 
-1. **Path doesn't change scoring math.** Both ChunkBase and EventBase funnel through `queryCollection()`, so the A1/A2/A3 switch produces identical scoring math regardless of caller. The collapse from 6 columns to 3 reflects this.
-2. **`hybrid_keyword_level` is the only setting placed in ChunkBase.** It is read by both paths via `queryCollection()` → `scoreResults()` (A1) or `hybridSearch()` (A2), but the chunk re-ranker is its primary consumer. EventBase has its own importance/persist/recency re-ranker on top, which dominates final ordering — so the control lives in ChunkBase as a chunk-path-tuning knob without misleading EventBase users.
-3. **All other rows live in Core.** They are consumed identically by both paths — placing them in either tab alone would lie to users of the other path.
+1. **Path routing is now content-type-scoped.** ChunkBase's `keyword_scoring_method` no longer affects EventBase. Changing to "Hybrid" in ChunkBase tab will not switch lorebook queries AND event queries to A2 — only lorebook queries switch.
+2. **`eventbase_keyword_scoring_method` is internal.** It defaults to `'bm25'` and is not exposed in the GUI. There is no need for a dropdown in the EventBase tab — the routing is determined by content type (chat vs non-chat), not a user choice.
+3. **BM25 tuning params (k1, b, fusion, RRF K) remain shared** via the `ebSettings` spread. Only the path-selector key (`keyword_scoring_method`) is isolated.
+4. **`hybrid_keyword_level` is the only ChunkBase-tab setting.** EventBase is pinned to A1 on Standard — `scoreResults()` reads `hybrid_keyword_level` — but EventBase's own 4-weight re-ranker dominates final ordering so the practical effect is negligible.
 
 ### GUI hide/show rules (consequence of the above)
 

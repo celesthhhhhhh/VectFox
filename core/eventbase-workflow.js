@@ -408,9 +408,10 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     // Archive events are stored with the same schema as live EventBase events so we
     // query them via queryCollection directly and attach _hash (same as queryEvents does).
     const topK = (settings.eventbase_retrieval_top_k || 8) * 2;
+    const ebSettings = { ...settings, keyword_scoring_method: settings.eventbase_keyword_scoring_method || 'bm25' };
     const archiveEventPromises = archiveCollections.map(async ({ collectionId: archColId }) => {
         try {
-            const { hashes, metadata } = await queryCollection(archColId, searchText, topK, settings);
+            const { hashes, metadata } = await queryCollection(archColId, searchText, topK, ebSettings);
             if (!hashes?.length) return [];
             return metadata.map((meta, i) => ({ ...meta, _hash: hashes[i] }));
         } catch (err) {

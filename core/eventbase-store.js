@@ -141,7 +141,8 @@ export async function queryEvents(searchText, topK, settings, chatUUID) {
     const collectionId = await _resolveEventBaseCollectionIdForRead(settings, uuid);
     if (!collectionId) return [];
 
-    const { hashes, metadata } = await queryCollection(collectionId, searchText, topK, settings);
+    const ebSettings = { ...settings, keyword_scoring_method: settings.eventbase_keyword_scoring_method || 'bm25' };
+    const { hashes, metadata } = await queryCollection(collectionId, searchText, topK, ebSettings);
     if (!hashes?.length) return [];
 
     // Attach hash to each metadata item for dedup / downstream use

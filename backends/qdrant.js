@@ -841,6 +841,12 @@ export class QdrantBackend extends VectorBackend {
             console.log(`[EventBase] Native hybrid request: collection=${body.collectionId}, fusionMode=${fusionMode}, topK=${topK}, sparse=${sparseQueryVector ? sparseQueryVector.indices.length + ' tokens' : 'n/a'}, searchTextPreview="${preview}"`);
         }
 
+        // ABC-DELETE: end-to-end timing for A/B/C fusion-mode comparison.
+        // tNetStart  - just before fetch()
+        // tNetEnd    - immediately after the response body is read (server time + network round-trip)
+        // tFuseEnd   - after browser-side fusion (legacy fusion mode only; for the other two = tNetEnd)
+        const tNetStart = performance.now();
+
         try {
             // Try the hybrid endpoint first
             const response = await fetch('/api/plugins/similharity/chunks/hybrid-query', {
@@ -851,6 +857,8 @@ export class QdrantBackend extends VectorBackend {
 
             if (response.ok) {
                 const data = await response.json();
+                const tNetEnd = performance.now();
+                const netMs = (tNetEnd - tNetStart).toFixed(1);
 
                 // ABC-DELETE: native_sparse_legacy_fusion returns unfused prefetch lists; fuse here.
                 if (data.fusionMode === 'native_sparse_legacy_fusion' && data.unfused) {
@@ -862,7 +870,13 @@ export class QdrantBackend extends VectorBackend {
                         fusionMethod,
                         rrfK,
                     });
-                    console.log(`[Qdrant] native_sparse_legacy_fusion fused ${fused.length} results from ${data.unfused.vector.length}+${data.unfused.keyword.length}`);
+                    const tFuseEnd = performance.now();
+                    const fuseMs = (tFuseEnd - tNetEnd).toFixed(1);
+                    const totalMs = (tFuseEnd - tNetStart).toFixed(1);
+                    console.log(
+                        `[Qdrant timing] mode=native_sparse_legacy_fusion total=${totalMs}ms (network+server=${netMs}ms + js-fusion=${fuseMs}ms), ` +
+                        `unfused=${data.unfused.vector.length}+${data.unfused.keyword.length}, fused=${fused.length}`
+                    );
                     return {
                         hashes: fused.map(r => r.hash),
                         metadata: fused.map(r => ({
@@ -881,7 +895,10 @@ export class QdrantBackend extends VectorBackend {
                     };
                 }
 
-                console.log(`[Qdrant] Native hybrid search (mode=${data.fusionMode || 'legacy'}) returned ${data.results?.length || 0} results`);
+                console.log(
+                    `[Qdrant timing] mode=${data.fusionMode || 'legacy'} total=${netMs}ms (network+server, no js-fusion), ` +
+                    `results=${data.results?.length || 0}`
+                );
 
                 return {
                     hashes: data.results.map(r => r.hash),

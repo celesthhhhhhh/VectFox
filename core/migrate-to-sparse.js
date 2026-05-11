@@ -22,12 +22,44 @@
 
 import { encodeSparseVector } from './sparse-vector-encoder.js';
 import { invalidateCollectionMetadata } from './tokenizer-lock.js';
+import { unregisterCollection, getCollectionRegistry } from './collection-loader.js';
+import { deleteCollectionMeta } from './collection-metadata.js';
 
 const SCROLL_BATCH = 250;
 
 async function getRequestHeaders() {
     const mod = await import('../../../../../script.js');
     return mod.getRequestHeaders();
+}
+
+/**
+ * Remove any local VectHare references to the temp `_v2` collection name. After finalize,
+ * `<source>_v2` no longer exists in Qdrant — leaving it in the registry / collection metadata
+ * causes EventBase retrieval to fire queries to the deleted collection on every chat turn.
+ *
+ * @param {string} targetName - The `_v2` collection name to scrub from local state.
+ */
+function purgeLocalReferencesTo(targetName) {
+    // Try both bare and prefixed registry-key forms (callers vary across the codebase).
+    const candidates = [
+        targetName,
+        `qdrant:${targetName}`,
+    ];
+    // Also catch any registry entry that ends with this collection name (legacy `source:id` form).
+    try {
+        const registry = getCollectionRegistry();
+        for (const key of registry.slice()) {
+            if (key === targetName || key.endsWith(`:${targetName}`) || key === `qdrant:${targetName}`) {
+                if (!candidates.includes(key)) candidates.push(key);
+            }
+        }
+    } catch (e) { /* tolerate */ }
+
+    for (const key of candidates) {
+        try { unregisterCollection(key); } catch (e) { /* tolerate */ }
+        try { deleteCollectionMeta(key); } catch (e) { /* tolerate */ }
+    }
+    console.log(`[Migrate] Purged local references to "${targetName}" (registry + metadata)`);
 }
 
 async function postJSON(url, body) {
@@ -97,6 +129,7 @@ export async function migrateCollectionToSparse({ sourceCollection, cjkTokenizer
             vectorSize: tVectorSize,
         });
         invalidateCollectionMetadata(sourceCollection);
+        purgeLocalReferencesTo(target);
         report('done', result.copied || 0, result.copied || 0);
         return { ok: true, totalMigrated: result.copied || 0, target: sourceCollection, recovered: true };
     }
@@ -175,7 +208,7 @@ export async function migrateCollectionToSparse({ sourceCollection, cjkTokenizer
         if (!nextOffset) break;
     }
 
-    // Step 4: finalize — write sentinel, drop source, alias.
+    // Step 4: finalize — copy v2 → source in-place, then drop v2.
     report('finalize', totalMigrated, totalMigrated);
     await postJSON('/api/plugins/similharity/chunks/migrate-to-sparse/finalize', {
         sourceCollection,
@@ -186,6 +219,8 @@ export async function migrateCollectionToSparse({ sourceCollection, cjkTokenizer
 
     // Invalidate cached metadata so the next query reads the new sentinel.
     invalidateCollectionMetadata(sourceCollection);
+    // Drop local references to the temp `_v2` name — Qdrant just deleted it.
+    purgeLocalReferencesTo(target);
 
     report('done', totalMigrated, totalMigrated);
     return { ok: true, totalMigrated, target };

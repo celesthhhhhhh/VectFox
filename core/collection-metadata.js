@@ -71,7 +71,6 @@ const defaultCollectionMeta = {
         linearRate: 0.01,         // % per message (linear mode)
         minRelevance: 0.3,        // Never decay below this (0-1) - decay mode only
         maxBoost: 2.0,            // Maximum boost multiplier (1-5) - nostalgia mode only
-        sceneAware: false,        // Reset decay at scene boundaries
     },
 
     // =========================================================================
@@ -97,7 +96,6 @@ const defaultCollectionMeta = {
 
 /**
  * Gets default temporal decay settings based on collection type
- * Uses global defaults from settings, with chat collections getting scene-awareness
  * @param {string} collectionType - 'chat', 'lorebook', 'file', 'document', etc.
  * @returns {object} Default decay settings for this type
  */
@@ -107,7 +105,7 @@ export function getDefaultDecayForType(collectionType) {
     const globalEnabled = globalSettings.default_decay_enabled ?? false;
     const globalType = globalSettings.default_decay_type || 'decay';
 
-    const baseDefaults = {
+    return {
         enabled: globalEnabled,
         type: globalType,
         mode: 'exponential',
@@ -115,18 +113,7 @@ export function getDefaultDecayForType(collectionType) {
         linearRate: 0.01,
         minRelevance: 0.3,
         maxBoost: 2.0,
-        sceneAware: false,
     };
-
-    // Chat collections get scene-awareness by default (if decay is enabled)
-    if (collectionType === 'chat') {
-        return {
-            ...baseDefaults,
-            sceneAware: globalEnabled, // Only enable scene-aware if decay is enabled
-        };
-    }
-
-    return baseDefaults;
 }
 
 /**
@@ -338,7 +325,6 @@ export function isCollectionAutoSyncEnabled(collectionId) {
 // ============================================================================
 // Chunk metadata is stored per-hash and can include:
 // - conditions: { ... }     - Conditional activation rules
-// - sceneId: string         - Scene boundary marker
 // - links: []               - Soft/hard links to other chunks
 // - disabled: boolean       - Exclude from results
 // - isSummary: boolean      - Dual-vector summary chunk
@@ -1067,7 +1053,6 @@ const defaultTemporalDecay = {
     halfLife: 50,
     linearRate: 0.01,
     minRelevance: 0.3,
-    sceneAware: false,
 };
 
 /**
@@ -1087,7 +1072,6 @@ export function getCollectionDecaySettings(collectionId) {
             halfLife: meta.temporalDecay.halfLife || 50,
             linearRate: meta.temporalDecay.linearRate || 0.01,
             minRelevance: meta.temporalDecay.minRelevance || 0.3,
-            sceneAware: meta.temporalDecay.sceneAware ?? false,
         };
     }
 
@@ -1137,9 +1121,6 @@ export function getCollectionDecaySummary(collectionId) {
             description = `Exponential (half-life: ${settings.halfLife} msgs)`;
         } else {
             description = `Linear (${(settings.linearRate * 100).toFixed(1)}% per msg)`;
-        }
-        if (settings.sceneAware) {
-            description += ', scene-aware';
         }
     }
 

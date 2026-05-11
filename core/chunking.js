@@ -220,18 +220,6 @@ const STRATEGIES = {
     },
 
     /**
-     * Per Scene - scenes are vectorized via UI markers, not this function
-     * This strategy returns empty because scenes are created by createSceneChunk()
-     * when the user marks a scene end. Auto-sync skips processing for this strategy.
-     */
-    per_scene: (_messages, _options) => {
-        // Scenes are created via scene-markers.js when user marks scene boundaries
-        // This strategy intentionally returns empty - auto-sync is bypassed for per_scene
-        // See chat-vectorization.js which checks for this strategy and skips processing
-        return [];
-    },
-
-    /**
      * Adaptive - intelligent splitting at natural boundaries
      * Tries paragraphs first, then sentences, then words
      */

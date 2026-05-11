@@ -14,7 +14,6 @@ import {
     applyNostalgiaBoost,
     applyDecayToResults,
     applyNostalgiaToResults,
-    applySceneAwareDecay,
     getDefaultDecaySettings,
     validateDecaySettings,
     projectDecayCurve,
@@ -317,55 +316,6 @@ describe('applyNostalgiaToResults', () => {
 
         expect(result[0].nostalgiaApplied).toBe(true);
         expect(result[1].nostalgiaApplied).toBe(true);
-    });
-});
-
-// =============================================================================
-// SCENE-AWARE DECAY TESTS
-// =============================================================================
-
-describe('applySceneAwareDecay', () => {
-    const decaySettings = {
-        enabled: true,
-        mode: 'exponential',
-        halfLife: 50,
-        minRelevance: 0.3
-    };
-
-    const scenes = [
-        { start: 0, end: 30 },    // Scene 1: messages 0-30
-        { start: 31, end: 60 },   // Scene 2: messages 31-60
-        { start: 61, end: null }  // Scene 3: messages 61+
-    ];
-
-    const mockChunks = [
-        {
-            text: 'Same scene chunk',
-            score: 1.0,
-            metadata: { source: 'chat', messageId: 70 }
-        },
-        {
-            text: 'Different scene chunk',
-            score: 0.9,
-            metadata: { source: 'chat', messageId: 40 }
-        }
-    ];
-
-    it('should apply scene-aware decay flag', () => {
-        const result = applySceneAwareDecay(mockChunks, 80, scenes, decaySettings);
-
-        expect(result[0].sceneAwareDecay).toBe(true);
-        expect(result[1].sceneAwareDecay).toBe(true);
-    });
-
-    it('should calculate effective age based on scenes', () => {
-        const result = applySceneAwareDecay(mockChunks, 80, scenes, decaySettings);
-
-        // Same scene (both in scene 3): age = 80 - 70 = 10
-        expect(result[0].effectiveAge).toBe(10);
-
-        // Different scene: age calculated from scene boundary
-        expect(result[1].effectiveAge).toBeDefined();
     });
 });
 

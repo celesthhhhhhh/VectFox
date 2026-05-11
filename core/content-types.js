@@ -60,16 +60,6 @@ export const CHUNKING_STRATEGIES = {
         needsBatchSize: true,
         bestFor: ['chat'],
     },
-    per_scene: {
-        id: 'per_scene',
-        name: 'Per Scene',
-        description: 'Only vectorizes marked scenes. Mark scene boundaries in chat to create chunks.',
-        needsSize: false,
-        needsOverlap: false,
-        needsBatchSize: false,
-        bestFor: ['chat'],
-    },
-
     // =========================================================================
     // CONTENT STRATEGIES (unit-based, no size controls)
     // =========================================================================
@@ -197,15 +187,13 @@ export const CONTENT_TYPES = {
             temporalDecay: true,
             speakerAware: true,
             autoSync: true,
-            scenes: true,
         },
 
         // LEGACY CHAT STRATEGIES NOTE:
         // *** will be remove in future version because no longer used by eventbased path ***
         // These remain in the registry for backward compatibility, but EventBase-only chat
         // retrieval means they are no longer surfaced in the chat Auto-Sync GUI.
-        // Chat strategies: per_message, conversation_turns, message_batch, message_group_batch, per_scene, adaptive
-        chunkingStrategies: ['per_message', 'conversation_turns', 'message_batch', 'message_group_batch', 'per_scene', 'adaptive'],
+        chunkingStrategies: ['per_message', 'conversation_turns', 'message_batch', 'message_group_batch', 'adaptive'],
         defaultStrategy: 'per_message',
 
         defaults: {

@@ -30,8 +30,7 @@ import {
     isSummarizationFatalError,
     getSummarizationConfigFingerprint,
 } from './summarizer.js';
-import { applyDecayToResults, applySceneAwareDecay } from './temporal-decay.js';
-import { isChunkDisabledByScene } from './scenes.js';
+import { applyDecayToResults } from './temporal-decay.js';
 import { registerCollection, getCollectionRegistry, isCollectionEmpty } from './collection-loader.js';
 import { isCollectionEnabled, filterActiveCollections, setCollectionLock } from './collection-metadata.js';
 import { progressTracker } from '../ui/progress-tracker.js';
@@ -361,27 +360,6 @@ async function groupMessagesByStrategy(messages, strategy, batchSize = 4, keywor
 }
 
 /**
- * Filters out chunks that have been disabled by scene vectorization
- * @param {object[]} chunks Chunks to filter
- * @returns {object[]} Chunks not disabled by scenes
- */
-function filterSceneDisabledChunks(chunks) {
-    const filtered = chunks.filter(chunk => {
-        const isDisabled = isChunkDisabledByScene(chunk.hash);
-        if (isDisabled) {
-            console.debug(`VectHare: Chunk ${chunk.hash} is disabled by scene`);
-        }
-        return !isDisabled;
-    });
-
-    if (filtered.length !== chunks.length) {
-        console.log(`VectHare: Scene filtering: ${chunks.length} → ${filtered.length} chunks (${chunks.length - filtered.length} disabled by scenes)`);
-    }
-
-    return filtered;
-}
-
-/**
  * Applies chunk-level conditions to filter results
  * @param {object[]} chunks Chunks with metadata
  * @param {object[]} chat Chat messages for context
@@ -389,8 +367,7 @@ function filterSceneDisabledChunks(chunks) {
  * @returns {Promise<object[]>} Filtered chunks
  */
 async function applyChunkConditions(chunks, chat, settings) {
-    // First filter out chunks disabled by scenes
-    let filtered = filterSceneDisabledChunks(chunks);
+    let filtered = chunks;
 
     // Check if any chunks have conditions (from chunk metadata)
     const chunksWithConditions = filtered.map(chunk => {
@@ -539,15 +516,6 @@ export async function synchronizeChat(settings, batchSize = 5) {
     if (!isCollectionAutoSyncEnabled(collectionId)) {
         console.log(`[VectHare] synchronizeChat: collection "${collectionId}" has auto-sync disabled — skipping`);
         return { remaining: -1, messagesProcessed: 0, chunksCreated: 0 };
-    }
-
-    // LEGACY CHAT STRATEGY NOTE:
-    // *** will be remove in future version because no longer used by eventbased path ***
-    // Per Scene belongs to the old chunk-based chat pipeline.
-    // Per Scene strategy: don't auto-vectorize on message events
-    // Scenes are vectorized when user marks scene end (via createSceneChunk)
-    if (settings.chunking_strategy === 'per_scene') {
-        return { remaining: 0, messagesProcessed: 0, chunksCreated: 0 };
     }
 
     // EventBase workflow: extract structured events instead of raw-chunk vectorization
@@ -1132,7 +1100,6 @@ function applyTemporalDecayStage(chunks, chat, settings, threshold, debugData) {
     const beforeCount = chunks.length;
     addTrace(debugData, 'decay', 'Starting temporal decay', {
         enabled: true,
-        sceneAware: settings.temporal_decay.sceneAware,
         halfLife: settings.temporal_decay.halfLife || settings.temporal_decay.half_life,
         strength: settings.temporal_decay.strength || settings.temporal_decay.rate
     });
@@ -1144,31 +1111,9 @@ function applyTemporalDecayStage(chunks, chat, settings, threshold, debugData) {
         score: chunk.score
     }));
 
-    let decayedChunks;
-    let decayType = 'standard';
-
-    // Use scene-aware decay if enabled and scenes exist
-    if (settings.temporal_decay.sceneAware) {
-        const sceneChunks = chunks.filter(c => c.metadata?.isScene === true);
-        const scenes = sceneChunks.map(c => ({
-            start: c.metadata.sceneStart,
-            end: c.metadata.sceneEnd,
-            hash: c.hash,
-        }));
-
-        if (scenes.length > 0) {
-            decayedChunks = applySceneAwareDecay(chunksWithScores, currentMessageId, scenes, settings.temporal_decay);
-            decayType = 'scene_aware';
-            console.log('VectHare: Applied scene-aware temporal decay to search results');
-        } else {
-            decayedChunks = applyDecayToResults(chunksWithScores, currentMessageId, settings.temporal_decay);
-            decayType = 'standard_no_scenes';
-            console.log('VectHare: Applied temporal decay to search results (no scenes marked)');
-        }
-    } else {
-        decayedChunks = applyDecayToResults(chunksWithScores, currentMessageId, settings.temporal_decay);
-        console.log('VectHare: Applied temporal decay to search results');
-    }
+    const decayType = 'standard';
+    const decayedChunks = applyDecayToResults(chunksWithScores, currentMessageId, settings.temporal_decay);
+    console.log('VectHare: Applied temporal decay to search results');
 
     decayedChunks.sort((a, b) => b.score - a.score);
 
@@ -1178,7 +1123,7 @@ function applyTemporalDecayStage(chunks, chat, settings, threshold, debugData) {
     // Map decay results back to chunks and record fate
     let result = chunks.map(chunk => {
         const decayedChunk = decayedChunksMap.get(chunk.hash);
-        if (decayedChunk && (decayedChunk.decayApplied || decayedChunk.sceneAwareDecay)) {
+        if (decayedChunk && decayedChunk.decayApplied) {
             const decayMultiplier = decayedChunk.score / (decayedChunk.originalScore || 1);
             const newScore = decayedChunk.score;
             const stillAboveThreshold = newScore >= threshold;
@@ -1210,7 +1155,6 @@ function applyTemporalDecayStage(chunks, chat, settings, threshold, debugData) {
                 originalScore: decayedChunk.originalScore,
                 messageAge: decayedChunk.messageAge || decayedChunk.effectiveAge,
                 decayApplied: true,
-                sceneAwareDecay: decayedChunk.sceneAwareDecay || false,
                 decayMultiplier
             };
         }

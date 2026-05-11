@@ -36,7 +36,6 @@ import { renderSettings, openDiagnosticsModal, loadWebLlmModels, updateWebLlmSta
 import { progressTracker } from './ui/progress-tracker.js';
 import { initializeVisualizer } from './ui/chunk-visualizer.js';
 import { initializeDatabaseBrowser } from './ui/database-browser.js';
-import { initializeSceneMarkers, updateAllMarkerStates, setSceneSettings } from './ui/scene-markers.js';
 import { initializeWorldInfoIntegration } from './core/world-info-integration.js';
 import { CJK_TOKENIZER_MODES, setCjkTokenizerMode, ensureJiebaTokenizerLoaded, ensureJiebaTwLoaded } from './core/bm25-scorer.js';
 
@@ -405,10 +404,6 @@ jQuery(async () => {
 
     // Initialize database browser
     initializeDatabaseBrowser(settings);
-
-    // Initialize scene markers on chat messages (settings needed for DB operations)
-    setSceneSettings(settings);
-    initializeSceneMarkers();
 
     // Initialize world info integration hooks
     initializeWorldInfoIntegration();

@@ -1833,7 +1833,6 @@ let activationEditorState = {
     linearRate: 0.01,
     minRelevance: 0.3,
     maxBoost: 1.2,
-    sceneAware: false,
   },
   // Injection settings (position/depth)
   position: null, // null = use global default
@@ -1883,7 +1882,6 @@ function openActivationEditor(collectionId, collectionName) {
       linearRate: decaySettings.linearRate,
       minRelevance: decaySettings.minRelevance,
       maxBoost: decaySettings.maxBoost || 1.2,
-      sceneAware: decaySettings.sceneAware,
     },
     // Prompt context
     context: meta.context || "",
@@ -2106,13 +2104,6 @@ function createActivationEditorModal() {
                                     <small>ceiling for nostalgia (1.2 = 20% max boost)</small>
                                 </div>
 
-                                <div class="vecthare-option-row">
-                                    <label class="vecthare-checkbox-label">
-                                        <input type="checkbox" id="vecthare_decay_scene_aware">
-                                        Scene-aware
-                                    </label>
-                                    <small>Reset weighting at scene boundaries</small>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -2352,7 +2343,6 @@ function renderActivationEditor() {
   $("#vecthare_decay_rate").val(decay.linearRate);
   $("#vecthare_decay_min").val(decay.minRelevance);
   $("#vecthare_decay_max_boost").val(decay.maxBoost || 1.2);
-  $("#vecthare_decay_scene_aware").prop("checked", decay.sceneAware);
 
   // Show/hide advanced decay settings based on enabled
   $("#vecthare_decay_advanced").toggle(decay.enabled);
@@ -2466,7 +2456,6 @@ function saveActivation() {
     linearRate: parseFloat($("#vecthare_decay_rate").val()) || 0.01,
     minRelevance: parseFloat($("#vecthare_decay_min").val()) || 0.3,
     maxBoost: parseFloat($("#vecthare_decay_max_boost").val()) || 1.2,
-    sceneAware: $("#vecthare_decay_scene_aware").prop("checked"),
   };
 
   // Get prompt context values (sanitize xml tag)

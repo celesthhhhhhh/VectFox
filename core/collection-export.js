@@ -205,7 +205,6 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
                     halfLife: 50,
                     linearRate: 0.01,
                     minRelevance: 0.3,
-                    sceneAware: false,
                 },
 
                 // Chunk groups
@@ -319,7 +318,6 @@ export async function exportMultipleCollections(collectionIds, settings) {
                         halfLife: 50,
                         linearRate: 0.01,
                         minRelevance: 0.3,
-                        sceneAware: false,
                     },
                     groups: collectionMeta.groups || [],
                     context: collectionMeta.context || '',

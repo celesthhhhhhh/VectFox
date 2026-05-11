@@ -498,13 +498,6 @@
         min-height: 44px !important;
     }
 
-    .vecthare-visualizer-body.vecthare-scenes-tab {
-        display: none !important;
-    }
-    .vecthare-visualizer-body.vecthare-scenes-tab.active {
-        display: block !important;
-    }
-
     .vecthare-visualizer-body.vecthare-groups-tab {
         display: none !important;
     }

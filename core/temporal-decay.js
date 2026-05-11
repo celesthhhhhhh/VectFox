@@ -220,94 +220,6 @@ export function applyDecayToResults(chunks, currentMessageId, decaySettings) {
 }
 
 /**
- * Checks if a chunk is affected by scene-aware decay reset
- * @param {number} messageId - Message ID
- * @param {Array} scenes - Array of scenes
- * @returns {Object} { isInScene: boolean, sceneStart: number|null }
- */
-function getSceneContext(messageId, scenes) {
-    const scene = scenes.find(s =>
-        messageId >= s.start && (s.end === null || messageId <= s.end)
-    );
-
-    return {
-        isInScene: !!scene,
-        sceneStart: scene?.start || null
-    };
-}
-
-/**
- * Applies scene-aware temporal decay
- * Decay resets when a new scene starts
- * Skips chunks marked as temporally blind
- * @param {Array} chunks - Array of chunks
- * @param {number} currentMessageId - Current message ID
- * @param {Array} scenes - Array of scenes from chat_metadata
- * @param {Object} decaySettings - Decay configuration
- * @returns {Array} Chunks with scene-aware decay applied
- */
-export function applySceneAwareDecay(chunks, currentMessageId, scenes, decaySettings) {
-    if (!decaySettings.enabled) {
-        return chunks;
-    }
-
-    const currentSceneContext = getSceneContext(currentMessageId, scenes);
-
-    let blindCount = 0;
-    const decayed = chunks.map(chunk => {
-        if (chunk.metadata?.source !== 'chat' || chunk.metadata?.messageId === undefined || chunk.metadata?.messageId === null) {
-            return chunk;
-        }
-
-        // Check if chunk is temporally blind (immune to decay)
-        const chunkHash = chunk.hash || chunk.metadata?.hash;
-        if (chunkHash && isChunkTemporallyBlind(chunkHash)) {
-            blindCount++;
-            return {
-                ...chunk,
-                temporallyBlind: true,
-                sceneAwareDecay: false
-            };
-        }
-
-        const chunkMessageId = chunk.metadata.messageId;
-        const chunkSceneContext = getSceneContext(chunkMessageId, scenes);
-
-        let effectiveAge;
-
-        if (currentSceneContext.isInScene && chunkSceneContext.isInScene) {
-            // Both in scenes - compare scene boundaries
-            if (currentSceneContext.sceneStart === chunkSceneContext.sceneStart) {
-                // Same scene - age is distance within scene
-                effectiveAge = currentMessageId - chunkMessageId;
-            } else {
-                // Different scenes - age is distance from chunk's scene start to current position
-                effectiveAge = currentMessageId - chunkSceneContext.sceneStart;
-            }
-        } else {
-            // Not using scenes, or one is outside scene - normal age calculation
-            effectiveAge = currentMessageId - chunkMessageId;
-        }
-
-        const originalScore = chunk.score || 0;
-        const decayedScore = applyTemporalDecay(originalScore, effectiveAge, decaySettings);
-
-        return {
-            ...chunk,
-            score: decayedScore,
-            originalScore,
-            effectiveAge,
-            sceneAwareDecay: true
-        };
-    });
-
-    const affectedCount = decayed.filter(c => c.sceneAwareDecay).length;
-    console.log(`⏳ [Decay] Applied scene-aware decay to ${affectedCount} chunks (${blindCount} temporally blind, skipped)`);
-
-    return decayed;
-}
-
-/**
  * Gets default temporal weighting settings
  * @returns {Object} Default settings
  */
@@ -320,7 +232,6 @@ export function getDefaultDecaySettings() {
         linearRate: 0.01,           // Rate per message (linear mode)
         minRelevance: DEFAULT_DECAY_FLOOR,  // Never decay below this (decay only)
         maxBoost: DEFAULT_NOSTALGIA_MAX_BOOST, // Maximum boost multiplier (nostalgia only)
-        sceneAware: false           // Reset at scene boundaries
     };
 }
 
@@ -396,7 +307,7 @@ export function projectDecayCurve(baseScore, decaySettings, ages = [0, 10, 20, 5
  * @returns {Object} Statistics
  */
 export function getDecayStats(chunks) {
-    const decayedChunks = chunks.filter(c => c.decayApplied || c.sceneAwareDecay);
+    const decayedChunks = chunks.filter(c => c.decayApplied);
 
     if (decayedChunks.length === 0) {
         return { affected: 0, avgReduction: 0, maxReduction: 0 };
@@ -448,10 +359,9 @@ export function getNostalgiaStats(chunks) {
  * @param {Array} chunks - Array of chunks with scores
  * @param {number} currentMessageId - Current message ID in chat
  * @param {string} collectionId - Collection identifier
- * @param {Array} scenes - Optional scenes array for scene-aware effects
  * @returns {Promise<Array>} Chunks with weighting applied
  */
-export async function applyDecayForCollection(chunks, currentMessageId, collectionId, scenes = null) {
+export async function applyDecayForCollection(chunks, currentMessageId, collectionId) {
     // Import dynamically to avoid circular dependency
     const { getCollectionDecaySettings } = await import('./collection-metadata.js');
 
@@ -469,12 +379,6 @@ export async function applyDecayForCollection(chunks, currentMessageId, collecti
         return applyNostalgiaToResults(chunks, currentMessageId, settings);
     }
 
-    // Apply decay (older = lower score)
-    // Use scene-aware decay if enabled and scenes provided
-    if (settings.sceneAware && scenes && scenes.length > 0) {
-        return applySceneAwareDecay(chunks, currentMessageId, scenes, settings);
-    }
-
     return applyDecayToResults(chunks, currentMessageId, settings);
 }
 
@@ -483,7 +387,6 @@ export default {
     applyNostalgiaBoost,
     applyDecayToResults,
     applyNostalgiaToResults,
-    applySceneAwareDecay,
     applyDecayForCollection,
     getDefaultDecaySettings,
     validateDecaySettings,

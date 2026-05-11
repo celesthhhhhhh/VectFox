@@ -28,13 +28,6 @@ import {
 } from '../core/core-vector-api.js';
 import { getStringHash } from '../../../../utils.js';
 import {
-    filterSceneChunks,
-    filterNonSceneChunks,
-    deleteSceneChunk,
-    updateSceneChunkMetadata,
-    getPendingScene,
-} from '../core/scenes.js';
-import {
     createGroup,
     validateGroup,
     getGroupStats,
@@ -66,18 +59,11 @@ let selectedHashes = new Set();
 let hasUnsavedChanges = false;
 let pendingChanges = new Map(); // hash -> {keywords, enabled, conditions, etc.}
 let plaintextKeywordMode = false; // Toggle for plaintext keyword editing
-let activeTab = 'chunks'; // 'chunks' or 'scenes'
+let activeTab = 'chunks'; // 'chunks' or 'groups'
 
 // ============================================================================
 // COLLECTION TYPE HELPERS
 // ============================================================================
-
-/**
- * Checks if the current collection is a chat collection (supports scenes)
- */
-function isChatCollection() {
-    return currentResults?.collectionType === 'chat';
-}
 
 /**
  * Gets the appropriate icon for the collection type
@@ -432,7 +418,6 @@ function createModal() {
     $('#vecthare_visualizer_modal').remove();
 
     const collectionName = currentCollectionId || 'Collection';
-    const isChat = isChatCollection();
     const icon = getCollectionIcon();
     const dbChunkCount = Number(currentResults?.dbChunkCount);
     const dbChunkText = Number.isFinite(dbChunkCount) && dbChunkCount >= 0
@@ -456,16 +441,11 @@ function createModal() {
                     </div>
                 </div>
 
-                <!-- Tab Bar (only for chat collections) -->
+                <!-- Tab Bar -->
                 <div class="vecthare-visualizer-tabs">
                     <button class="vecthare-visualizer-tab active" data-tab="chunks">
                         <i class="fa-solid fa-puzzle-piece"></i> Chunks
                     </button>
-                    ${isChat ? `
-                    <button class="vecthare-visualizer-tab" data-tab="scenes">
-                        <i class="fa-solid fa-bookmark"></i> Scenes
-                    </button>
-                    ` : ''}
                     <button class="vecthare-visualizer-tab" data-tab="groups">
                         <i class="fa-solid fa-layer-group"></i> Groups
                     </button>
@@ -523,13 +503,6 @@ function createModal() {
                     </div>
                 </div>
 
-                <!-- Scenes Tab Content (only for chat collections) -->
-                ${isChat ? `
-                <div class="vecthare-visualizer-body vecthare-vis-tab-content vecthare-scenes-tab" data-tab="scenes">
-                    <div class="vecthare-scenes-container" id="vecthare_scenes_container"></div>
-                </div>
-                ` : ''}
-
                 <!-- Groups Tab Content -->
                 <div class="vecthare-visualizer-body vecthare-vis-tab-content vecthare-groups-tab" data-tab="groups">
                     <div class="vecthare-groups-toolbar">
@@ -554,351 +527,6 @@ function createModal() {
     `;
 
     $('body').append(html);
-}
-
-// ============================================================================
-// SCENES TAB STATE & RENDERING
-// ============================================================================
-// Scenes are chunks with metadata.isScene === true
-// We filter them from allChunks to display in the Scenes tab
-
-let selectedSceneHash = null;
-
-/**
- * Gets scene chunks from the loaded collection
- * @returns {object[]} Chunks where metadata.isScene === true
- */
-function getSceneChunks() {
-    return filterSceneChunks(allChunks);
-}
-
-/**
- * Renders the scenes tab content - split-panel like chunks tab
- */
-function renderScenesTab() {
-    const container = $('#vecthare_scenes_container');
-    if (!container.length) return;
-
-    const sceneChunks = getSceneChunks();
-    const pendingScene = getPendingScene();
-
-    if (sceneChunks.length === 0 && !pendingScene) {
-        container.html(`
-            <div class="vecthare-scenes-empty-full">
-                <i class="fa-solid fa-bookmark"></i>
-                <p><strong>No scenes in this collection</strong></p>
-                <p>Mark scene starts and ends on chat messages using the bookmark buttons</p>
-            </div>
-        `);
-        return;
-    }
-
-    // Split-panel layout matching chunks tab
-    container.html(`
-        <!-- Left: Scene List -->
-        <div class="vecthare-scene-list-panel">
-            <div class="vecthare-scene-list-status">
-                <span>${sceneChunks.length} scene${sceneChunks.length !== 1 ? 's' : ''}</span>
-                ${pendingScene ? '<span class="vecthare-badge-open">1 pending</span>' : ''}
-            </div>
-            <div class="vecthare-scene-list" id="vecthare_scene_list"></div>
-        </div>
-        <!-- Right: Scene Detail -->
-        <div class="vecthare-scene-detail-panel" id="vecthare_scene_detail">
-            <div class="vecthare-detail-empty">Select a scene to view details</div>
-        </div>
-    `);
-
-    renderSceneList();
-    bindScenesTabEvents();
-}
-
-/**
- * Renders the scene list (left panel)
- */
-function renderSceneList() {
-    const container = $('#vecthare_scene_list');
-    const sceneChunks = getSceneChunks();
-
-    let html = '';
-
-    // Sort scenes by start index
-    const sortedScenes = [...sceneChunks].sort((a, b) =>
-        (a.metadata?.sceneStart || 0) - (b.metadata?.sceneStart || 0)
-    );
-
-    sortedScenes.forEach((scene, index) => {
-        const meta = scene.metadata || {};
-        const start = meta.sceneStart ?? 0;
-        const end = meta.sceneEnd ?? start;
-        const msgCount = end - start + 1;
-        const isSelected = selectedSceneHash === scene.hash;
-        const title = meta.title || `Scene ${index + 1}`;
-        const containedCount = meta.containedHashes?.length || 0;
-
-        // Get preview from scene text
-        let preview = '';
-        if (scene.text) {
-            preview = scene.text.substring(0, 60).replace(/\s+/g, ' ');
-            if (scene.text.length > 60) preview += '...';
-        } else if (meta.text) {
-            preview = meta.text.substring(0, 60).replace(/\s+/g, ' ');
-            if (meta.text.length > 60) preview += '...';
-        }
-
-        html += `
-            <div class="vecthare-scene-item ${isSelected ? 'selected' : ''}" data-scene-hash="${scene.hash}">
-                <div class="vecthare-scene-item-header">
-                    <span class="vecthare-scene-item-num">${index + 1}.</span>
-                    <span class="vecthare-scene-item-title">${escapeHtml(title)}</span>
-                </div>
-                <div class="vecthare-scene-item-meta">
-                    <span class="vecthare-scene-item-range">#${start} - #${end}</span>
-                    <span class="vecthare-scene-item-badge closed">${msgCount} msgs</span>
-                    <span class="vecthare-scene-item-badge vectorized">${containedCount} chunks</span>
-                </div>
-                ${preview ? `<div class="vecthare-scene-item-preview">${escapeHtml(preview)}</div>` : ''}
-            </div>
-        `;
-    });
-
-    container.html(html);
-}
-
-/**
- * Gets the currently selected scene chunk
- * @returns {object|null}
- */
-function getSelectedScene() {
-    if (!selectedSceneHash) return null;
-    return allChunks.find(c => c.hash === selectedSceneHash && c.metadata?.isScene);
-}
-
-/**
- * Renders the scene detail panel (right panel)
- */
-function renderSceneDetailPanel() {
-    const panel = $('#vecthare_scene_detail');
-    const scene = getSelectedScene();
-
-    if (!scene) {
-        panel.html('<div class="vecthare-detail-empty">Select a scene to view details</div>');
-        return;
-    }
-
-    // Read fresh metadata from persistent storage, not from scene object
-    const stored = getChunkMetadata(scene.hash) || {};
-    const meta = { ...scene.metadata, ...stored } || {};
-    const start = meta.sceneStart ?? 0;
-    const end = meta.sceneEnd ?? start;
-    const msgCount = end - start + 1;
-    const containedCount = meta.containedHashes?.length || 0;
-    const title = meta.title || `Scene ${start}-${end}`;
-    const summary = meta.summary || '';
-    const keywords = meta.keywords || [];
-
-    // Scene text preview (first 500 chars)
-    const textPreview = scene.text
-        ? (scene.text.length > 500 ? scene.text.substring(0, 500) + '...' : scene.text)
-        : '';
-
-    panel.html(`
-        <!-- Header -->
-        <div class="vecthare-detail-header">
-            <div class="vecthare-detail-name-section">
-                <input type="text" class="vecthare-chunk-name-input" id="vecthare_scene_title"
-                       placeholder="Scene title..."
-                       value="${escapeHtml(title)}">
-            </div>
-            <button class="vecthare-detail-delete" id="vecthare_delete_scene">
-                <i class="fa-solid fa-trash"></i> Delete
-            </button>
-        </div>
-
-        <!-- Info Bar -->
-        <div class="vecthare-detail-info-bar">
-            <span class="vecthare-info-item">
-                <span class="vecthare-info-label">Messages</span>
-                <span class="vecthare-info-value">#${start} - #${end}</span>
-            </span>
-            <span class="vecthare-info-divider">•</span>
-            <span class="vecthare-info-item">
-                <span class="vecthare-info-value">${msgCount} messages</span>
-            </span>
-            <span class="vecthare-info-divider">•</span>
-            <span class="vecthare-info-item">
-                <span class="vecthare-info-value">${containedCount} chunks disabled</span>
-            </span>
-        </div>
-
-        <!-- Content -->
-        <div class="vecthare-detail-content">
-            <!-- Hash Info -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-title">Scene Hash</div>
-                <div class="vecthare-scene-vector-row">
-                    <span class="vecthare-scene-vector-value vecthare-hash-display" title="Click to copy">${scene.hash}</span>
-                </div>
-            </div>
-
-            <!-- Preview Block -->
-            <div class="vecthare-detail-text-block">
-                <div class="vecthare-detail-section-title">Content Preview</div>
-                <div class="vecthare-scene-preview-text">${escapeHtml(textPreview)}</div>
-            </div>
-
-            <!-- Summary Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-title">Summary <span class="vecthare-section-hint">(for search)</span></div>
-                <textarea class="vecthare-scene-summary-textarea" id="vecthare_scene_summary"
-                          placeholder="Brief summary of what happens in this scene...">${escapeHtml(summary)}</textarea>
-            </div>
-
-            <!-- Keywords Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-header">
-                    <span class="vecthare-detail-section-title">Keywords <span class="vecthare-section-hint">(boost when query matches)</span></span>
-                </div>
-                <div class="vecthare-scene-keywords-field-wrapper">
-                    <input type="text" class="vecthare-scene-keywords-field" id="vecthare_scene_keywords"
-                           placeholder="keyword1, keyword2, ..."
-                           value="${escapeHtml(keywords.join(', '))}">
-                    <small class="vecthare-keywords-hint">Comma-separated keywords to improve search relevance</small>
-                </div>
-            </div>
-
-            <!-- Actions Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-title">Actions</div>
-                <div class="vecthare-scene-actions">
-                    <button class="vecthare-scene-action-btn" id="vecthare_scene_jump">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Jump to Scene
-                    </button>
-                </div>
-            </div>
-        </div>
-    `);
-
-    bindSceneDetailEvents();
-}
-
-/**
- * Binds events for scenes tab (list interactions)
- */
-function bindScenesTabEvents() {
-    // Scene item click - select scene by hash
-    // Bind to modal container (not document) since modal stops propagation
-    $('#vecthare_visualizer_modal').off('click', '.vecthare-scene-item').on('click', '.vecthare-scene-item', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const hash = $(this).data('scene-hash');
-        console.log('VectHare: Clicked scene with hash:', hash);
-        if (!hash) {
-            console.error('VectHare: No scene-hash found on clicked element');
-            return;
-        }
-        selectedSceneHash = hash;
-        renderSceneList();
-        renderSceneDetailPanel();
-    });
-}
-
-function bindSceneDetailEvents() {
-    const scene = getSelectedScene();
-    if (!scene) return;
-
-    const meta = scene.metadata || {};
-
-    // Title input - saves to chunk metadata
-    $('#vecthare_scene_title').off('blur').on('blur', async function() {
-        const title = $(this).val().trim();
-        try {
-            await updateSceneChunkMetadata(scene.hash, { title }, currentSettings);
-            // Update local chunk data
-            if (scene.metadata) scene.metadata.title = title;
-            renderSceneList();
-            toastr.success('Title saved', 'VectHare');
-        } catch (error) {
-            console.error('VectHare: Failed to save scene title', error);
-            toastr.error('Failed to save title', 'VectHare');
-        }
-    });
-
-    // Summary input
-    $('#vecthare_scene_summary').off('blur').on('blur', async function() {
-        const summary = $(this).val().trim();
-        try {
-            await updateSceneChunkMetadata(scene.hash, { summary }, currentSettings);
-            if (scene.metadata) scene.metadata.summary = summary;
-            toastr.success('Summary saved', 'VectHare');
-        } catch (error) {
-            console.error('VectHare: Failed to save scene summary', error);
-            toastr.error('Failed to save summary', 'VectHare');
-        }
-    });
-
-    // Keywords input - save on blur with feedback
-    $('#vecthare_scene_keywords').off('blur').on('blur', async function() {
-        const keywordsStr = $(this).val().trim();
-        const keywords = keywordsStr ? keywordsStr.split(',').map(k => k.trim()).filter(Boolean) : [];
-        try {
-            await updateSceneChunkMetadata(scene.hash, { keywords }, currentSettings);
-            // Update local metadata to reflect saved changes
-            if (scene.metadata) {
-                scene.metadata.keywords = keywords;
-            }
-            toastr.success('Keywords saved', 'VectHare');
-        } catch (error) {
-            console.error('VectHare: Failed to save scene keywords', error);
-            toastr.error('Failed to save keywords', 'VectHare');
-        }
-    });
-
-    // Jump to scene
-    $('#vecthare_scene_jump').off('click').on('click', function() {
-        const start = meta.sceneStart ?? 0;
-        closeVisualizer();
-        setTimeout(() => {
-            const messageElement = document.querySelector(`.mes[mesid="${start}"]`);
-            if (messageElement) {
-                messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                messageElement.classList.add('flash');
-                setTimeout(() => messageElement.classList.remove('flash'), 1000);
-            } else {
-                toastr.warning('Scene message not found. Is the chat open?');
-            }
-        }, 300);
-    });
-
-    // Copy hash to clipboard
-    $('.vecthare-hash-display').off('click').on('click', function() {
-        const hash = $(this).text();
-        navigator.clipboard.writeText(hash).then(() => {
-            toastr.info('Hash copied to clipboard');
-        });
-    });
-
-    // Delete scene - removes chunk from vector DB and re-enables contained chunks
-    $('#vecthare_delete_scene').off('click').on('click', async function() {
-        const containedHashes = meta.containedHashes || [];
-        const warningText = `Delete this scene? ${containedHashes.length} individual chunks will be re-enabled. This cannot be undone.`;
-
-        if (!confirm(warningText)) return;
-
-        const result = await deleteSceneChunk(scene.hash, containedHashes, currentSettings);
-        if (result.success) {
-            // Remove from local allChunks array
-            const idx = allChunks.findIndex(c => c.hash === scene.hash);
-            if (idx !== -1) allChunks.splice(idx, 1);
-
-            toastr.success('Scene deleted');
-            selectedSceneHash = null;
-            renderScenesTab();
-            eventSource.emit('vecthare_scenes_changed');
-        } else {
-            toastr.error(result.error || 'Failed to delete scene');
-        }
-    });
 }
 
 // ============================================================================
@@ -1732,9 +1360,7 @@ function bindEvents() {
         $(`.vecthare-vis-tab-content[data-tab="${tab}"]`).addClass('active');
 
         // Render tab content when switching
-        if (tab === 'scenes') {
-            renderScenesTab();
-        } else if (tab === 'groups') {
+        if (tab === 'groups') {
             renderGroupsTab();
         }
     });

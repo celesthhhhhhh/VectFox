@@ -293,20 +293,38 @@ Three retrieval paths exist after the keyword-level simplification. All paths ar
 **Keep-in-sync note:** if the extraction algorithm changes in `similharity/index.js` (e.g. anchor budget, bigram fallback, Latin regex), update `core/query-keyword-extractor.js` to match. The console log prefix was changed from `[Qdrant]` to `[VectHare]` — that difference is intentional.
 
 
-## Scene summary field — intentionally kept
+## Scene support — REMOVED
 
-The `summary` field on scene chunks is a **user-editable search hint** (not AI-generated). It is unrelated to the EventBase `summary` that was removed.
+Scenes were a chunk-based-chat-era feature for bundling raw message chunks into
+composite "scene" chunks (with `isScene: true` metadata). With chat now handled
+exclusively by EventBase (events extracted by LLM, not raw message chunks), the
+original semantic no longer applied, and the feature was removed wholesale.
 
-`ui/chunk-visualizer.js` line ~642 reads `meta.summary || ''` — correct, no change needed.
+**What was deleted:**
+- Modules: `core/scenes.js`, `ui/scene-markers.js`, `ui/scenes-panel.js`, `ui/scenes.css`
+- Chunk visualizer "Scenes" tab (and all its renderers in `ui/chunk-visualizer.js`)
+- Bookmark scene-marker buttons attached to chat messages
+- Scene-aware temporal decay (`applySceneAwareDecay`, `getSceneContext`, `sceneAware` flag)
+- `per_scene` chunking strategy + content-type entry
+- Scene-filtering in `chat-vectorization.js` (`filterSceneDisabledChunks`)
+- Scene-aware checkbox in the Database Browser settings panel
+- `applySceneAwareDecay` test block in `tests/temporal-decay.test.js`
 
-**Storage split for scene chunks:**
-- Scene metadata (title, summary, keywords, sceneStart/End, containedHashes) → **vector DB payload** (read back via `scene.metadata`)
-- Operational flags (disabledByScene, temporallyBlind) → **extension settings** via `saveChunkMetadata` (fast access without DB query)
-- User edits to title/summary/keywords → extension settings via `updateSceneChunkMetadata` (overrides vector DB value in the merge)
+**Orphan-but-harmless data (silently ignored):**
+- `settings.temporal_decay.sceneAware: true` in saved user configs
+- `settings.chunking_strategy: "per_scene"` in saved user configs
+- `meta.temporalDecay.sceneAware` on collection metadata
+- `metadata.isScene` / `metadata.sceneStart` / `metadata.sceneEnd` / `metadata.containedHashes`
+  / `metadata.disabledByScene` on existing chunks in vector DBs
 
-Read path in `renderSceneDetailPanel`: `{ ...scene.metadata, ...getChunkMetadata(hash) }` — vector DB base, extension settings overlay.
+These fields are no longer read by any code; they sit dormant on disk and have
+no migration step. They will eventually rot out of the data as collections are
+re-vectorized or replaced.
 
-`similharity/qdrant-backend.js` explicitly stores `summary: item.metadata?.summary ?? null` in the Qdrant payload. EventBase items have no `summary` in metadata (dropped in `eventbase-store.js`), so they get `null`. Scene chunks carry it correctly.
+**Prompt text that still mentions "scene":** `core/summarizer.js` and
+`core/eventbase-schema.js` use the word generically in LLM instructions
+("filler scene", "where the scene takes place") — that's English, not feature
+wiring, and was left alone.
 
 ---
 

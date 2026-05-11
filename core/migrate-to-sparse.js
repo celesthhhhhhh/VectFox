@@ -61,54 +61,60 @@ export async function migrateCollectionToSparse({ sourceCollection, cjkTokenizer
     const report = (phase, done, total = null) => onProgress?.({ phase, done, total });
     const target = `${sourceCollection}_v2`;
 
-    // Step 1: discover vector size by reading a single point from the source.
-    // If the source is missing but the target exists, we're in a half-migrated state from a
-    // failed prior run — recover by running just the finalize step (server-side copy v2 → source).
+    // RECOVERY-FIRST CHECK: if the target collection already exists with data, a prior
+    // migration got past the data-copy step but failed at finalize (or was interrupted).
+    // Run only the new finalize, which will server-side copy v2 → source and drop v2.
+    //
+    // We probe the target FIRST because Qdrant aliases (used by a previous version of this
+    // code) may transparently resolve scroll-source on the original name even when the
+    // underlying collection was dropped — making naive "source-missing" detection unreliable.
     report('inspect', 0);
-    let probe;
-    let recoveryMode = false;
+    let targetProbe = null;
     try {
-        probe = await postJSON('/api/plugins/similharity/chunks/migrate-to-sparse/scroll-source', {
-            sourceCollection,
+        targetProbe = await postJSON('/api/plugins/similharity/chunks/migrate-to-sparse/scroll-source', {
+            sourceCollection: target,
             limit: 1,
         });
-    } catch (sourceErr) {
-        // Try the target — it might have all the data from a prior interrupted migration.
-        try {
-            probe = await postJSON('/api/plugins/similharity/chunks/migrate-to-sparse/scroll-source', {
-                sourceCollection: target,
-                limit: 1,
-            });
-            recoveryMode = true;
-            console.warn(`[Migrate] Source "${sourceCollection}" not found but "${target}" exists — entering recovery mode.`);
-        } catch (targetErr) {
-            throw new Error(`Neither "${sourceCollection}" nor "${target}" is readable: ${sourceErr.message}`);
-        }
+    } catch (e) {
+        // Target doesn't exist — fresh migration. Fall through.
     }
-    if (!probe.points || probe.points.length === 0) {
-        throw new Error(`Source collection is empty or unreadable`);
-    }
-    const firstVector = probe.points[0].vector;
-    // Could be plain-array (legacy source) or named-vector form (target with sparse).
-    const denseSample = Array.isArray(firstVector) ? firstVector : firstVector?.[''];
-    if (!Array.isArray(denseSample) || denseSample.length === 0) {
-        throw new Error(`Could not determine dense vector size`);
-    }
-    const vectorSize = denseSample.length;
 
-    // RECOVERY PATH: target already has tokenized data — skip straight to finalize.
-    if (recoveryMode) {
+    if (targetProbe && targetProbe.points && targetProbe.points.length > 0) {
+        // Recovery: target has tokenized data. Skip straight to finalize.
+        const tFirstVector = targetProbe.points[0].vector;
+        const tDenseSample = Array.isArray(tFirstVector) ? tFirstVector : tFirstVector?.[''];
+        if (!Array.isArray(tDenseSample) || tDenseSample.length === 0) {
+            throw new Error(`Recovery: could not determine dense vector size from "${target}"`);
+        }
+        const tVectorSize = tDenseSample.length;
+
+        console.warn(`[Migrate] Target "${target}" already exists with data — entering recovery mode and running finalize only.`);
         report('finalize', 0);
         const result = await postJSON('/api/plugins/similharity/chunks/migrate-to-sparse/finalize', {
             sourceCollection,
             targetCollection: target,
             cjkTokenizerMode,
-            vectorSize,
+            vectorSize: tVectorSize,
         });
         invalidateCollectionMetadata(sourceCollection);
         report('done', result.copied || 0, result.copied || 0);
         return { ok: true, totalMigrated: result.copied || 0, target: sourceCollection, recovered: true };
     }
+
+    // FRESH MIGRATION: target does not exist. Read source to determine dimension.
+    const probe = await postJSON('/api/plugins/similharity/chunks/migrate-to-sparse/scroll-source', {
+        sourceCollection,
+        limit: 1,
+    });
+    if (!probe.points || probe.points.length === 0) {
+        throw new Error(`Source collection "${sourceCollection}" is empty or unreadable`);
+    }
+    const firstVector = probe.points[0].vector;
+    const denseSample = Array.isArray(firstVector) ? firstVector : firstVector?.[''];
+    if (!Array.isArray(denseSample) || denseSample.length === 0) {
+        throw new Error(`Could not determine dense vector size from "${sourceCollection}"`);
+    }
+    const vectorSize = denseSample.length;
 
     // Step 2: create target.
     report('create-target', 0);

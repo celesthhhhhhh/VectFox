@@ -354,8 +354,14 @@ export function renderSettings(containerId, settings, callbacks) {
                                         <label for="vecthare_openrouter_model">
                                             <small>OpenRouter Model:</small>
                                         </label>
-                                        <input type="text" id="vecthare_openrouter_model" class="vecthare-input" placeholder="openai/text-embedding-3-large" />
-                                        <small class="vecthare_hint">Enter OpenRouter-compatible model ID</small>
+                                        <div style="display: flex; gap: 6px; align-items: stretch;">
+                                            <input type="text" id="vecthare_openrouter_model" class="vecthare-input" style="flex: 1;" placeholder="openai/text-embedding-3-large" />
+                                            <button id="vecthare_openrouter_model_choose" class="menu_button" type="button" title="Browse OpenRouter's model list (filtered to embedding models)">
+                                                <i class="fa-solid fa-list"></i> Choose
+                                            </button>
+                                        </div>
+                                        <select id="vecthare_openrouter_model_list" class="vecthare-select" style="display:none; margin-top:6px;"></select>
+                                        <small class="vecthare_hint">Enter OpenRouter-compatible model ID, or click <b>Choose</b> to browse. List defaults to embedding models — toggle <i>Show all</i> if you need to pick a non-embedding one.</small>
                                         <label for="vecthare_openrouter_apikey" style="margin-top: 8px;">
                                             <small>OpenRouter API Key:</small>
                                         </label>
@@ -3279,6 +3285,93 @@ function bindSettingsEvents(settings, callbacks) {
             Object.assign(extension_settings.vecthareplus, settings);
             saveSettingsDebounced();
         });
+
+    // "Choose" button — fetches OpenRouter model list, filters to embedding-likely models
+    // Cached for the session to avoid re-fetching 600+ entries each click
+    let _openrouterModelCache = null;
+    $('#vecthare_openrouter_model_choose').on('click', async function() {
+        const $btn = $(this);
+        const $list = $('#vecthare_openrouter_model_list');
+        const $input = $('#vecthare_openrouter_model');
+
+        const originalHtml = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Loading…');
+
+        try {
+            if (!_openrouterModelCache) {
+                const resp = await fetch('https://openrouter.ai/api/v1/models', { method: 'GET' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                _openrouterModelCache = (data?.data || []).map(m => ({ id: m.id, label: m.name ? `${m.id} — ${m.name}` : m.id }));
+            }
+
+            const all = _openrouterModelCache;
+            const embeddings = all.filter(m => m.id.toLowerCase().includes('embed'));
+
+            const renderList = (items, showingAll) => {
+                if (!items.length) {
+                    toastr.warning('No models matched the filter.');
+                    return;
+                }
+                items.sort((a, b) => a.id.localeCompare(b.id));
+                const currentValue = String($input.val() || '').trim();
+                const toggleLabel = showingAll ? '— Showing all models · click to filter to embedding-only —' : '— Showing embedding models · click to show all —';
+                const options = [`<option value="__toggle__">${toggleLabel}</option>`, '<option value="">— Select a model —</option>']
+                    .concat(items.map(m => {
+                        const selected = m.id === currentValue ? ' selected' : '';
+                        const safeId = $('<div>').text(m.id).html();
+                        const safeLabel = $('<div>').text(m.label).html();
+                        return `<option value="${safeId}"${selected}>${safeLabel}</option>`;
+                    }));
+                $list.html(options.join('')).data('showing-all', showingAll).show();
+            };
+
+            // Default to embedding-only; if zero matches, fall back to all
+            if (embeddings.length > 0) {
+                renderList(embeddings, false);
+                toastr.success(`Loaded ${embeddings.length} embedding models (${all.length} total available).`);
+            } else {
+                renderList(all, true);
+                toastr.info(`No embedding-tagged models found — showing all ${all.length} models.`);
+            }
+        } catch (err) {
+            console.error('[VectHare] OpenRouter model list fetch failed:', err);
+            toastr.error(`Could not fetch model list: ${err?.message || err}`);
+        } finally {
+            $btn.prop('disabled', false).html(originalHtml);
+        }
+    });
+
+    $('#vecthare_openrouter_model_list').on('change', function() {
+        const $list = $(this);
+        const value = String($list.val() || '').trim();
+
+        // "__toggle__" pseudo-option toggles between embedding-only and all
+        if (value === '__toggle__') {
+            const showingAll = !!$list.data('showing-all');
+            const all = _openrouterModelCache || [];
+            const items = showingAll
+                ? all.filter(m => m.id.toLowerCase().includes('embed'))
+                : all;
+            items.sort((a, b) => a.id.localeCompare(b.id));
+            const currentValue = String($('#vecthare_openrouter_model').val() || '').trim();
+            const nextShowingAll = !showingAll;
+            const toggleLabel = nextShowingAll ? '— Showing all models · click to filter to embedding-only —' : '— Showing embedding models · click to show all —';
+            const options = [`<option value="__toggle__">${toggleLabel}</option>`, '<option value="">— Select a model —</option>']
+                .concat(items.map(m => {
+                    const selected = m.id === currentValue ? ' selected' : '';
+                    const safeId = $('<div>').text(m.id).html();
+                    const safeLabel = $('<div>').text(m.label).html();
+                    return `<option value="${safeId}"${selected}>${safeLabel}</option>`;
+                }));
+            $list.html(options.join('')).data('showing-all', nextShowingAll);
+            return;
+        }
+
+        if (!value) return;
+        $('#vecthare_openrouter_model').val(value).trigger('input');
+        $list.hide();
+    });
 
     // OpenRouter API key - saves directly to ST secrets
     // Show existing key if set

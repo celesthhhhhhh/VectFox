@@ -234,9 +234,10 @@ That's it! VectHarePlus will be downloaded and enabled automatically.
 3. Select your embedding provider (Transformers, OpenAI, Ollama, BananaBread, etc.)
 4. Select your summaizer LLM (Openrouter or vLLM)
 5. Configure API keys if using cloud providers
+6. Keyword Extraction choose the language of your story.
 6. Most settings using default should be good, but feel free to tweak it.
 
-### Step 3: (Needed for Qdrant backends) Install Similharity Plugin
+### Step 3: (Needed for Qdrant backends ONLY) Install Similharity Plugin
 
 ```bash
 cd SillyTavern/plugins

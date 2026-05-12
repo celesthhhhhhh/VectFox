@@ -183,6 +183,16 @@ const defaultSettings = {
     eventbase_rerank_w_persist: 0.15,
     eventbase_rerank_w_recency: 0.10,
 
+    // Anchor boost: flat additive bonus when an event's keyword appears verbatim
+    // in the user's last message. Rescues historically-distant events the user
+    // explicitly asks about. Slider 0.00-0.50, default 0.25. 0 = disabled.
+    eventbase_anchor_boost: 0.25,
+    // Dedup temporal proximity: only suppress two same-type/same-cast events
+    // when their source windows are within this many messages of each other.
+    // Slider 1-200, default 20. Lower = stricter (keep more distinct events);
+    // higher = more aggressive dedup.
+    eventbase_dedup_window_gap: 20,
+
     // ─── AgentMode (Agentic Retrieval) ──────────────────────────────────
     // Optional LLM planner step that consumes pre-search candidates plus
     // recent chat context and emits 1-4 follow-up queries which fan out in

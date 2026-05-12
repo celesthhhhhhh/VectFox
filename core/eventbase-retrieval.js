@@ -219,16 +219,21 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         const persistBonus = meta.should_persist === true ? 1 : 0;
         const recencyBonus = _recencyBonus(meta, chatLength);
 
-        // Anchor boost: TEMPORARILY DISABLED to get an unbiased baseline for
-        // evaluating agentic retrieval mode. The boost rescues historically-distant
-        // events that the user explicitly asked about via keyword substring match,
-        // but it makes it hard to measure how much agentic mode contributes on its
-        // own. Re-enable once agentic mode is benchmarked.
+        // Anchor boost: rescues historically-distant events that the user explicitly
+        // asked about via keyword substring match. If any of the event's stored
+        // keywords (>= 2 chars to skip noise) appears verbatim in the user's last
+        // message, the event gets a flat additive boost that pushes it past several
+        // unmatched events even if their semantic scores are slightly higher.
         //
-        // const anchorBoost = anchorText && (meta.keywords || []).some(
-        //     k => k.length >= 2 && anchorText.includes(k.toLowerCase())
-        // ) ? 0.25 : 0;
-        const anchorBoost = 0;
+        // Configurable via `eventbase_anchor_boost` (Core tab slider, 0.00-0.50,
+        // default 0.25). Setting to 0 disables the boost (useful when measuring
+        // agentic-mode-only contribution to recall).
+        const anchorBoostAmount = typeof settings.eventbase_anchor_boost === 'number'
+            ? Math.max(0, Math.min(0.5, settings.eventbase_anchor_boost))
+            : 0.25;
+        const anchorBoost = anchorBoostAmount > 0 && anchorText && (meta.keywords || []).some(
+            k => k.length >= 2 && anchorText.includes(k.toLowerCase())
+        ) ? anchorBoostAmount : 0;
 
         const finalScore =
             weights.cosine * cosineScore +
@@ -273,7 +278,13 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     //    DUPLICATE_SCORE_OVERRIDE = 0.75 is intentionally high. Most Qdrant RRF
     //    scores land in 0.2-0.6; crossing 0.75 means the query text and event are
     //    very tightly aligned (often a near-exact concept/keyword anchor match).
-    const DUPLICATE_WINDOW_GAP = 20;
+    // Configurable via `eventbase_dedup_window_gap` (Core tab slider, 1-200,
+    // default 20). Two events are only considered duplicates when their source
+    // windows are within this many messages of each other. Lower = stricter
+    // (more events kept as distinct); higher = more aggressive dedup.
+    const DUPLICATE_WINDOW_GAP = typeof settings.eventbase_dedup_window_gap === 'number'
+        ? Math.max(1, Math.min(200, settings.eventbase_dedup_window_gap))
+        : 20;
     const DUPLICATE_SCORE_OVERRIDE = 0.75;
     const _candidateSimScore = (c) =>
         typeof c.score === 'number' ? c.score :

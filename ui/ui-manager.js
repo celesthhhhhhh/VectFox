@@ -488,6 +488,18 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <input type="range" id="vecthare_deduplication_depth" class="vecthare-slider" min="0" max="500" step="10" />
                                 <small class="vecthare_hint">Recent messages to check for duplicates (0 = check all, lower = allow older content to resurface)</small>
 
+                                <label for="vecthare_eventbase_dedup_window_gap" style="margin-top: 12px;">
+                                    <small>Dedup Window Gap: <span id="vecthare_eventbase_dedup_window_gap_val">20</span> messages</small>
+                                </label>
+                                <input type="range" id="vecthare_eventbase_dedup_window_gap" class="vecthare-slider" min="1" max="200" step="1" />
+                                <small class="vecthare_hint">EventBase only. Two events with the same type + character cast are only suppressed as duplicates if their source windows are within this many messages of each other. Lower = stricter (keep more distinct scenes); higher = aggressive dedup. Default 20.</small>
+
+                                <label for="vecthare_eventbase_anchor_boost" style="margin-top: 12px;">
+                                    <small>Anchor Boost: <span id="vecthare_eventbase_anchor_boost_val">0.25</span></small>
+                                </label>
+                                <input type="range" id="vecthare_eventbase_anchor_boost" class="vecthare-slider" min="0" max="0.5" step="0.05" />
+                                <small class="vecthare_hint">EventBase only. Flat additive bonus when an event's stored keyword appears verbatim in your last message. Rescues historically-distant events the user explicitly asks about. 0 = disabled. Range 0.00-0.50, default 0.25.</small>
+
                                 <div style="margin-top: 12px;">
                                     <label class="checkbox_label" for="vecthare_retrieval_popup_on_start">
                                         <input id="vecthare_retrieval_popup_on_start" type="checkbox" />
@@ -2670,6 +2682,37 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
     $('#vecthare_deduplication_depth_value').text(settings.deduplication_depth ?? 50);
+
+    // EventBase Dedup Window Gap — temporal proximity threshold for the
+    // dedup gate in eventbase-retrieval.js. See settings comment in index.js.
+    $('#vecthare_eventbase_dedup_window_gap')
+        .val(settings.eventbase_dedup_window_gap ?? 20)
+        .on('input', function() {
+            const value = parseInt($(this).val());
+            const safeValue = isNaN(value) ? 20 : Math.max(1, Math.min(200, value));
+            $('#vecthare_eventbase_dedup_window_gap_val').text(safeValue);
+            settings.eventbase_dedup_window_gap = safeValue;
+            Object.assign(extension_settings.vecthareplus, settings);
+            saveSettingsDebounced();
+        });
+    $('#vecthare_eventbase_dedup_window_gap_val').text(settings.eventbase_dedup_window_gap ?? 20);
+
+    // EventBase Anchor Boost — flat additive bonus on keyword-anchored events.
+    // See settings comment in index.js and the boost code in
+    // eventbase-retrieval.js (around the `_finalScore` formula).
+    $('#vecthare_eventbase_anchor_boost')
+        .val(settings.eventbase_anchor_boost ?? 0.25)
+        .on('input', function() {
+            const value = parseFloat($(this).val());
+            const safeValue = isNaN(value) ? 0.25 : Math.max(0, Math.min(0.5, value));
+            $('#vecthare_eventbase_anchor_boost_val').text(safeValue.toFixed(2));
+            settings.eventbase_anchor_boost = safeValue;
+            Object.assign(extension_settings.vecthareplus, settings);
+            saveSettingsDebounced();
+        });
+    $('#vecthare_eventbase_anchor_boost_val').text(
+        (typeof settings.eventbase_anchor_boost === 'number' ? settings.eventbase_anchor_boost : 0.25).toFixed(2)
+    );
 
     // Keyword scoring method (bm25 = A1 fast re-rank; hybrid = A2 client-side hybrid fusion, ANN-bound ≤100)
     $('#vecthare_keyword_scoring_method')

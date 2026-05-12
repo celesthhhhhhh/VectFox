@@ -10,7 +10,7 @@
 
 ## 🎯 What is VectHarePlus?
 
-Branched from the original VectHare project, VectHarePlus is an **advanced Retrieval-Augmented Generation (RAG) system** for SillyTavern, now featuring newly added, optimized support for English, Japanese, Korean, Traditional Chinese, and Simplified Chinese.
+Branched from the original VectHare project which is a awesome product, VectHarePlus is an **advanced Retrieval-Augmented Generation (RAG) system** for SillyTavern, now featuring newly added, optimized support for English, Japanese, Korean, Traditional Chinese, and Simplified Chinese.
 
 I branched the original VectHare to handle the massive scale of my personal [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) projects, which feature:
 - **Extreme scale: 2,000+ replies per story, with 1,000+ words per reply. Summary retrieval returns in less than 3 seconds**
@@ -27,7 +27,7 @@ Cars with square wheels will never solve the problem, no matter how much you fin
 To tackle this, VectHarePlus uses a dedicated vector database that stores **every single meaningful event** from the chat. Whether it's the first message or the 2,000th, every meaningful event stays in the database and is always available for SillyTavern to search.  I want a production grade memory vector system for SillyTavern which is scalable to 10k+ messages and round trip time within seconds.
 
 ### The Problem It Solves
-
+- 🧠  The orginal VectHare doesn't think about what it needs.  So, We add Event base AI extraction on top of it.  AI decide what need to be extract and what it relates to what character, events, items, locations, and concepts.
 - 😩 Strip out all functional tags used by [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) before memory storage.
 - 🧠 Adding story based memory on top of character based memory in [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker).
 - 💸 Long conversations choke your token budget with irrelevant history
@@ -36,6 +36,11 @@ To tackle this, VectHarePlus uses a dedicated vector database that stores **ever
 **VectHarePlus Solution:** Use **Qdrant** as a dedicated vector database that stores every meaningful event from the chat, no matter how long it gets. For users who aren't ready to run an extra service, a **"light" version using the A1 and A2 paths** runs on SillyTavern's built-in vector store with no additional software — it shares many features of the full vector DB at smaller scale. When you're ready for a real long-term memory system, upgrade to the **A3 path** with Qdrant.
 
 Note: Qdrant is free and open source
+
+
+### The Problem That It Doesn't Solve
+- Tracking of quests , characters or stats.
+
 
 ---
 

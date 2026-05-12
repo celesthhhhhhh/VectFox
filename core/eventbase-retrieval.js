@@ -219,12 +219,16 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         const persistBonus = meta.should_persist === true ? 1 : 0;
         const recencyBonus = _recencyBonus(meta, chatLength);
 
-        // Anchor boost: +0.25 when any of the event's stored keywords appear
-        // verbatim in the user's last message (min 2 chars to skip noise).
-        // This rescues historically-distant events that the user explicitly asked about.
-        const anchorBoost = anchorText && (meta.keywords || []).some(
-            k => k.length >= 2 && anchorText.includes(k.toLowerCase())
-        ) ? 0.25 : 0;
+        // Anchor boost: TEMPORARILY DISABLED to get an unbiased baseline for
+        // evaluating agentic retrieval mode. The boost rescues historically-distant
+        // events that the user explicitly asked about via keyword substring match,
+        // but it makes it hard to measure how much agentic mode contributes on its
+        // own. Re-enable once agentic mode is benchmarked.
+        //
+        // const anchorBoost = anchorText && (meta.keywords || []).some(
+        //     k => k.length >= 2 && anchorText.includes(k.toLowerCase())
+        // ) ? 0.25 : 0;
+        const anchorBoost = 0;
 
         const finalScore =
             weights.cosine * cosineScore +

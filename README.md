@@ -27,19 +27,20 @@ Cars with square wheels will never solve the problem, no matter how much you fin
 To tackle this, VectHarePlus uses a dedicated vector database that stores **every single meaningful event** from the chat. Whether it's the first message or the 2,000th, every meaningful event stays in the database and is always available for SillyTavern to search.  I want a production grade memory vector system for SillyTavern which is scalable to 10k+ messages and round trip time within seconds.
 
 ### The Problem It Solves
-- 🧠  The orginal VectHare doesn't think about what it needs.  So, We add Event base AI extraction on top of it.  AI decide what need to be extract and what it relates to what character, events, items, locations, and concepts.
+- 🧠 **The original VectHare doesn't think about what's worth remembering.** VectHarePlus adds an LLM-driven **EventBase** extraction layer on top: the AI decides which moments are meaningful events and tags each event with the characters, items, locations, and concepts involved.
+- 🤖 **The original VectHare doesn't reason about your query** — it only matches surface-level text similarity. VectHarePlus adds optional **Agent Mode** that uses a small LLM to plan multi-angle searches, surfacing memories your raw query wouldn't have found on its own.
 - 😩 Strip out all functional tags used by [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) before memory storage.
-- 🧠 Adding story based memory on top of character based memory in [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker).
-- 💸 Long conversations choke your token budget with irrelevant history
-- ✍️ You manually edit context to remind characters of key events
+- 🧠 Adding story-based memory on top of character-based memory in [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker).
+- 💸 Long conversations choke your token budget with irrelevant history.
+- ✍️ You no longer need to manually edit context to remind characters of key events.
 
 **VectHarePlus Solution:** Use **Qdrant** as a dedicated vector database that stores every meaningful event from the chat, no matter how long it gets. For users who aren't ready to run an extra service, a **"light" version using the A1 and A2 paths** runs on SillyTavern's built-in vector store with no additional software — it shares many features of the full vector DB at smaller scale. When you're ready for a real long-term memory system, upgrade to the **A3 path** with Qdrant.
 
 Note: Qdrant is free and open source
 
 
-### The Problem That It Doesn't Solve
-- Tracking of quests , characters or stats.
+### What VectHarePlus is NOT trying to solve
+VectHarePlus is a **memory** system, not a tracker. It does not track quest progress, character stats, or live world state. For that, pair it with [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) — a character-based tracking system with a built-in GUI for quests, characters, and stats. Running both together covers roughly 90% of the memory and state problems that plague long-form SillyTavern roleplay.
 
 
 ---
@@ -88,6 +89,52 @@ But once you commit to EventBase, the picture changes:
 That's exactly the workload a **dedicated vector database like Qdrant is designed for**: many small structured records with both dense vector similarity and sparse keyword search, plus metadata filtering, plus global BM25 weighting across the full corpus. Trying to do this with a flat file of summaries would mean linear scans, no keyword indexing, no metadata filters, and no scale beyond a few hundred entries.
 
 EventBase doesn't *force* you onto Qdrant — the A1/A2 light paths run on SillyTavern's built-in Vectra. But once your chat passes a few hundreds events, Qdrant is the storage layer that was actually built for this shape of data.
+
+### 3. Agent Mode — let an AI plan your search (optional, Qdrant / A3 only)
+
+Plain vector search has one weakness: it can only search for what you literally typed. Ask *"do you remember why I paid the ransom?"* and the search looks for events matching those words. But the real answer might involve the kidnapping that led to the ransom, the negotiation where the price was decided, and your character's reaction afterward — and your raw question doesn't mention any of those.
+
+**Agent Mode adds a small "planner" LLM** that reads your recent chat plus the top semantic matches, then asks: *"What other angles should I search for to really answer this?"* It outputs 1–4 follow-up queries that fan out in parallel against Qdrant.
+
+**Concrete example.** You type:
+> *I say to Mayla, "Do you remember why I paid your ransom back then?"*
+
+Without Agent Mode the search finds:
+- ✓ The ransom payment event itself (direct keyword match on "ransom")
+
+With Agent Mode the planner adds these angles automatically (illustrative planner output for this kind of query):
+
+```json
+{
+  "queries": [
+    "Critblade ransom Mayla reason",
+    "Mayla past fear of abandonment",
+    "Critblade promise to help find her father",
+    "Mayla leadership challenge moment"
+  ],
+  "filters": {
+    "characters_any": ["Critblade", "Mayla"],
+    "concepts_any": ["ransom", "abandonment", "leadership"]
+  }
+}
+```
+
+Four parallel Qdrant searches return:
+- ✓ The ransom payment (direct)
+- ✓ Mayla's past fear of abandonment (emotional context)
+- ✓ The promise to find her missing father (a related narrative beat the planner inferred from recent chat context)
+- ✓ The leadership-challenge moment (a related arc the planner pulled in)
+
+All four merge with the original search and feed the same 4-weight re-ranker. The main reply LLM then has the **full causal chain plus emotional context** instead of just the moment of payment.
+
+**Why Agent Mode pairs with A3 (Qdrant)**:
+- Each planner query is a separate Qdrant call. Qdrant fanout completes in 1–3 seconds for 4 parallel queries.
+- A1/A2 (Vectra) would serialize these and lose the parallelism advantage.
+- Qdrant's payload filters (`characters_any`, `concepts_any`) let the planner narrow each search precisely — the standard backend doesn't expose these.
+
+**Cost & latency**: ~$0.0002 with GPT-4o-mini or Haiku as the planner, ~2–5 seconds added per turn. It's purely additive — never replaces normal search, and falls back cleanly to the standard flow if the planner fails. Configure it in the dedicated **AgentMode** tab; default off.
+
+> 💡 Agent Mode works best on **reflective questions** ("why...", "remember when..."), **vague callbacks** ("that thing about my father"), and **cause-chain queries** where the literal user message doesn't contain the search anchors. For direct lookups where your message already contains the right keywords, the standard pre-search already does most of the work; Agent Mode is incremental polish.
 
 ### 🧠 Why this beats traditional memory extensions
 
@@ -174,6 +221,16 @@ should_persist: false
 ```
 
 Both signals (meaning + keywords) operate over this rich field set, so a query like "armor for the dungeon" hits via concepts/open_threads, while "Astarion 80gp" hits via characters/items/keywords.  The structure is native to Qdrant vector database so that hit rate is WAY higher than any other kind of memory extension.
+
+### 🤖 Agent Mode — LLM-planned multi-angle retrieval (Qdrant / A3 only)
+A small planner LLM reads your recent chat plus the top pre-search candidates, then emits 1–4 follow-up Qdrant queries each targeting a different angle of what you asked about. Results fan out in parallel and merge through the same 4-weight re-ranker — purely additive, never replaces normal search. Falls back cleanly to the standard flow on any failure. Best for **reflective questions, vague callbacks, and cause-chain queries** where the literal user message doesn't contain the right search anchors.
+
+- **Provider/model inheritance** — leave blank in AgentMode tab to inherit from your summarizer config; override with a cheaper model (e.g. Haiku 4.5, GPT-4o-mini) to cut planner cost.
+- **Language-matching prompt** — planner emits queries in the chat language (Chinese, Japanese, Korean, Latin-script, English), preserving proper nouns. No cross-language pollution.
+- **Configurable sliders** — past chat turns sent to planner (1–10), candidates shown to planner (5–20), max queries (1–4), timeout (1–60s), debug logging.
+- **Real cost** — ~$0.0002 per turn with a small fast model, ~2–5 seconds added latency. Disabled by default — opt in when long-form recall matters.
+
+See the **AgentMode** tab in settings, or the "How It Works → Agent Mode" section above for the full architecture.
 
 ### 🌏 CJK language support (Japanese, Korean, Traditional/Simplified Chinese)
 - Jieba WASM (Simplified + Traditional Chinese), TinySegmenter (Japanese), Intl.Segmenter (English/Latin/Korean)
@@ -276,16 +333,19 @@ Use **Qdrant vector database** for any ultra fast and accurate delopment — A3 
 That's it! VectHarePlus will be downloaded and enabled automatically.
 
 ### Step 2: Configure VectHarePlus
-1. Open **VectHarePlus Settings** (Core tab in the extensions panel)
-2. Choose your vector storage (Standard or Qdrant)
-3. Select your embedding provider (Transformers, OpenAI, Ollama, BananaBread, etc.)
-4. Select your summaizer LLM (Openrouter or vLLM)
-5. Configure API keys if using cloud providers
-6. Keyword Extraction choose the language of your story.
-7. Most settings using default should be good, but feel free to tweak it.
-8. Click in to your chat in SillyTavern, then click on VectHarePlus extension again.  You HAVE to click on "Vectorize Content" and choose Chat History to vectorize your first db.
-9. Enable Auto-Sync if needed in AutoSync tab, the frequence is set in EventBase tab under "Extraction > Window Size"
-10. Vectorize your lorebook/World Info if needed in WorldInfo tab.
+1. Open **VectHarePlus Settings** (Core tab in the extensions panel).
+2. Choose your vector storage (Standard or Qdrant).
+3. Select your embedding provider (Transformers, OpenAI, Ollama, BananaBread, OpenRouter, etc.).
+   - 💡 **Recommended:** use `qwen/qwen3-embedding-8b` through **OpenRouter**. It's extremely cheap, multilingual (excellent CJK + Latin), and produces high-quality dense vectors for the corpus size VectHarePlus targets.
+4. Select your Summarization LLM (OpenRouter or vLLM) — used by EventBase extraction during vectorization.
+   - 💡 **Recommended cheap & fast models:** `openai/gpt-4o-mini` or `x-ai/grok-4.1-fast` through OpenRouter. Both are very cheap and fast enough to keep ingestion latency low. Same recommendation applies to the **Agent Mode LLM** (configured separately in the AgentMode tab) — if you leave the AgentMode model field blank it inherits this summarizer setting.
+5. Configure API keys if using cloud providers (OpenRouter / vLLM / OpenAI / Cohere).
+6. Under **Keyword Extraction**, choose the language of your story.
+7. Most settings work fine on default — feel free to tweak.
+8. Open your chat in SillyTavern, then click the VectHarePlus extension icon again. You **HAVE** to click "Vectorize Content" and choose **Chat History** to vectorize your first DB.
+9. Enable Auto-Sync if needed in the **AutoSync** tab. Frequency is controlled by the EventBase tab under *Extraction > Window Size*.
+10. Vectorize your lorebook / World Info if needed in the **WorldInfo** tab.
+11. (Optional) Turn on **Agent Mode** in the AgentMode tab once everything else works. Leave provider/model/API-key blank to inherit from your summarizer config — that way the same cheap/fast model used in step 4 also drives the planner. See "How It Works → Agent Mode" above for what it does.
 
 ### Step 3: (Needed for Qdrant backends ONLY) Install Similharity Plugin
 

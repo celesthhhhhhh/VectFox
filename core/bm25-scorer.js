@@ -117,29 +117,73 @@ async function ensureJiebaTwLoaded() {
     if (typeof window === 'undefined') return false;
 
     jiebaTwLoadPromise = (async () => {
+        // Per-stage timing so a slow/blocked network call tells us WHICH stage
+        // is the choke point (WASM module JS / WASM binary / dict CDN fetch).
+        // All four fail-paths go through this same try/catch and surface the
+        // stage name in the warn so debugging is one log line, not three.
+        const _now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        const _ms = (start) => Math.round(_now() - start);
+        const tStart = _now();
+        let stage = 'init';
         try {
+            // Stage 1 — fetch the jieba-wasm JS module (small, ~10KB)
+            stage = `WASM module import (${JIEBA_TW_WASM_MODULE_URL})`;
+            const tModStart = _now();
             const mod = await import(JIEBA_TW_WASM_MODULE_URL);
+            console.log(`[VectHare CJK] Jieba TW: WASM module imported in ${_ms(tModStart)}ms`);
+
             if (typeof mod.default !== 'function') {
                 console.warn('[VectHare CJK] Jieba TW module loaded but init() is unavailable');
                 return false;
             }
+
+            // Stage 2 — fetch + instantiate the WASM binary (large, ~2-3 MB)
+            stage = `WASM binary init (${JIEBA_TW_WASM_BINARY_URL})`;
+            const tWasmStart = _now();
             await mod.default({ module_or_path: JIEBA_TW_WASM_BINARY_URL });
+            console.log(`[VectHare CJK] Jieba TW: WASM binary initialized in ${_ms(tWasmStart)}ms`);
 
             if (typeof mod.with_dict !== 'function' || typeof mod.cut !== 'function') {
                 console.warn('[VectHare CJK] Jieba TW module missing with_dict() or cut()');
                 return false;
             }
 
+            // Stage 3 — fetch the TW dictionary text (large, ~5 MB). This was
+            // the original timeout source; log start/finish + bytes so a slow
+            // CDN is obvious from the log alone.
+            stage = `dict fetch (${JIEBA_TW_DICT_URL})`;
+            const tFetchStart = _now();
+            console.log(`[VectHare CJK] Jieba TW: fetching TW dictionary from ${JIEBA_TW_DICT_URL} (30s timeout)…`);
             const resp = await fetch(JIEBA_TW_DICT_URL, { signal: AbortSignal.timeout(30000) });
-            if (!resp.ok) throw new Error(`Failed to fetch TW dict: HTTP ${resp.status}`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+            console.log(`[VectHare CJK] Jieba TW: dict HTTP response in ${_ms(tFetchStart)}ms (status=${resp.status})`);
+
+            // Stage 4 — read the response body (streaming download time goes
+            // here on slow networks; the HTTP status above can return quickly
+            // while body bytes still trickle in).
+            stage = 'dict body read';
+            const tBodyStart = _now();
             const dictText = await resp.text();
+            console.log(`[VectHare CJK] Jieba TW: dict body read in ${_ms(tBodyStart)}ms (${dictText.length.toLocaleString()} chars)`);
+
+            // Stage 5 — apply dict to the loaded WASM tokenizer
+            stage = 'with_dict() apply';
+            const tApplyStart = _now();
             mod.with_dict(dictText);
+            console.log(`[VectHare CJK] Jieba TW: with_dict() applied in ${_ms(tApplyStart)}ms`);
 
             jiebaTwCutFunction = mod.cut;
-            console.log('[VectHare CJK] Jieba TW tokenizer initialized with Traditional Chinese dictionary');
+            console.log(`[VectHare CJK] Jieba TW tokenizer ready (total ${_ms(tStart)}ms)`);
             return true;
         } catch (error) {
-            console.warn('[VectHare CJK] Failed to load Jieba TW tokenizer:', error?.message || error);
+            const msg = error?.message || String(error);
+            const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError' || /aborted|timeout|timed out/i.test(msg);
+            const elapsed = _ms(tStart);
+            if (isTimeout) {
+                console.warn(`[VectHare CJK] Jieba TW: TIMED OUT during stage "${stage}" after ${elapsed}ms total. Falling back to Intl.Segmenter. This is usually a slow/blocked CDN — try reloading, or check that jsdelivr.net is reachable from your network.`);
+            } else {
+                console.warn(`[VectHare CJK] Jieba TW: failed during stage "${stage}" after ${elapsed}ms total: ${msg}`);
+            }
             return false;
         }
     })();

@@ -48,11 +48,9 @@ VectHarePlus splits content into two pipelines:
 
 They never see each other's content — so the same chat message can't get retrieved twice.
 
-### What is EventBase? 
+### What is EventBase?
 
-Old way: chat gets cut into raw message chunks. The AI searches over the raw text.
-
-EventBase way: an LLM periodically reads recent messages and **summarizes them into structured events** with metadata like importance and who was involved. A chat reply may contain 0 or more than 1 meaningful event.
+An LLM periodically reads recent messages and **summarizes them into structured events** with metadata like importance, characters, locations, items, and timestamps. A chat reply may contain 0 events, 1 event, or several — depending on what actually happened.
 
 If your character had a long shopping trip with Astarion across 100 sentences with conversations amoung 3 other teamates and other background story noise that do not help on searching, EventBase might extract one event out of that wall of text:
 
@@ -65,7 +63,24 @@ If your character had a long shopping trip with Astarion across 100 sentences wi
 }
 ```
 
-Later when you mention "remember the shopping trip?", VectHarePlus retrieves **the event**, not 100 raw sentences nor summary of meaningless 100 sentences. That gives the AI a clean, dense summary instead of a noisy wall of dialogue. Re-running vectorization never re-extracts the same window twice (fingerprint cache).
+Later when you mention "remember the shopping trip?", VectHarePlus retrieves **the event**, not 100 raw sentences nor a blurry summary of meaningless background dialogue. That gives the AI a clean, dense summary instead of a noisy wall of text. Re-running vectorization never re-extracts the same window twice (fingerprint cache).
+
+### 🧠 Why this beats traditional memory extensions
+
+Most existing memory extensions use one of two approaches. Both lose detail as the chat grows. Here's why — and how EventBase avoids it:
+
+| Aspect | 📝 Rolling Summary <br>*(most "memory" extensions)* | ✂️ Raw Chunking <br>*(older vector RAG)* | 🧬 EventBase <br>*(VectHarePlus)* |
+|---|---|---|---|
+| **What gets stored** | One ever-growing summary text | Every message cut into raw chunks | Structured event records with metadata |
+| **At msg 100** | Mostly intact | Intact | Intact |
+| **At msg 1,000** | Heavily compressed — names, numbers, and one-off details drift or vanish | Token budget overflow — older chunks score-pruned or dropped | **Intact** — old events still in DB, surfaced by relevance |
+| **At msg 5,000+** | Effectively a blur | DB bloat; retrieval gets noisy because raw chunks are low signal | **Intact** — only the few events relevant to the current scene are pulled |
+| **What "compression" does** | Re-summarizes the summary recursively, so every pass loses information | None — but no synthesis either; raw text is hit-or-miss for retrieval | One-time, semantic — extracts *the meaningful event* and drops filler. Detail in the event itself is preserved. |
+| **Retrieval signal** | None — the whole summary is always injected | Vector similarity over raw text (catches paraphrases but also noise) | Vector + BM25 hybrid over rich fields (`characters`, `items`, `locations`, `concepts`, `keywords`, plus dense meaning) |
+| **Where detail goes** | Lost forever once compressed | Lost when chunk drops below score threshold | **Doesn't go anywhere** — events live in the vector DB and surface when relevant |
+| **What gets injected** | The whole running summary (every turn, every time) | A few semantically-close raw messages | Only the events that matter for the current message |
+
+**The core insight:** rolling summaries lose detail because they *throw away* old content to make room. Raw chunking loses detail because *retrieval breaks* at scale. EventBase keeps every meaningful event around forever — and lets vector + keyword search decide which 5–10 of them are worth showing the AI right now. Detail isn't compressed; **irrelevance is filtered**.
 
 ---
 

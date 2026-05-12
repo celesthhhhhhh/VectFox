@@ -871,8 +871,10 @@ function generateCollectionId(contentType, source, settings) {
     const context = getContext();
     const baseName = sourceName;
 
-    // Sanitize name for use in ID — Unicode-aware so CJK / Cyrillic / etc. survive
+    // Sanitize name for use in ID — Unicode-aware so CJK / Cyrillic / etc. survive.
+    // NFC-normalize first so decomposed combining marks survive the \p{L} filter.
     const sanitizedName = baseName
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .substring(0, 50);

@@ -179,9 +179,12 @@ export function buildLegacyChatCollectionId(chatId) {
 
 /**
  * Sanitize a name segment for use in collection IDs (lowercase, alphanumeric + underscores).
+ * NFC-normalizes first so decomposed combining marks (e.g. macOS NFD filenames, some
+ * Vietnamese input) survive the \p{L} filter instead of being stripped.
  */
 function _sanitizeNameSegment(name, maxLength) {
     return String(name || '')
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .substring(0, maxLength);
@@ -194,6 +197,7 @@ function _sanitizeNameSegment(name, maxLength) {
 function _currentHandleId() {
     const ctx = getContext();
     return String(ctx?.name1 || 'user')
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .replace(/^_|_$/g, '')
@@ -277,12 +281,14 @@ export function buildEventBaseCollectionId(chatUUID, backend) {
 
     const context = getContext();
     const sanitizedHandle = (context?.name1 || 'user')
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .replace(/^_|_$/g, '')
         .substring(0, 30) || 'user';
 
     const sanitizedChar = (context?.name2 || 'chat')
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .replace(/^_|_$/g, '')
@@ -314,12 +320,14 @@ export function buildArchiveEventCollectionId({ filenameCharName, archiveUUID, b
 
     const context = getContext();
     const sanitizedHandle = (context?.name1 || 'user')
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .replace(/^_|_$/g, '')
         .substring(0, 30) || 'user';
 
     const sanitizedChar = (filenameCharName || 'archive')
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .replace(/^_|_$/g, '')

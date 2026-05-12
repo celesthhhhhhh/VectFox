@@ -100,6 +100,7 @@ export function getCollectionRegistry() {
  */
 function _sanitizeHandleId(name) {
     return String(name || 'user')
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .replace(/^_|_$/g, '')
@@ -758,7 +759,7 @@ async function discoverViaFallback(settings) {
     for (const char of characters) {
         if (!char.name) continue;
 
-        const sanitizedName = char.name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '_').substring(0, 30);
+        const sanitizedName = char.name.normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '_').substring(0, 30);
 
         // VectHare character collection format
         const charCollectionId = `${COLLECTION_PREFIXES.VECTHARE_CHARACTER}${sanitizedName}`;

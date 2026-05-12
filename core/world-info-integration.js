@@ -202,6 +202,7 @@ function deduplicateWithActiveEntries(semanticEntries, activeEntries) {
  */
 function _sanitizeLorebookName(name) {
     return String(name || '')
+        .normalize('NFC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, '_')
         .substring(0, 50);

@@ -663,6 +663,7 @@ function switchTab(tabName) {
  */
 function _sanitizeHandleForFilter(name) {
   return String(name || "user")
+    .normalize("NFC")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, "_")
     .replace(/^_|_$/g, "")

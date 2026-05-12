@@ -8,7 +8,7 @@
 
 ## 🎯 What is VectHarePlus?
 
-Branched from the original VectHare project, VectHarePlus is an **advanced Retrieval-Augmented Generation (RAG) system** for SillyTavern, now featuring newly added, optimized support for Japanese, Traditional Chinese, and Simplified Chinese.
+Branched from the original VectHare project, VectHarePlus is an **advanced Retrieval-Augmented Generation (RAG) system** for SillyTavern, now featuring newly added, optimized support for English, Japanese, Korean, Traditional Chinese, and Simplified Chinese.
 
 I branched the original VectHare to handle the massive scale of my personal MVU Game Maker projects, which feature:
 - **Extreme scale: 2,000+ replies per story, with 1,000+ words per reply. Summary retrieval returns in less than 3 seconds**
@@ -18,7 +18,7 @@ I branched the original VectHare to handle the massive scale of my personal MVU 
 
 Ordinary SillyTavern memory extensions completely buckle under this load, especially when there are a lot of functional tags reside inside the story used by MVU Game Maker, which is useless for memory lookup. So, I need something that is able to clean up all these functional tags while maintain high speed vectorization on extreme scale.
 
-Most memory extensions are designed for chats with 100 messages or fewer, and they work perfectly well at that scale. But as the chat grows past that, they're forced to summarize older messages more and more aggressively. You end up with full detail on recent history and a heavily compressed blur for everything older — and there's no real way around it, because you simply can't fit 100+ messages worth of raw context into the prompt. Old memory *has* to be compressed, which means detail is lost.
+Most memory extensions are designed for chats with 100 messages or fewer, and they work perfectly well at that scale. But as the chat grows past that, they're forced to summarize older messages more and more aggressively. You end up with full detail on recent history and a heavily compressed blur for everything older — and there's no real way around it, because you simply can't fit 100+ messages worth of raw context into the prompt or auto-created lorebook entries. Old memory *has* to be compressed, which means detail is lost.
 
 Cars with square wheels will never solve the problem, no matter how much you fine-tune them. I need the right tool for the job. What I actually need is a dedicated vector database backend to properly store all these memories.
 
@@ -49,7 +49,7 @@ Most memory extensions take each/several AI replies and summarize it into one bl
 
 - A 100-sentence reply might contain **5 meaningful events** (a fight, a discovery, a promise, an item swap, a relationship beat) buried in 95 sentences of filler dialogue, scene-setting, and chitchat
 - Another reply might contain **zero events** — just banter
-- A third might pack **3 events** into 20 sentences
+- A third might pack **1 event** into 1000 words.
 
 Summary-per-reply flattens all three cases into "one blob per reply" — losing event boundaries, mixing important beats with filler, and producing the same data shape whether anything actually happened or not.
 
@@ -90,14 +90,16 @@ Most existing memory extensions use one of two approaches. Both lose detail as t
 |---|---|---|---|
 | **What gets stored** | One ever-growing summary text | Every message cut into raw chunks | Structured event records with metadata |
 | **At msg 100** | Mostly intact | Intact | Intact |
-| **At msg 1,000** | Heavily compressed — names, numbers, and one-off details drift or vanish | Token budget overflow — older chunks score-pruned or dropped | **Intact** — old events still in DB, surfaced by relevance |
-| **At msg 5,000+** | Effectively a blur | DB bloat; retrieval gets noisy because raw chunks are low signal | **Intact** — only the few events relevant to the current scene are pulled |
+| **At msg 200** | Heavily compressed — names, numbers, and one-off details drift or vanish | Token budget overflow — older chunks score-pruned or dropped | **Intact** — old events still in DB, surfaced by relevance |
+| **At msg 1,000+** | Effectively a blur | DB bloat; retrieval gets noisy because raw chunks are low signal | **Intact** — only the few events relevant to the current scene are pulled |
 | **What "compression" does** | Re-summarizes the summary recursively, so every pass loses information | None — but no synthesis either; raw text is hit-or-miss for retrieval | One-time, semantic — extracts *the meaningful event* and drops filler. Detail in the event itself is preserved. |
 | **Retrieval signal** | None — the whole summary is always injected | Vector similarity over raw text (catches paraphrases but also noise) | Vector + BM25 hybrid over rich fields (`characters`, `items`, `locations`, `concepts`, `keywords`, plus dense meaning) |
 | **Where detail goes** | Lost forever once compressed | Lost when chunk drops below score threshold | **Doesn't go anywhere** — events live in the vector DB and surface when relevant |
 | **What gets injected** | The whole running summary (every turn, every time) | A few semantically-close raw messages | Only the events that matter for the current message |
 
 **The core insight:** rolling summaries lose detail because they *throw away* old content to make room. Raw chunking loses detail because *retrieval breaks* at scale. EventBase keeps every meaningful event around forever — and lets vector + keyword search decide which 5–10 of them are worth showing the AI right now. Detail isn't compressed; **irrelevance is filtered**.
+
+> 💡 **The way you phrase your message has a big impact on what gets retrieved.** Because retrieval is driven by the text of your reply, the words you use matter. For example, *"Do you remember why I paid the ransom?"* and *"Do you remember why I paid 2,000 bucks?"* will return very different events — "ransom" pulls in every event tied to that storyline (the kidnapping, the negotiation, the drop-off), while "2,000 bucks" mostly matches events that literally mention the number 2,000. If you want the AI to recall a specific scene, anchor your message with the **story-meaningful words** from that scene rather than incidental details like exact numbers.
 
 ---
 

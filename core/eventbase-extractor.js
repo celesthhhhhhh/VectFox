@@ -415,7 +415,7 @@ async function _callVLLM(prompt, settings, windowIndex) {
  * @param {object[]} params.messages  - Array of chat message objects with .mes and .name
  * @param {number} params.windowStart - 0-based start index in the full chat
  * @param {number} params.windowEnd   - 0-based end index (inclusive)
- * @param {object} params.settings    - VectHare settings
+ * @param {object} params.settings    - VectFox settings
  * @param {number} [params.windowIndex] - Window index for error reporting
  * @returns {Promise<object[]>} Array of full EventRecord objects (ingestion fields attached)
  */

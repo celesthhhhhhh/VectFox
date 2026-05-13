@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE DIAGNOSTICS - CONFIGURATION
+ * VectFox DIAGNOSTICS - CONFIGURATION
  * ============================================================================
  * Settings validation and configuration checks
  *
@@ -11,7 +11,7 @@
  * NOTE — DEAD-CHUNK-CHAT branches present in this file:
  * Several checks below call `getChatCollectionId()`, which is now disabled (returns
  * null). Chat history runs through the EventBase pipeline; there are no more
- * `vecthare_chat_*` collections to validate. The conditional branches that depend
+ * `VectFox_chat_*` collections to validate. The conditional branches that depend
  * on `chatCollectionId` are effectively skipped at runtime.
  *
  * These diagnostics need to be rewritten to inspect EventBase collections instead.

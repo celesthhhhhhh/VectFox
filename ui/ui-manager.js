@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE UI MANAGER
+ * VectFox UI MANAGER
  * ============================================================================
  * Handles ALL UI rendering and event binding
  * Keeps index.js clean and lean
@@ -28,120 +28,121 @@ import { getChunkingStrategies } from '../core/content-types.js';
 import { CJK_TOKENIZER_MODES, setCjkTokenizerMode, ensureJiebaTokenizerLoaded, ensureJiebaTwLoaded } from '../core/bm25-scorer.js';
 
 /**
- * Renders the VectHare settings UI
+ * Renders the VectFox settings UI
  * @param {string} containerId - The container element ID to render into
- * @param {object} settings - VectHare settings object
+ * @param {object} settings - VectFox settings object
  * @param {object} callbacks - Object containing callback functions
  * @param {Function} callbacks.onVectorizeAll - Called when "Vectorize All" is clicked
  * @param {Function} callbacks.onPurge - Called when "Purge" is clicked
  * @param {Function} callbacks.onCleanupCorrupted - Called when "Cleanup Corrupted" is clicked
  * @param {Function} callbacks.onRunDiagnostics - Called when "Run Diagnostics" is clicked
+ * @param {Function} callbacks.onMigrateCollections - Called when "Migrate Collections" is clicked
  */
 export function renderSettings(containerId, settings, callbacks) {
-    console.log('VectHare UI: Rendering settings...');
+    console.log('VectFox UI: Rendering settings...');
 
     const html = `
-        <div id="vecthare_settings">
+        <div id="VectFox_settings">
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>VectHarePlus - Advanced RAG</b>
+                    <b>VectFoxPlus - Advanced RAG</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
 
                     <!-- Tab Navigation -->
-                    <div class="vecthare-tabs">
-                        <div class="vecthare-tab-nav-row">
-                            <button class="vecthare-tab-btn active" data-tab="action">Action</button>
-                            <button class="vecthare-tab-btn" data-tab="core">Core</button>
-                            <button class="vecthare-tab-btn" data-tab="eventbase">EventBase</button>
-                            <button class="vecthare-tab-btn" data-tab="weight">ChunkBase</button>
+                    <div class="vectfox-tabs">
+                        <div class="vectfox-tab-nav-row">
+                            <button class="vectfox-tab-btn active" data-tab="action">Action</button>
+                            <button class="vectfox-tab-btn" data-tab="core">Core</button>
+                            <button class="vectfox-tab-btn" data-tab="eventbase">EventBase</button>
+                            <button class="vectfox-tab-btn" data-tab="weight">ChunkBase</button>
                         </div>
-                        <div class="vecthare-tab-nav-row">
-                            <button class="vecthare-tab-btn" data-tab="autosync">AutoSync</button>
-                            <button class="vecthare-tab-btn" data-tab="worldinfo">WorldInfo</button>
-                            <button class="vecthare-tab-btn" data-tab="rag">RAG</button>
-                            <button class="vecthare-tab-btn" data-tab="agentmode">AgentMode</button>
+                        <div class="vectfox-tab-nav-row">
+                            <button class="vectfox-tab-btn" data-tab="autosync">AutoSync</button>
+                            <button class="vectfox-tab-btn" data-tab="worldinfo">WorldInfo</button>
+                            <button class="vectfox-tab-btn" data-tab="rag">RAG</button>
+                            <button class="vectfox-tab-btn" data-tab="agentmode">AgentMode</button>
                         </div>
                     </div>
 
                     <!-- Core Settings Card -->
-                    <div class="vecthare-card" data-vecthare-tab="core">
-                        <div class="vecthare-card-header">
-                            <h3 class="vecthare-card-title">
-                                <span class="vecthare-icon">
+                    <div class="vectfox-card" data-vectfox-tab="core">
+                        <div class="vectfox-card-header">
+                            <h3 class="vectfox-card-title">
+                                <span class="vectfox-icon">
                                     <i class="fa-solid fa-cog"></i>
                                 </span>
                                 Core Settings
                             </h3>
-                            <p class="vecthare-card-subtitle">Shared settings for embedding, retrieval, and EventBase extraction.</p>
+                            <p class="vectfox-card-subtitle">Shared settings for embedding, retrieval, and EventBase extraction.</p>
                         </div>
-                        <div class="vecthare-card-body">
+                        <div class="vectfox-card-body">
 
                             <!-- ═══════════════════════════════════════════════════════ -->
                             <!-- GROUP 1: Vector Storage                                -->
                             <!-- ═══════════════════════════════════════════════════════ -->
-                            <div class="vecthare-subsection">
-                                <div class="vecthare-card-header" style="padding: 0 0 8px 0;">
-                                    <h3 class="vecthare-card-title" style="font-size: 0.95em;">
-                                        <span class="vecthare-icon"><i class="fa-solid fa-database"></i></span>
+                            <div class="vectfox-subsection">
+                                <div class="vectfox-card-header" style="padding: 0 0 8px 0;">
+                                    <h3 class="vectfox-card-title" style="font-size: 0.95em;">
+                                        <span class="vectfox-icon"><i class="fa-solid fa-database"></i></span>
                                         Vector Storage
                                     </h3>
-                                    <p class="vecthare-card-subtitle">Vector database backend</p>
+                                    <p class="vectfox-card-subtitle">Vector database backend</p>
                                 </div>
 
-                                <label for="vecthare_vector_backend">
+                                <label for="VectFox_vector_backend">
                                     <small>Vector Backend</small>
                                 </label>
-                                <select id="vecthare_vector_backend" class="vecthare-select">
+                                <select id="VectFox_vector_backend" class="vectfox-select">
                                     <option value="standard">Standard (ST's Vectra - file-based)</option>
                                     <option value="qdrant">Qdrant (production vector search)</option>
                                 </select>
-                                <small class="vecthare-help-text" style="display: block; margin-top: -8px; margin-bottom: 16px; opacity: 0.7; font-size: 0.85em; line-height: 1.5;">
+                                <small class="vectfox-help-text" style="display: block; margin-top: -8px; margin-bottom: 16px; opacity: 0.7; font-size: 0.85em; line-height: 1.5;">
                                     • Standard: ST's built-in Vectra (best for &lt;100k vectors)<br>
                                     • Qdrant: Production-grade with HNSW, filtering, cloud support
                                 </small>
 
                                 <!-- Qdrant Settings (shown only when Qdrant backend is selected) -->
-                                <div id="vecthare_qdrant_settings" style="display: none;">
+                                <div id="VectFox_qdrant_settings" style="display: none;">
                                     <label class="checkbox_label">
-                                        <input type="checkbox" id="vecthare_qdrant_use_cloud" />
+                                        <input type="checkbox" id="VectFox_qdrant_use_cloud" />
                                         <span>Use Qdrant Cloud</span>
                                     </label>
 
                                     <!-- Local Qdrant Settings -->
-                                    <div id="vecthare_qdrant_local_settings">
-                                        <label for="vecthare_qdrant_host">
+                                    <div id="VectFox_qdrant_local_settings">
+                                        <label for="VectFox_qdrant_host">
                                             <small>Qdrant Host:</small>
                                         </label>
-                                        <input type="text" id="vecthare_qdrant_host" class="vecthare-input" placeholder="localhost" />
+                                        <input type="text" id="VectFox_qdrant_host" class="vectfox-input" placeholder="localhost" />
 
-                                        <label for="vecthare_qdrant_port">
+                                        <label for="VectFox_qdrant_port">
                                             <small>Qdrant Port:</small>
                                         </label>
-                                        <input type="number" id="vecthare_qdrant_port" class="vecthare-input" placeholder="6333" />
+                                        <input type="number" id="VectFox_qdrant_port" class="vectfox-input" placeholder="6333" />
                                     </div>
 
                                     <!-- Cloud Qdrant Settings -->
-                                    <div id="vecthare_qdrant_cloud_settings" style="display: none;">
-                                        <label for="vecthare_qdrant_url">
+                                    <div id="VectFox_qdrant_cloud_settings" style="display: none;">
+                                        <label for="VectFox_qdrant_url">
                                             <small>Qdrant Cloud URL:</small>
                                         </label>
-                                        <input type="text" id="vecthare_qdrant_url" class="vecthare-input" placeholder="https://xxx.cloud.qdrant.io" />
+                                        <input type="text" id="VectFox_qdrant_url" class="vectfox-input" placeholder="https://xxx.cloud.qdrant.io" />
 
-                                        <label for="vecthare_qdrant_api_key">
+                                        <label for="VectFox_qdrant_api_key">
                                             <small>API Key:</small>
                                         </label>
-                                        <input type="password" id="vecthare_qdrant_api_key" class="vecthare-input" placeholder="Your Qdrant Cloud API key" />
+                                        <input type="password" id="VectFox_qdrant_api_key" class="vectfox-input" placeholder="Your Qdrant Cloud API key" />
                                     </div>
 
                                     <!-- Qdrant Multitenancy Setting -->
                                     <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.1); border-radius: 4px;">
                                         <label class="checkbox_label" title="When enabled, uses a single Qdrant collection with content_type filtering (multitenancy). When disabled, creates separate collections for each content type (better isolation).">
-                                            <input type="checkbox" id="vecthare_qdrant_multitenancy" />
+                                            <input type="checkbox" id="VectFox_qdrant_multitenancy" />
                                             <span>Use Multitenancy (Single Collection)</span>
                                         </label>
-                                        <small class="vecthare_hint" style="display: block; margin-top: 4px;">
+                                        <small class="VectFox_hint" style="display: block; margin-top: 4px;">
                                             <strong>Multitenancy ON:</strong> Single collection with filtering (saves resources)<br>
                                             <strong>Multitenancy OFF:</strong> Separate collections per content type (better isolation)
                                         </small>
@@ -152,19 +153,19 @@ export function renderSettings(containerId, settings, callbacks) {
                             <!-- ═══════════════════════════════════════════════════════ -->
                             <!-- GROUP 2: Embedding                                     -->
                             <!-- ═══════════════════════════════════════════════════════ -->
-                            <div class="vecthare-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
-                                <div class="vecthare-card-header" style="padding: 0 0 8px 0;">
-                                    <h3 class="vecthare-card-title" style="font-size: 0.95em;">
-                                        <span class="vecthare-icon"><i class="fa-solid fa-microchip"></i></span>
+                            <div class="vectfox-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
+                                <div class="vectfox-card-header" style="padding: 0 0 8px 0;">
+                                    <h3 class="vectfox-card-title" style="font-size: 0.95em;">
+                                        <span class="vectfox-icon"><i class="fa-solid fa-microchip"></i></span>
                                         Embedding
                                     </h3>
-                                    <p class="vecthare-card-subtitle">Embedding provider and model</p>
+                                    <p class="vectfox-card-subtitle">Embedding provider and model</p>
                                 </div>
 
-                                <label for="vecthare_source">
+                                <label for="VectFox_source">
                                     <small>Embedding Provider</small>
                                 </label>
-                                <select id="vecthare_source" class="vecthare-select">
+                                <select id="VectFox_source" class="vectfox-select">
                                     <option value="transformers">Transformers (Local)</option>
                                     <option value="bananabread">BananaBread</option>
                                     <option value="openai">OpenAI</option>
@@ -185,100 +186,100 @@ export function renderSettings(containerId, settings, callbacks) {
                                 </select>
 
                                 <!-- Provider-Specific Settings -->
-                                <div id="vecthare_provider_settings">
+                                <div id="VectFox_provider_settings">
 
                                     <!-- ElectronHub Model -->
-                                    <div class="vecthare_provider_setting" data-provider="electronhub">
-                                        <label for="vecthare_electronhub_model">
+                                    <div class="VectFox_provider_setting" data-provider="electronhub">
+                                        <label for="VectFox_electronhub_model">
                                             <small>ElectronHub Model:</small>
                                         </label>
-                                        <input type="text" id="vecthare_electronhub_model" class="vecthare-input" placeholder="text-embedding-3-small" />
-                                        <small class="vecthare_hint">Enter ElectronHub-compatible model ID (e.g., text-embedding-3-small, text-embedding-3-large)</small>
+                                        <input type="text" id="VectFox_electronhub_model" class="vectfox-input" placeholder="text-embedding-3-small" />
+                                        <small class="VectFox_hint">Enter ElectronHub-compatible model ID (e.g., text-embedding-3-small, text-embedding-3-large)</small>
                                     </div>
 
                                     <!-- Alternative Endpoint (for local providers) -->
-                                    <div class="vecthare_provider_setting" data-provider="ollama,vllm,llamacpp,koboldcpp,bananabread">
+                                    <div class="VectFox_provider_setting" data-provider="ollama,vllm,llamacpp,koboldcpp,bananabread">
                                         <label class="checkbox_label">
-                                            <input type="checkbox" id="vecthare_use_alt_endpoint" />
+                                            <input type="checkbox" id="VectFox_use_alt_endpoint" />
                                             <span>Use Alternative Endpoint</span>
                                         </label>
-                                        <input type="text" id="vecthare_alt_endpoint_url" class="vecthare-input" placeholder="http://localhost:11434" />
-                                        <small class="vecthare_hint">Override default API URL for this provider</small>
+                                        <input type="text" id="VectFox_alt_endpoint_url" class="vectfox-input" placeholder="http://localhost:11434" />
+                                        <small class="VectFox_hint">Override default API URL for this provider</small>
                                     </div>
 
                                     <!-- BananaBread Info & Reranking -->
-                                    <div class="vecthare_provider_setting" data-provider="bananabread">
-                                        <small class="vecthare_info">
+                                    <div class="VectFox_provider_setting" data-provider="bananabread">
+                                        <small class="VectFox_info">
                                             <i class="fa-solid fa-info-circle"></i>
                                             BananaBread default: http://localhost:8008. Supports MixedBread AI and Qwen3 embedding models.
                                         </small>
                                         <label class="checkbox_label" style="margin-top: 8px;">
-                                            <input type="checkbox" id="vecthare_bananabread_rerank" />
+                                            <input type="checkbox" id="VectFox_bananabread_rerank" />
                                             <span>Enable Reranking</span>
                                         </label>
-                                        <small class="vecthare_hint">Re-score results using BananaBread's reranker for better relevance</small>
-                                        <label for="vecthare_bananabread_apikey" style="margin-top: 8px;">
+                                        <small class="VectFox_hint">Re-score results using BananaBread's reranker for better relevance</small>
+                                        <label for="VectFox_bananabread_apikey" style="margin-top: 8px;">
                                             <small>BananaBread API Key:</small>
                                         </label>
-                                        <input type="password" id="vecthare_bananabread_apikey" class="vecthare-input" placeholder="Paste key here to save..." autocomplete="off" />
+                                        <input type="password" id="VectFox_bananabread_apikey" class="vectfox-input" placeholder="Paste key here to save..." autocomplete="off" />
                                     </div>
 
                                     <!-- WebLLM Model -->
-                                    <div class="vecthare_provider_setting" data-provider="webllm">
-                                        <small class="vecthare_info" id="vecthare_webllm_status">
+                                    <div class="VectFox_provider_setting" data-provider="webllm">
+                                        <small class="VectFox_info" id="VectFox_webllm_status">
                                             <i class="fa-solid fa-spinner fa-spin"></i>
                                             Checking WebLLM availability...
                                         </small>
-                                        <label for="vecthare_webllm_model">
+                                        <label for="VectFox_webllm_model">
                                             <small>WebLLM Model:</small>
                                         </label>
-                                        <select id="vecthare_webllm_model" class="vecthare-select"></select>
+                                        <select id="VectFox_webllm_model" class="vectfox-select"></select>
                                         <div style="display: flex; gap: 8px; margin-top: 8px;">
-                                            <button id="vecthare_webllm_load" class="menu_button">
+                                            <button id="VectFox_webllm_load" class="menu_button">
                                                 <i class="fa-solid fa-download"></i> Load Model
                                             </button>
-                                            <button id="vecthare_webllm_install" class="menu_button menu_button_icon">
+                                            <button id="VectFox_webllm_install" class="menu_button menu_button_icon">
                                                 <i class="fa-solid fa-puzzle-piece"></i> Install Extension
                                             </button>
                                         </div>
-                                        <small class="vecthare_hint">WebLLM requires the WebLLM extension and a WebGPU-compatible browser (Chrome 113+, Edge 113+)</small>
+                                        <small class="VectFox_hint">WebLLM requires the WebLLM extension and a WebGPU-compatible browser (Chrome 113+, Edge 113+)</small>
                                     </div>
 
                                     <!-- Ollama Model -->
-                                    <div class="vecthare_provider_setting" data-provider="ollama">
-                                        <label for="vecthare_ollama_model">
+                                    <div class="VectFox_provider_setting" data-provider="ollama">
+                                        <label for="VectFox_ollama_model">
                                             <small>Ollama Model:</small>
                                         </label>
-                                        <input type="text" id="vecthare_ollama_model" class="vecthare-input" placeholder="mxbai-embed-large" />
+                                        <input type="text" id="VectFox_ollama_model" class="vectfox-input" placeholder="mxbai-embed-large" />
                                         <label class="checkbox_label">
-                                            <input type="checkbox" id="vecthare_ollama_keep" />
+                                            <input type="checkbox" id="VectFox_ollama_keep" />
                                             <span>Keep Model in Memory</span>
                                         </label>
-                                        <small class="vecthare_hint">Enter the model name from your local Ollama installation</small>
+                                        <small class="VectFox_hint">Enter the model name from your local Ollama installation</small>
                                     </div>
 
                                     <!-- KoboldCPP Info -->
-                                    <div class="vecthare_provider_setting" data-provider="koboldcpp">
-                                        <small class="vecthare_info">
+                                    <div class="VectFox_provider_setting" data-provider="koboldcpp">
+                                        <small class="VectFox_info">
                                             <i class="fa-solid fa-info-circle"></i>
                                             KoboldCPP uses the currently loaded model for embeddings. Ensure your model supports embeddings.
                                         </small>
                                     </div>
 
                                     <!-- LlamaCPP Info -->
-                                    <div class="vecthare_provider_setting" data-provider="llamacpp">
-                                        <small class="vecthare_info">
+                                    <div class="VectFox_provider_setting" data-provider="llamacpp">
+                                        <small class="VectFox_info">
                                             <i class="fa-solid fa-info-circle"></i>
                                             LlamaCPP requires the --embedding flag to be enabled. Restart your server with this flag if not already set.
                                         </small>
                                     </div>
 
                                     <!-- OpenAI Model -->
-                                    <div class="vecthare_provider_setting" data-provider="openai">
-                                        <label for="vecthare_openai_model">
+                                    <div class="VectFox_provider_setting" data-provider="openai">
+                                        <label for="VectFox_openai_model">
                                             <small>OpenAI Model:</small>
                                         </label>
-                                        <select id="vecthare_openai_model" class="vecthare-select">
+                                        <select id="VectFox_openai_model" class="vectfox-select">
                                             <option value="text-embedding-ada-002">text-embedding-ada-002</option>
                                             <option value="text-embedding-3-small">text-embedding-3-small</option>
                                             <option value="text-embedding-3-large">text-embedding-3-large</option>
@@ -286,11 +287,11 @@ export function renderSettings(containerId, settings, callbacks) {
                                     </div>
 
                                     <!-- Cohere Model -->
-                                    <div class="vecthare_provider_setting" data-provider="cohere">
-                                        <label for="vecthare_cohere_model">
+                                    <div class="VectFox_provider_setting" data-provider="cohere">
+                                        <label for="VectFox_cohere_model">
                                             <small>Cohere Model:</small>
                                         </label>
-                                        <select id="vecthare_cohere_model" class="vecthare-select">
+                                        <select id="VectFox_cohere_model" class="vectfox-select">
                                             <option value="embed-english-v3.0">embed-english-v3.0</option>
                                             <option value="embed-multilingual-v3.0">embed-multilingual-v3.0</option>
                                             <option value="embed-english-light-v3.0">embed-english-light-v3.0</option>
@@ -303,11 +304,11 @@ export function renderSettings(containerId, settings, callbacks) {
                                     </div>
 
                                     <!-- TogetherAI Model -->
-                                    <div class="vecthare_provider_setting" data-provider="togetherai">
-                                        <label for="vecthare_togetherai_model">
+                                    <div class="VectFox_provider_setting" data-provider="togetherai">
+                                        <label for="VectFox_togetherai_model">
                                             <small>Together AI Model:</small>
                                         </label>
-                                        <select id="vecthare_togetherai_model" class="vecthare-select">
+                                        <select id="VectFox_togetherai_model" class="vectfox-select">
                                             <option value="togethercomputer/m2-bert-80M-32k-retrieval">togethercomputer/m2-bert-80M-32k-retrieval</option>
                                             <option value="togethercomputer/m2-bert-80M-8k-retrieval">togethercomputer/m2-bert-80M-8k-retrieval</option>
                                             <option value="togethercomputer/m2-bert-80M-2k-retrieval">togethercomputer/m2-bert-80M-2k-retrieval</option>
@@ -320,24 +321,24 @@ export function renderSettings(containerId, settings, callbacks) {
                                     </div>
 
                                     <!-- vLLM Model -->
-                                    <div class="vecthare_provider_setting" data-provider="vllm">
-                                        <label for="vecthare_vllm_model">
+                                    <div class="VectFox_provider_setting" data-provider="vllm">
+                                        <label for="VectFox_vllm_model">
                                             <small>vLLM Model:</small>
                                         </label>
-                                        <input type="text" id="vecthare_vllm_model" class="vecthare-input" placeholder="Model name" />
-                                        <small class="vecthare_hint">Enter the model name from your vLLM deployment</small>
-                                        <label for="vecthare_vllm_api_key" style="margin-top: 8px;">
+                                        <input type="text" id="VectFox_vllm_model" class="vectfox-input" placeholder="Model name" />
+                                        <small class="VectFox_hint">Enter the model name from your vLLM deployment</small>
+                                        <label for="VectFox_vllm_api_key" style="margin-top: 8px;">
                                             <small>vLLM API Key (optional):</small>
                                         </label>
-                                        <input type="password" id="vecthare_vllm_api_key" class="vecthare-input" placeholder="Leave blank for local / no-auth deployments" autocomplete="off" />
+                                        <input type="password" id="VectFox_vllm_api_key" class="vectfox-input" placeholder="Leave blank for local / no-auth deployments" autocomplete="off" />
                                     </div>
 
                                     <!-- Google Model (PaLM/VertexAI) -->
-                                    <div class="vecthare_provider_setting" data-provider="palm,vertexai">
-                                        <label for="vecthare_google_model">
+                                    <div class="VectFox_provider_setting" data-provider="palm,vertexai">
+                                        <label for="VectFox_google_model">
                                             <small>Google Model:</small>
                                         </label>
-                                        <select id="vecthare_google_model" class="vecthare-select">
+                                        <select id="VectFox_google_model" class="vectfox-select">
                                             <option value="text-embedding-005">text-embedding-005</option>
                                             <option value="text-embedding-004">text-embedding-004</option>
                                             <option value="text-multilingual-embedding-002">text-multilingual-embedding-002</option>
@@ -347,30 +348,30 @@ export function renderSettings(containerId, settings, callbacks) {
                                     </div>
 
                                     <!-- NomicAI API Key -->
-                                    <div class="vecthare_provider_setting" data-provider="nomicai">
-                                        <button id="vecthare_nomicai_api_key" class="menu_button">
+                                    <div class="VectFox_provider_setting" data-provider="nomicai">
+                                        <button id="VectFox_nomicai_api_key" class="menu_button">
                                             <i class="fa-solid fa-key"></i> Set Nomic API Key
                                         </button>
-                                        <small class="vecthare_hint">Configure your Nomic API key in SillyTavern settings</small>
+                                        <small class="VectFox_hint">Configure your Nomic API key in SillyTavern settings</small>
                                     </div>
 
                                     <!-- OpenRouter Model -->
-                                    <div class="vecthare_provider_setting" data-provider="openrouter">
-                                        <label for="vecthare_openrouter_model">
+                                    <div class="VectFox_provider_setting" data-provider="openrouter">
+                                        <label for="VectFox_openrouter_model">
                                             <small>OpenRouter Model:</small>
                                         </label>
                                         <div style="display: flex; gap: 6px; align-items: stretch;">
-                                            <input type="text" id="vecthare_openrouter_model" class="vecthare-input" style="flex: 1;" placeholder="openai/text-embedding-3-large" />
-                                            <button id="vecthare_openrouter_model_choose" class="menu_button" type="button" title="Browse OpenRouter's model list (filtered to embedding models)">
+                                            <input type="text" id="VectFox_openrouter_model" class="vectfox-input" style="flex: 1;" placeholder="openai/text-embedding-3-large" />
+                                            <button id="VectFox_openrouter_model_choose" class="menu_button" type="button" title="Browse OpenRouter's model list (filtered to embedding models)">
                                                 <i class="fa-solid fa-list"></i> Choose
                                             </button>
                                         </div>
-                                        <select id="vecthare_openrouter_model_list" class="vecthare-select" style="display:none; margin-top:6px;"></select>
-                                        <small class="vecthare_hint">Enter OpenRouter-compatible model ID, or click <b>Choose</b> to browse. List defaults to embedding models — toggle <i>Show all</i> if you need to pick a non-embedding one.</small>
-                                        <label for="vecthare_openrouter_apikey" style="margin-top: 8px;">
+                                        <select id="VectFox_openrouter_model_list" class="vectfox-select" style="display:none; margin-top:6px;"></select>
+                                        <small class="VectFox_hint">Enter OpenRouter-compatible model ID, or click <b>Choose</b> to browse. List defaults to embedding models — toggle <i>Show all</i> if you need to pick a non-embedding one.</small>
+                                        <label for="VectFox_openrouter_apikey" style="margin-top: 8px;">
                                             <small>OpenRouter API Key:</small>
                                         </label>
-                                        <input type="password" id="vecthare_openrouter_apikey" class="vecthare-input" placeholder="Paste key here to save..." autocomplete="off" />
+                                        <input type="password" id="VectFox_openrouter_apikey" class="vectfox-input" placeholder="Paste key here to save..." autocomplete="off" />
                                     </div>
 
                                 </div>
@@ -382,82 +383,82 @@ export function renderSettings(containerId, settings, callbacks) {
                                     </label>
                                     <div style="display: flex; gap: 10px;">
                                         <div style="flex: 1;">
-                                            <label for="vecthare_rate_limit_calls" style="display: block; margin-bottom: 4px;">
+                                            <label for="VectFox_rate_limit_calls" style="display: block; margin-bottom: 4px;">
                                                 <small>Max Calls</small>
                                             </label>
-                                            <input type="number" id="vecthare_rate_limit_calls" class="vecthare-input" min="0" placeholder="5" />
+                                            <input type="number" id="VectFox_rate_limit_calls" class="vectfox-input" min="0" placeholder="5" />
                                         </div>
                                         <div style="flex: 1;">
-                                            <label for="vecthare_rate_limit_interval" style="display: block; margin-bottom: 4px;">
+                                            <label for="VectFox_rate_limit_interval" style="display: block; margin-bottom: 4px;">
                                                 <small>Interval (sec)</small>
                                             </label>
-                                            <input type="number" id="vecthare_rate_limit_interval" class="vecthare-input" min="1" placeholder="60" />
+                                            <input type="number" id="VectFox_rate_limit_interval" class="vectfox-input" min="1" placeholder="60" />
                                         </div>
                                     </div>
-                                    <small class="vecthare_hint">Limit the number of API requests per time interval</small>
+                                    <small class="VectFox_hint">Limit the number of API requests per time interval</small>
                                 </div>
                             </div>
 
                             <!-- ═══════════════════════════════════════════════════════ -->
                             <!-- GROUP 3: LLM / EventBase Extraction                   -->
                             <!-- ═══════════════════════════════════════════════════════ -->
-                            <div class="vecthare-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
-                                <div class="vecthare-card-header" style="padding: 0 0 8px 0;">
-                                    <h3 class="vecthare-card-title" style="font-size: 0.95em;">
-                                        <span class="vecthare-icon">
+                            <div class="vectfox-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
+                                <div class="vectfox-card-header" style="padding: 0 0 8px 0;">
+                                    <h3 class="vectfox-card-title" style="font-size: 0.95em;">
+                                        <span class="vectfox-icon">
                                             <i class="fa-solid fa-file-lines"></i>
                                         </span>
                                         LLM Summarization &amp; EventBase Extraction
                                     </h3>
-                                    <p class="vecthare-card-subtitle">LLM for EventBase event extraction</p>
+                                    <p class="vectfox-card-subtitle">LLM for EventBase event extraction</p>
                                 </div>
 
-                                <label for="vecthare_summarize_provider">
+                                <label for="VectFox_summarize_provider">
                                     <small>Summarization Provider</small>
                                 </label>
-                                <select id="vecthare_summarize_provider" class="vecthare-select">
+                                <select id="VectFox_summarize_provider" class="vectfox-select">
                                     <option value="openrouter">OpenRouter</option>
                                     <option value="vllm">vLLM</option>
                                 </select>
-                                <small class="vecthare_hint">Provider required for summarization / EventBase extraction LLM calls</small>
+                                <small class="VectFox_hint">Provider required for summarization / EventBase extraction LLM calls</small>
 
-                                <div id="vecthare_summarize_settings" style="display:none; margin-top:12px;">
+                                <div id="VectFox_summarize_settings" style="display:none; margin-top:12px;">
 
-                                    <div id="vecthare_summarize_openrouter_row" style="display:none; margin-bottom:10px;">
-                                        <label for="vecthare_summarize_openrouter_apikey">
+                                    <div id="VectFox_summarize_openrouter_row" style="display:none; margin-bottom:10px;">
+                                        <label for="VectFox_summarize_openrouter_apikey">
                                             <small>OpenRouter API Key</small>
                                         </label>
-                                        <input type="password" id="vecthare_summarize_openrouter_apikey" class="vecthare-input"
+                                        <input type="password" id="VectFox_summarize_openrouter_apikey" class="vectfox-input"
                                             placeholder="Paste key here to save..." autocomplete="off" />
-                                        <small class="vecthare_hint">Stored in VectHare settings (separate from the embedding key)</small>
+                                        <small class="VectFox_hint">Stored in VectFox settings (separate from the embedding key)</small>
                                     </div>
 
-                                    <div id="vecthare_summarize_vllm_url_row" style="display:none; margin-bottom:10px;">
-                                        <label for="vecthare_summarize_vllm_url">
+                                    <div id="VectFox_summarize_vllm_url_row" style="display:none; margin-bottom:10px;">
+                                        <label for="VectFox_summarize_vllm_url">
                                             <small>vLLM Base URL</small>
                                         </label>
-                                        <input type="text" id="vecthare_summarize_vllm_url" class="vecthare-input"
+                                        <input type="text" id="VectFox_summarize_vllm_url" class="vectfox-input"
                                             placeholder="http://localhost:8000" />
-                                        <small class="vecthare_hint">Base URL of your vLLM server (OpenAI-compatible)</small>
-                                        <label for="vecthare_summarize_vllm_apikey" style="margin-top:8px;">
+                                        <small class="VectFox_hint">Base URL of your vLLM server (OpenAI-compatible)</small>
+                                        <label for="VectFox_summarize_vllm_apikey" style="margin-top:8px;">
                                             <small>vLLM API Key <span style="opacity:0.6;">(optional — leave blank if not required)</span></small>
                                         </label>
-                                        <input type="password" id="vecthare_summarize_vllm_apikey" class="vecthare-input"
+                                        <input type="password" id="VectFox_summarize_vllm_apikey" class="vectfox-input"
                                             placeholder="Paste key here to save..." autocomplete="off" />
                                     </div>
 
-                                    <label for="vecthare_summarize_model">
+                                    <label for="VectFox_summarize_model">
                                         <small>Summarization / EventBase Model</small>
                                     </label>
                                     <div style="display: flex; gap: 6px; align-items: stretch;">
-                                        <input type="text" id="vecthare_summarize_model" class="vecthare-input" style="flex: 1;"
+                                        <input type="text" id="VectFox_summarize_model" class="vectfox-input" style="flex: 1;"
                                             placeholder="e.g. google/gemini-flash-1.5-8b" />
-                                        <button id="vecthare_summarize_model_choose" class="menu_button" type="button" title="Fetch available models from the configured provider">
+                                        <button id="VectFox_summarize_model_choose" class="menu_button" type="button" title="Fetch available models from the configured provider">
                                             <i class="fa-solid fa-list"></i> Choose
                                         </button>
                                     </div>
-                                    <select id="vecthare_summarize_model_list" class="vecthare-select" style="display:none; margin-top:6px;"></select>
-                                    <small class="vecthare_hint">Model ID used for EventBase extraction (separate from embedding model). Required. Click <b>Choose</b> to browse the provider's model list.</small>
+                                    <select id="VectFox_summarize_model_list" class="vectfox-select" style="display:none; margin-top:6px;"></select>
+                                    <small class="VectFox_hint">Model ID used for EventBase extraction (separate from embedding model). Required. Click <b>Choose</b> to browse the provider's model list.</small>
 
                                 </div>
                             </div>
@@ -465,72 +466,72 @@ export function renderSettings(containerId, settings, callbacks) {
                             <!-- ═══════════════════════════════════════════════════════ -->
                             <!-- GROUP 4: Retrieval                                     -->
                             <!-- ═══════════════════════════════════════════════════════ -->
-                            <div class="vecthare-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
-                                <div class="vecthare-card-header" style="padding: 0 0 8px 0;">
-                                    <h3 class="vecthare-card-title" style="font-size: 0.95em;">
-                                        <span class="vecthare-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <div class="vectfox-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
+                                <div class="vectfox-card-header" style="padding: 0 0 8px 0;">
+                                    <h3 class="vectfox-card-title" style="font-size: 0.95em;">
+                                        <span class="vectfox-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
                                         Retrieval
                                     </h3>
-                                    <p class="vecthare-card-subtitle">Shared retrieval settings (EventBase + ChunkBase)</p>
+                                    <p class="vectfox-card-subtitle">Shared retrieval settings (EventBase + ChunkBase)</p>
                                 </div>
 
-                                <label for="vecthare_query_depth" style="margin-top: 4px;">
-                                    <small>Query Depth: <span id="vecthare_query_depth_value">2</span> messages</small>
+                                <label for="VectFox_query_depth" style="margin-top: 4px;">
+                                    <small>Query Depth: <span id="VectFox_query_depth_value">2</span> messages</small>
                                 </label>
-                                <input type="range" id="vecthare_query_depth" class="vecthare-slider" min="1" max="20" step="1" />
-                                <small class="vecthare_hint">How many recent messages to include in the search query</small>
+                                <input type="range" id="VectFox_query_depth" class="vectfox-slider" min="1" max="20" step="1" />
+                                <small class="VectFox_hint">How many recent messages to include in the search query</small>
 
-                                <label for="vecthare_min_chat_length" style="margin-top: 12px;">
+                                <label for="VectFox_min_chat_length" style="margin-top: 12px;">
                                     <small>Minimum Messages Before Injection</small>
                                 </label>
-                                <input type="number" id="vecthare_min_chat_length" class="vecthare-input" min="0" max="100" step="1" placeholder="0" />
-                                <small class="vecthare_hint">Minimum number of messages in chat before RAG injection starts (0 = inject immediately)</small>
+                                <input type="number" id="VectFox_min_chat_length" class="vectfox-input" min="0" max="100" step="1" placeholder="0" />
+                                <small class="VectFox_hint">Minimum number of messages in chat before RAG injection starts (0 = inject immediately)</small>
 
-                                <label for="vecthare_deduplication_depth" style="margin-top: 12px;">
-                                    <small>Skip Already-Visible Events: <span id="vecthare_deduplication_depth_value">0</span> messages</small>
+                                <label for="VectFox_deduplication_depth" style="margin-top: 12px;">
+                                    <small>Skip Already-Visible Events: <span id="VectFox_deduplication_depth_value">0</span> messages</small>
                                 </label>
-                                <input type="range" id="vecthare_deduplication_depth" class="vecthare-slider" min="0" max="500" step="10" />
-                                <small class="vecthare_hint">Drop candidate events whose source window is in the last N messages of the chat (assumption: the LLM can already see them in raw context). <b>0 = OFF (recommended)</b> — never skip on this basis. Real raw-context visibility is usually only ~3-6 messages (depends on context budget), so larger values tend to over-filter. Independent from "Dedup Window Gap" below, which is about removing near-duplicate events from the candidate pool.</small>
+                                <input type="range" id="VectFox_deduplication_depth" class="vectfox-slider" min="0" max="500" step="10" />
+                                <small class="VectFox_hint">Drop candidate events whose source window is in the last N messages of the chat (assumption: the LLM can already see them in raw context). <b>0 = OFF (recommended)</b> — never skip on this basis. Real raw-context visibility is usually only ~3-6 messages (depends on context budget), so larger values tend to over-filter. Independent from "Dedup Window Gap" below, which is about removing near-duplicate events from the candidate pool.</small>
 
-                                <label for="vecthare_eventbase_dedup_window_gap" style="margin-top: 12px;">
-                                    <small>Dedup Window Gap: <span id="vecthare_eventbase_dedup_window_gap_val">10</span> messages</small>
+                                <label for="VectFox_eventbase_dedup_window_gap" style="margin-top: 12px;">
+                                    <small>Dedup Window Gap: <span id="VectFox_eventbase_dedup_window_gap_val">10</span> messages</small>
                                 </label>
-                                <input type="range" id="vecthare_eventbase_dedup_window_gap" class="vecthare-slider" min="0" max="200" step="1" />
-                                <small class="vecthare_hint">EventBase only. Minimum source-window distance at which two same-type/same-cast events are considered <b>distinct</b> (kept). <b>0 = OFF</b> (no temporal-proximity dedup; even same-window duplicates kept). <b>1</b> = only same-window duplicates suppressed. <b>10</b> (default) = events within 9 messages dedup'd; 10+ apart kept. Higher = more aggressive dedup.</small>
+                                <input type="range" id="VectFox_eventbase_dedup_window_gap" class="vectfox-slider" min="0" max="200" step="1" />
+                                <small class="VectFox_hint">EventBase only. Minimum source-window distance at which two same-type/same-cast events are considered <b>distinct</b> (kept). <b>0 = OFF</b> (no temporal-proximity dedup; even same-window duplicates kept). <b>1</b> = only same-window duplicates suppressed. <b>10</b> (default) = events within 9 messages dedup'd; 10+ apart kept. Higher = more aggressive dedup.</small>
 
-                                <label for="vecthare_eventbase_anchor_boost" style="margin-top: 12px;">
-                                    <small>Anchor Boost: <span id="vecthare_eventbase_anchor_boost_val">0.20</span></small>
+                                <label for="VectFox_eventbase_anchor_boost" style="margin-top: 12px;">
+                                    <small>Anchor Boost: <span id="VectFox_eventbase_anchor_boost_val">0.20</span></small>
                                 </label>
-                                <input type="range" id="vecthare_eventbase_anchor_boost" class="vecthare-slider" min="0" max="0.5" step="0.05" />
-                                <small class="vecthare_hint">EventBase only. Flat additive bonus when an event's stored keyword appears verbatim in your last message. Rescues historically-distant events the user explicitly asks about. 0 = disabled. Range 0.00-0.50, default 0.20.</small>
+                                <input type="range" id="VectFox_eventbase_anchor_boost" class="vectfox-slider" min="0" max="0.5" step="0.05" />
+                                <small class="VectFox_hint">EventBase only. Flat additive bonus when an event's stored keyword appears verbatim in your last message. Rescues historically-distant events the user explicitly asks about. 0 = disabled. Range 0.00-0.50, default 0.20.</small>
 
                                 <div style="margin-top: 12px;">
-                                    <label class="checkbox_label" for="vecthare_eventbase_native_rerank">
-                                        <input id="vecthare_eventbase_native_rerank" type="checkbox" />
+                                    <label class="checkbox_label" for="VectFox_eventbase_native_rerank">
+                                        <input id="VectFox_eventbase_native_rerank" type="checkbox" />
                                         <span>Push EventBase re-rank to Qdrant (experimental)</span>
                                     </label>
-                                    <small class="vecthare_hint">A3 (Qdrant) only. Computes importance/persist/recency weighted scoring inside Qdrant via a formula query, in the same /query call as the dense+sparse hybrid. Anchor boost and pairwise dedup still run locally. Requires Qdrant 1.13+; falls back gracefully when unavailable. Re-tune the cosine weight if recall changes — see plans/qdrant-native-eventbase-rerank-formula.md.</small>
+                                    <small class="VectFox_hint">A3 (Qdrant) only. Computes importance/persist/recency weighted scoring inside Qdrant via a formula query, in the same /query call as the dense+sparse hybrid. Anchor boost and pairwise dedup still run locally. Requires Qdrant 1.13+; falls back gracefully when unavailable. Re-tune the cosine weight if recall changes — see plans/qdrant-native-eventbase-rerank-formula.md.</small>
 
-                                    <label class="checkbox_label" for="vecthare_eventbase_compare_rerank" style="margin-top: 6px; display: flex;">
-                                        <input id="vecthare_eventbase_compare_rerank" type="checkbox" />
+                                    <label class="checkbox_label" for="VectFox_eventbase_compare_rerank" style="margin-top: 6px; display: flex;">
+                                        <input id="VectFox_eventbase_compare_rerank" type="checkbox" />
                                         <span>Compare native vs JS re-rank (debug)</span>
                                     </label>
-                                    <small class="vecthare_hint">Requires native re-rank ON and Debug Logging ON. Runs the JS pipeline in parallel for each (collection, queryText) and logs top-K overlap + Spearman ρ + timings. Doubles per-collection cost — debug only.</small>
+                                    <small class="VectFox_hint">Requires native re-rank ON and Debug Logging ON. Runs the JS pipeline in parallel for each (collection, queryText) and logs top-K overlap + Spearman ρ + timings. Doubles per-collection cost — debug only.</small>
 
-                                    <label class="checkbox_label" for="vecthare_eventbase_compare_rerank_verbose" style="margin-top: 6px; display: flex;">
-                                        <input id="vecthare_eventbase_compare_rerank_verbose" type="checkbox" />
+                                    <label class="checkbox_label" for="VectFox_eventbase_compare_rerank_verbose" style="margin-top: 6px; display: flex;">
+                                        <input id="VectFox_eventbase_compare_rerank_verbose" type="checkbox" />
                                         <span>Verbose compare logs (per-event breakdown)</span>
                                     </label>
-                                    <small class="vecthare_hint">Adds per-event score-component breakdowns for events present in both top-K lists. Verbose — enable only when investigating a specific divergence.</small>
+                                    <small class="VectFox_hint">Adds per-event score-component breakdowns for events present in both top-K lists. Verbose — enable only when investigating a specific divergence.</small>
                                 </div>
 
                                 <div style="margin-top: 12px;">
-                                    <label class="checkbox_label" for="vecthare_retrieval_popup_on_start">
-                                        <input id="vecthare_retrieval_popup_on_start" type="checkbox" />
+                                    <label class="checkbox_label" for="VectFox_retrieval_popup_on_start">
+                                        <input id="VectFox_retrieval_popup_on_start" type="checkbox" />
                                         <span>Popup: show when backend retrieval starts</span>
                                     </label>
-                                    <label class="checkbox_label" for="vecthare_retrieval_popup_on_result" style="margin-top: 6px; display: flex;">
-                                        <input id="vecthare_retrieval_popup_on_result" type="checkbox" />
+                                    <label class="checkbox_label" for="VectFox_retrieval_popup_on_result" style="margin-top: 6px; display: flex;">
+                                        <input id="VectFox_retrieval_popup_on_result" type="checkbox" />
                                         <span>Popup: show retrieved result count</span>
                                     </label>
                                 </div>
@@ -539,108 +540,108 @@ export function renderSettings(containerId, settings, callbacks) {
                             <!-- ═══════════════════════════════════════════════════════ -->
                             <!-- GROUP 5: Injection                                     -->
                             <!-- ═══════════════════════════════════════════════════════ -->
-                            <div class="vecthare-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
-                                <div class="vecthare-card-header" style="padding: 0 0 8px 0;">
-                                    <h3 class="vecthare-card-title" style="font-size: 0.95em;">
-                                        <span class="vecthare-icon"><i class="fa-solid fa-arrow-right-to-bracket"></i></span>
+                            <div class="vectfox-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
+                                <div class="vectfox-card-header" style="padding: 0 0 8px 0;">
+                                    <h3 class="vectfox-card-title" style="font-size: 0.95em;">
+                                        <span class="vectfox-icon"><i class="fa-solid fa-arrow-right-to-bracket"></i></span>
                                         Injection
                                     </h3>
-                                    <p class="vecthare-card-subtitle">Prompt injection position</p>
+                                    <p class="vectfox-card-subtitle">Prompt injection position</p>
                                 </div>
 
                                 <label style="margin-top: 4px;">
                                     <small>Injection Position</small>
                                 </label>
-                                <select id="vecthare_injection_position" class="vecthare-select">
+                                <select id="VectFox_injection_position" class="vectfox-select">
                                     <option value="2">Before Main Prompt</option>
                                     <option value="0">After Main Prompt</option>
                                     <option value="1">In-Chat @ Depth</option>
                                 </select>
-                                <small class="vecthare_hint">Where retrieved chunks appear in the prompt</small>
+                                <small class="VectFox_hint">Where retrieved chunks appear in the prompt</small>
 
-                                <div id="vecthare_injection_depth_row" style="margin-top: 12px; display: none;">
-                                    <label for="vecthare_injection_depth">
-                                        <small>Injection Depth: <span id="vecthare_injection_depth_value">2</span></small>
+                                <div id="VectFox_injection_depth_row" style="margin-top: 12px; display: none;">
+                                    <label for="VectFox_injection_depth">
+                                        <small>Injection Depth: <span id="VectFox_injection_depth_value">2</span></small>
                                     </label>
-                                    <input type="range" id="vecthare_injection_depth" class="vecthare-slider" min="0" max="50" step="1" />
-                                    <small class="vecthare_hint">Messages from end of chat to insert at</small>
+                                    <input type="range" id="VectFox_injection_depth" class="vectfox-slider" min="0" max="50" step="1" />
+                                    <small class="VectFox_hint">Messages from end of chat to insert at</small>
                                 </div>
                             </div>
 
                             <!-- ═══════════════════════════════════════════════════════ -->
                             <!-- GROUP 6: Hybrid Search & BM25                          -->
                             <!-- ═══════════════════════════════════════════════════════ -->
-                            <div class="vecthare-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
-                                <div class="vecthare-card-header" style="padding: 0 0 8px 0;">
-                                    <h3 class="vecthare-card-title" style="font-size: 0.95em;">
-                                        <span class="vecthare-icon"><i class="fa-solid fa-bolt"></i></span>
+                            <div class="vectfox-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
+                                <div class="vectfox-card-header" style="padding: 0 0 8px 0;">
+                                    <h3 class="vectfox-card-title" style="font-size: 0.95em;">
+                                        <span class="vectfox-icon"><i class="fa-solid fa-bolt"></i></span>
                                         Hybrid Search &amp; BM25
                                     </h3>
-                                    <p class="vecthare-card-subtitle">Keyword scoring and result fusion</p>
+                                    <p class="vectfox-card-subtitle">Keyword scoring and result fusion</p>
                                 </div>
 
                                 <!-- Keyword Scoring Method (hidden when native hybrid active) -->
-                                <div id="vecthare_keyword_method_section" style="margin-top: 8px;">
+                                <div id="VectFox_keyword_method_section" style="margin-top: 8px;">
                                     <label>
                                         <small>Keyword Scoring Method</small>
                                     </label>
-                                    <select id="vecthare_keyword_scoring_method" class="vecthare-select">
+                                    <select id="VectFox_keyword_scoring_method" class="vectfox-select">
                                         <option value="bm25">BM25 (fast re-rank of top-K)</option>
                                         <option value="hybrid">Hybrid (vector candidates + BM25 fusion)</option>
                                     </select>
-                                    <small class="vecthare_hint">BM25 re-ranks the vector top-K candidates. Hybrid expands the vector candidate window, scores those candidates with BM25, then fuses both signals. It is broader than BM25 mode, but not a true full-corpus keyword scan.</small>
+                                    <small class="VectFox_hint">BM25 re-ranks the vector top-K candidates. Hybrid expands the vector candidate window, scores those candidates with BM25, then fuses both signals. It is broader than BM25 mode, but not a true full-corpus keyword scan.</small>
                                 </div>
 
                                 <!-- Shown instead of above when native hybrid (A3) is active -->
-                                <div id="vecthare_native_hybrid_info" style="display: none; margin-top: 16px;">
-                                    <small class="vecthare_hint"><i class="fa-solid fa-bolt"></i> Native Qdrant hybrid active: dense ANN + sparse BM25 (global IDF) fused server-side via RRF. The CJK Tokenizer Mode below is locked into each collection at upsert.</small>
+                                <div id="VectFox_native_hybrid_info" style="display: none; margin-top: 16px;">
+                                    <small class="VectFox_hint"><i class="fa-solid fa-bolt"></i> Native Qdrant hybrid active: dense ANN + sparse BM25 (global IDF) fused server-side via RRF. The CJK Tokenizer Mode below is locked into each collection at upsert.</small>
                                 </div>
 
                                 <!-- BM25 Parameters (visible when client-side BM25 logic runs — A1 or A2) -->
-                                <div id="vecthare_bm25_params" style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.1); border-radius: 8px;">
-                                    <label for="vecthare_bm25_k1">
-                                        <small>BM25 k1 (TF saturation): <span id="vecthare_bm25_k1_value">1.5</span></small>
+                                <div id="VectFox_bm25_params" style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.1); border-radius: 8px;">
+                                    <label for="VectFox_bm25_k1">
+                                        <small>BM25 k1 (TF saturation): <span id="VectFox_bm25_k1_value">1.5</span></small>
                                     </label>
-                                    <input type="range" id="vecthare_bm25_k1" class="vecthare-slider" min="0.5" max="3.0" step="0.1" />
-                                    <small class="vecthare_hint">Controls term frequency saturation (1.2-2.0 typical)</small>
+                                    <input type="range" id="VectFox_bm25_k1" class="vectfox-slider" min="0.5" max="3.0" step="0.1" />
+                                    <small class="VectFox_hint">Controls term frequency saturation (1.2-2.0 typical)</small>
 
-                                    <label for="vecthare_bm25_b" style="margin-top: 8px;">
-                                        <small>BM25 b (Length norm): <span id="vecthare_bm25_b_value">0.75</span></small>
+                                    <label for="VectFox_bm25_b" style="margin-top: 8px;">
+                                        <small>BM25 b (Length norm): <span id="VectFox_bm25_b_value">0.75</span></small>
                                     </label>
-                                    <input type="range" id="vecthare_bm25_b" class="vecthare-slider" min="0" max="1" step="0.05" />
-                                    <small class="vecthare_hint">Controls document length normalization (0.75 typical)</small>
+                                    <input type="range" id="VectFox_bm25_b" class="vectfox-slider" min="0" max="1" step="0.05" />
+                                    <small class="VectFox_hint">Controls document length normalization (0.75 typical)</small>
                                 </div>
 
                                 <!-- Hybrid Search params (visible in A2 hybrid mode and A3 native) -->
                                 <div style="margin-top: 16px; padding: 12px; background: rgba(0,100,200,0.1); border-radius: 8px; border: 1px solid rgba(0,100,200,0.2);">
-                                    <div id="vecthare_hybrid_params" style="margin-top: 4px;">
+                                    <div id="VectFox_hybrid_params" style="margin-top: 4px;">
                                         <label style="margin-top: 8px;">
                                             <small>Fusion Method</small>
                                         </label>
-                                        <select id="vecthare_hybrid_fusion_method" class="vecthare-select">
+                                        <select id="VectFox_hybrid_fusion_method" class="vectfox-select">
                                             <option value="rrf">RRF (Reciprocal Rank Fusion)</option>
                                             <option value="weighted">Weighted Linear Combination</option>
                                         </select>
-                                        <small class="vecthare_hint">RRF is parameter-free and robust; Weighted allows fine-tuning</small>
+                                        <small class="VectFox_hint">RRF is parameter-free and robust; Weighted allows fine-tuning</small>
 
-                                        <div id="vecthare_hybrid_weights" style="display: none; margin-top: 12px;">
-                                            <label for="vecthare_hybrid_vector_weight">
-                                                <small>Vector Weight: <span id="vecthare_hybrid_vector_weight_value">0.5</span></small>
+                                        <div id="VectFox_hybrid_weights" style="display: none; margin-top: 12px;">
+                                            <label for="VectFox_hybrid_vector_weight">
+                                                <small>Vector Weight: <span id="VectFox_hybrid_vector_weight_value">0.5</span></small>
                                             </label>
-                                            <input type="range" id="vecthare_hybrid_vector_weight" class="vecthare-slider" min="0" max="1" step="0.1" />
+                                            <input type="range" id="VectFox_hybrid_vector_weight" class="vectfox-slider" min="0" max="1" step="0.1" />
 
-                                            <label for="vecthare_hybrid_text_weight" style="margin-top: 8px;">
-                                                <small>Text Weight: <span id="vecthare_hybrid_text_weight_value">0.5</span></small>
+                                            <label for="VectFox_hybrid_text_weight" style="margin-top: 8px;">
+                                                <small>Text Weight: <span id="VectFox_hybrid_text_weight_value">0.5</span></small>
                                             </label>
-                                            <input type="range" id="vecthare_hybrid_text_weight" class="vecthare-slider" min="0" max="1" step="0.1" />
+                                            <input type="range" id="VectFox_hybrid_text_weight" class="vectfox-slider" min="0" max="1" step="0.1" />
                                         </div>
 
-                                        <div id="vecthare_hybrid_rrf_settings" style="margin-top: 12px;">
-                                            <label for="vecthare_hybrid_rrf_k">
-                                                <small>RRF K Constant: <span id="vecthare_hybrid_rrf_k_value">60</span></small>
+                                        <div id="VectFox_hybrid_rrf_settings" style="margin-top: 12px;">
+                                            <label for="VectFox_hybrid_rrf_k">
+                                                <small>RRF K Constant: <span id="VectFox_hybrid_rrf_k_value">60</span></small>
                                             </label>
-                                            <input type="range" id="vecthare_hybrid_rrf_k" class="vecthare-slider" min="1" max="100" step="1" />
-                                            <small class="vecthare_hint">Higher K = more weight to top-ranked results (60 is typical)</small>
+                                            <input type="range" id="VectFox_hybrid_rrf_k" class="vectfox-slider" min="1" max="100" step="1" />
+                                            <small class="VectFox_hint">Higher K = more weight to top-ranked results (60 is typical)</small>
                                         </div>
                                     </div>
                                 </div>
@@ -650,164 +651,164 @@ export function renderSettings(containerId, settings, callbacks) {
                             <!-- ═══════════════════════════════════════════════════════ -->
                             <!-- GROUP 7: Keyword Extraction                            -->
                             <!-- ═══════════════════════════════════════════════════════ -->
-                            <div class="vecthare-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
-                                <div class="vecthare-card-header" style="padding: 0 0 8px 0;">
-                                    <h3 class="vecthare-card-title" style="font-size: 0.95em;">
-                                        <span class="vecthare-icon"><i class="fa-solid fa-tags"></i></span>
+                            <div class="vectfox-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--grey30);">
+                                <div class="vectfox-card-header" style="padding: 0 0 8px 0;">
+                                    <h3 class="vectfox-card-title" style="font-size: 0.95em;">
+                                        <span class="vectfox-icon"><i class="fa-solid fa-tags"></i></span>
                                         Keyword Extraction
                                     </h3>
-                                    <p class="vecthare-card-subtitle">CJK tokenizer and stopwords for BM25</p>
+                                    <p class="vectfox-card-subtitle">CJK tokenizer and stopwords for BM25</p>
                                 </div>
 
-                                <label for="vecthare_cjk_tokenizer_mode">
+                                <label for="VectFox_cjk_tokenizer_mode">
                                     <small><b>CJK Tokenizer Mode</b></small>
                                 </label>
-                                <select id="vecthare_cjk_tokenizer_mode" class="vecthare-select" style="margin-top: 4px;">
+                                <select id="VectFox_cjk_tokenizer_mode" class="vectfox-select" style="margin-top: 4px;">
                                     <option value="intl">Intl.Segmenter (English / Korean / Latin)</option>
                                     <option value="jieba">Simplified Chinese (Jieba WASM)</option>
                                     <option value="jieba_tw">Traditional Chinese (Jieba WASM)</option>
                                     <option value="tiny_segmenter">Japanese (TinySegmenter)</option>
                                 </select>
-                                <small class="vecthare_hint">Default mode uses Intl.Segmenter — supports Korean, Chinese, and any Latin-script language (English, French, etc.) with no extra downloads. Jieba WASM loads only when selected. Traditional Chinese also downloads a TW dictionary (~2–5 MB, one-time). TinySegmenter is used for kana-containing Japanese text.</small>
+                                <small class="VectFox_hint">Default mode uses Intl.Segmenter — supports Korean, Chinese, and any Latin-script language (English, French, etc.) with no extra downloads. Jieba WASM loads only when selected. Traditional Chinese also downloads a TW dictionary (~2–5 MB, one-time). TinySegmenter is used for kana-containing Japanese text.</small>
                             </div>
 
                             <div style="margin-top: 12px; padding: 12px; background: rgba(100,100,100,0.1); border-radius: 8px;">
-                                <label for="vecthare_custom_stopwords">
+                                <label for="VectFox_custom_stopwords">
                                     <small><b>Custom Stopwords</b></small>
                                 </label>
-                                <textarea id="vecthare_custom_stopwords" class="vecthare-textarea" rows="2"
+                                <textarea id="VectFox_custom_stopwords" class="vectfox-textarea" rows="2"
                                     placeholder="{{char}}, {{user}}, character, scene, location..."
                                     style="margin-top: 4px;"></textarea>
-                                <small class="vecthare_hint">Words to exclude from keyword extraction. Supports ST macros: {{char}}, {{user}}, {{charIfNotGroup}}, etc.</small>
+                                <small class="VectFox_hint">Words to exclude from keyword extraction. Supports ST macros: {{char}}, {{user}}, {{charIfNotGroup}}, etc.</small>
                             </div>
 
                         </div>
                     </div>
 
                     <!-- ChunkBase Settings Card -->
-                    <div class="vecthare-card" data-vecthare-tab="weight">
-                        <div class="vecthare-card-header">
-                            <h3 class="vecthare-card-title">
-                                <span class="vecthare-icon">
+                    <div class="vectfox-card" data-vectfox-tab="weight">
+                        <div class="vectfox-card-header">
+                            <h3 class="vectfox-card-title">
+                                <span class="vectfox-icon">
                                     <i class="fa-solid fa-layer-group"></i>
                                 </span>
                                 ChunkBase Settings
                             </h3>
-                            <p class="vecthare-card-subtitle">Settings on this tab apply to chunk-based content: <b>Lorebook / World Info</b>, <b>Character Cards</b>, <b>URLs / web pages</b>, <b>custom documents</b>, <b>wiki pages</b>, and <b>YouTube transcripts</b>. Chat history is handled separately under EventBase.</p>
+                            <p class="vectfox-card-subtitle">Settings on this tab apply to chunk-based content: <b>Lorebook / World Info</b>, <b>Character Cards</b>, <b>URLs / web pages</b>, <b>custom documents</b>, <b>wiki pages</b>, and <b>YouTube transcripts</b>. Chat history is handled separately under EventBase.</p>
                         </div>
-                        <div class="vecthare-card-body">
+                        <div class="vectfox-card-body">
 
                             <!-- Ingestion -->
-                            <p class="vecthare-section-label" style="font-weight:600; margin-bottom:8px;">Ingestion</p>
-                            <label for="vecthare_insert_batch_size">
-                                <small>Insert Batch Size: <span id="vecthare_insert_batch_size_value">50</span></small>
+                            <p class="vectfox-section-label" style="font-weight:600; margin-bottom:8px;">Ingestion</p>
+                            <label for="VectFox_insert_batch_size">
+                                <small>Insert Batch Size: <span id="VectFox_insert_batch_size_value">50</span></small>
                             </label>
-                            <input type="range" id="vecthare_insert_batch_size" class="vecthare-slider" min="10" max="100" step="10" />
-                            <small class="vecthare_hint">Chunks per insert batch (50-100 recommended for faster bulk operations)</small>
+                            <input type="range" id="VectFox_insert_batch_size" class="vectfox-slider" min="10" max="100" step="10" />
+                            <small class="VectFox_hint">Chunks per insert batch (50-100 recommended for faster bulk operations)</small>
 
                             <!-- Query (ChunkBase-only) -->
-                            <p class="vecthare-section-label" style="font-weight:600; margin-top:16px; margin-bottom:8px;">Query</p>
+                            <p class="vectfox-section-label" style="font-weight:600; margin-top:16px; margin-bottom:8px;">Query</p>
                             <div style="margin-top:4px; display:flex; gap:8px; align-items:center;">
-                                <label for="vecthare_topk" style="margin:0; white-space:nowrap;"><small>Top K</small></label>
-                                <input id="vecthare_topk" type="number" class="vecthare-input" min="1" style="width:90px;" />
-                                <small class="vecthare_hint" style="margin-left:8px;">Up to this many results per collection (may be fewer after filtering/dedup)</small>
+                                <label for="VectFox_topk" style="margin:0; white-space:nowrap;"><small>Top K</small></label>
+                                <input id="VectFox_topk" type="number" class="vectfox-input" min="1" style="width:90px;" />
+                                <small class="VectFox_hint" style="margin-left:8px;">Up to this many results per collection (may be fewer after filtering/dedup)</small>
                             </div>
 
                             <!-- Retrieval Gating (ChunkBase-only) -->
-                            <p class="vecthare-section-label" style="font-weight:600; margin-top:16px; margin-bottom:8px;">Retrieval Gating</p>
-                            <label for="vecthare_score_threshold" style="margin-top:12px;">
-                                <small>Similarity Threshold: <span id="vecthare_threshold_value">0.25</span></small>
+                            <p class="vectfox-section-label" style="font-weight:600; margin-top:16px; margin-bottom:8px;">Retrieval Gating</p>
+                            <label for="VectFox_score_threshold" style="margin-top:12px;">
+                                <small>Similarity Threshold: <span id="VectFox_threshold_value">0.25</span></small>
                             </label>
-                            <input type="range" id="vecthare_score_threshold" class="vecthare-slider" min="0" max="1" step="0.05" />
-                            <small class="vecthare_hint">Minimum relevance score for retrieval</small>
+                            <input type="range" id="VectFox_score_threshold" class="vectfox-slider" min="0" max="1" step="0.05" />
+                            <small class="VectFox_hint">Minimum relevance score for retrieval</small>
 
                             <!-- Keyword Budget (chunk-only; visible only in A1 Standard+BM25 mode) -->
-                            <p class="vecthare-section-label" style="font-weight:600; margin-top:16px; margin-bottom:8px;">Keyword Budget</p>
-                            <small class="vecthare_hint" style="display: block; margin-bottom: 8px;">
+                            <p class="vectfox-section-label" style="font-weight:600; margin-top:16px; margin-bottom:8px;">Keyword Budget</p>
+                            <small class="VectFox_hint" style="display: block; margin-bottom: 8px;">
                                 Chunk-path-only setting. Other hybrid/BM25 knobs live under <b>Core → Hybrid Search &amp; BM25</b>.
                             </small>
-                            <div id="vecthare_hybrid_keyword_budget_wrapper" style="margin-top: 8px;">
+                            <div id="VectFox_hybrid_keyword_budget_wrapper" style="margin-top: 8px;">
                                 <label>
                                     <small>Query Keyword Budget</small>
                                 </label>
-                                <select id="vecthare_hybrid_keyword_level" class="vecthare-select">
+                                <select id="VectFox_hybrid_keyword_level" class="vectfox-select">
                                     <option value="minimal">30</option>
                                     <option value="balance">50</option>
                                     <option value="maximum">70</option>
                                 </select>
-                                <small class="vecthare_hint">Max keywords extracted from your query for BM25 scoring (CJK priority; +10 English overflow when CJK fills budget). Used only when Standard backend + BM25 mode is active.</small>
+                                <small class="VectFox_hint">Max keywords extracted from your query for BM25 scoring (CJK priority; +10 English overflow when CJK fills budget). Used only when Standard backend + BM25 mode is active.</small>
                             </div>
 
                         </div>
                     </div>
 
                     <!-- Global Temporal Weighting Defaults Card -->
-                    <div class="vecthare-card" data-vecthare-tab="weight">
-                        <div class="vecthare-card-header">
-                            <h3 class="vecthare-card-title">
-                                <span class="vecthare-icon">
+                    <div class="vectfox-card" data-vectfox-tab="weight">
+                        <div class="vectfox-card-header">
+                            <h3 class="vectfox-card-title">
+                                <span class="vectfox-icon">
                                     <i class="fa-solid fa-clock"></i>
                                 </span>
                                 Temporal Weighting Defaults (Non-Chat Collections)
                             </h3>
-                            <p class="vecthare-card-subtitle">Default settings for newly created non-chat collections that still use chunk retrieval (can be overridden per-collection)</p>
+                            <p class="vectfox-card-subtitle">Default settings for newly created non-chat collections that still use chunk retrieval (can be overridden per-collection)</p>
                         </div>
-                        <div class="vecthare-card-body">
+                        <div class="vectfox-card-body">
 
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                                <input type="checkbox" id="vecthare_default_decay_enabled" />
-                                <label for="vecthare_default_decay_enabled" style="margin: 0;">
+                                <input type="checkbox" id="VectFox_default_decay_enabled" />
+                                <label for="VectFox_default_decay_enabled" style="margin: 0;">
                                     <small>Enable temporal weighting by default for non-chat collections</small>
                                 </label>
                             </div>
 
-                            <div id="vecthare_default_decay_type_section" class="vecthare-subsection-disabled">
+                            <div id="VectFox_default_decay_type_section" class="vectfox-subsection-disabled">
                                 <label style="margin-bottom: 4px;">
                                     <small>Default Type</small>
                                 </label>
                                 <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                                     <label style="display: flex; align-items: center; gap: 4px; margin: 0;">
-                                        <input type="radio" name="vecthare_default_decay_type" value="decay" />
+                                        <input type="radio" name="VectFox_default_decay_type" value="decay" />
                                         <small>Decay (favor recent)</small>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 4px; margin: 0;">
-                                        <input type="radio" name="vecthare_default_decay_type" value="nostalgia" />
+                                        <input type="radio" name="VectFox_default_decay_type" value="nostalgia" />
                                         <small>Nostalgia (favor old)</small>
                                     </label>
                                 </div>
                             </div>
 
-                            <small class="vecthare_hint">These defaults apply only to newly created non-chat collections that use the chunk-based retrieval path. Chat history/EventBase retrieval does not use this setting. Existing collections keep their settings.</small>
+                            <small class="VectFox_hint">These defaults apply only to newly created non-chat collections that use the chunk-based retrieval path. Chat history/EventBase retrieval does not use this setting. Existing collections keep their settings.</small>
 
                         </div>
                     </div>
 
                     <!-- RAG Context Card -->
-                    <div class="vecthare-card" data-vecthare-tab="rag">
-                        <div class="vecthare-card-header">
-                            <h3 class="vecthare-card-title">
-                                <span class="vecthare-icon">
+                    <div class="vectfox-card" data-vectfox-tab="rag">
+                        <div class="vectfox-card-header">
+                            <h3 class="vectfox-card-title">
+                                <span class="vectfox-icon">
                                     <i class="fa-solid fa-quote-left"></i>
                                 </span>
                                 RAG Context
                             </h3>
-                            <p class="vecthare-card-subtitle">Retrieval-Augmented Generation injection settings — XML tag wrapping, prompt template, injection depth and position. Applies to retrieved results from any path.</p>
+                            <p class="vectfox-card-subtitle">Retrieval-Augmented Generation injection settings — XML tag wrapping, prompt template, injection depth and position. Applies to retrieved results from any path.</p>
                         </div>
-                        <div class="vecthare-card-body">
+                        <div class="vectfox-card-body">
 
-                            <label for="vecthare_rag_context">
+                            <label for="VectFox_rag_context">
                                 <small>Global Context Prompt</small>
                             </label>
-                            <textarea id="vecthare_rag_context" class="vecthare-textarea" rows="3" placeholder="e.g., The following information may be relevant to your conversation with {{user}}:"></textarea>
-                            <small class="vecthare_hint">Shown before all RAG content. Supports {{user}} and {{char}} variables.</small>
+                            <textarea id="VectFox_rag_context" class="vectfox-textarea" rows="3" placeholder="e.g., The following information may be relevant to your conversation with {{user}}:"></textarea>
+                            <small class="VectFox_hint">Shown before all RAG content. Supports {{user}} and {{char}} variables.</small>
 
-                            <label for="vecthare_rag_xml_tag" style="margin-top: 12px;">
+                            <label for="VectFox_rag_xml_tag" style="margin-top: 12px;">
                                 <small>Global XML Tag (optional)</small>
                             </label>
-                            <input type="text" id="vecthare_rag_xml_tag" class="vecthare-input" placeholder="e.g., retrieved_context" />
-                            <small class="vecthare_hint">Wraps all RAG content in &lt;tag&gt;...&lt;/tag&gt;. Leave empty for no wrapping.</small>
+                            <input type="text" id="VectFox_rag_xml_tag" class="vectfox-input" placeholder="e.g., retrieved_context" />
+                            <small class="VectFox_hint">Wraps all RAG content in &lt;tag&gt;...&lt;/tag&gt;. Leave empty for no wrapping.</small>
 
-                            <div class="vecthare_info" style="margin-top: 16px; padding: 8px 12px; border-radius: 4px; background: var(--SmartThemeBlurTintColor); font-size: 0.85em;">
+                            <div class="VectFox_info" style="margin-top: 16px; padding: 8px 12px; border-radius: 4px; background: var(--SmartThemeBlurTintColor); font-size: 0.85em;">
                                 <i class="fa-solid fa-info-circle"></i>
                                 <span>Collection and chunk-level context can be set in the Database Browser and Chunk Visualizer respectively.</span>
                             </div>
@@ -816,63 +817,63 @@ export function renderSettings(containerId, settings, callbacks) {
                         </div>
 
                         <!-- World Info Settings Card -->
-                        <div class="vecthare-card" data-vecthare-tab="worldinfo">
-                            <div class="vecthare-card-header">
-                                <h3 class="vecthare-card-title">
-                                    <span class="vecthare-icon">
+                        <div class="vectfox-card" data-vectfox-tab="worldinfo">
+                            <div class="vectfox-card-header">
+                                <h3 class="vectfox-card-title">
+                                    <span class="vectfox-icon">
                                         <i class="fa-solid fa-globe"></i>
                                     </span>
                                     World Info settings
                                 </h3>
-                                <p class="vecthare-card-subtitle">Semantic World Info / Lorebook activation — uses vector similarity instead of keyword matching to decide which entries to inject. Operates on chunk-based lorebook collections.</p>
+                                <p class="vectfox-card-subtitle">Semantic World Info / Lorebook activation — uses vector similarity instead of keyword matching to decide which entries to inject. Operates on chunk-based lorebook collections.</p>
                             </div>
-                            <div class="vecthare-card-body">
-                                <label class="checkbox_label" for="vecthare_enabled_world_info">
-                                    <input id="vecthare_enabled_world_info" type="checkbox" class="checkbox">
+                            <div class="vectfox-card-body">
+                                <label class="checkbox_label" for="VectFox_enabled_world_info">
+                                    <input id="VectFox_enabled_world_info" type="checkbox" class="checkbox">
                                     <span>Enable Semantic WI Activation</span>
                                 </label>
-                                <small class="vecthare_hint">Activates lorebook entries based on meaning, not just keywords — so relevant lore shows up even when the exact words aren't mentioned.</small>
-                                <div id="vecthare_wi_status" style="margin-top: 6px; font-size: 0.82em;"></div>
+                                <small class="VectFox_hint">Activates lorebook entries based on meaning, not just keywords — so relevant lore shows up even when the exact words aren't mentioned.</small>
+                                <div id="VectFox_wi_status" style="margin-top: 6px; font-size: 0.82em;"></div>
 
-                                <div id="vecthare_world_info_settings" style="margin-top:10px; display:none;">
+                                <div id="VectFox_world_info_settings" style="margin-top:10px; display:none;">
                                     <small style="display:block; margin-bottom:8px; opacity:0.85;">
                                         Activates World Info entries from <strong>vectorized lorebooks</strong> based on semantic similarity to recent chat messages. Complements keyword-based activation.
                                     </small>
 
                                     <div style="display:flex; gap:12px;">
                                         <div style="flex:1;">
-                                            <label for="vecthare_world_info_threshold"><small>Score Threshold</small></label>
-                                            <input id="vecthare_world_info_threshold" type="number" class="vecthare-input" min="0" max="1" step="0.01" />
+                                            <label for="VectFox_world_info_threshold"><small>Score Threshold</small></label>
+                                            <input id="VectFox_world_info_threshold" type="number" class="vectfox-input" min="0" max="1" step="0.01" />
                                         </div>
                                         <div style="flex:1;">
-                                            <label for="vecthare_world_info_top_k"><small>Top-K per Lorebook</small></label>
-                                            <input id="vecthare_world_info_top_k" type="number" class="vecthare-input" min="1" max="20" />
+                                            <label for="VectFox_world_info_top_k"><small>Top-K per Lorebook</small></label>
+                                            <input id="VectFox_world_info_top_k" type="number" class="vectfox-input" min="1" max="20" />
                                         </div>
                                         <div style="flex:1;">
-                                            <label for="vecthare_world_info_query_depth"><small>Query Depth</small></label>
-                                            <input id="vecthare_world_info_query_depth" type="number" class="vecthare-input" min="1" max="10" />
+                                            <label for="VectFox_world_info_query_depth"><small>Query Depth</small></label>
+                                            <input id="VectFox_world_info_query_depth" type="number" class="vectfox-input" min="1" max="10" />
                                         </div>
                                     </div>
 
                                     <div style="margin-top:10px;">
-                                        <label for="vecthare_wi_test_input"><small>Test Messages (one per line)</small></label>
-                                        <textarea id="vecthare_wi_test_input" class="vecthare-textarea" rows="3" placeholder="Enter test messages, one per line..."></textarea>
+                                        <label for="VectFox_wi_test_input"><small>Test Messages (one per line)</small></label>
+                                        <textarea id="VectFox_wi_test_input" class="vectfox-textarea" rows="3" placeholder="Enter test messages, one per line..."></textarea>
                                         <div style="display:flex; gap:8px; margin-top:8px;">
-                                            <button id="vecthare_wi_test_btn" class="vecthare-btn-secondary">Test Semantic WI</button>
-                                            <button id="vecthare_wi_dump_registry" class="vecthare-btn-secondary">Dump Registry</button>
-                                            <button id="vecthare_wi_apply_first" class="vecthare-btn-primary">Apply First Semantic Hit</button>
+                                            <button id="VectFox_wi_test_btn" class="vectfox-btn-secondary">Test Semantic WI</button>
+                                            <button id="VectFox_wi_dump_registry" class="vectfox-btn-secondary">Dump Registry</button>
+                                            <button id="VectFox_wi_apply_first" class="vectfox-btn-primary">Apply First Semantic Hit</button>
                                         </div>
                                     </div>
 
                                     <div style="margin-top:10px; display:flex; gap:12px; align-items:center;">
-                                        <label class="checkbox_label" for="vecthare_enabled_for_all">
-                                            <input id="vecthare_enabled_for_all" type="checkbox" />
+                                        <label class="checkbox_label" for="VectFox_enabled_for_all">
+                                            <input id="VectFox_enabled_for_all" type="checkbox" />
                                             <span>Enabled for all entries</span>
                                         </label>
                                         <div style="flex:1"></div>
                                         <div style="width:160px;">
-                                            <label for="vecthare_max_entries"><small>Max Entries</small></label>
-                                            <input id="vecthare_max_entries" type="number" class="vecthare-input" min="1" max="9999" />
+                                            <label for="VectFox_max_entries"><small>Max Entries</small></label>
+                                            <input id="VectFox_max_entries" type="number" class="vectfox-input" min="1" max="9999" />
                                         </div>
                                     </div>
                                 </div>
@@ -880,36 +881,36 @@ export function renderSettings(containerId, settings, callbacks) {
                         </div>
 
                         <!-- Chat Auto-Sync Card -->
-                    <div class="vecthare-card" data-vecthare-tab="autosync">
-                        <div class="vecthare-card-header">
-                            <h3 class="vecthare-card-title">
-                                <span class="vecthare-icon">
+                    <div class="vectfox-card" data-vectfox-tab="autosync">
+                        <div class="vectfox-card-header">
+                            <h3 class="vectfox-card-title">
+                                <span class="vectfox-icon">
                                     <i class="fa-solid fa-comments"></i>
                                 </span>
                                 Chat Auto-Sync
                             </h3>
-                            <p class="vecthare-card-subtitle">Configure automatic synchronization between the active chat and its vector collection. Per-chat toggle, behavior on new messages, and conflict resolution.</p>
+                            <p class="vectfox-card-subtitle">Configure automatic synchronization between the active chat and its vector collection. Per-chat toggle, behavior on new messages, and conflict resolution.</p>
                         </div>
-                        <div class="vecthare-card-body">
+                        <div class="vectfox-card-body">
 
-                            <label class="checkbox_label" for="vecthare_autosync_enabled">
-                                <input type="checkbox" id="vecthare_autosync_enabled" />
+                            <label class="checkbox_label" for="VectFox_autosync_enabled">
+                                <input type="checkbox" id="VectFox_autosync_enabled" />
                                 <span>Enable Auto-Sync</span>
                             </label>
-                            <small class="vecthare_hint">Auto-Sync new messages (requires initial vectorization)</small>
-                            <div id="vecthare_autosync_status" style="margin-top: 6px; font-size: 0.82em;"></div>
+                            <small class="VectFox_hint">Auto-Sync new messages (requires initial vectorization)</small>
+                            <div id="VectFox_autosync_status" style="margin-top: 6px; font-size: 0.82em;"></div>
 
                             <!-- Collection lock moved to Database Browser (per-collection settings) -->
 
-                            <div class="vecthare-form-group" style="margin-top: 12px;">
-                                <label class="checkbox_label" for="vecthare_autosync_popup">
-                                    <input type="checkbox" id="vecthare_autosync_popup" />
+                            <div class="vectfox-form-group" style="margin-top: 12px;">
+                                <label class="checkbox_label" for="VectFox_autosync_popup">
+                                    <input type="checkbox" id="VectFox_autosync_popup" />
                                     <span>Popup: show when auto-sync is extracting</span>
                                 </label>
-                                <small class="vecthare_hint">Show a notification toast each time auto-sync triggers a new EventBase extraction window.</small>
+                                <small class="VectFox_hint">Show a notification toast each time auto-sync triggers a new EventBase extraction window.</small>
                             </div>
 
-                            <small class="vecthare_hint" style="display:block; margin-top: 8px;">
+                            <small class="VectFox_hint" style="display:block; margin-top: 8px;">
                                 Chat Auto-Sync follows the EventBase extraction settings. Legacy chat chunking controls are hidden because chat history no longer uses the old chunk-based retrieval path.
                             </small>
 
@@ -917,201 +918,205 @@ export function renderSettings(containerId, settings, callbacks) {
                     </div>
 
                     <!-- Actions Card -->
-                    <div class="vecthare-card vecthare-tab-active" data-vecthare-tab="action">
-                        <div class="vecthare-card-header">
-                            <h3 class="vecthare-card-title">
-                                <span class="vecthare-icon">
+                    <div class="vectfox-card vectfox-tab-active" data-vectfox-tab="action">
+                        <div class="vectfox-card-header">
+                            <h3 class="vectfox-card-title">
+                                <span class="vectfox-icon">
                                     <i class="fa-solid fa-bolt"></i>
                                 </span>
                                 Actions
                             </h3>
-                            <p class="vecthare-card-subtitle">Run vectorization, sync chat with collections, browse the database, and run diagnostics. Operates on whatever path is currently active (Chunk or EventBase).</p>
+                            <p class="vectfox-card-subtitle">Run vectorization, sync chat with collections, browse the database, and run diagnostics. Operates on whatever path is currently active (Chunk or EventBase).</p>
                         </div>
-                        <div class="vecthare-card-body">
+                        <div class="vectfox-card-body">
 
-                            <div class="vecthare-actions-grid">
-                                <button id="vecthare_vectorize_content" class="vecthare-action-btn vecthare-btn-primary vecthare-action-featured">
+                            <div class="vectfox-actions-grid">
+                                <button id="VectFox_vectorize_content" class="vectfox-action-btn vectfox-btn-primary vectfox-action-featured">
                                     <i class="fa-solid fa-plus-circle"></i>
                                     <span>Vectorize Content</span>
                                 </button>
-                                <button id="vecthare_vectorize_all" class="vecthare-action-btn vecthare-btn-secondary">
+                                <button id="VectFox_vectorize_all" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-sync"></i>
                                     <span>Sync Chat</span>
                                 </button>
-                                <button id="vecthare_database_browser" class="vecthare-action-btn vecthare-btn-secondary">
+                                <button id="VectFox_database_browser" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-folder-open"></i>
                                     <span>Database Browser</span>
                                 </button>
-                                <button id="vecthare_run_diagnostics" class="vecthare-action-btn vecthare-btn-secondary">
+                                <button id="VectFox_migrate_collections" class="vectfox-action-btn vectfox-btn-secondary" title="Migrate all vecthare_* collections to new vf_* naming format">
+                                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                                    <span>Migrate Collections</span>
+                                </button>
+                                <button id="VectFox_run_diagnostics" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-stethoscope"></i>
                                     <span>Diagnostics</span>
                                 </button>
-                                <button id="vecthare_view_results" class="vecthare-action-btn vecthare-btn-secondary">
+                                <button id="VectFox_view_results" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-bug"></i>
                                     <span>Debug Query</span>
                                 </button>
-                                <button id="vecthare_purge" class="vecthare-action-btn vecthare-btn-danger-outline">
+                                <button id="VectFox_purge" class="vectfox-action-btn vectfox-btn-danger-outline">
                                     <i class="fa-solid fa-trash"></i>
                                     <span>Purge</span>
                                 </button>
-                                <button id="vecthare_cleanup_corrupted" class="vecthare-action-btn vecthare-btn-danger-outline" title="Delete corrupted prefix-stacked collections and ST-native file_* attachments from disk. Irreversible.">
+                                <button id="VectFox_cleanup_corrupted" class="vectfox-action-btn vectfox-btn-danger-outline" title="Delete corrupted prefix-stacked collections and ST-native file_* attachments from disk. Irreversible.">
                                     <i class="fa-solid fa-broom"></i>
                                     <span>Cleanup Corrupted</span>
                                 </button>
-                                <button id="vecthare_text_cleaning" class="vecthare-action-btn vecthare-btn-secondary">
+                                <button id="VectFox_text_cleaning" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-broom"></i>
                                     <span>Text Cleaning</span>
                                 </button>
-                                <button id="vecthare_reopen_progress" class="vecthare-action-btn vecthare-btn-secondary">
+                                <button id="VectFox_reopen_progress" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-chart-line"></i>
                                     <span>Progress</span>
                                 </button>
                                 ${getHealthIndicatorHtml()}
                             </div>
 
-                            <label class="checkbox_label" for="vecthare_injection_debug_logging" style="margin-top: 20px;">
-                                <input type="checkbox" id="vecthare_injection_debug_logging" />
+                            <label class="checkbox_label" for="VectFox_injection_debug_logging" style="margin-top: 20px;">
+                                <input type="checkbox" id="VectFox_injection_debug_logging" />
                                 <span>Debug Injection Logging (Chunk Path)</span>
                             </label>
-                            <small class="vecthare_hint">Log [VectHare Injection Control] details to the browser console (useful for diagnosing retrieval/injection issues)</small>
+                            <small class="VectFox_hint">Log [VectFox Injection Control] details to the browser console (useful for diagnosing retrieval/injection issues)</small>
 
-                            <label class="checkbox_label" for="vecthare_debug_vectorizing_log" style="margin-top: 12px;">
-                                <input type="checkbox" id="vecthare_debug_vectorizing_log" />
+                            <label class="checkbox_label" for="VectFox_debug_vectorizing_log" style="margin-top: 12px;">
+                                <input type="checkbox" id="VectFox_debug_vectorizing_log" />
                                 <span>Debug Logging</span>
                             </label>
-                            <small class="vecthare_hint">Log [EventBase] details and vectorization progress diagnostics (ProgressTracker + batch/parsing logs) to the browser console.</small>
+                            <small class="VectFox_hint">Log [EventBase] details and vectorization progress diagnostics (ProgressTracker + batch/parsing logs) to the browser console.</small>
 
-                            <label class="checkbox_label" for="vecthare_eventbase_debug_qdrant_backend" style="margin-top: 12px;">
-                                <input type="checkbox" id="vecthare_eventbase_debug_qdrant_backend" />
+                            <label class="checkbox_label" for="VectFox_eventbase_debug_qdrant_backend" style="margin-top: 12px;">
+                                <input type="checkbox" id="VectFox_eventbase_debug_qdrant_backend" />
                                 <span>Debug Qdrant backend</span>
                             </label>
-                            <small class="vecthare_hint">Log native hybrid backend keyword/fusion diagnostics from the Similharity Qdrant backend. Turn this off when not actively debugging to avoid noisy console output.</small>
+                            <small class="VectFox_hint">Log native hybrid backend keyword/fusion diagnostics from the Similharity Qdrant backend. Turn this off when not actively debugging to avoid noisy console output.</small>
 
-                            <label class="checkbox_label" for="vecthare_agentic_debug" style="margin-top: 12px;">
-                                <input type="checkbox" id="vecthare_agentic_debug" />
+                            <label class="checkbox_label" for="VectFox_agentic_debug" style="margin-top: 12px;">
+                                <input type="checkbox" id="VectFox_agentic_debug" />
                                 <span>Debug Agent Mode</span>
                             </label>
-                            <small class="vecthare_hint">Log [VectHarePlus-Agentic] details: mode marker, narrative context preview (~50 words per turn), LLM round-trip ms, planner output JSON, Qdrant fanout ms, total agent overhead ms, per-query hit counts. Only fires when Agent Mode is enabled (AgentMode tab).</small>
+                            <small class="VectFox_hint">Log [VectFoxPlus-Agentic] details: mode marker, narrative context preview (~50 words per turn), LLM round-trip ms, planner output JSON, Qdrant fanout ms, total agent overhead ms, per-query hit counts. Only fires when Agent Mode is enabled (AgentMode tab).</small>
 
 
                         </div>
                     </div>
 
                     <!-- EventBase Card -->
-                    <div class="vecthare-card" data-vecthare-tab="eventbase">
-                        <div class="vecthare-card-header">
-                            <h3 class="vecthare-card-title">
-                                <span class="vecthare-icon"><i class="fa-solid fa-database"></i></span>
+                    <div class="vectfox-card" data-vectfox-tab="eventbase">
+                        <div class="vectfox-card-header">
+                            <h3 class="vectfox-card-title">
+                                <span class="vectfox-icon"><i class="fa-solid fa-database"></i></span>
                                 EventBase
                             </h3>
-                            <p class="vecthare-card-subtitle">Settings on this tab apply to chat content: <b>Current Chat history</b> and <b>uploaded Archive Chat history (.jsonl)</b>. AI-extracted structured events are stored for semantic retrieval.</p>
+                            <p class="vectfox-card-subtitle">Settings on this tab apply to chat content: <b>Current Chat history</b> and <b>uploaded Archive Chat history (.jsonl)</b>. AI-extracted structured events are stored for semantic retrieval.</p>
                         </div>
-                        <div class="vecthare-card-body">
+                        <div class="vectfox-card-body">
 
                             <!-- Extraction settings -->
-                            <p class="vecthare-section-label"><strong>Extraction</strong></p>
+                            <p class="vectfox-section-label"><strong>Extraction</strong></p>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Window Size <span id="vecthare_eventbase_window_size_val">2</span> messages</label>
-                                <input type="range" id="vecthare_eventbase_window_size" min="2" max="20" step="1" class="vecthare-range" />
-                                <small class="vecthare_hint">Number of consecutive messages sent to the AI per extraction call.</small>
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Window Size <span id="VectFox_eventbase_window_size_val">2</span> messages</label>
+                                <input type="range" id="VectFox_eventbase_window_size" min="2" max="20" step="1" class="vectfox-range" />
+                                <small class="VectFox_hint">Number of consecutive messages sent to the AI per extraction call.</small>
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Window Overlap <span id="vecthare_eventbase_window_overlap_val">0</span></label>
-                                <input type="range" id="vecthare_eventbase_window_overlap" min="0" max="5" step="1" class="vecthare-range" />
-                                <small class="vecthare_hint">Messages shared between consecutive windows. Higher overlap re-extracts edge messages with more context (more LLM calls). 0 = no overlap, each message extracted once.</small>
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Window Overlap <span id="VectFox_eventbase_window_overlap_val">0</span></label>
+                                <input type="range" id="VectFox_eventbase_window_overlap" min="0" max="5" step="1" class="vectfox-range" />
+                                <small class="VectFox_hint">Messages shared between consecutive windows. Higher overlap re-extracts edge messages with more context (more LLM calls). 0 = no overlap, each message extracted once.</small>
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Min Importance to Store <span id="vecthare_eventbase_min_importance_store_val">3</span></label>
-                                <input type="range" id="vecthare_eventbase_min_importance_store" min="1" max="10" step="1" class="vecthare-range" />
-                                <small class="vecthare_hint">Events below this importance threshold are discarded before writing to Qdrant.</small>
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Min Importance to Store <span id="VectFox_eventbase_min_importance_store_val">3</span></label>
+                                <input type="range" id="VectFox_eventbase_min_importance_store" min="1" max="10" step="1" class="vectfox-range" />
+                                <small class="VectFox_hint">Events below this importance threshold are discarded before writing to Qdrant.</small>
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Max Events per Window <span id="vecthare_eventbase_max_events_per_window_val">3</span></label>
-                                <input type="range" id="vecthare_eventbase_max_events_per_window" min="1" max="10" step="1" class="vecthare-range" />
-                                <small class="vecthare_hint">Hard cap per LLM call. AI is instructed to return fewer (or zero) for filler / 日常 nichijou / non-narrative scenes.</small>
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Max Events per Window <span id="VectFox_eventbase_max_events_per_window_val">3</span></label>
+                                <input type="range" id="VectFox_eventbase_max_events_per_window" min="1" max="10" step="1" class="vectfox-range" />
+                                <small class="VectFox_hint">Hard cap per LLM call. AI is instructed to return fewer (or zero) for filler / 日常 nichijou / non-narrative scenes.</small>
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Temperature</label>
-                                <input type="number" id="vecthare_eventbase_temperature" class="vecthare-input" min="0" max="2" step="0.05" style="width:100px;" />
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Temperature</label>
+                                <input type="number" id="VectFox_eventbase_temperature" class="vectfox-input" min="0" max="2" step="0.05" style="width:100px;" />
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Max Output Tokens</label>
-                                <input type="number" id="vecthare_eventbase_max_tokens" class="vecthare-input" min="256" max="8192" step="64" style="width:120px;" />
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Max Output Tokens</label>
+                                <input type="number" id="VectFox_eventbase_max_tokens" class="vectfox-input" min="256" max="8192" step="64" style="width:120px;" />
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Timeout (ms)</label>
-                                <input type="number" id="vecthare_eventbase_timeout_ms" class="vecthare-input" min="5000" max="300000" step="1000" style="width:130px;" />
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Timeout (ms)</label>
+                                <input type="number" id="VectFox_eventbase_timeout_ms" class="vectfox-input" min="5000" max="300000" step="1000" style="width:130px;" />
                             </div>
 
                             <hr style="margin: 16px 0; opacity:0.2;" />
 
                             <!-- Retrieval settings -->
-                            <p class="vecthare-section-label"><strong>Retrieval</strong></p>
+                            <p class="vectfox-section-label"><strong>Retrieval</strong></p>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Retrieve Top-K <span id="vecthare_eventbase_retrieval_top_k_val">10</span></label>
-                                <input type="range" id="vecthare_eventbase_retrieval_top_k" min="1" max="32" step="1" class="vecthare-range" />
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Retrieve Top-K <span id="VectFox_eventbase_retrieval_top_k_val">10</span></label>
+                                <input type="range" id="VectFox_eventbase_retrieval_top_k" min="1" max="32" step="1" class="vectfox-range" />
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Min Importance for Retrieval <span id="vecthare_eventbase_retrieval_min_importance_val">1</span></label>
-                                <input type="range" id="vecthare_eventbase_retrieval_min_importance" min="1" max="10" step="1" class="vecthare-range" />
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Min Importance for Retrieval <span id="VectFox_eventbase_retrieval_min_importance_val">1</span></label>
+                                <input type="range" id="VectFox_eventbase_retrieval_min_importance" min="1" max="10" step="1" class="vectfox-range" />
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Injection Format</label>
-                                <select id="vecthare_eventbase_injection_format" class="vecthare-select">
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Injection Format</label>
+                                <select id="VectFox_eventbase_injection_format" class="vectfox-select">
                                     <option value="jsonarray">JSONArray</option>
                                     <option value="densetext">DenseText</option>
                                     <option value="summaryonly">Summary Only</option>
                                 </select>
-                                <small class="vecthare_hint">JSONArray keeps full structured JSON. DenseText uses compact key/value blocks. Summary Only injects only summary + DateTime — minimum prompt footprint.</small>
+                                <small class="VectFox_hint">JSONArray keeps full structured JSON. DenseText uses compact key/value blocks. Summary Only injects only summary + DateTime — minimum prompt footprint.</small>
                             </div>
 
                             <!-- Re-rank weights -->
                             <p style="margin: 12px 0 4px; font-size:0.85em; font-weight:600;">Re-rank Weights</p>
-                            <small class="vecthare_hint">Weights are normalized to sum to 1.0 on save. Defaults are tuned for long-form SillyTavern RP.</small>
+                            <small class="VectFox_hint">Weights are normalized to sum to 1.0 on save. Defaults are tuned for long-form SillyTavern RP.</small>
 
-                            <div class="vecthare-rerank-weights" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
-                                <div class="vecthare-form-group">
-                                    <label class="vecthare-label">Cosine (semantic)</label>
-                                    <input type="number" id="vecthare_eventbase_rerank_w_cosine" class="vecthare-input" min="0" max="1" step="0.05" style="width:80px;" />
+                            <div class="vectfox-rerank-weights" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+                                <div class="vectfox-form-group">
+                                    <label class="vectfox-label">Cosine (semantic)</label>
+                                    <input type="number" id="VectFox_eventbase_rerank_w_cosine" class="vectfox-input" min="0" max="1" step="0.05" style="width:80px;" />
                                 </div>
-                                <div class="vecthare-form-group">
-                                    <label class="vecthare-label">Importance</label>
-                                    <input type="number" id="vecthare_eventbase_rerank_w_importance" class="vecthare-input" min="0" max="1" step="0.05" style="width:80px;" />
+                                <div class="vectfox-form-group">
+                                    <label class="vectfox-label">Importance</label>
+                                    <input type="number" id="VectFox_eventbase_rerank_w_importance" class="vectfox-input" min="0" max="1" step="0.05" style="width:80px;" />
                                 </div>
-                                <div class="vecthare-form-group">
-                                    <label class="vecthare-label">Persist bonus</label>
-                                    <input type="number" id="vecthare_eventbase_rerank_w_persist" class="vecthare-input" min="0" max="1" step="0.05" style="width:80px;" />
+                                <div class="vectfox-form-group">
+                                    <label class="vectfox-label">Persist bonus</label>
+                                    <input type="number" id="VectFox_eventbase_rerank_w_persist" class="vectfox-input" min="0" max="1" step="0.05" style="width:80px;" />
                                 </div>
-                                <div class="vecthare-form-group">
-                                    <label class="vecthare-label">Recency decay</label>
-                                    <input type="number" id="vecthare_eventbase_rerank_w_recency" class="vecthare-input" min="0" max="1" step="0.05" style="width:80px;" />
+                                <div class="vectfox-form-group">
+                                    <label class="vectfox-label">Recency decay</label>
+                                    <input type="number" id="VectFox_eventbase_rerank_w_recency" class="vectfox-input" min="0" max="1" step="0.05" style="width:80px;" />
                                 </div>
                             </div>
-                            <button id="vecthare_eventbase_reset_weights" class="vecthare-btn vecthare-btn-secondary" style="margin-top:6px; font-size:0.8em;">Reset to defaults</button>
+                            <button id="VectFox_eventbase_reset_weights" class="vectfox-btn vectfox-btn-secondary" style="margin-top:6px; font-size:0.8em;">Reset to defaults</button>
 
                             <hr style="margin: 16px 0; opacity:0.2;" />
 
                             <hr style="margin: 16px 0; opacity:0.2;" />
 
                             <!-- Extraction Prompt -->
-                            <div class="vecthare-setting-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                            <div class="vectfox-setting-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
                                 <label style="font-weight:600;">Extraction Prompt</label>
-                                <small class="vecthare_hint">Full prompt sent to the LLM for each window. Use <code>{{text}}</code> where the excerpt goes and <code>{{maxCount}}</code> for the event cap. Leave empty to use the built-in default.</small>
+                                <small class="VectFox_hint">Full prompt sent to the LLM for each window. Use <code>{{text}}</code> where the excerpt goes and <code>{{maxCount}}</code> for the event cap. Leave empty to use the built-in default.</small>
                                 <div style="display:flex; gap:6px; width:100%; margin-bottom:4px;">
-                                    <button id="vecthare_eventbase_prompt_reset" class="vecthare-action-btn vecthare-btn-secondary" style="font-size:11px; padding:3px 10px;">Reset to Default</button>
+                                    <button id="VectFox_eventbase_prompt_reset" class="vectfox-action-btn vectfox-btn-secondary" style="font-size:11px; padding:3px 10px;">Reset to Default</button>
                                 </div>
-                                <textarea id="vecthare_eventbase_custom_prompt"
-                                    class="vecthare-input"
+                                <textarea id="VectFox_eventbase_custom_prompt"
+                                    class="vectfox-input"
                                     rows="12"
                                     style="width:100%; font-family:monospace; font-size:11px; resize:vertical;"
                                     placeholder="Leave empty to use the built-in default prompt…"></textarea>
@@ -1119,7 +1124,7 @@ export function renderSettings(containerId, settings, callbacks) {
 
                             <!-- Browser button -->
                             <div style="margin-top:20px;">
-                                <button id="vecthare_eventbase_open_browser" class="vecthare-action-btn vecthare-btn-secondary">
+                                <button id="VectFox_eventbase_open_browser" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-list"></i>
                                     <span>Open Event Browser</span>
                                 </button>
@@ -1129,89 +1134,89 @@ export function renderSettings(containerId, settings, callbacks) {
                     </div>
 
                     <!-- AgentMode Card -->
-                    <div class="vecthare-card" data-vecthare-tab="agentmode">
-                        <div class="vecthare-card-header">
-                            <h3 class="vecthare-card-title">
-                                <span class="vecthare-icon"><i class="fa-solid fa-robot"></i></span>
+                    <div class="vectfox-card" data-vectfox-tab="agentmode">
+                        <div class="vectfox-card-header">
+                            <h3 class="vectfox-card-title">
+                                <span class="vectfox-icon"><i class="fa-solid fa-robot"></i></span>
                                 AgentMode — Agentic Retrieval
                             </h3>
-                            <p class="vecthare-card-subtitle">An optional LLM-planner step that runs between pre-search and re-rank. It reads recent chat context plus pre-search candidates, then fans out 1-4 follow-up queries in parallel against Qdrant. Purely additive — never replaces the normal flow.</p>
+                            <p class="vectfox-card-subtitle">An optional LLM-planner step that runs between pre-search and re-rank. It reads recent chat context plus pre-search candidates, then fans out 1-4 follow-up queries in parallel against Qdrant. Purely additive — never replaces the normal flow.</p>
                         </div>
-                        <div class="vecthare-card-body">
+                        <div class="vectfox-card-body">
 
                             <!-- Master toggle -->
-                            <div class="vecthare-form-group">
-                                <label class="checkbox_label" for="vecthare_agentic_retrieval_enabled">
-                                    <input id="vecthare_agentic_retrieval_enabled" type="checkbox" />
+                            <div class="vectfox-form-group">
+                                <label class="checkbox_label" for="VectFox_agentic_retrieval_enabled">
+                                    <input id="VectFox_agentic_retrieval_enabled" type="checkbox" />
                                     <span><b>Enable AgentMode</b></span>
                                 </label>
-                                <small class="vecthare_hint" style="display:block; margin-top:6px;">
+                                <small class="VectFox_hint" style="display:block; margin-top:6px;">
                                     Requires Qdrant backend (A3). Adds ~$0.0002 and ~300ms per turn. Always merged with normal search — never replaces it. Falls back gracefully on any failure.
                                 </small>
                             </div>
 
                             <!-- LLM Provider (inheritance from summarizer) -->
-                            <p class="vecthare-section-label" style="margin-top:16px;"><strong>LLM Provider</strong></p>
-                            <small class="vecthare_hint" style="display:block; margin-bottom:8px;">
+                            <p class="vectfox-section-label" style="margin-top:16px;"><strong>LLM Provider</strong></p>
+                            <small class="VectFox_hint" style="display:block; margin-bottom:8px;">
                                 Leave any field blank to inherit from <b>Summarize Before Store</b> settings. Use a cheaper model here (e.g. <code>anthropic/claude-haiku-4-5</code>) to save cost.
                             </small>
 
-                            <div class="vecthare-form-group">
-                                <label for="vecthare_agentic_provider"><small>Provider</small></label>
-                                <select id="vecthare_agentic_provider" class="vecthare-select">
+                            <div class="vectfox-form-group">
+                                <label for="VectFox_agentic_provider"><small>Provider</small></label>
+                                <select id="VectFox_agentic_provider" class="vectfox-select">
                                     <option value="">(Inherit from summarizer)</option>
                                     <option value="openrouter">OpenRouter</option>
                                     <option value="vllm">vLLM</option>
                                 </select>
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label for="vecthare_agentic_model"><small>Model</small></label>
-                                <input type="text" id="vecthare_agentic_model" class="vecthare-input"
+                            <div class="vectfox-form-group">
+                                <label for="VectFox_agentic_model"><small>Model</small></label>
+                                <input type="text" id="VectFox_agentic_model" class="vectfox-input"
                                     placeholder="(empty → inherit summarizer model)" />
-                                <small class="vecthare_hint">e.g. <code>anthropic/claude-haiku-4-5</code> for OpenRouter.</small>
+                                <small class="VectFox_hint">e.g. <code>anthropic/claude-haiku-4-5</code> for OpenRouter.</small>
                             </div>
 
-                            <div class="vecthare-form-group" id="vecthare_agentic_openrouter_row">
-                                <label for="vecthare_agentic_openrouter_apikey"><small>OpenRouter API Key</small></label>
-                                <input type="password" id="vecthare_agentic_openrouter_apikey" class="vecthare-input"
+                            <div class="vectfox-form-group" id="VectFox_agentic_openrouter_row">
+                                <label for="VectFox_agentic_openrouter_apikey"><small>OpenRouter API Key</small></label>
+                                <input type="password" id="VectFox_agentic_openrouter_apikey" class="vectfox-input"
                                     placeholder="(empty → inherit summarize key)" autocomplete="off" />
                             </div>
 
-                            <div class="vecthare-form-group" id="vecthare_agentic_vllm_row" style="display:none;">
-                                <label for="vecthare_agentic_vllm_url"><small>vLLM Base URL</small></label>
-                                <input type="text" id="vecthare_agentic_vllm_url" class="vecthare-input"
+                            <div class="vectfox-form-group" id="VectFox_agentic_vllm_row" style="display:none;">
+                                <label for="VectFox_agentic_vllm_url"><small>vLLM Base URL</small></label>
+                                <input type="text" id="VectFox_agentic_vllm_url" class="vectfox-input"
                                     placeholder="(empty → inherit summarize URL)" />
-                                <label for="vecthare_agentic_vllm_apikey" style="margin-top:8px;"><small>vLLM API Key</small></label>
-                                <input type="password" id="vecthare_agentic_vllm_apikey" class="vecthare-input"
+                                <label for="VectFox_agentic_vllm_apikey" style="margin-top:8px;"><small>vLLM API Key</small></label>
+                                <input type="password" id="VectFox_agentic_vllm_apikey" class="vectfox-input"
                                     placeholder="(empty → inherit summarize key)" autocomplete="off" />
                             </div>
 
                             <!-- Retrieval Tuning -->
-                            <p class="vecthare-section-label" style="margin-top:16px;"><strong>Retrieval Tuning</strong></p>
+                            <p class="vectfox-section-label" style="margin-top:16px;"><strong>Retrieval Tuning</strong></p>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Past chat turns sent to planner: <span id="vecthare_agentic_chat_depth_val">3</span></label>
-                                <input type="range" id="vecthare_agentic_chat_depth" min="1" max="10" step="1" class="vecthare-range" />
-                                <small class="vecthare_hint">How many recent non-system chat turns are included as narrative context for the planner. Lower = faster + cheaper LLM call; higher = more story context for the planner to reason about.</small>
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Past chat turns sent to planner: <span id="VectFox_agentic_chat_depth_val">3</span></label>
+                                <input type="range" id="VectFox_agentic_chat_depth" min="1" max="10" step="1" class="vectfox-range" />
+                                <small class="VectFox_hint">How many recent non-system chat turns are included as narrative context for the planner. Lower = faster + cheaper LLM call; higher = more story context for the planner to reason about.</small>
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Candidates shown to planner: <span id="vecthare_agentic_candidates_val">12</span></label>
-                                <input type="range" id="vecthare_agentic_candidates" min="5" max="20" step="1" class="vecthare-range" />
-                                <small class="vecthare_hint">How many top pre-search events the planner sees when deciding what extra queries to run.</small>
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Candidates shown to planner: <span id="VectFox_agentic_candidates_val">12</span></label>
+                                <input type="range" id="VectFox_agentic_candidates" min="5" max="20" step="1" class="vectfox-range" />
+                                <small class="VectFox_hint">How many top pre-search events the planner sees when deciding what extra queries to run.</small>
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label class="vecthare-label">Max planner queries: <span id="vecthare_agentic_max_queries_val">4</span></label>
-                                <input type="range" id="vecthare_agentic_max_queries" min="1" max="4" step="1" class="vecthare-range" />
-                                <small class="vecthare_hint">Hard ceiling on how many follow-up queries the planner can emit. Each query is one Qdrant call per live collection.</small>
+                            <div class="vectfox-form-group">
+                                <label class="vectfox-label">Max planner queries: <span id="VectFox_agentic_max_queries_val">4</span></label>
+                                <input type="range" id="VectFox_agentic_max_queries" min="1" max="4" step="1" class="vectfox-range" />
+                                <small class="VectFox_hint">Hard ceiling on how many follow-up queries the planner can emit. Each query is one Qdrant call per live collection.</small>
                             </div>
 
-                            <div class="vecthare-form-group">
-                                <label for="vecthare_agentic_timeout"><small>Planner LLM Timeout (ms)</small></label>
-                                <input type="number" id="vecthare_agentic_timeout" class="vecthare-input" min="1000" max="60000" step="1000" />
-                                <small class="vecthare_hint">Hard timeout for the planner call. Default <b>30000 ms (30s)</b>. On timeout, agent mode falls back to pre-search only. Increase if your planner model is slow (large models / free-tier providers often take 10-20s on a 1500-token prompt).</small>
+                            <div class="vectfox-form-group">
+                                <label for="VectFox_agentic_timeout"><small>Planner LLM Timeout (ms)</small></label>
+                                <input type="number" id="VectFox_agentic_timeout" class="vectfox-input" min="1000" max="60000" step="1000" />
+                                <small class="VectFox_hint">Hard timeout for the planner call. Default <b>30000 ms (30s)</b>. On timeout, agent mode falls back to pre-search only. Increase if your planner model is slow (large models / free-tier providers often take 10-20s on a 1500-token prompt).</small>
                             </div>
 
 
@@ -1223,62 +1228,62 @@ export function renderSettings(containerId, settings, callbacks) {
         </div>
 
         <!-- Diagnostics Modal -->
-        <div id="vecthare_diagnostics_modal" class="vecthare-modal" style="display: none;">
-            <div class="vecthare-modal-overlay"></div>
-            <div class="vecthare-modal-content vecthare-diagnostics-modal">
-                <div class="vecthare-modal-header">
+        <div id="VectFox_diagnostics_modal" class="vectfox-modal" style="display: none;">
+            <div class="vectfox-modal-overlay"></div>
+            <div class="vectfox-modal-content vectfox-diagnostics-modal">
+                <div class="vectfox-modal-header">
                     <h3>
                         <i class="fa-solid fa-stethoscope"></i>
-                        <span id="vecthare_diagnostics_title">Run Diagnostics</span>
+                        <span id="VectFox_diagnostics_title">Run Diagnostics</span>
                     </h3>
-                    <button class="vecthare-modal-close" id="vecthare_diagnostics_close">
+                    <button class="vectfox-modal-close" id="VectFox_diagnostics_close">
                         <i class="fa-solid fa-times"></i>
                     </button>
                 </div>
-                <div class="vecthare-modal-body">
+                <div class="vectfox-modal-body">
                     <!-- Phase 1: Category Selection -->
-                    <div id="vecthare_diagnostics_selection" class="vecthare-diagnostics-phase">
-                        <p class="vecthare-diagnostics-intro">Select which diagnostic categories to run:</p>
+                    <div id="VectFox_diagnostics_selection" class="vectfox-diagnostics-phase">
+                        <p class="vectfox-diagnostics-intro">Select which diagnostic categories to run:</p>
 
-                        <div class="vecthare-diagnostics-categories">
-                            <label class="vecthare-diagnostics-category-option">
-                                <input type="checkbox" id="vecthare_diag_infrastructure" checked>
-                                <div class="vecthare-diagnostics-category-card">
+                        <div class="vectfox-diagnostics-categories">
+                            <label class="vectfox-diagnostics-category-option">
+                                <input type="checkbox" id="VectFox_diag_infrastructure" checked>
+                                <div class="vectfox-diagnostics-category-card">
                                     <i class="fa-solid fa-server"></i>
-                                    <div class="vecthare-diagnostics-category-info">
+                                    <div class="vectfox-diagnostics-category-info">
                                         <strong>Infrastructure</strong>
                                         <span>Backend connections, plugins, API endpoints</span>
                                     </div>
                                 </div>
                             </label>
 
-                            <label class="vecthare-diagnostics-category-option">
-                                <input type="checkbox" id="vecthare_diag_configuration" checked>
-                                <div class="vecthare-diagnostics-category-card">
+                            <label class="vectfox-diagnostics-category-option">
+                                <input type="checkbox" id="VectFox_diag_configuration" checked>
+                                <div class="vectfox-diagnostics-category-card">
                                     <i class="fa-solid fa-sliders"></i>
-                                    <div class="vecthare-diagnostics-category-info">
+                                    <div class="vectfox-diagnostics-category-info">
                                         <strong>Configuration</strong>
                                         <span>Settings validation, chunk size, thresholds</span>
                                     </div>
                                 </div>
                             </label>
 
-                            <label class="vecthare-diagnostics-category-option">
-                                <input type="checkbox" id="vecthare_diag_visualizer" checked>
-                                <div class="vecthare-diagnostics-category-card">
+                            <label class="vectfox-diagnostics-category-option">
+                                <input type="checkbox" id="VectFox_diag_visualizer" checked>
+                                <div class="vectfox-diagnostics-category-card">
                                     <i class="fa-solid fa-eye"></i>
-                                    <div class="vecthare-diagnostics-category-info">
+                                    <div class="vectfox-diagnostics-category-info">
                                         <strong>Visualizer</strong>
                                         <span>Chunk editing, deletion, summary vectors</span>
                                     </div>
                                 </div>
                             </label>
 
-                            <label class="vecthare-diagnostics-category-option">
-                                <input type="checkbox" id="vecthare_diag_production">
-                                <div class="vecthare-diagnostics-category-card">
+                            <label class="vectfox-diagnostics-category-option">
+                                <input type="checkbox" id="VectFox_diag_production">
+                                <div class="vectfox-diagnostics-category-card">
                                     <i class="fa-solid fa-vial"></i>
-                                    <div class="vecthare-diagnostics-category-info">
+                                    <div class="vectfox-diagnostics-category-info">
                                         <strong>Production Tests</strong>
                                         <span>Live embedding, storage, retrieval tests</span>
                                     </div>
@@ -1286,36 +1291,36 @@ export function renderSettings(containerId, settings, callbacks) {
                             </label>
                         </div>
 
-                        <div class="vecthare-diagnostics-actions">
-                            <button class="vecthare-btn-secondary" id="vecthare_diag_cancel">Cancel</button>
-                            <button class="vecthare-btn-primary" id="vecthare_diag_run">
+                        <div class="vectfox-diagnostics-actions">
+                            <button class="vectfox-btn-secondary" id="VectFox_diag_cancel">Cancel</button>
+                            <button class="vectfox-btn-primary" id="VectFox_diag_run">
                                 <i class="fa-solid fa-play"></i> Run Diagnostics
                             </button>
                         </div>
                     </div>
 
                     <!-- Phase 2: Running -->
-                    <div id="vecthare_diagnostics_running" class="vecthare-diagnostics-phase" style="display: none;">
-                        <div class="vecthare-diagnostics-spinner">
+                    <div id="VectFox_diagnostics_running" class="vectfox-diagnostics-phase" style="display: none;">
+                        <div class="vectfox-diagnostics-spinner">
                             <i class="fa-solid fa-spinner fa-spin"></i>
                             <span>Running diagnostics...</span>
                         </div>
                     </div>
 
                     <!-- Phase 3: Results -->
-                    <div id="vecthare_diagnostics_results" class="vecthare-diagnostics-phase" style="display: none;">
-                        <div id="vecthare_diagnostics_content"></div>
-                        <div class="vecthare-diagnostics-footer">
-                            <button class="vecthare-btn-secondary" id="vecthare_diag_back">
+                    <div id="VectFox_diagnostics_results" class="vectfox-diagnostics-phase" style="display: none;">
+                        <div id="VectFox_diagnostics_content"></div>
+                        <div class="vectfox-diagnostics-footer">
+                            <button class="vectfox-btn-secondary" id="VectFox_diag_back">
                                 <i class="fa-solid fa-arrow-left"></i> Run Again
                             </button>
-                            <button class="vecthare-btn-secondary" id="vecthare_diag_copy">
+                            <button class="vectfox-btn-secondary" id="VectFox_diag_copy">
                                 <i class="fa-solid fa-copy"></i> Copy Report
                             </button>
-                            <button class="vecthare-btn-danger" id="vecthare_diag_fix_all" style="display: none;">
+                            <button class="vectfox-btn-danger" id="VectFox_diag_fix_all" style="display: none;">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> Fix All Issues
                             </button>
-                            <button class="vecthare-btn-primary" id="vecthare_diag_done">Done</button>
+                            <button class="vectfox-btn-primary" id="VectFox_diag_done">Done</button>
                         </div>
                     </div>
                 </div>
@@ -1323,32 +1328,32 @@ export function renderSettings(containerId, settings, callbacks) {
         </div>
 
         <!-- Chunk Visualizer Modal -->
-        <div id="vecthare_visualizer_modal" class="vecthare-modal" style="display: none;">
-            <div class="vecthare-modal-overlay"></div>
-            <div class="vecthare-modal-content vecthare-visualizer-content">
-                <div class="vecthare-modal-header">
+        <div id="VectFox_visualizer_modal" class="vectfox-modal" style="display: none;">
+            <div class="vectfox-modal-overlay"></div>
+            <div class="vectfox-modal-content vectfox-visualizer-content">
+                <div class="vectfox-modal-header">
                     <h3>
                         <i class="fa-solid fa-cubes"></i>
                         Chunk Visualizer
                     </h3>
-                    <button class="vecthare-modal-close" id="vecthare_visualizer_close">
+                    <button class="vectfox-modal-close" id="VectFox_visualizer_close">
                         <i class="fa-solid fa-times"></i>
                     </button>
                 </div>
-                <div class="vecthare-visualizer-toolbar">
-                    <input type="text" id="vecthare_visualizer_search"
-                           class="vecthare-visualizer-search"
+                <div class="vectfox-visualizer-toolbar">
+                    <input type="text" id="VectFox_visualizer_search"
+                           class="vectfox-visualizer-search"
                            placeholder="Search chunks by text, keywords, or name...">
-                    <div class="vecthare-visualizer-stats">
-                        <span id="vecthare_visualizer_count">0 chunks</span>
-                        <span id="vecthare_visualizer_tiers"></span>
+                    <div class="vectfox-visualizer-stats">
+                        <span id="VectFox_visualizer_count">0 chunks</span>
+                        <span id="VectFox_visualizer_tiers"></span>
                     </div>
                 </div>
-                <div class="vecthare-modal-body">
-                    <div id="vecthare_visualizer_content"></div>
+                <div class="vectfox-modal-body">
+                    <div id="VectFox_visualizer_content"></div>
                 </div>
-                <div class="vecthare-modal-footer">
-                    <button class="vecthare-btn-secondary" id="vecthare_visualizer_done">Done</button>
+                <div class="vectfox-modal-footer">
+                    <button class="vectfox-btn-secondary" id="VectFox_visualizer_done">Done</button>
                 </div>
             </div>
         </div>
@@ -1358,24 +1363,24 @@ export function renderSettings(containerId, settings, callbacks) {
 
     // Sanity debug: confirm the generated HTML contains the lock button marker
     try {
-        console.log(`VectHare: renderSettings built HTML contains lock marker:`, String(html).indexOf('vecthare_lock_collection') >= 0);
+        console.log(`VectFox: renderSettings built HTML contains lock marker:`, String(html).indexOf('VectFox_lock_collection') >= 0);
         const target = document.getElementById(containerId);
-        console.log(`VectHare: renderSettings target container exists:`, !!target, 'containerId=', containerId);
+        console.log(`VectFox: renderSettings target container exists:`, !!target, 'containerId=', containerId);
     } catch (e) {
-        console.warn('VectHare: renderSettings pre-append debug failed', e);
+        console.warn('VectFox: renderSettings pre-append debug failed', e);
     }
 
     $(`#${containerId}`).append(html);
 
     // Debug: log presence of lock button after rendering and observe for later appearance
     try {
-        console.log(`VectHare: renderSettings appended to ${containerId}. lock button present:`, !!document.getElementById('vecthare_lock_collection'));
-        if (!document.getElementById('vecthare_lock_collection')) {
+        console.log(`VectFox: renderSettings appended to ${containerId}. lock button present:`, !!document.getElementById('VectFox_lock_collection'));
+        if (!document.getElementById('VectFox_lock_collection')) {
             const containerEl = document.getElementById(containerId);
             if (containerEl && window.MutationObserver) {
                 const mo = new MutationObserver((mutations, obs) => {
-                    if (document.getElementById('vecthare_lock_collection')) {
-                        console.log('VectHare: lock button appeared in DOM');
+                    if (document.getElementById('VectFox_lock_collection')) {
+                        console.log('VectFox: lock button appeared in DOM');
                         obs.disconnect();
                     }
                 });
@@ -1383,7 +1388,7 @@ export function renderSettings(containerId, settings, callbacks) {
             }
         }
     } catch (e) {
-        console.warn('VectHare: debug check failed', e);
+        console.warn('VectFox: debug check failed', e);
     }
 
     // Bind all events
@@ -1401,7 +1406,7 @@ export function renderSettings(containerId, settings, callbacks) {
     // Initialize health dashboard
     initializeHealthDashboard();
 
-    console.log('VectHare UI: Settings rendered');
+    console.log('VectFox UI: Settings rendered');
 }
 
 /**
@@ -1409,47 +1414,47 @@ export function renderSettings(containerId, settings, callbacks) {
  */
 function initializeDiagnosticsModal() {
     // Close button
-    $('#vecthare_diagnostics_close').on('click', function() {
+    $('#VectFox_diagnostics_close').on('click', function() {
         closeDiagnosticsModal();
     });
 
     // Click overlay to close
-    $('#vecthare_diagnostics_modal .vecthare-modal-overlay').on('click', function() {
+    $('#VectFox_diagnostics_modal .vectfox-modal-overlay').on('click', function() {
         closeDiagnosticsModal();
     });
 
     // Stop mousedown propagation (ST closes drawers on mousedown/touchstart)
     // Note: This modal is inside the drawer so it doesn't strictly need this,
     // but we include it for consistency with other modals
-    $('#vecthare_diagnostics_modal').on('mousedown touchstart', function(e) {
+    $('#VectFox_diagnostics_modal').on('mousedown touchstart', function(e) {
         e.stopPropagation();
     });
 
     // ESC key to close
     $(document).on('keydown', function(e) {
-        if (e.key === 'Escape' && $('#vecthare_diagnostics_modal').is(':visible')) {
+        if (e.key === 'Escape' && $('#VectFox_diagnostics_modal').is(':visible')) {
             closeDiagnosticsModal();
         }
     });
 
     // Cancel button
-    $('#vecthare_diag_cancel').on('click', function() {
+    $('#VectFox_diag_cancel').on('click', function() {
         closeDiagnosticsModal();
     });
 
     // Done button
-    $('#vecthare_diag_done').on('click', function() {
+    $('#VectFox_diag_done').on('click', function() {
         closeDiagnosticsModal();
     });
 
     // Back button - go back to selection
-    $('#vecthare_diag_back').on('click', function() {
+    $('#VectFox_diag_back').on('click', function() {
         showDiagnosticsPhase('selection');
-        $('#vecthare_diagnostics_title').text('Run Diagnostics');
+        $('#VectFox_diagnostics_title').text('Run Diagnostics');
     });
 
     // Run button - execute diagnostics
-    $('#vecthare_diag_run').on('click', async function() {
+    $('#VectFox_diag_run').on('click', async function() {
         await executeDiagnostics();
     });
 }
@@ -1458,10 +1463,10 @@ function initializeDiagnosticsModal() {
  * Closes the diagnostics modal and resets to selection phase
  */
 function closeDiagnosticsModal() {
-    $('#vecthare_diagnostics_modal').fadeOut(200, function() {
+    $('#VectFox_diagnostics_modal').fadeOut(200, function() {
         // Reset to selection phase for next open
         showDiagnosticsPhase('selection');
-        $('#vecthare_diagnostics_title').text('Run Diagnostics');
+        $('#VectFox_diagnostics_title').text('Run Diagnostics');
     });
 }
 
@@ -1470,10 +1475,10 @@ function closeDiagnosticsModal() {
  * @param {string} phase - 'selection', 'running', or 'results'
  */
 function showDiagnosticsPhase(phase) {
-    $('#vecthare_diagnostics_selection').hide();
-    $('#vecthare_diagnostics_running').hide();
-    $('#vecthare_diagnostics_results').hide();
-    $(`#vecthare_diagnostics_${phase}`).show();
+    $('#VectFox_diagnostics_selection').hide();
+    $('#VectFox_diagnostics_running').hide();
+    $('#VectFox_diagnostics_results').hide();
+    $(`#VectFox_diagnostics_${phase}`).show();
 }
 
 // Console error capture for diagnostics
@@ -1535,13 +1540,13 @@ function stopConsoleCapture() {
  * Executes diagnostics based on selected categories
  */
 async function executeDiagnostics() {
-    const settings = extension_settings.vecthareplus;
+    const settings = extension_settings.VectFoxplus;
 
     // Get selected categories
-    const runInfrastructure = $('#vecthare_diag_infrastructure').prop('checked');
-    const runConfiguration = $('#vecthare_diag_configuration').prop('checked');
-    const runVisualizer = $('#vecthare_diag_visualizer').prop('checked');
-    const runProduction = $('#vecthare_diag_production').prop('checked');
+    const runInfrastructure = $('#VectFox_diag_infrastructure').prop('checked');
+    const runConfiguration = $('#VectFox_diag_configuration').prop('checked');
+    const runVisualizer = $('#VectFox_diag_visualizer').prop('checked');
+    const runProduction = $('#VectFox_diag_production').prop('checked');
 
     if (!runInfrastructure && !runConfiguration && !runVisualizer && !runProduction) {
         toastr.warning('Please select at least one category to run');
@@ -1550,7 +1555,7 @@ async function executeDiagnostics() {
 
     // Show running phase
     showDiagnosticsPhase('running');
-    $('#vecthare_diagnostics_title').text('Running Diagnostics...');
+    $('#VectFox_diagnostics_title').text('Running Diagnostics...');
 
     // Start capturing console errors
     startConsoleCapture();
@@ -1611,10 +1616,10 @@ async function executeDiagnostics() {
 
     } catch (error) {
         stopConsoleCapture();
-        console.error('VectHare Diagnostics error:', error);
+        console.error('VectFox Diagnostics error:', error);
         toastr.error('Failed to run diagnostics: ' + error.message);
         showDiagnosticsPhase('selection');
-        $('#vecthare_diagnostics_title').text('Run Diagnostics');
+        $('#VectFox_diagnostics_title').text('Run Diagnostics');
     }
 }
 
@@ -1622,9 +1627,9 @@ async function executeDiagnostics() {
  * Initializes collapsible functionality
  */
 function initializeCollapsibleCards() {
-    $('.vecthare-collapsible-header').on('click', function() {
-        const content = $(this).next('.vecthare-collapsible-content');
-        const icon = $(this).find('.vecthare-collapsible-icon');
+    $('.vectfox-collapsible-header').on('click', function() {
+        const content = $(this).next('.vectfox-collapsible-content');
+        const icon = $(this).find('.vectfox-collapsible-icon');
 
         content.slideToggle(200);
         icon.toggleClass('rotated');
@@ -1633,17 +1638,17 @@ function initializeCollapsibleCards() {
 
     /**
      * Initializes two-row tab navigation for settings panels.
-     * Each .vecthare-card[data-vecthare-tab] is a panel; only the active one is shown.
+     * Each .vectfox-card[data-vectfox-tab] is a panel; only the active one is shown.
      */
     function initializeTabs() {
-        $('#vecthare_settings').on('click', '.vecthare-tab-btn', function() {
+        $('#VectFox_settings').on('click', '.vectfox-tab-btn', function() {
             const tab = $(this).data('tab');
             // Update button active state
-            $('.vecthare-tab-btn', '#vecthare_settings').removeClass('active');
+            $('.vectfox-tab-btn', '#VectFox_settings').removeClass('active');
             $(this).addClass('active');
             // Show only the matching tab panel
-            $('[data-vecthare-tab]', '#vecthare_settings').removeClass('vecthare-tab-active');
-            $(`[data-vecthare-tab="${tab}"]`, '#vecthare_settings').addClass('vecthare-tab-active');
+            $('[data-vectfox-tab]', '#VectFox_settings').removeClass('vectfox-tab-active');
+            $(`[data-vectfox-tab="${tab}"]`, '#VectFox_settings').addClass('vectfox-tab-active');
         });
     }
 
@@ -1659,7 +1664,7 @@ const getWebLlmProvider = getSharedWebLlmProvider;
 function isWebLlmSupported() {
     // Check 1: Browser supports WebGPU API
     if (!('gpu' in navigator)) {
-        const warningKey = 'vecthare_webllm_browser_warning_shown';
+        const warningKey = 'VectFox_webllm_browser_warning_shown';
         if (!sessionStorage.getItem(warningKey)) {
             toastr.error(
                 'Your browser does not support the WebGPU API. Please use Chrome 113+, Edge 113+, or another WebGPU-compatible browser.',
@@ -1673,7 +1678,7 @@ function isWebLlmSupported() {
 
     // Check 2: WebLLM extension is installed
     if (!Object.hasOwn(SillyTavern, 'llm')) {
-        const warningKey = 'vecthare_webllm_extension_warning_shown';
+        const warningKey = 'VectFox_webllm_extension_warning_shown';
         if (!sessionStorage.getItem(warningKey)) {
             toastr.error(
                 'WebLLM extension is not installed. Click here to install it.',
@@ -1692,7 +1697,7 @@ function isWebLlmSupported() {
 
     // Check 3: WebLLM extension supports embeddings
     if (typeof SillyTavern.llm.generateEmbedding !== 'function') {
-        const warningKey = 'vecthare_webllm_update_warning_shown';
+        const warningKey = 'VectFox_webllm_update_warning_shown';
         if (!sessionStorage.getItem(warningKey)) {
             toastr.error(
                 'Your WebLLM extension is outdated and does not support embeddings. Please update the extension.',
@@ -1716,7 +1721,7 @@ async function executeWithWebLlmErrorHandling(func) {
     try {
         return await func();
     } catch (error) {
-        console.error('VectHare: WebLLM operation failed', error);
+        console.error('VectFox: WebLLM operation failed', error);
         if (!(error instanceof Error)) {
             return;
         }
@@ -1752,13 +1757,13 @@ async function executeWithWebLlmErrorHandling(func) {
 
 /**
  * Loads available WebLLM models into the dropdown
- * @param {object} settings - VectHare settings object
+ * @param {object} settings - VectFox settings object
  */
 export async function loadWebLlmModels(settings) {
     return executeWithWebLlmErrorHandling(async () => {
         const provider = getWebLlmProvider();
         const models = provider.getModels();
-        const $select = $('#vecthare_webllm_model');
+        const $select = $('#VectFox_webllm_model');
 
         $select.empty();
 
@@ -1780,7 +1785,7 @@ export async function loadWebLlmModels(settings) {
         } else if (models.length > 0) {
             settings.webllm_model = models[0].id;
             $select.val(settings.webllm_model);
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         }
     });
@@ -1793,14 +1798,14 @@ export async function loadWebLlmModels(settings) {
 /**
  * Refreshes the auto-sync checkbox state from current chat's collection
  * Call this when chat changes to keep UI in sync
- * @param {object} settings - VectHare settings object (unused, kept for API compatibility)
+ * @param {object} settings - VectFox settings object (unused, kept for API compatibility)
  */
 export function refreshWIStatus() {
-    const $status = $('#vecthare_wi_status');
+    const $status = $('#VectFox_wi_status');
     if (!$status.length) return;
     const registry = getCollectionRegistry();
     const lorebookIds = Array.isArray(registry)
-        ? registry.filter(id => id.startsWith('vecthare_lorebook_'))
+        ? registry.filter(id => id.startsWith('VectFox_lorebook_'))
         : [];
     if (lorebookIds.length === 0) {
         $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> No lorebooks vectorized — vectorize one first');
@@ -1823,16 +1828,16 @@ export function refreshWIStatus() {
 
 export function refreshAutoSyncCheckbox(settings) {
     const collectionId = null; // DEAD-CHUNK-CHAT: always null
-    const $status = $('#vecthare_autosync_status');
+    const $status = $('#VectFox_autosync_status');
     if (!collectionId) {
-        $('#vecthare_autosync_enabled').prop('checked', false);
+        $('#VectFox_autosync_enabled').prop('checked', false);
         $status.html('');
         return;
     }
     // Dynamically import to avoid circular dependency
     import('../core/collection-metadata.js').then(({ isCollectionAutoSyncEnabled }) => {
         const isEnabled = isCollectionAutoSyncEnabled(collectionId);
-        $('#vecthare_autosync_enabled').prop('checked', isEnabled);
+        $('#VectFox_autosync_enabled').prop('checked', isEnabled);
     });
     // Show initialization status
     $status.html('<i class="fa-solid fa-spinner fa-spin" style="opacity:0.5;"></i> Checking...');
@@ -1849,10 +1854,10 @@ export function refreshAutoSyncCheckbox(settings) {
 }
 
 export function updateWebLlmStatus() {
-    const $status = $('#vecthare_webllm_status');
-    const $installBtn = $('#vecthare_webllm_install');
-    const $loadBtn = $('#vecthare_webllm_load');
-    const $modelSelect = $('#vecthare_webllm_model');
+    const $status = $('#VectFox_webllm_status');
+    const $installBtn = $('#VectFox_webllm_install');
+    const $loadBtn = $('#VectFox_webllm_load');
+    const $modelSelect = $('#VectFox_webllm_model');
 
     // Check browser support
     if (!('gpu' in navigator)) {
@@ -1893,14 +1898,14 @@ export function updateWebLlmStatus() {
 /**
  * Toggles provider-specific settings visibility
  * @param {string} selectedProvider - Currently selected provider
- * @param {object} settings - VectHare settings object
+ * @param {object} settings - VectFox settings object
  */
 function toggleProviderSettings(selectedProvider, settings) {
     // Hide all provider-specific settings
-    $('.vecthare_provider_setting').hide();
+    $('.VectFox_provider_setting').hide();
 
     // Show settings for selected provider
-    $(`.vecthare_provider_setting`).each(function() {
+    $(`.VectFox_provider_setting`).each(function() {
         const providers = $(this).attr('data-provider').split(',');
         if (providers.includes(selectedProvider)) {
             $(this).show();
@@ -1920,7 +1925,7 @@ function toggleProviderSettings(selectedProvider, settings) {
  * Shows a confirmation modal when enabling auto-sync on a chat with existing vectors
  * If multiple collections match, lets user pick which one to use
  * @param {Array} allMatches - Array of matching collections [{collectionId, registryKey, chunkCount, source, backend}]
- * @param {object} settings - VectHare settings for purge operations
+ * @param {object} settings - VectFox settings for purge operations
  * @returns {Promise<{action: string, selectedCollection?: object}>} User's choice
  */
 async function showAutoSyncConfirmModal(allMatches, settings) {
@@ -1940,7 +1945,7 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
             const isRecommended = index === 0 && !isGhost;
 
             return `
-                <div class="vecthare-collection-option ${isGhost ? 'ghost' : ''}" data-index="${index}" style="
+                <div class="vectfox-collection-option ${isGhost ? 'ghost' : ''}" data-index="${index}" style="
                     background: var(--SmartThemeBlurTintColor);
                     padding: 12px;
                     border-radius: 8px;
@@ -1963,7 +1968,7 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
                             </div>
                         </div>
                         ${isGhost ? `
-                            <button class="menu_button menu_button_icon vecthare-delete-ghost" data-index="${index}" style="margin-left: 10px; color: var(--SmartThemeFontColorOverrideWarning, #f0ad4e);" title="Delete this ghost collection">
+                            <button class="menu_button menu_button_icon vectfox-delete-ghost" data-index="${index}" style="margin-left: 10px; color: var(--SmartThemeFontColorOverrideWarning, #f0ad4e);" title="Delete this ghost collection">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         ` : ''}
@@ -1973,15 +1978,15 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
         }).join('');
 
         const modalHtml = `
-            <div id="vecthare_autosync_confirm_modal" class="vecthare-modal" style="display: flex;">
-                <div class="vecthare-modal-content" style="max-width: 500px;">
-                    <div class="vecthare-modal-header">
+            <div id="VectFox_autosync_confirm_modal" class="vectfox-modal" style="display: flex;">
+                <div class="vectfox-modal-content" style="max-width: 500px;">
+                    <div class="vectfox-modal-header">
                         <h3><i class="fa-solid fa-link"></i> ${hasMultiple ? 'Multiple Collections Found' : 'Existing Collection Found'}</h3>
-                        <button class="vecthare-modal-close" data-action="cancel">
+                        <button class="vectfox-modal-close" data-action="cancel">
                             <i class="fa-solid fa-times"></i>
                         </button>
                     </div>
-                    <div class="vecthare-modal-body" style="padding: 20px;">
+                    <div class="vectfox-modal-body" style="padding: 20px;">
                         <p style="margin-bottom: 15px;">
                             ${hasMultiple
                                 ? `Found <strong>${allMatches.length}</strong> collections matching this chat.${hasGhosts ? ' <span style="color: var(--SmartThemeFontColorOverrideWarning, #f0ad4e);">Ghost collections (0 chunks) can be deleted.</span>' : ''}`
@@ -1994,7 +1999,7 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
                             ${hasMultiple ? 'Click a collection to select it, then choose an action.' : 'What would you like to do?'}
                         </p>
                     </div>
-                    <div class="vecthare-modal-footer" style="display: flex; gap: 10px; padding: 15px 20px; border-top: 1px solid var(--SmartThemeBorderColor);">
+                    <div class="vectfox-modal-footer" style="display: flex; gap: 10px; padding: 15px 20px; border-top: 1px solid var(--SmartThemeBorderColor);">
                         <button class="menu_button" data-action="reconnect" style="flex: 1;">
                             <i class="fa-solid fa-plug"></i> Connect
                         </button>
@@ -2014,19 +2019,19 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
 
         // Track selected collection (default to first/best)
         let selectedIndex = 0;
-        $modal.find('.vecthare-collection-option').first().css('border-color', 'var(--SmartThemeQuoteColor)');
+        $modal.find('.vectfox-collection-option').first().css('border-color', 'var(--SmartThemeQuoteColor)');
 
         // Handle collection selection
-        $modal.find('.vecthare-collection-option').on('click', function(e) {
-            if ($(e.target).closest('.vecthare-delete-ghost').length) return; // Don't select when clicking delete
+        $modal.find('.vectfox-collection-option').on('click', function(e) {
+            if ($(e.target).closest('.vectfox-delete-ghost').length) return; // Don't select when clicking delete
 
             selectedIndex = parseInt($(this).data('index'));
-            $modal.find('.vecthare-collection-option').css('border-color', 'transparent');
+            $modal.find('.vectfox-collection-option').css('border-color', 'transparent');
             $(this).css('border-color', 'var(--SmartThemeQuoteColor)');
         });
 
         // Handle ghost deletion - uses unified deleteCollection()
-        $modal.find('.vecthare-delete-ghost').on('click', async function(e) {
+        $modal.find('.vectfox-delete-ghost').on('click', async function(e) {
             e.stopPropagation();
             const index = parseInt($(this).data('index'));
             const ghost = allMatches[index];
@@ -2043,19 +2048,19 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
 
                 // Remove from UI
                 allMatches.splice(index, 1);
-                $(this).closest('.vecthare-collection-option').fadeOut(200, function() {
+                $(this).closest('.vectfox-collection-option').fadeOut(200, function() {
                     $(this).remove();
                     // Re-index remaining items
-                    $modal.find('.vecthare-collection-option').each((i, el) => {
+                    $modal.find('.vectfox-collection-option').each((i, el) => {
                         $(el).attr('data-index', i);
-                        $(el).find('.vecthare-delete-ghost').attr('data-index', i);
+                        $(el).find('.vectfox-delete-ghost').attr('data-index', i);
                     });
                 });
 
                 if (result.success) {
-                    toastr.success('Ghost collection deleted', 'VectHare');
+                    toastr.success('Ghost collection deleted', 'VectFox');
                 } else {
-                    toastr.warning(`Partial deletion: ${result.errors.join(', ')}`, 'VectHare');
+                    toastr.warning(`Partial deletion: ${result.errors.join(', ')}`, 'VectFox');
                 }
 
                 // If no collections left, close modal
@@ -2064,11 +2069,11 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
                     resolve({ action: 'revectorize' });
                 } else if (selectedIndex >= allMatches.length) {
                     selectedIndex = 0;
-                    $modal.find('.vecthare-collection-option').first().css('border-color', 'var(--SmartThemeQuoteColor)');
+                    $modal.find('.vectfox-collection-option').first().css('border-color', 'var(--SmartThemeQuoteColor)');
                 }
             } catch (error) {
-                console.error('VectHare: Failed to delete ghost', error);
-                toastr.error('Failed to delete ghost collection', 'VectHare');
+                console.error('VectFox: Failed to delete ghost', error);
+                toastr.error('Failed to delete ghost collection', 'VectFox');
             }
         });
 
@@ -2107,13 +2112,13 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
 
 /**
  * Binds event handlers to UI elements
- * @param {object} settings - VectHare settings object
+ * @param {object} settings - VectFox settings object
  * @param {object} callbacks - Callback functions
  */
 function bindSettingsEvents(settings, callbacks) {
     // Auto-sync enable/disable - now per-collection instead of global
     // Initial state is set by refreshAutoSyncCheckbox() after chat loads
-    $('#vecthare_autosync_enabled')
+    $('#VectFox_autosync_enabled')
         .on('input', async function() {
             const enabling = $(this).prop('checked');
             const $checkbox = $(this);
@@ -2162,7 +2167,7 @@ function bindSettingsEvents(settings, callbacks) {
                     // Connect to selected collection
                     const selected = result.selectedCollection;
                     toastr.success(`Connected to collection with ${selected.chunkCount} chunks`, 'Auto-Sync Enabled');
-                    console.log(`VectHare: Auto-sync enabled - connected to ${selected.collectionId} (${selected.chunkCount} chunks)`);
+                    console.log(`VectFox: Auto-sync enabled - connected to ${selected.collectionId} (${selected.chunkCount} chunks)`);
                 } else if (result.action === 'revectorize') {
                     // User wants to start fresh - open vectorizer
                     $checkbox.prop('checked', false);
@@ -2179,7 +2184,7 @@ function bindSettingsEvents(settings, callbacks) {
             } else {
                 toastr.success('Auto-sync enabled for this chat');
             }
-            console.log(`VectHare: Chat auto-sync for ${collectionId}: ${enabling ? 'enabled' : 'disabled'}`);
+            console.log(`VectFox: Chat auto-sync for ${collectionId}: ${enabling ? 'enabled' : 'disabled'}`);
         });
 
         // Collection lock handled inside Database Browser per-collection settings
@@ -2192,35 +2197,35 @@ function bindSettingsEvents(settings, callbacks) {
 
     // Summarization provider
     const updateSummarizeUI = (provider) => {
-        $('#vecthare_summarize_settings').show();
-        $('#vecthare_summarize_openrouter_row').toggle(provider === 'openrouter');
-        $('#vecthare_summarize_vllm_url_row').toggle(provider === 'vllm');
+        $('#VectFox_summarize_settings').show();
+        $('#VectFox_summarize_openrouter_row').toggle(provider === 'openrouter');
+        $('#VectFox_summarize_vllm_url_row').toggle(provider === 'vllm');
     };
-    $('#vecthare_summarize_provider')
+    $('#VectFox_summarize_provider')
         .val(settings.summarize_provider || 'openrouter')
         .on('change', function() {
             settings.summarize_provider = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             updateSummarizeUI(settings.summarize_provider);
         });
     updateSummarizeUI(settings.summarize_provider || 'openrouter');
 
-    $('#vecthare_summarize_model')
+    $('#VectFox_summarize_model')
         .val(settings.summarize_model || '')
         .on('input change', function() {
             // Bind 'input' too — 'change' alone only fires on blur, so clicking Vectorize
             // immediately after typing would skip the save.
             settings.summarize_model = String($(this).val()).trim();
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // "Choose" button — fetches model list from the configured provider and populates a dropdown
-    $('#vecthare_summarize_model_choose').on('click', async function() {
+    $('#VectFox_summarize_model_choose').on('click', async function() {
         const $btn = $(this);
-        const $list = $('#vecthare_summarize_model_list');
-        const $input = $('#vecthare_summarize_model');
+        const $list = $('#VectFox_summarize_model_list');
+        const $input = $('#VectFox_summarize_model');
         const provider = settings.summarize_provider || 'openrouter';
 
         const originalHtml = $btn.html();
@@ -2270,25 +2275,25 @@ function bindSettingsEvents(settings, callbacks) {
             $list.html(options.join('')).show();
             toastr.success(`Loaded ${models.length} models from ${provider}.`);
         } catch (err) {
-            console.error('[VectHare] Model list fetch failed:', err);
+            console.error('[VectFox] Model list fetch failed:', err);
             toastr.error(`Could not fetch model list: ${err?.message || err}`);
         } finally {
             $btn.prop('disabled', false).html(originalHtml);
         }
     });
 
-    $('#vecthare_summarize_model_list').on('change', function() {
+    $('#VectFox_summarize_model_list').on('change', function() {
         const value = String($(this).val() || '').trim();
         if (!value) return;
-        $('#vecthare_summarize_model').val(value).trigger('change');
+        $('#VectFox_summarize_model').val(value).trigger('change');
         $(this).hide();
     });
 
-    $('#vecthare_summarize_vllm_url')
+    $('#VectFox_summarize_vllm_url')
         .val(settings.summarize_vllm_url || '')
         .on('change', function() {
             settings.summarize_vllm_url = String($(this).val()).trim();
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
@@ -2299,17 +2304,17 @@ function bindSettingsEvents(settings, callbacks) {
             const masked = savedKey.length > 4
                 ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
                 : '*'.repeat(savedKey.length);
-            $('#vecthare_summarize_vllm_apikey').attr('placeholder', `Key saved: ${masked}`);
+            $('#VectFox_summarize_vllm_apikey').attr('placeholder', `Key saved: ${masked}`);
         } else {
-            $('#vecthare_summarize_vllm_apikey').attr('placeholder', 'Paste key here to save...');
+            $('#VectFox_summarize_vllm_apikey').attr('placeholder', 'Paste key here to save...');
         }
     };
     updateSummarizeVllmKeyDisplay();
-    $('#vecthare_summarize_vllm_apikey').on('change', function() {
+    $('#VectFox_summarize_vllm_apikey').on('change', function() {
         const value = String($(this).val()).trim();
         if (value) {
             settings.summarize_vllm_api_key = value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             toastr.success('vLLM summarization API key saved');
             $(this).val('');
@@ -2324,17 +2329,17 @@ function bindSettingsEvents(settings, callbacks) {
             const masked = savedKey.length > 4
                 ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
                 : '*'.repeat(savedKey.length);
-            $('#vecthare_summarize_openrouter_apikey').attr('placeholder', `Key saved: ${masked}`);
+            $('#VectFox_summarize_openrouter_apikey').attr('placeholder', `Key saved: ${masked}`);
         } else {
-            $('#vecthare_summarize_openrouter_apikey').attr('placeholder', 'Paste key here to save...');
+            $('#VectFox_summarize_openrouter_apikey').attr('placeholder', 'Paste key here to save...');
         }
     };
     updateSummarizeORKeyDisplay();
-    $('#vecthare_summarize_openrouter_apikey').on('change', function() {
+    $('#VectFox_summarize_openrouter_apikey').on('change', function() {
         const value = String($(this).val()).trim();
         if (value) {
             settings.summarize_openrouter_api_key = value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             toastr.success('OpenRouter summarization API key saved');
             $(this).val('');
@@ -2348,33 +2353,33 @@ function bindSettingsEvents(settings, callbacks) {
     // user is reminded inheritance is in effect.
     const updateAgenticUI = (provider) => {
         const resolved = String(provider || '').trim();
-        $('#vecthare_agentic_openrouter_row').toggle(resolved === 'openrouter');
-        $('#vecthare_agentic_vllm_row').toggle(resolved === 'vllm');
+        $('#VectFox_agentic_openrouter_row').toggle(resolved === 'openrouter');
+        $('#VectFox_agentic_vllm_row').toggle(resolved === 'vllm');
     };
 
-    $('#vecthare_agentic_retrieval_enabled')
+    $('#VectFox_agentic_retrieval_enabled')
         .prop('checked', !!settings.agentic_retrieval_enabled)
         .on('change', function() {
             settings.agentic_retrieval_enabled = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_agentic_provider')
+    $('#VectFox_agentic_provider')
         .val(settings.agentic_retrieval_provider || '')
         .on('change', function() {
             settings.agentic_retrieval_provider = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             updateAgenticUI(settings.agentic_retrieval_provider);
         });
     updateAgenticUI(settings.agentic_retrieval_provider || '');
 
-    $('#vecthare_agentic_model')
+    $('#VectFox_agentic_model')
         .val(settings.agentic_retrieval_model || '')
         .on('input change', function() {
             settings.agentic_retrieval_model = String($(this).val()).trim();
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
@@ -2385,17 +2390,17 @@ function bindSettingsEvents(settings, callbacks) {
             const masked = savedKey.length > 4
                 ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
                 : '*'.repeat(savedKey.length);
-            $('#vecthare_agentic_openrouter_apikey').attr('placeholder', `Key saved: ${masked}`);
+            $('#VectFox_agentic_openrouter_apikey').attr('placeholder', `Key saved: ${masked}`);
         } else {
-            $('#vecthare_agentic_openrouter_apikey').attr('placeholder', '(empty → inherit summarize key)');
+            $('#VectFox_agentic_openrouter_apikey').attr('placeholder', '(empty → inherit summarize key)');
         }
     };
     updateAgenticORKeyDisplay();
-    $('#vecthare_agentic_openrouter_apikey').on('change', function() {
+    $('#VectFox_agentic_openrouter_apikey').on('change', function() {
         const value = String($(this).val()).trim();
         if (value) {
             settings.agentic_retrieval_openrouter_api_key = value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             toastr.success('AgentMode OpenRouter key saved');
             $(this).val('');
@@ -2403,11 +2408,11 @@ function bindSettingsEvents(settings, callbacks) {
         }
     });
 
-    $('#vecthare_agentic_vllm_url')
+    $('#VectFox_agentic_vllm_url')
         .val(settings.agentic_retrieval_vllm_url || '')
         .on('change', function() {
             settings.agentic_retrieval_vllm_url = String($(this).val()).trim();
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
@@ -2417,17 +2422,17 @@ function bindSettingsEvents(settings, callbacks) {
             const masked = savedKey.length > 4
                 ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
                 : '*'.repeat(savedKey.length);
-            $('#vecthare_agentic_vllm_apikey').attr('placeholder', `Key saved: ${masked}`);
+            $('#VectFox_agentic_vllm_apikey').attr('placeholder', `Key saved: ${masked}`);
         } else {
-            $('#vecthare_agentic_vllm_apikey').attr('placeholder', '(empty → inherit summarize key)');
+            $('#VectFox_agentic_vllm_apikey').attr('placeholder', '(empty → inherit summarize key)');
         }
     };
     updateAgenticVllmKeyDisplay();
-    $('#vecthare_agentic_vllm_apikey').on('change', function() {
+    $('#VectFox_agentic_vllm_apikey').on('change', function() {
         const value = String($(this).val()).trim();
         if (value) {
             settings.agentic_retrieval_vllm_api_key = value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             toastr.success('AgentMode vLLM key saved');
             $(this).val('');
@@ -2444,38 +2449,38 @@ function bindSettingsEvents(settings, callbacks) {
             const v = Number($(this).val());
             settings[settingKey] = v;
             $(valSpanId).text(v);
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
     };
-    bindAgenticSlider('#vecthare_agentic_chat_depth', '#vecthare_agentic_chat_depth_val', 'agentic_retrieval_chat_depth', 3);
-    bindAgenticSlider('#vecthare_agentic_candidates', '#vecthare_agentic_candidates_val', 'agentic_retrieval_candidates_to_show', 12);
-    bindAgenticSlider('#vecthare_agentic_max_queries', '#vecthare_agentic_max_queries_val', 'agentic_retrieval_max_queries', 4);
+    bindAgenticSlider('#VectFox_agentic_chat_depth', '#VectFox_agentic_chat_depth_val', 'agentic_retrieval_chat_depth', 3);
+    bindAgenticSlider('#VectFox_agentic_candidates', '#VectFox_agentic_candidates_val', 'agentic_retrieval_candidates_to_show', 12);
+    bindAgenticSlider('#VectFox_agentic_max_queries', '#VectFox_agentic_max_queries_val', 'agentic_retrieval_max_queries', 4);
 
-    $('#vecthare_agentic_timeout')
+    $('#VectFox_agentic_timeout')
         .val(Number(settings.agentic_retrieval_timeout_ms ?? 30000))
         .on('change input', function() {
             const v = Number($(this).val());
             settings.agentic_retrieval_timeout_ms = Math.max(1000, Math.min(60000, v || 30000));
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_agentic_debug')
+    $('#VectFox_agentic_debug')
         .prop('checked', !!settings.agentic_retrieval_debug_logging)
         .on('change', function() {
             settings.agentic_retrieval_debug_logging = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Chunk size (for adaptive strategy)
-    $('#vecthare_chunk_size')
+    $('#VectFox_chunk_size')
         .val(settings.chunk_size || 500)
         .on('input', function() {
             const value = Number($(this).val());
             settings.chunk_size = value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
@@ -2490,19 +2495,19 @@ function bindSettingsEvents(settings, callbacks) {
         const isBM25Mode    = !nativeActive && method === 'bm25';    // A1
 
         // Keyword scoring method dropdown vs static "native active" notice
-        $('#vecthare_keyword_method_section').toggle(!nativeActive);
-        $('#vecthare_native_hybrid_info').toggle(nativeActive);
+        $('#VectFox_keyword_method_section').toggle(!nativeActive);
+        $('#VectFox_native_hybrid_info').toggle(nativeActive);
 
         // BM25 k1/b: visible whenever client-side BM25 logic runs (A1 or A2)
-        $('#vecthare_bm25_params').toggle(!nativeActive);
+        $('#VectFox_bm25_params').toggle(!nativeActive);
 
         // Fusion Method + RRF K: visible only for A2 (Standard + Hybrid). A3 (Qdrant) ignores
         // these — Qdrant always runs server-side RRF with its own internal k constant — so the
         // controls would just confuse Qdrant users.
-        $('#vecthare_hybrid_params').toggle(isHybridMode);
+        $('#VectFox_hybrid_params').toggle(isHybridMode);
 
         // Query Keyword Budget (lives in ChunkBase tab): visible only in A1
-        $('#vecthare_hybrid_keyword_budget_wrapper').toggle(isBM25Mode);
+        $('#VectFox_hybrid_keyword_budget_wrapper').toggle(isBM25Mode);
     }
 
     // Apply backend-specific hybrid defaults when backend changes or on first load.
@@ -2521,51 +2526,51 @@ function bindSettingsEvents(settings, callbacks) {
             settings.hybrid_fusion_method = settings.hybrid_fusion_method || 'rrf';
         }
         // Sync UI controls
-        $('#vecthare_keyword_scoring_method').val(settings.keyword_scoring_method || 'bm25');
-        $('#vecthare_hybrid_fusion_method').val(settings.hybrid_fusion_method || 'rrf');
-        Object.assign(extension_settings.vecthareplus, settings);
+        $('#VectFox_keyword_scoring_method').val(settings.keyword_scoring_method || 'bm25');
+        $('#VectFox_hybrid_fusion_method').val(settings.hybrid_fusion_method || 'rrf');
+        Object.assign(extension_settings.VectFoxplus, settings);
         saveSettingsDebounced();
     }
 
     // Vector backend selection
-    $('#vecthare_vector_backend')
+    $('#VectFox_vector_backend')
         .val(settings.vector_backend || 'qdrant')
         .on('change', function() {
             settings.vector_backend = String($(this).val());
 
             // Show/hide Qdrant settings
             if (settings.vector_backend === 'qdrant') {
-                $('#vecthare_qdrant_settings').show();
+                $('#VectFox_qdrant_settings').show();
             } else {
-                $('#vecthare_qdrant_settings').hide();
+                $('#VectFox_qdrant_settings').hide();
             }
 
             applyBackendHybridDefaults(settings.vector_backend);
             updateNativeHybridUI();
-            console.log(`VectHare: Vector backend changed to ${settings.vector_backend}`);
+            console.log(`VectFox: Vector backend changed to ${settings.vector_backend}`);
             // Reset health cache so new backend gets properly initialized
             resetBackendHealth();
         });
 
     // Qdrant cloud toggle
-    $('#vecthare_qdrant_use_cloud')
+    $('#VectFox_qdrant_use_cloud')
         .prop('checked', settings.qdrant_use_cloud || false)
         .on('change', async function() {
             settings.qdrant_use_cloud = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
 
             // Toggle between local and cloud settings
             if (settings.qdrant_use_cloud) {
-                $('#vecthare_qdrant_local_settings').hide();
-                $('#vecthare_qdrant_cloud_settings').show();
+                $('#VectFox_qdrant_local_settings').hide();
+                $('#VectFox_qdrant_cloud_settings').show();
             } else {
-                $('#vecthare_qdrant_local_settings').show();
-                $('#vecthare_qdrant_cloud_settings').hide();
+                $('#VectFox_qdrant_local_settings').show();
+                $('#VectFox_qdrant_cloud_settings').hide();
             }
 
             // Reset backend health to force re-initialization with new config
-            console.log('VectHare: Qdrant mode changed, forcing re-initialization...');
+            console.log('VectFox: Qdrant mode changed, forcing re-initialization...');
             resetBackendHealth('qdrant');
 
             // Proactively reinitialize if Qdrant is the current backend
@@ -2575,299 +2580,299 @@ function bindSettingsEvents(settings, callbacks) {
                     await initializeBackend('qdrant', settings, false);
                     toastr.success(
                         `Qdrant re-initialized in ${settings.qdrant_use_cloud ? 'cloud' : 'local'} mode`,
-                        'VectHare'
+                        'VectFox'
                     );
                 } catch (e) {
-                    console.error('VectHare: Failed to reinitialize Qdrant:', e);
-                    toastr.warning('Failed to reinitialize Qdrant: ' + e.message, 'VectHare');
+                    console.error('VectFox: Failed to reinitialize Qdrant:', e);
+                    toastr.warning('Failed to reinitialize Qdrant: ' + e.message, 'VectFox');
                 }
             }
         })
         .trigger('change');
 
     // Qdrant settings
-    $('#vecthare_qdrant_host')
+    $('#VectFox_qdrant_host')
         .val(settings.qdrant_host || 'localhost')
         .on('input', function() {
             settings.qdrant_host = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_qdrant_port')
+    $('#VectFox_qdrant_port')
         .val(settings.qdrant_port || 6333)
         .on('input', function() {
             const value = parseInt($(this).val());
             settings.qdrant_port = isNaN(value) ? 6333 : value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_qdrant_url')
+    $('#VectFox_qdrant_url')
         .val(settings.qdrant_url || '')
         .on('input', function() {
             settings.qdrant_url = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_qdrant_api_key')
+    $('#VectFox_qdrant_api_key')
         .val(settings.qdrant_api_key || '')
         .on('input', function() {
             settings.qdrant_api_key = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Qdrant multitenancy toggle
-    $('#vecthare_qdrant_multitenancy')
+    $('#VectFox_qdrant_multitenancy')
         .prop('checked', settings.qdrant_multitenancy || false)
         .on('change', function() {
             settings.qdrant_multitenancy = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Show Qdrant settings if backend is qdrant
     if (settings.vector_backend === 'qdrant') {
-        $('#vecthare_qdrant_settings').show();
+        $('#VectFox_qdrant_settings').show();
     }
 
     // Embedding provider
-    $('#vecthare_source')
+    $('#VectFox_source')
         .val(settings.source)
         .on('change', function() {
             settings.source = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             toggleProviderSettings(settings.source, settings);
-            console.log(`VectHare: Embedding provider changed to ${settings.source}`);
+            console.log(`VectFox: Embedding provider changed to ${settings.source}`);
             // Reset health cache since provider change may affect backend connectivity
             resetBackendHealth();
         });
 
     // Score threshold
-    $('#vecthare_score_threshold')
+    $('#VectFox_score_threshold')
         .val(settings.score_threshold)
         .on('input', function() {
             const value = parseFloat($(this).val());
             const safeValue = isNaN(value) ? 0.3 : value;
-            $('#vecthare_threshold_value').text(safeValue.toFixed(2));
+            $('#VectFox_threshold_value').text(safeValue.toFixed(2));
             settings.score_threshold = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_threshold_value').text(settings.score_threshold.toFixed(2));
+    $('#VectFox_threshold_value').text(settings.score_threshold.toFixed(2));
 
     // "Skip Already-Visible Events" (legacy key name: deduplication_depth).
     // Default 0 = filter disabled. See settings comment in index.js — the assumption
     // that the LLM sees the last N messages in raw form is usually wrong (~3-6 in
     // practice), so this is opt-in only.
-    $('#vecthare_deduplication_depth')
+    $('#VectFox_deduplication_depth')
         .val(settings.deduplication_depth ?? 0)
         .on('input', function() {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? 0 : Math.max(0, value);
-            $('#vecthare_deduplication_depth_value').text(safeValue);
+            $('#VectFox_deduplication_depth_value').text(safeValue);
             settings.deduplication_depth = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_deduplication_depth_value').text(settings.deduplication_depth ?? 0);
+    $('#VectFox_deduplication_depth_value').text(settings.deduplication_depth ?? 0);
 
     // EventBase Dedup Window Gap — temporal proximity threshold for the
     // dedup gate in eventbase-retrieval.js. See settings comment in index.js.
     // 0 = temporal dedup fully disabled.
-    $('#vecthare_eventbase_dedup_window_gap')
+    $('#VectFox_eventbase_dedup_window_gap')
         .val(settings.eventbase_dedup_window_gap ?? 10)
         .on('input', function() {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? 10 : Math.max(0, Math.min(200, value));
-            $('#vecthare_eventbase_dedup_window_gap_val').text(safeValue);
+            $('#VectFox_eventbase_dedup_window_gap_val').text(safeValue);
             settings.eventbase_dedup_window_gap = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_eventbase_dedup_window_gap_val').text(settings.eventbase_dedup_window_gap ?? 10);
+    $('#VectFox_eventbase_dedup_window_gap_val').text(settings.eventbase_dedup_window_gap ?? 10);
 
     // EventBase Anchor Boost — flat additive bonus on keyword-anchored events.
     // See settings comment in index.js and the boost code in
     // eventbase-retrieval.js (around the `_finalScore` formula).
-    $('#vecthare_eventbase_anchor_boost')
+    $('#VectFox_eventbase_anchor_boost')
         .val(settings.eventbase_anchor_boost ?? 0.20)
         .on('input', function() {
             const value = parseFloat($(this).val());
             const safeValue = isNaN(value) ? 0.20 : Math.max(0, Math.min(0.5, value));
-            $('#vecthare_eventbase_anchor_boost_val').text(safeValue.toFixed(2));
+            $('#VectFox_eventbase_anchor_boost_val').text(safeValue.toFixed(2));
             settings.eventbase_anchor_boost = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_eventbase_anchor_boost_val').text(
+    $('#VectFox_eventbase_anchor_boost_val').text(
         (typeof settings.eventbase_anchor_boost === 'number' ? settings.eventbase_anchor_boost : 0.20).toFixed(2)
     );
 
     // Keyword scoring method (bm25 = A1 fast re-rank; hybrid = A2 client-side hybrid fusion, ANN-bound ≤100)
-    $('#vecthare_keyword_scoring_method')
+    $('#VectFox_keyword_scoring_method')
         .val(settings.keyword_scoring_method || 'bm25')
         .on('change', function() {
             settings.keyword_scoring_method = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
-            console.log(`VectHare: Keyword scoring method changed to ${settings.keyword_scoring_method}`);
+            console.log(`VectFox: Keyword scoring method changed to ${settings.keyword_scoring_method}`);
             updateNativeHybridUI();
         });
 
     // Hybrid keyword level
-    $('#vecthare_hybrid_keyword_level')
+    $('#VectFox_hybrid_keyword_level')
         .val(settings.hybrid_keyword_level || 'balance')
         .on('change', function() {
             settings.hybrid_keyword_level = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
-            console.log(`VectHare: Hybrid keyword level changed to ${settings.hybrid_keyword_level}`);
+            console.log(`VectFox: Hybrid keyword level changed to ${settings.hybrid_keyword_level}`);
         });
 
     // BM25 k1 parameter
-    $('#vecthare_bm25_k1')
+    $('#VectFox_bm25_k1')
         .val(settings.bm25_k1 || 1.5)
         .on('input', function() {
             const value = parseFloat($(this).val());
             const safeValue = isNaN(value) ? 1.5 : value;
-            $('#vecthare_bm25_k1_value').text(safeValue.toFixed(1));
+            $('#VectFox_bm25_k1_value').text(safeValue.toFixed(1));
             settings.bm25_k1 = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_bm25_k1_value').text((settings.bm25_k1 || 1.5).toFixed(1));
+    $('#VectFox_bm25_k1_value').text((settings.bm25_k1 || 1.5).toFixed(1));
 
     // BM25 b parameter
-    $('#vecthare_bm25_b')
+    $('#VectFox_bm25_b')
         .val(settings.bm25_b || 0.75)
         .on('input', function() {
             const value = parseFloat($(this).val());
             const safeValue = isNaN(value) ? 0.75 : value;
-            $('#vecthare_bm25_b_value').text(safeValue.toFixed(2));
+            $('#VectFox_bm25_b_value').text(safeValue.toFixed(2));
             settings.bm25_b = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_bm25_b_value').text((settings.bm25_b || 0.75).toFixed(2));
+    $('#VectFox_bm25_b_value').text((settings.bm25_b || 0.75).toFixed(2));
 
     // ========== Hybrid Search Settings ==========
 
     // Fusion method selector
-    $('#vecthare_hybrid_fusion_method')
+    $('#VectFox_hybrid_fusion_method')
         .val(settings.hybrid_fusion_method || 'rrf')
         .on('change', function() {
             settings.hybrid_fusion_method = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             // Show weights only for weighted method, RRF settings for RRF
             const isWeighted = settings.hybrid_fusion_method === 'weighted';
-            $('#vecthare_hybrid_weights').toggle(isWeighted);
-            $('#vecthare_hybrid_rrf_settings').toggle(!isWeighted);
-            console.log(`VectHare: Hybrid fusion method changed to ${settings.hybrid_fusion_method}`);
+            $('#VectFox_hybrid_weights').toggle(isWeighted);
+            $('#VectFox_hybrid_rrf_settings').toggle(!isWeighted);
+            console.log(`VectFox: Hybrid fusion method changed to ${settings.hybrid_fusion_method}`);
         });
     // Initialize visibility based on current method
     const isWeightedMethod = (settings.hybrid_fusion_method || 'rrf') === 'weighted';
-    $('#vecthare_hybrid_weights').toggle(isWeightedMethod);
-    $('#vecthare_hybrid_rrf_settings').toggle(!isWeightedMethod);
+    $('#VectFox_hybrid_weights').toggle(isWeightedMethod);
+    $('#VectFox_hybrid_rrf_settings').toggle(!isWeightedMethod);
 
     // Vector weight slider
-    $('#vecthare_hybrid_vector_weight')
+    $('#VectFox_hybrid_vector_weight')
         .val(settings.hybrid_vector_weight ?? 0.5)
         .on('input', function() {
             const value = parseFloat($(this).val());
             const safeValue = isNaN(value) ? 0.5 : value;
-            $('#vecthare_hybrid_vector_weight_value').text(safeValue.toFixed(1));
+            $('#VectFox_hybrid_vector_weight_value').text(safeValue.toFixed(1));
             settings.hybrid_vector_weight = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_hybrid_vector_weight_value').text((settings.hybrid_vector_weight ?? 0.5).toFixed(1));
+    $('#VectFox_hybrid_vector_weight_value').text((settings.hybrid_vector_weight ?? 0.5).toFixed(1));
 
     // Text weight slider
-    $('#vecthare_hybrid_text_weight')
+    $('#VectFox_hybrid_text_weight')
         .val(settings.hybrid_text_weight ?? 0.5)
         .on('input', function() {
             const value = parseFloat($(this).val());
             const safeValue = isNaN(value) ? 0.5 : value;
-            $('#vecthare_hybrid_text_weight_value').text(safeValue.toFixed(1));
+            $('#VectFox_hybrid_text_weight_value').text(safeValue.toFixed(1));
             settings.hybrid_text_weight = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_hybrid_text_weight_value').text((settings.hybrid_text_weight ?? 0.5).toFixed(1));
+    $('#VectFox_hybrid_text_weight_value').text((settings.hybrid_text_weight ?? 0.5).toFixed(1));
 
     // RRF K constant slider
-    $('#vecthare_hybrid_rrf_k')
+    $('#VectFox_hybrid_rrf_k')
         .val(settings.hybrid_rrf_k || 60)
         .on('input', function() {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? 60 : value;
-            $('#vecthare_hybrid_rrf_k_value').text(safeValue);
+            $('#VectFox_hybrid_rrf_k_value').text(safeValue);
             settings.hybrid_rrf_k = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_hybrid_rrf_k_value').text(settings.hybrid_rrf_k || 60);
+    $('#VectFox_hybrid_rrf_k_value').text(settings.hybrid_rrf_k || 60);
 
     // Initialize native-hybrid-dependent visibility
     updateNativeHybridUI();
 
     // Query depth (how many recent messages to include in search query)
-    $('#vecthare_query_depth')
+    $('#VectFox_query_depth')
         .val(settings.query || 2)
         .on('input', function() {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? 2 : value;
-            $('#vecthare_query_depth_value').text(safeValue);
+            $('#VectFox_query_depth_value').text(safeValue);
             settings.query = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_query_depth_value').text(settings.query || 2);
+    $('#VectFox_query_depth_value').text(settings.query || 2);
 
     // Top K - number of results retrieved per collection (top-K)
-    $('#vecthare_topk')
+    $('#VectFox_topk')
         .val((settings.top_k ?? settings.insert) || 3)
         .on('input', function() {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? (settings.insert || 3) : value;
             settings.top_k = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Auto-sync popup toggle
-    $('#vecthare_autosync_popup')
+    $('#VectFox_autosync_popup')
         .prop('checked', settings.eventbase_autosync_popup !== false)
         .on('change', function() {
             settings.eventbase_autosync_popup = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Retrieval popups
-    $('#vecthare_retrieval_popup_on_start')
+    $('#VectFox_retrieval_popup_on_start')
         .prop('checked', settings.retrieval_popup_on_start || false)
         .on('change', function() {
             settings.retrieval_popup_on_start = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_retrieval_popup_on_result')
+    $('#VectFox_retrieval_popup_on_result')
         .prop('checked', settings.retrieval_popup_on_result || false)
         .on('change', function() {
             settings.retrieval_popup_on_result = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // World Info Integration settings
-    $('#vecthare_enabled_world_info')
+    $('#VectFox_enabled_world_info')
         .prop('checked', settings.enabled_world_info || false)
         .on('change', async function() {
             const enabled = $(this).prop('checked');
@@ -2876,7 +2881,7 @@ function bindSettingsEvents(settings, callbacks) {
             if (enabled) {
                 // Check if any lorebook collections have been vectorized
                 const registry = getCollectionRegistry();
-                const hasLorebookVectors = Array.isArray(registry) && registry.some(id => id.startsWith('vecthare_lorebook_'));
+                const hasLorebookVectors = Array.isArray(registry) && registry.some(id => id.startsWith('VectFox_lorebook_'));
 
                 if (!hasLorebookVectors) {
                     $checkbox.prop('checked', false);
@@ -2887,105 +2892,105 @@ function bindSettingsEvents(settings, callbacks) {
             }
 
             settings.enabled_world_info = enabled;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             // Show/hide the detailed world info settings panel
-            $('#vecthare_world_info_settings').toggle(enabled);
+            $('#VectFox_world_info_settings').toggle(enabled);
         });
 
-    $('#vecthare_world_info_threshold')
+    $('#VectFox_world_info_threshold')
         .val(settings.world_info_threshold ?? 0.3)
         .on('input', function() {
             const value = parseFloat($(this).val());
             const safeValue = isNaN(value) ? 0.3 : Math.max(0, Math.min(1, value));
             settings.world_info_threshold = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_world_info_top_k')
+    $('#VectFox_world_info_top_k')
         .val(settings.world_info_top_k ?? 3)
         .on('input', function() {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? 3 : Math.max(1, Math.min(20, value));
             settings.world_info_top_k = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_world_info_query_depth')
+    $('#VectFox_world_info_query_depth')
         .val(settings.world_info_query_depth ?? 3)
         .on('input', function() {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? 3 : Math.max(1, Math.min(10, value));
             settings.world_info_query_depth = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Custom stopwords
-    $('#vecthare_custom_stopwords')
+    $('#VectFox_custom_stopwords')
         .val(settings.custom_stopwords || '')
         .on('input', function() {
             settings.custom_stopwords = $(this).val();
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // CJK tokenizer mode selector
-    $('#vecthare_cjk_tokenizer_mode')
+    $('#VectFox_cjk_tokenizer_mode')
         .val(settings.cjk_tokenizer_mode || CJK_TOKENIZER_MODES.intl)
         .on('change', async function() {
             const mode = String($(this).val());
             settings.cjk_tokenizer_mode = mode;
             setCjkTokenizerMode(mode);
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
 
             if (mode === CJK_TOKENIZER_MODES.jieba) {
                 const ok = await ensureJiebaTokenizerLoaded();
                 if (!ok) {
-                    toastr.warning('Simplified Chinese Jieba tokenizer failed to load. Falling back to Intl.Segmenter.', 'VectHare CJK');
+                    toastr.warning('Simplified Chinese Jieba tokenizer failed to load. Falling back to Intl.Segmenter.', 'VectFox CJK');
                 }
             }
 
             if (mode === CJK_TOKENIZER_MODES.jieba_tw) {
-                toastr.info('Loading Traditional Chinese dictionary (~2–5 MB)...', 'VectHare CJK');
+                toastr.info('Loading Traditional Chinese dictionary (~2–5 MB)...', 'VectFox CJK');
                 const ok = await ensureJiebaTwLoaded();
                 if (ok) {
-                    toastr.success('Traditional Chinese Jieba tokenizer ready.', 'VectHare CJK');
+                    toastr.success('Traditional Chinese Jieba tokenizer ready.', 'VectFox CJK');
                 } else {
-                    toastr.warning('Traditional Chinese Jieba tokenizer failed to load. Falling back to Intl.Segmenter.', 'VectHare CJK');
+                    toastr.warning('Traditional Chinese Jieba tokenizer failed to load. Falling back to Intl.Segmenter.', 'VectFox CJK');
                 }
             }
         });
 
     // Initialize world info settings visibility based on current setting
-    $('#vecthare_world_info_settings').toggle(settings.enabled_world_info || false);
+    $('#VectFox_world_info_settings').toggle(settings.enabled_world_info || false);
     refreshWIStatus();
 
     // Debug buttons: Test semantic WI and dump registry
-    $('#vecthare_wi_test_btn').on('click', async function() {
+    $('#VectFox_wi_test_btn').on('click', async function() {
         try {
-            const raw = $('#vecthare_wi_test_input').val() || '';
+            const raw = $('#VectFox_wi_test_input').val() || '';
             const recentMessages = raw.split('\n').map(s => s.trim()).filter(Boolean);
             const activeEntries = [];
-            const cfg = window.extension_settings?.vecthare || settings;
+            const cfg = window.extension_settings?.VectFox || settings;
 
-            console.log('VectHare: Running semantic WI test with messages:', recentMessages);
+            console.log('VectFox: Running semantic WI test with messages:', recentMessages);
 
             // Primary: use initialized hooks if available
-            if (window.VectHare_WorldInfo && typeof window.VectHare_WorldInfo.getSemanticEntries === 'function') {
-                const entries = await window.VectHare_WorldInfo.getSemanticEntries(recentMessages, activeEntries, cfg);
-                console.log('VectHare: Semantic WI test results (via window hooks):', entries);
+            if (window.VectFox_WorldInfo && typeof window.VectFox_WorldInfo.getSemanticEntries === 'function') {
+                const entries = await window.VectFox_WorldInfo.getSemanticEntries(recentMessages, activeEntries, cfg);
+                console.log('VectFox: Semantic WI test results (via window hooks):', entries);
                 toastr.info(`Semantic WI test completed - ${entries.length} entries (see console)`);
 
                 // If no entries found, provide extended diagnostics to help debug
                 if (!entries || entries.length === 0) {
                     try {
-                        console.log('VectHare: No semantic entries — dumping registry and per-collection query info...');
-                        const registry = window.extension_settings?.vecthare?.vecthare_collection_registry || settings.vecthare_collection_registry || [];
-                        console.log('VectHare: Collection registry:', registry);
+                        console.log('VectFox: No semantic entries — dumping registry and per-collection query info...');
+                        const registry = window.extension_settings?.VectFox?.VectFox_collection_registry || settings.VectFox_collection_registry || [];
+                        console.log('VectFox: Collection registry:', registry);
 
                         const coreApi = await import('../core/core-vector-api.js');
                         const metaMod = await import('../core/collection-metadata.js');
@@ -2994,33 +2999,33 @@ function bindSettingsEvents(settings, callbacks) {
                             try {
                                 if (!collKey.includes('lorebook')) continue; // focus on lorebooks
                                 const meta = metaMod.getCollectionMeta(collKey);
-                                console.log(`VectHare: Collection meta for ${collKey}:`, meta);
+                                console.log(`VectFox: Collection meta for ${collKey}:`, meta);
 
                                 // Check saved hashes (true=include metadata)
                                 if (coreApi.getSavedHashes) {
                                     try {
                                         const saved = await coreApi.getSavedHashes(collKey, cfg, true);
-                                        console.log(`VectHare: getSavedHashes for ${collKey}:`, saved && saved.hashes ? saved.hashes.length + ' hashes' : saved);
+                                        console.log(`VectFox: getSavedHashes for ${collKey}:`, saved && saved.hashes ? saved.hashes.length + ' hashes' : saved);
                                     } catch (hErr) {
-                                        console.warn(`VectHare: getSavedHashes failed for ${collKey}:`, hErr.message);
+                                        console.warn(`VectFox: getSavedHashes failed for ${collKey}:`, hErr.message);
                                     }
                                 }
 
                                 // Run a direct vector query against this collection
                                 try {
                                     const qres = await coreApi.queryCollection(collKey, recentMessages.join('\n'), cfg.world_info_top_k || 3, cfg);
-                                    console.log(`VectHare: queryCollection result for ${collKey}:`, qres);
+                                    console.log(`VectFox: queryCollection result for ${collKey}:`, qres);
                                 } catch (qErr) {
-                                    console.warn(`VectHare: queryCollection failed for ${collKey}:`, qErr.message);
+                                    console.warn(`VectFox: queryCollection failed for ${collKey}:`, qErr.message);
                                 }
                             } catch (inner) {
-                                console.warn('VectHare: Error inspecting collection', collKey, inner.message);
+                                console.warn('VectFox: Error inspecting collection', collKey, inner.message);
                             }
                         }
 
                         toastr.info('Extended WI diagnostics written to console (registry + per-collection queries)');
                     } catch (diagErr) {
-                        console.error('VectHare: Failed to run extended WI diagnostics', diagErr);
+                        console.error('VectFox: Failed to run extended WI diagnostics', diagErr);
                         toastr.error('Failed to run WI diagnostics: ' + (diagErr.message || diagErr));
                     }
                 }
@@ -3036,52 +3041,52 @@ function bindSettingsEvents(settings, callbacks) {
                     throw new Error('WorldInfo module does not export a usable function');
                 }
                 const entries = await fn(recentMessages, activeEntries, cfg);
-                console.log('VectHare: Semantic WI test results (via dynamic import):', entries);
+                console.log('VectFox: Semantic WI test results (via dynamic import):', entries);
                 toastr.info(`Semantic WI test completed - ${entries.length} entries (see console)`);
                 return;
             } catch (impErr) {
-                console.warn('VectHare: Dynamic import fallback failed:', impErr.message);
-                toastr.error('VectHare: WorldInfo hooks not initialized and dynamic import failed: ' + impErr.message);
+                console.warn('VectFox: Dynamic import fallback failed:', impErr.message);
+                toastr.error('VectFox: WorldInfo hooks not initialized and dynamic import failed: ' + impErr.message);
                 return;
             }
 
         } catch (e) {
-            console.error('VectHare: Semantic WI test failed', e);
+            console.error('VectFox: Semantic WI test failed', e);
             try { toastr.error('Semantic WI test failed: ' + (e.message || String(e))); } catch (_) {}
         }
     });
 
-    $('#vecthare_wi_dump_registry').on('click', function() {
+    $('#VectFox_wi_dump_registry').on('click', function() {
         try {
-            const registry = window.extension_settings?.vecthare?.vecthare_collection_registry || settings.vecthare_collection_registry || [];
-            console.log('VectHare: Collection registry dump:', registry);
+            const registry = window.extension_settings?.VectFox?.VectFox_collection_registry || settings.VectFox_collection_registry || [];
+            console.log('VectFox: Collection registry dump:', registry);
             toastr.info(`Collection registry dumped to console (${registry.length} items)`);
         } catch (e) {
-            console.error('VectHare: Failed to dump registry', e);
+            console.error('VectFox: Failed to dump registry', e);
             toastr.error('Failed to dump registry: ' + e.message);
         }
     });
 
     // Apply first semantic hit to ST World Info (best-effort)
-    $('#vecthare_wi_apply_first').on('click', async function() {
+    $('#VectFox_wi_apply_first').on('click', async function() {
         try {
-            const raw = $('#vecthare_wi_test_input').val() || '';
+            const raw = $('#VectFox_wi_test_input').val() || '';
             const recentMessages = raw.split('\n').map(s => s.trim()).filter(Boolean);
-            const cfg = window.extension_settings?.vecthare || settings;
+            const cfg = window.extension_settings?.VectFox || settings;
 
-            if (!window.VectHare_WorldInfo || !window.VectHare_WorldInfo.getSemanticEntries) {
-                toastr.error('VectHare: WorldInfo hooks not initialized');
+            if (!window.VectFox_WorldInfo || !window.VectFox_WorldInfo.getSemanticEntries) {
+                toastr.error('VectFox: WorldInfo hooks not initialized');
                 return;
             }
 
-            const entries = await window.VectHare_WorldInfo.getSemanticEntries(recentMessages, [], cfg);
+            const entries = await window.VectFox_WorldInfo.getSemanticEntries(recentMessages, [], cfg);
             if (!entries || entries.length === 0) {
                 toastr.info('No semantic entries found');
                 return;
             }
 
             const first = entries[0];
-            console.log('VectHare: Applying semantic WI entry:', first);
+            console.log('VectFox: Applying semantic WI entry:', first);
 
             // Best-effort: try importing ST's world-info module and invoking common APIs
             let applied = false;
@@ -3093,12 +3098,12 @@ function bindSettingsEvents(settings, callbacks) {
                     if (worldInfo[name] && typeof worldInfo[name] === 'function') {
                         await worldInfo[name]([first]);
                         applied = true;
-                        console.log(`VectHare: Applied via world-info.${name}`);
+                        console.log(`VectFox: Applied via world-info.${name}`);
                         break;
                     }
                 }
             } catch (e) {
-                console.debug('VectHare: world-info import failed or method not found', e);
+                console.debug('VectFox: world-info import failed or method not found', e);
             }
 
             // Try global window API fallbacks
@@ -3113,10 +3118,10 @@ function bindSettingsEvents(settings, callbacks) {
                         try {
                             await fn([first]);
                             applied = true;
-                            console.log('VectHare: Applied via global fallback function');
+                            console.log('VectFox: Applied via global fallback function');
                             break;
                         } catch (e) {
-                            console.debug('VectHare: fallback apply failed', e);
+                            console.debug('VectFox: fallback apply failed', e);
                         }
                     }
                 }
@@ -3133,141 +3138,141 @@ function bindSettingsEvents(settings, callbacks) {
                 await navigator.clipboard.writeText(text);
                 toastr.info('Semantic entry copied to clipboard. Paste into World Info editor to activate.');
             } catch (e) {
-                console.log('VectHare: Clipboard write failed, showing content in console');
+                console.log('VectFox: Clipboard write failed, showing content in console');
                 console.log('Semantic entry content:', text);
                 toastr.info('Semantic entry logged to console. Paste into World Info editor to activate.');
             }
 
         } catch (e) {
-            console.error('VectHare: Apply semantic WI failed', e);
+            console.error('VectFox: Apply semantic WI failed', e);
             toastr.error('Failed to apply semantic WI entry: ' + e.message);
         }
     });
 
     // Injection position (where chunks appear in prompt)
-    $('#vecthare_injection_position')
+    $('#VectFox_injection_position')
         .val(settings.position ?? 0)
         .on('change', function() {
             const value = parseInt($(this).val());
             settings.position = value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             // Show/hide depth slider based on position
-            $('#vecthare_injection_depth_row').toggle(value === 1);
+            $('#VectFox_injection_depth_row').toggle(value === 1);
         });
     // Initialize depth row visibility
-    $('#vecthare_injection_depth_row').toggle((settings.position ?? 0) === 1);
+    $('#VectFox_injection_depth_row').toggle((settings.position ?? 0) === 1);
 
     // Injection depth (for in-chat position)
-    $('#vecthare_injection_depth')
+    $('#VectFox_injection_depth')
         .val(settings.depth ?? 2)
         .on('input', function() {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? 2 : value;
-            $('#vecthare_injection_depth_value').text(safeValue);
+            $('#VectFox_injection_depth_value').text(safeValue);
             settings.depth = safeValue;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_injection_depth_value').text(settings.depth ?? 2);
+    $('#VectFox_injection_depth_value').text(settings.depth ?? 2);
 
     // RAG Context settings
-    $('#vecthare_rag_context')
+    $('#VectFox_rag_context')
         .val(settings.rag_context || '')
         .on('input', function() {
             settings.rag_context = $(this).val();
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_rag_xml_tag')
+    $('#VectFox_rag_xml_tag')
         .val(settings.rag_xml_tag || '')
         .on('input', function() {
             // Sanitize: only allow alphanumeric, underscore, hyphen
             const sanitized = $(this).val().replace(/[^a-zA-Z0-9_-]/g, '');
             $(this).val(sanitized);
             settings.rag_xml_tag = sanitized;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Global temporal weighting defaults
     const updateDecayTypeSection = (enabled) => {
-        const $section = $('#vecthare_default_decay_type_section');
+        const $section = $('#VectFox_default_decay_type_section');
         const $radios = $section.find('input[type="radio"]');
 
         if (enabled) {
-            $section.removeClass('vecthare-subsection-disabled');
+            $section.removeClass('vectfox-subsection-disabled');
             $radios.prop('disabled', false);
             // Select the saved type (or default to 'decay') when enabling
             const savedType = settings.default_decay_type || 'decay';
-            $(`input[name="vecthare_default_decay_type"][value="${savedType}"]`).prop('checked', true);
+            $(`input[name="VectFox_default_decay_type"][value="${savedType}"]`).prop('checked', true);
         } else {
-            $section.addClass('vecthare-subsection-disabled');
+            $section.addClass('vectfox-subsection-disabled');
             $radios.prop('disabled', true).prop('checked', false);
         }
     };
 
-    $('#vecthare_default_decay_enabled')
+    $('#VectFox_default_decay_enabled')
         .prop('checked', settings.default_decay_enabled || false)
         .on('change', function() {
             const enabled = $(this).prop('checked');
             settings.default_decay_enabled = enabled;
             updateDecayTypeSection(enabled);
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Initialize the section state
     updateDecayTypeSection(settings.default_decay_enabled || false);
 
-    $('input[name="vecthare_default_decay_type"]').on('change', function() {
+    $('input[name="VectFox_default_decay_type"]').on('change', function() {
         settings.default_decay_type = $(this).val();
-        Object.assign(extension_settings.vecthareplus, settings);
+        Object.assign(extension_settings.VectFoxplus, settings);
         saveSettingsDebounced();
     });
 
     // Provider-specific settings
 
     // ElectronHub model
-    $('#vecthare_electronhub_model')
+    $('#VectFox_electronhub_model')
         .val(settings.electronhub_model)
         .on('change', function() {
             settings.electronhub_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Alternative endpoint
-    $('#vecthare_use_alt_endpoint')
+    $('#VectFox_use_alt_endpoint')
         .prop('checked', settings.use_alt_endpoint)
         .on('input', function() {
             settings.use_alt_endpoint = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
-            $('#vecthare_alt_endpoint_url').toggle(settings.use_alt_endpoint);
+            $('#VectFox_alt_endpoint_url').toggle(settings.use_alt_endpoint);
         });
 
-    $('#vecthare_alt_endpoint_url')
+    $('#VectFox_alt_endpoint_url')
         .val(settings.alt_endpoint_url)
         .toggle(settings.use_alt_endpoint)
         .on('input', function() {
             settings.alt_endpoint_url = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // WebLLM model
-    $('#vecthare_webllm_model')
+    $('#VectFox_webllm_model')
         .val(settings.webllm_model)
         .on('change', function() {
             settings.webllm_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // WebLLM Load Model button
-    $('#vecthare_webllm_load').on('click', async function() {
+    $('#VectFox_webllm_load').on('click', async function() {
         const modelId = settings.webllm_model;
 
         if (!modelId) {
@@ -3293,7 +3298,7 @@ function bindSettingsEvents(settings, callbacks) {
     });
 
     // WebLLM Install Extension button
-    $('#vecthare_webllm_install').on('click', function(e) {
+    $('#VectFox_webllm_install').on('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -3306,76 +3311,76 @@ function bindSettingsEvents(settings, callbacks) {
     });
 
     // Ollama model
-    $('#vecthare_ollama_model')
+    $('#VectFox_ollama_model')
         .val(settings.ollama_model)
         .on('input', function() {
             settings.ollama_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_ollama_keep')
+    $('#VectFox_ollama_keep')
         .prop('checked', settings.ollama_keep)
         .on('input', function() {
             settings.ollama_keep = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // BananaBread reranking
-    $('#vecthare_bananabread_rerank')
+    $('#VectFox_bananabread_rerank')
         .prop('checked', settings.bananabread_rerank)
         .on('input', function() {
             settings.bananabread_rerank = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Debug injection logging toggle
-    $('#vecthare_injection_debug_logging')
+    $('#VectFox_injection_debug_logging')
         .prop('checked', settings.injection_debug_logging || false)
         .on('change', function() {
             settings.injection_debug_logging = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Debug vectorizing log toggle
-    $('#vecthare_debug_vectorizing_log')
+    $('#VectFox_debug_vectorizing_log')
         .prop('checked', (settings.debug_vectorizing_log || settings.eventbase_debug_logging) || false)
         .on('change', function() {
             const enabled = $(this).prop('checked');
             // Merged control: one checkbox drives both EventBase and vectorizing logs.
             settings.debug_vectorizing_log = enabled;
             settings.eventbase_debug_logging = enabled;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // EventBase native rerank toggle (A3 / Qdrant only).
-    $('#vecthare_eventbase_native_rerank')
+    $('#VectFox_eventbase_native_rerank')
         .prop('checked', !!settings.eventbase_native_rerank)
         .on('change', function() {
             settings.eventbase_native_rerank = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Compare-mode toggle (debug-only observability for native rerank).
-    $('#vecthare_eventbase_compare_rerank')
+    $('#VectFox_eventbase_compare_rerank')
         .prop('checked', !!settings.eventbase_compare_rerank)
         .on('change', function() {
             settings.eventbase_compare_rerank = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Compare-mode verbose toggle.
-    $('#vecthare_eventbase_compare_rerank_verbose')
+    $('#VectFox_eventbase_compare_rerank_verbose')
         .prop('checked', !!settings.eventbase_compare_rerank_verbose)
         .on('change', function() {
             settings.eventbase_compare_rerank_verbose = $(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
@@ -3389,22 +3394,22 @@ function bindSettingsEvents(settings, callbacks) {
         if (total === 0) return;
         keys.forEach((k, i) => {
             settings[`eventbase_${k}`] = Math.round((values[i] / total) * 1000) / 1000;
-            $(`#vecthare_eventbase_${k}`).val(settings[`eventbase_${k}`]);
+            $(`#VectFox_eventbase_${k}`).val(settings[`eventbase_${k}`]);
         });
     };
 
     // Range inputs with live label update
     const _bindEventBaseRange = (id, settingKey, labelId) => {
-        const $el = $(`#vecthare_eventbase_${id}`);
+        const $el = $(`#VectFox_eventbase_${id}`);
         $el.val(settings[settingKey] ?? $el.attr('min') ?? 0)
             .on('input', function() {
                 const v = parseInt($(this).val(), 10);
                 settings[settingKey] = v;
-                if (labelId) $(`#vecthare_eventbase_${labelId}_val`).text(v);
-                Object.assign(extension_settings.vecthareplus, settings);
+                if (labelId) $(`#VectFox_eventbase_${labelId}_val`).text(v);
+                Object.assign(extension_settings.VectFoxplus, settings);
                 saveSettingsDebounced();
             });
-        if (labelId) $(`#vecthare_eventbase_${labelId}_val`).text(settings[settingKey] ?? $el.val());
+        if (labelId) $(`#VectFox_eventbase_${labelId}_val`).text(settings[settingKey] ?? $el.val());
     };
 
     _bindEventBaseRange('window_size', 'eventbase_window_size', 'window_size');
@@ -3414,23 +3419,23 @@ function bindSettingsEvents(settings, callbacks) {
     _bindEventBaseRange('retrieval_top_k', 'eventbase_retrieval_top_k', 'retrieval_top_k');
     _bindEventBaseRange('retrieval_min_importance', 'eventbase_retrieval_min_importance', 'retrieval_min_importance');
 
-    $('#vecthare_eventbase_injection_format')
+    $('#VectFox_eventbase_injection_format')
         .val(settings.eventbase_injection_format || 'densetext')
         .on('change', function() {
             settings.eventbase_injection_format = String($(this).val() || 'densetext').toLowerCase();
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Number inputs (temperature, max_tokens, timeout_ms)
     const _bindEventBaseNumber = (id, settingKey) => {
-        $(`#vecthare_eventbase_${id}`)
+        $(`#VectFox_eventbase_${id}`)
             .val(settings[settingKey] ?? '')
             .on('change', function() {
                 const v = parseFloat($(this).val());
                 if (!isNaN(v)) {
                     settings[settingKey] = v;
-                    Object.assign(extension_settings.vecthareplus, settings);
+                    Object.assign(extension_settings.VectFoxplus, settings);
                     saveSettingsDebounced();
                 }
             });
@@ -3442,28 +3447,28 @@ function bindSettingsEvents(settings, callbacks) {
 
     // Re-rank weight inputs
     ['rerank_w_cosine', 'rerank_w_importance', 'rerank_w_persist', 'rerank_w_recency'].forEach(k => {
-        $(`#vecthare_eventbase_${k}`)
+        $(`#VectFox_eventbase_${k}`)
             .val(settings[`eventbase_${k}`] ?? '')
             .on('change', function() {
                 const v = parseFloat($(this).val());
                 if (!isNaN(v) && v >= 0) {
                     settings[`eventbase_${k}`] = v;
                     _normalizeRerankWeights();
-                    Object.assign(extension_settings.vecthareplus, settings);
+                    Object.assign(extension_settings.VectFoxplus, settings);
                     saveSettingsDebounced();
                 }
             });
     });
 
-    $('#vecthare_eventbase_reset_weights').on('click', function() {
+    $('#VectFox_eventbase_reset_weights').on('click', function() {
         settings.eventbase_rerank_w_cosine    = 0.55;
         settings.eventbase_rerank_w_importance = 0.20;
         settings.eventbase_rerank_w_persist   = 0.15;
         settings.eventbase_rerank_w_recency   = 0.10;
         ['rerank_w_cosine', 'rerank_w_importance', 'rerank_w_persist', 'rerank_w_recency'].forEach(k => {
-            $(`#vecthare_eventbase_${k}`).val(settings[`eventbase_${k}`]);
+            $(`#VectFox_eventbase_${k}`).val(settings[`eventbase_${k}`]);
         });
-        Object.assign(extension_settings.vecthareplus, settings);
+        Object.assign(extension_settings.VectFoxplus, settings);
         saveSettingsDebounced();
         toastr.success('Re-rank weights reset to defaults');
     });
@@ -3472,26 +3477,26 @@ function bindSettingsEvents(settings, callbacks) {
     (async () => {
         const { DEFAULT_EXTRACTION_PROMPT } = await import('../core/eventbase-schema.js');
         const saved = settings.eventbase_custom_prompt || '';
-        $('#vecthare_eventbase_custom_prompt').val(saved || DEFAULT_EXTRACTION_PROMPT);
+        $('#VectFox_eventbase_custom_prompt').val(saved || DEFAULT_EXTRACTION_PROMPT);
     })();
 
-    $('#vecthare_eventbase_custom_prompt').on('input', function() {
+    $('#VectFox_eventbase_custom_prompt').on('input', function() {
         settings.eventbase_custom_prompt = $(this).val();
-        Object.assign(extension_settings.vecthareplus, settings);
+        Object.assign(extension_settings.VectFoxplus, settings);
         saveSettingsDebounced();
     });
 
     // Reset prompt to built-in default
-    $('#vecthare_eventbase_prompt_reset').on('click', async function() {
+    $('#VectFox_eventbase_prompt_reset').on('click', async function() {
         const { DEFAULT_EXTRACTION_PROMPT } = await import('../core/eventbase-schema.js');
         settings.eventbase_custom_prompt = '';
-        $('#vecthare_eventbase_custom_prompt').val(DEFAULT_EXTRACTION_PROMPT);
-        Object.assign(extension_settings.vecthareplus, settings);
+        $('#VectFox_eventbase_custom_prompt').val(DEFAULT_EXTRACTION_PROMPT);
+        Object.assign(extension_settings.VectFoxplus, settings);
         saveSettingsDebounced();
         toastr.success('Extraction prompt reset to default', 'EventBase');
     });
 
-    $('#vecthare_eventbase_open_browser').on('click', function() {
+    $('#VectFox_eventbase_open_browser').on('click', function() {
         toastr.info('Event Browser coming in a future update.', 'EventBase');
     });
 
@@ -3506,20 +3511,20 @@ function bindSettingsEvents(settings, callbacks) {
             const masked = savedKey.length > 4
                 ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
                 : '*'.repeat(savedKey.length);
-            $('#vecthare_bananabread_apikey').attr('placeholder', `Key saved: ${masked}`);
+            $('#VectFox_bananabread_apikey').attr('placeholder', `Key saved: ${masked}`);
         } else {
-            $('#vecthare_bananabread_apikey').attr('placeholder', 'Paste key here to save...');
+            $('#VectFox_bananabread_apikey').attr('placeholder', 'Paste key here to save...');
         }
     };
     updateBananaBreadKeyDisplay();
 
-    $('#vecthare_bananabread_apikey')
+    $('#VectFox_bananabread_apikey')
         .on('change', async function() {
             const value = String($(this).val()).trim();
             if (value) {
                 // Store in extension settings (primary storage for this key)
                 settings.bananabread_api_key = value;
-                Object.assign(extension_settings.vecthareplus, settings);
+                Object.assign(extension_settings.VectFoxplus, settings);
                 saveSettingsDebounced();
 
                 // Also write to ST secrets for potential future compatibility
@@ -3532,50 +3537,50 @@ function bindSettingsEvents(settings, callbacks) {
         });
 
     // OpenAI model
-    $('#vecthare_openai_model')
+    $('#VectFox_openai_model')
         .val(settings.openai_model)
         .on('change', function() {
             settings.openai_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Cohere model
-    $('#vecthare_cohere_model')
+    $('#VectFox_cohere_model')
         .val(settings.cohere_model)
         .on('change', function() {
             settings.cohere_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // TogetherAI model
-    $('#vecthare_togetherai_model')
+    $('#VectFox_togetherai_model')
         .val(settings.togetherai_model)
         .on('change', function() {
             settings.togetherai_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // vLLM model
-    $('#vecthare_vllm_model')
+    $('#VectFox_vllm_model')
         .val(settings.vllm_model)
         .on('input', function() {
             settings.vllm_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // vLLM API key (stored in extension settings, not ST secrets)
-    $('#vecthare_vllm_api_key')
+    $('#VectFox_vllm_api_key')
         .val(settings.vllm_api_key ? '••••••••' : '')
         .attr('placeholder', settings.vllm_api_key ? '••••••••' : 'Leave blank for local / no-auth deployments')
         .on('change', function() {
             const value = String($(this).val()).trim();
             if (value && value !== '••••••••') {
                 settings.vllm_api_key = value;
-                Object.assign(extension_settings.vecthareplus, settings);
+                Object.assign(extension_settings.VectFoxplus, settings);
                 saveSettingsDebounced();
                 $(this).val('••••••••').attr('placeholder', '••••••••');
                 toastr.success('vLLM API key saved');
@@ -3583,30 +3588,30 @@ function bindSettingsEvents(settings, callbacks) {
         });
 
     // Google model
-    $('#vecthare_google_model')
+    $('#VectFox_google_model')
         .val(settings.google_model)
         .on('change', function() {
             settings.google_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // OpenRouter model
-    $('#vecthare_openrouter_model')
+    $('#VectFox_openrouter_model')
         .val(settings.openrouter_model)
         .on('input', function() {
             settings.openrouter_model = String($(this).val());
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // "Choose" button — fetches OpenRouter model list, filters to embedding-likely models
     // Cached for the session to avoid re-fetching 600+ entries each click
     let _openrouterModelCache = null;
-    $('#vecthare_openrouter_model_choose').on('click', async function() {
+    $('#VectFox_openrouter_model_choose').on('click', async function() {
         const $btn = $(this);
-        const $list = $('#vecthare_openrouter_model_list');
-        const $input = $('#vecthare_openrouter_model');
+        const $list = $('#VectFox_openrouter_model_list');
+        const $input = $('#VectFox_openrouter_model');
 
         const originalHtml = $btn.html();
         $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Loading…');
@@ -3649,14 +3654,14 @@ function bindSettingsEvents(settings, callbacks) {
                 toastr.info(`No embedding-tagged models found — showing all ${all.length} models.`);
             }
         } catch (err) {
-            console.error('[VectHare] OpenRouter model list fetch failed:', err);
+            console.error('[VectFox] OpenRouter model list fetch failed:', err);
             toastr.error(`Could not fetch model list: ${err?.message || err}`);
         } finally {
             $btn.prop('disabled', false).html(originalHtml);
         }
     });
 
-    $('#vecthare_openrouter_model_list').on('change', function() {
+    $('#VectFox_openrouter_model_list').on('change', function() {
         const $list = $(this);
         const value = String($list.val() || '').trim();
 
@@ -3668,7 +3673,7 @@ function bindSettingsEvents(settings, callbacks) {
                 ? all.filter(m => m.id.toLowerCase().includes('embed'))
                 : all;
             items.sort((a, b) => a.id.localeCompare(b.id));
-            const currentValue = String($('#vecthare_openrouter_model').val() || '').trim();
+            const currentValue = String($('#VectFox_openrouter_model').val() || '').trim();
             const nextShowingAll = !showingAll;
             const toggleLabel = nextShowingAll ? '— Showing all models · click to filter to embedding-only —' : '— Showing embedding models · click to show all —';
             const options = [`<option value="__toggle__">${toggleLabel}</option>`, '<option value="">— Select a model —</option>']
@@ -3683,7 +3688,7 @@ function bindSettingsEvents(settings, callbacks) {
         }
 
         if (!value) return;
-        $('#vecthare_openrouter_model').val(value).trigger('input');
+        $('#VectFox_openrouter_model').val(value).trigger('input');
         $list.hide();
     });
 
@@ -3694,13 +3699,13 @@ function bindSettingsEvents(settings, callbacks) {
         if (Array.isArray(secrets) && secrets.length > 0) {
             const activeSecret = secrets.find(s => s.active) || secrets[0];
             if (activeSecret?.value) {
-                $('#vecthare_openrouter_apikey').attr('placeholder', activeSecret.value);
+                $('#VectFox_openrouter_apikey').attr('placeholder', activeSecret.value);
             }
         }
     };
     updateOpenRouterKeyDisplay();
 
-    $('#vecthare_openrouter_apikey')
+    $('#VectFox_openrouter_apikey')
         .on('change', async function() {
             const value = String($(this).val()).trim();
             if (value) {
@@ -3713,74 +3718,75 @@ function bindSettingsEvents(settings, callbacks) {
         });
 
     // Rate Limiting
-    $('#vecthare_rate_limit_calls')
+    $('#VectFox_rate_limit_calls')
         .val(settings.rate_limit_calls || 0)
         .on('input', function() {
             const value = parseInt($(this).val());
             settings.rate_limit_calls = isNaN(value) ? 0 : value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_rate_limit_interval')
+    $('#VectFox_rate_limit_interval')
         .val(settings.rate_limit_interval || 60)
         .on('input', function() {
             const value = parseInt($(this).val());
             settings.rate_limit_interval = isNaN(value) ? 60 : value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
-    $('#vecthare_eventbase_debug_qdrant_backend')
+    $('#VectFox_eventbase_debug_qdrant_backend')
         .prop('checked', !!settings.eventbase_debug_qdrant_backend)
         .on('change', function() {
             settings.eventbase_debug_qdrant_backend = !!$(this).prop('checked');
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // VEC-6: Insert Batch Size
-    $('#vecthare_insert_batch_size')
+    $('#VectFox_insert_batch_size')
         .val(settings.insert_batch_size || 50)
         .on('input', function() {
             const value = parseInt($(this).val());
-            $('#vecthare_insert_batch_size_value').text(value);
+            $('#VectFox_insert_batch_size_value').text(value);
             settings.insert_batch_size = value;
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
-    $('#vecthare_insert_batch_size_value').text(settings.insert_batch_size || 50);
+    $('#VectFox_insert_batch_size_value').text(settings.insert_batch_size || 50);
 
     // Minimum chat length before injection starts
-    $('#vecthare_min_chat_length')
+    $('#VectFox_min_chat_length')
         .val(settings.min_chat_length ?? 0)
         .on('input', function() {
             const value = parseInt($(this).val());
             settings.min_chat_length = isNaN(value) ? 0 : Math.max(0, value);
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
         });
 
     // Action buttons
-    $('#vecthare_vectorize_content').on('click', () => {
+    $('#VectFox_vectorize_content').on('click', () => {
         openContentVectorizer();
     });
-    $('#vecthare_vectorize_all').on('click', callbacks.onVectorizeAll);
-    $('#vecthare_purge').on('click', callbacks.onPurge);
-    $('#vecthare_cleanup_corrupted').on('click', callbacks.onCleanupCorrupted);
-    $('#vecthare_run_diagnostics').on('click', callbacks.onRunDiagnostics);
-    $('#vecthare_database_browser').on('click', () => {
+    $('#VectFox_vectorize_all').on('click', callbacks.onVectorizeAll);
+    $('#VectFox_purge').on('click', callbacks.onPurge);
+    $('#VectFox_cleanup_corrupted').on('click', callbacks.onCleanupCorrupted);
+    $('#VectFox_run_diagnostics').on('click', callbacks.onRunDiagnostics);
+    $('#VectFox_database_browser').on('click', () => {
         openDatabaseBrowser();
     });
-    $('#vecthare_view_results').on('click', () => {
+    $('#VectFox_migrate_collections').on('click', callbacks.onMigrateCollections);
+    $('#VectFox_view_results').on('click', () => {
         openSearchDebugModal();
     });
-    $('#vecthare_text_cleaning').on('click', () => {
+    $('#VectFox_text_cleaning').on('click', () => {
         openTextCleaningManager();
     });
-    $('#vecthare_reopen_progress').on('click', () => {
+    $('#VectFox_reopen_progress').on('click', () => {
         if (!progressTracker.reopen()) {
-            toastr.info('No active progress to show', 'VectHare');
+            toastr.info('No active progress to show', 'VectFox');
         }
     });
 
@@ -3802,10 +3808,10 @@ async function initializeCottonTalesIntegration(settings) {
     const cottonTalesInstalled = !!extension_settings?.cotton_tales;
 
     if (cottonTalesInstalled) {
-        $('#vecthare_cottontales_section').show();
-        console.log('VectHare: Cotton-Tales detected, showing emotion classification options');
+        $('#VectFox_cottontales_section').show();
+        console.log('VectFox: Cotton-Tales detected, showing emotion classification options');
     } else {
-        $('#vecthare_cottontales_section').hide();
+        $('#VectFox_cottontales_section').hide();
         return;
     }
 
@@ -3814,18 +3820,18 @@ async function initializeCottonTalesIntegration(settings) {
     try {
         emotionClassifier = await import('../core/emotion-classifier.js');
     } catch (error) {
-        console.error('VectHare: Failed to load emotion classifier module:', error);
+        console.error('VectFox: Failed to load emotion classifier module:', error);
         return;
     }
 
     // Helper to update UI based on method selection
     function updateMethodUI(method) {
-        $('#vecthare_classifier_settings').toggle(method === 'classifier');
-        $('#vecthare_similarity_settings').toggle(method === 'similarity');
+        $('#VectFox_classifier_settings').toggle(method === 'classifier');
+        $('#VectFox_similarity_settings').toggle(method === 'similarity');
 
         // Update the display of current embedding source for similarity mode
         if (method === 'similarity') {
-            $('#vecthare_similarity_source_display').text(settings.source || 'transformers');
+            $('#VectFox_similarity_source_display').text(settings.source || 'transformers');
         }
     }
 
@@ -3840,7 +3846,7 @@ async function initializeCottonTalesIntegration(settings) {
     }
 
     // Classification method dropdown
-    $('#vecthare_emotion_method')
+    $('#VectFox_emotion_method')
         .val(getCurrentMethod())
         .on('change', function() {
             const method = $(this).val();
@@ -3863,7 +3869,7 @@ async function initializeCottonTalesIntegration(settings) {
                 emotionClassifier.updateClassifierSetting('useEmbeddingSimilarity', true);
             }
 
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             updateMethodUI(method);
         });
@@ -3872,17 +3878,17 @@ async function initializeCottonTalesIntegration(settings) {
     updateMethodUI(getCurrentMethod());
 
     // Classifier model selection
-    $('#vecthare_emotion_classifier_model')
+    $('#VectFox_emotion_classifier_model')
         .val(settings.emotion_classifier_model || 'SamLowe/roberta-base-go_emotions')
         .on('change', function() {
             const value = $(this).val();
 
             if (value === 'custom') {
-                $('#vecthare_custom_classifier_model').show();
+                $('#VectFox_custom_classifier_model').show();
             } else {
-                $('#vecthare_custom_classifier_model').hide();
+                $('#VectFox_custom_classifier_model').hide();
                 settings.emotion_classifier_model = value;
-                Object.assign(extension_settings.vecthareplus, settings);
+                Object.assign(extension_settings.VectFoxplus, settings);
                 saveSettingsDebounced();
                 emotionClassifier.updateClassifierSetting('model', value);
             }
@@ -3891,25 +3897,25 @@ async function initializeCottonTalesIntegration(settings) {
     // Show custom model input if currently set to custom
     if (settings.emotion_classifier_model &&
         !['SamLowe/roberta-base-go_emotions', 'j-hartmann/emotion-english-distilroberta-base', 'bhadresh-savani/distilbert-base-uncased-emotion'].includes(settings.emotion_classifier_model)) {
-        $('#vecthare_emotion_classifier_model').val('custom');
-        $('#vecthare_custom_classifier_model').show();
+        $('#VectFox_emotion_classifier_model').val('custom');
+        $('#VectFox_custom_classifier_model').show();
     }
 
     // Custom model input
-    $('#vecthare_emotion_classifier_custom')
+    $('#VectFox_emotion_classifier_custom')
         .val(settings.emotion_classifier_custom || '')
         .on('input', function() {
             settings.emotion_classifier_custom = $(this).val();
             settings.emotion_classifier_model = $(this).val();
-            Object.assign(extension_settings.vecthareplus, settings);
+            Object.assign(extension_settings.VectFoxplus, settings);
             saveSettingsDebounced();
             emotionClassifier.updateClassifierSetting('model', $(this).val());
         });
 
     // Test classifier button
-    $('#vecthare_test_classifier').on('click', async function() {
+    $('#VectFox_test_classifier').on('click', async function() {
         const $btn = $(this);
-        const $result = $('#vecthare_classifier_test_result');
+        const $result = $('#VectFox_classifier_test_result');
 
         $btn.addClass('disabled').find('i').removeClass('fa-flask').addClass('fa-spinner fa-spin');
         $result.hide();
@@ -3989,18 +3995,18 @@ export function showDiagnosticsResults(results) {
  * @param {string} filter - Filter: 'all', 'pass', 'warning', 'fail'
  */
 function renderDiagnosticsContent(results, filter = 'all') {
-    const output = $('#vecthare_diagnostics_content');
+    const output = $('#VectFox_diagnostics_content');
     output.empty();
 
-    console.log('VectHare UI: Rendering diagnostics with results:', results);
-    console.log('VectHare UI: Version data received:', results.version);
-    console.log('VectHare UI: Extension version:', results.version?.extension);
-    console.log('VectHare UI: Plugin version:', results.version?.plugin);
+    console.log('VectFox UI: Rendering diagnostics with results:', results);
+    console.log('VectFox UI: Version data received:', results.version);
+    console.log('VectFox UI: Extension version:', results.version?.extension);
+    console.log('VectFox UI: Plugin version:', results.version?.plugin);
 
     const statusIcons = {
-        'pass': '<i class="fa-solid fa-circle-check" style="color: var(--vecthare-success);"></i>',
-        'warning': '<i class="fa-solid fa-triangle-exclamation" style="color: var(--vecthare-warning);"></i>',
-        'fail': '<i class="fa-solid fa-circle-xmark" style="color: var(--vecthare-danger);"></i>',
+        'pass': '<i class="fa-solid fa-circle-check" style="color: var(--vectfox-success);"></i>',
+        'warning': '<i class="fa-solid fa-triangle-exclamation" style="color: var(--vectfox-warning);"></i>',
+        'fail': '<i class="fa-solid fa-circle-xmark" style="color: var(--vectfox-danger);"></i>',
         'skipped': '<i class="fa-solid fa-circle-minus" style="color: var(--grey70);"></i>'
     };
 
@@ -4048,7 +4054,7 @@ function renderDiagnosticsContent(results, filter = 'all') {
 
     const html = `
         <!-- Version Info -->
-        <div class="vecthare-diagnostics-version" style="padding: 10px 15px; background: var(--black30alpha); border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; color: var(--grey70);">
+        <div class="vectfox-diagnostics-version" style="padding: 10px 15px; background: var(--black30alpha); border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; color: var(--grey70);">
             <i class="fa-solid fa-info-circle"></i>
             <strong>Extension:</strong> v${results.version?.extension || 'Unknown'}
             <span style="margin: 0 10px;">•</span>
@@ -4056,28 +4062,28 @@ function renderDiagnosticsContent(results, filter = 'all') {
         </div>
 
         <!-- Summary Stats Bar (Clickable Filters) -->
-        <div class="vecthare-diagnostics-stats">
-            <div class="vecthare-diag-stat pass ${filter === 'pass' ? 'active' : ''}" data-filter="pass" title="Click to filter by passed">
+        <div class="vectfox-diagnostics-stats">
+            <div class="vectfox-diag-stat pass ${filter === 'pass' ? 'active' : ''}" data-filter="pass" title="Click to filter by passed">
                 ${statusIcons.pass}
-                <span class="vecthare-diag-stat-count">${passCount}</span>
-                <span class="vecthare-diag-stat-label">Passed</span>
+                <span class="vectfox-diag-stat-count">${passCount}</span>
+                <span class="vectfox-diag-stat-label">Passed</span>
             </div>
-            <div class="vecthare-diag-stat warning ${filter === 'warning' ? 'active' : ''}" data-filter="warning" title="Click to filter by warnings">
+            <div class="vectfox-diag-stat warning ${filter === 'warning' ? 'active' : ''}" data-filter="warning" title="Click to filter by warnings">
                 ${statusIcons.warning}
-                <span class="vecthare-diag-stat-count">${warnCount}</span>
-                <span class="vecthare-diag-stat-label">Warnings</span>
+                <span class="vectfox-diag-stat-count">${warnCount}</span>
+                <span class="vectfox-diag-stat-label">Warnings</span>
             </div>
-            <div class="vecthare-diag-stat fail ${filter === 'fail' ? 'active' : ''}" data-filter="fail" title="Click to filter by failed">
+            <div class="vectfox-diag-stat fail ${filter === 'fail' ? 'active' : ''}" data-filter="fail" title="Click to filter by failed">
                 ${statusIcons.fail}
-                <span class="vecthare-diag-stat-count">${failCount}</span>
-                <span class="vecthare-diag-stat-label">Failed</span>
+                <span class="vectfox-diag-stat-count">${failCount}</span>
+                <span class="vectfox-diag-stat-label">Failed</span>
             </div>
         </div>
 
         ${filter !== 'all' ? `
-            <div class="vecthare-diag-filter-notice">
+            <div class="vectfox-diag-filter-notice">
                 <span>Showing only: <strong>${filter}</strong></span>
-                <button class="vecthare-diag-clear-filter" data-filter="all">
+                <button class="vectfox-diag-clear-filter" data-filter="all">
                     <i class="fa-solid fa-times"></i> Show All
                 </button>
             </div>
@@ -4112,7 +4118,7 @@ function renderDiagnosticsContent(results, filter = 'all') {
                         </div>
                     </div>
                     <div class="diagnostic-category-content">
-                        <div class="vecthare-diagnostics">
+                        <div class="vectfox-diagnostics">
                             ${renderChecks(checks)}
                         </div>
                     </div>
@@ -4129,11 +4135,11 @@ function renderDiagnosticsContent(results, filter = 'all') {
         : results.overall === 'warnings'
             ? 'Completed with Warnings'
             : 'Issues Found';
-    $('#vecthare_diagnostics_title').text(titleText);
+    $('#VectFox_diagnostics_title').text(titleText);
 
     // Show/hide Fix All button based on fixable issues
     if (fixableCount > 0) {
-        $('#vecthare_diag_fix_all')
+        $('#VectFox_diag_fix_all')
             .show()
             .html(`<i class="fa-solid fa-wand-magic-sparkles"></i> Fix All (${fixableCount})`)
             .off('click')
@@ -4141,11 +4147,11 @@ function renderDiagnosticsContent(results, filter = 'all') {
                 handleFixAll(results.checks);
             });
     } else {
-        $('#vecthare_diag_fix_all').hide();
+        $('#VectFox_diag_fix_all').hide();
     }
 
     // Bind filter click handlers on stat boxes
-    $('.vecthare-diag-stat').off('click').on('click', function() {
+    $('.vectfox-diag-stat').off('click').on('click', function() {
         const clickedFilter = $(this).data('filter');
         // Toggle: if already active, show all; otherwise apply filter
         if (currentDiagnosticFilter === clickedFilter) {
@@ -4157,7 +4163,7 @@ function renderDiagnosticsContent(results, filter = 'all') {
     });
 
     // Bind clear filter button
-    $('.vecthare-diag-clear-filter').off('click').on('click', function() {
+    $('.vectfox-diag-clear-filter').off('click').on('click', function() {
         currentDiagnosticFilter = 'all';
         renderDiagnosticsContent(currentDiagnosticResults, 'all');
     });
@@ -4193,7 +4199,7 @@ function renderDiagnosticsContent(results, filter = 'all') {
     });
 
     // Bind copy button
-    $('#vecthare_diag_copy').off('click').on('click', function() {
+    $('#VectFox_diag_copy').off('click').on('click', function() {
         copyDiagnosticsReport(currentDiagnosticResults);
     });
 }
@@ -4244,7 +4250,7 @@ function copyDiagnosticsReport(results) {
     };
 
     // Get current settings for the report
-    const settings = extension_settings.vecthareplus;
+    const settings = extension_settings.VectFoxplus;
     const backend = settings.vector_backend || 'qdrant';
     const source = settings.source || 'none';
     const modelField = getModelField(source);
@@ -4264,7 +4270,7 @@ function copyDiagnosticsReport(results) {
     }
 
     let report = `╔══════════════════════════════════════════════════════════════╗
-║              VECTHARE DIAGNOSTICS REPORT                      ║
+║              VectFox DIAGNOSTICS REPORT                      ║
 ╚══════════════════════════════════════════════════════════════╝
 
 📅 Generated: ${timestamp}
@@ -4354,7 +4360,7 @@ ${categoryNames[category] || category.toUpperCase()}  ${catStats}
     // Copy to clipboard
     const filterMsg = isFiltered ? ` (${filterNames[filter]})` : '';
     navigator.clipboard.writeText(report).then(() => {
-        toastr.success(`Diagnostics report${filterMsg} copied to clipboard`, 'VectHare');
+        toastr.success(`Diagnostics report${filterMsg} copied to clipboard`, 'VectFox');
     }).catch(err => {
         console.error('Failed to copy:', err);
         toastr.error('Failed to copy report');
@@ -4366,8 +4372,8 @@ ${categoryNames[category] || category.toUpperCase()}  ${catStats}
  */
 export function openDiagnosticsModal() {
     showDiagnosticsPhase('selection');
-    $('#vecthare_diagnostics_title').text('Run Diagnostics');
-    $('#vecthare_diagnostics_modal').fadeIn(200);
+    $('#VectFox_diagnostics_title').text('Run Diagnostics');
+    $('#VectFox_diagnostics_modal').fadeIn(200);
 }
 
 /**
@@ -4384,7 +4390,7 @@ function handleFixAll(checks) {
 
     let fixedCount = 0;
     const statusIcons = {
-        'pass': '<i class="fa-solid fa-circle-check" style="color: var(--vecthare-success);"></i>'
+        'pass': '<i class="fa-solid fa-circle-check" style="color: var(--vectfox-success);"></i>'
     };
 
     fixableChecks.forEach(check => {
@@ -4404,7 +4410,7 @@ function handleFixAll(checks) {
     });
 
     // Hide Fix All button after use
-    $('#vecthare_diag_fix_all').fadeOut(200);
+    $('#VectFox_diag_fix_all').fadeOut(200);
 
     toastr.success(`Fixed ${fixedCount} issue${fixedCount !== 1 ? 's' : ''}`);
 }
@@ -4415,21 +4421,21 @@ function handleFixAll(checks) {
  * @param {boolean} silent - If true, suppress toast notifications and don't close modal
  */
 function handleDiagnosticFix(action, silent = false) {
-    const settings = extension_settings.vecthareplus;
+    const settings = extension_settings.VectFoxplus;
 
     switch (action) {
         case 'enable_chats':
-            $('#vecthare_autosync_enabled').prop('checked', true).trigger('change');
+            $('#VectFox_autosync_enabled').prop('checked', true).trigger('change');
             if (!silent) toastr.success('Chat auto-sync enabled');
             break;
 
         case 'vectorize_all':
-            $('#vecthare_vectorize_all').click();
+            $('#VectFox_vectorize_all').click();
             break;
 
         case 'configure_provider':
             // Scroll to provider settings
-            $('#vecthare_provider_settings')[0]?.scrollIntoView({ behavior: 'smooth' });
+            $('#VectFox_provider_settings')[0]?.scrollIntoView({ behavior: 'smooth' });
             if (!silent) toastr.info('Please select an embedding provider');
             break;
 
@@ -4439,30 +4445,30 @@ function handleDiagnosticFix(action, silent = false) {
 
         case 'configure_url':
             // Scroll to provider settings
-            $('#vecthare_provider_settings')[0]?.scrollIntoView({ behavior: 'smooth' });
+            $('#VectFox_provider_settings')[0]?.scrollIntoView({ behavior: 'smooth' });
             if (!silent) toastr.info('Please configure your API URL in the provider settings');
             break;
 
         case 'fix_threshold':
-            $('#vecthare_score_threshold').val(0.25).trigger('change');
+            $('#VectFox_score_threshold').val(0.25).trigger('change');
             if (!silent) toastr.success('Score threshold reset to 0.25');
             break;
 
         case 'fix_counts':
             if (settings.insert < 1) {
-                $('#vecthare_insert').val(3).trigger('change');
+                $('#VectFox_insert').val(3).trigger('change');
             }
             if ((settings.top_k ?? settings.insert) < 1) {
-                $('#vecthare_topk').val(3).trigger('change');
+                $('#VectFox_topk').val(3).trigger('change');
             }
             if (settings.query < 1) {
-                $('#vecthare_query').val(2).trigger('change');
+                $('#VectFox_query').val(2).trigger('change');
             }
             if (!silent) toastr.success('Insert/Query counts fixed');
             break;
 
         case 'fix_chunk_size':
-            $('#vecthare_chunk_size').val(500).trigger('input');
+            $('#VectFox_chunk_size').val(500).trigger('input');
             if (!silent) toastr.success('Chunk size reset to 500');
             break;
 
@@ -4500,12 +4506,12 @@ async function showQdrantDimensionFixDialog() {
     const pointsCount = data.pointsCount || 0;
 
     const dialogHtml = `
-        <div class="vecthare-dimension-fix-dialog">
-            <h3 style="margin-top: 0; color: var(--vecthare-danger);">
+        <div class="vectfox-dimension-fix-dialog">
+            <h3 style="margin-top: 0; color: var(--vectfox-danger);">
                 <i class="fa-solid fa-triangle-exclamation"></i> Vector Dimension Mismatch
             </h3>
 
-            <div class="vecthare-dimension-info" style="background: var(--SmartThemeBlurTintColor); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+            <div class="vectfox-dimension-info" style="background: var(--SmartThemeBlurTintColor); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
                 <p style="margin: 0 0 8px 0;"><strong>Your Qdrant collection:</strong></p>
                 <ul style="margin: 0; padding-left: 20px;">
                     <li><strong>${collectionDim}</strong> dimensions</li>
@@ -4522,20 +4528,20 @@ async function showQdrantDimensionFixDialog() {
 
             <p style="margin-bottom: 16px;">These dimensions don't match. You have two options:</p>
 
-            <div class="vecthare-dimension-options" style="display: flex; flex-direction: column; gap: 12px;">
-                <button id="vecthare_dim_fix_purge" class="vecthare-btn-danger" style="padding: 12px; text-align: left;">
+            <div class="vectfox-dimension-options" style="display: flex; flex-direction: column; gap: 12px;">
+                <button id="VectFox_dim_fix_purge" class="vectfox-btn-danger" style="padding: 12px; text-align: left;">
                     <i class="fa-solid fa-trash"></i>
                     <strong>Purge collection and start fresh</strong>
                     <br><small style="opacity: 0.8;">Delete all ${pointsCount.toLocaleString()} vectors and re-vectorize with your current model</small>
                 </button>
 
-                <button id="vecthare_dim_fix_switch" class="vecthare-btn-secondary" style="padding: 12px; text-align: left;">
+                <button id="VectFox_dim_fix_switch" class="vectfox-btn-secondary" style="padding: 12px; text-align: left;">
                     <i class="fa-solid fa-rotate-left"></i>
                     <strong>I'll switch my embedding model back</strong>
                     <br><small style="opacity: 0.8;">Keep your vectors; change your embedding settings to match (${sources}${models !== '(not recorded)' ? ': ' + models : ''})</small>
                 </button>
 
-                <button id="vecthare_dim_fix_cancel" class="vecthare-btn-secondary" style="padding: 12px; text-align: left;">
+                <button id="VectFox_dim_fix_cancel" class="vectfox-btn-secondary" style="padding: 12px; text-align: left;">
                     <i class="fa-solid fa-clock"></i>
                     <strong>Hold off for now</strong>
                     <br><small style="opacity: 0.8;">I'll figure it out later</small>
@@ -4555,7 +4561,7 @@ async function showQdrantDimensionFixDialog() {
     });
 
     // Bind button handlers
-    $('#vecthare_dim_fix_purge').off('click').on('click', async () => {
+    $('#VectFox_dim_fix_purge').off('click').on('click', async () => {
         // Close popup
         $('.popup-button-close').click();
 
@@ -4578,7 +4584,7 @@ async function showQdrantDimensionFixDialog() {
                 const response = await fetch('/api/plugins/similharity/backend/qdrant/purge-collection', {
                     method: 'POST',
                     headers: getRequestHeaders(),
-                    body: JSON.stringify({ collectionName: 'vecthare_main' })
+                    body: JSON.stringify({ collectionName: 'VectFox_main' })
                 });
 
                 if (response.ok) {
@@ -4594,15 +4600,15 @@ async function showQdrantDimensionFixDialog() {
         }
     });
 
-    $('#vecthare_dim_fix_switch').off('click').on('click', () => {
+    $('#VectFox_dim_fix_switch').off('click').on('click', () => {
         $('.popup-button-close').click();
         toastr.info(`Switch your embedding provider to "${sources}"${models !== '(not recorded)' ? ` with model "${models}"` : ''} to match your stored vectors.`);
         closeDiagnosticsModal();
         // Scroll to provider settings
-        $('#vecthare_provider_settings')[0]?.scrollIntoView({ behavior: 'smooth' });
+        $('#VectFox_provider_settings')[0]?.scrollIntoView({ behavior: 'smooth' });
     });
 
-    $('#vecthare_dim_fix_cancel').off('click').on('click', () => {
+    $('#VectFox_dim_fix_cancel').off('click').on('click', () => {
         $('.popup-button-close').click();
     });
 }
@@ -4611,5 +4617,5 @@ async function showQdrantDimensionFixDialog() {
  * Hides diagnostics output
  */
 export function hideDiagnosticsResults() {
-    $('#vecthare_diagnostics_output').hide();
+    $('#VectFox_diagnostics_output').hide();
 }

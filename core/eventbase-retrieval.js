@@ -287,12 +287,12 @@ function _logRerankComparison(colId, queryText, native, js, nativeMs, jsMs, sett
  *                                         a second parallel vector query (dual-query mode).
  *                                         Falls back to searchText when absent or identical.
  * @param {number} params.chatLength    - Current total chat message count (for recency)
- * @param {object} params.settings      - VectHare settings
+ * @param {object} params.settings      - VectFox settings
  * @param {string[]} [params.liveCollectionIds] - EventBase collection IDs to query for live
  *        events. Resolved by the workflow from collections locked to the current chat.
  *        Empty/missing → no live query.
  * @param {object[]} [params.additionalCandidates] - Pre-queried events from archive event
- *        collections (vecthare_archiveevent_*). Already event-shaped; merged before re-ranking.
+ *        collections (VectFox_archiveevent_*). Already event-shaped; merged before re-ranking.
  * @param {boolean}  [params.skipLiveQuery]    - When true, skip live EventBase collection query.
  *        Used when the live collection is paused or not locked to the current chat.
  * @param {boolean}  [params.skipContextDedup] - When true, skip the dedup-depth step.
@@ -416,7 +416,7 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         }
     }
 
-    // Merge in events pre-queried from archive event collections (vecthare_archiveevent_*).
+    // Merge in events pre-queried from archive event collections (VectFox_archiveevent_*).
     const allCandidates = additionalCandidates?.length
         ? [...rawCandidates, ...additionalCandidates]
         : rawCandidates;

@@ -59,7 +59,7 @@ let tinySegmenterInstance = null;
  */
 function setCjkTokenizerMode(mode) {
     if (!Object.values(CJK_TOKENIZER_MODES).includes(mode)) {
-        console.warn(`[VectHare CJK] Unknown tokenizer mode "${mode}", falling back to ${DEFAULT_CJK_TOKENIZER_MODE}`);
+        console.warn(`[VectFox CJK] Unknown tokenizer mode "${mode}", falling back to ${DEFAULT_CJK_TOKENIZER_MODE}`);
         cjkTokenizerMode = DEFAULT_CJK_TOKENIZER_MODE;
         return;
     }
@@ -91,13 +91,13 @@ async function ensureJiebaTokenizerLoaded() {
                 await mod.default();
             }
             if (typeof mod.cut !== 'function') {
-                console.warn('[VectHare CJK] Jieba module loaded but cut() is unavailable');
+                console.warn('[VectFox CJK] Jieba module loaded but cut() is unavailable');
                 return false;
             }
             jiebaCutFunction = mod.cut;
             return true;
         } catch (error) {
-            console.warn('[VectHare CJK] Failed to load Jieba WASM tokenizer:', error?.message || error);
+            console.warn('[VectFox CJK] Failed to load Jieba WASM tokenizer:', error?.message || error);
             return false;
         }
     })();
@@ -133,10 +133,10 @@ async function ensureJiebaTwLoaded() {
             stage = `WASM module import (${JIEBA_TW_WASM_MODULE_URL})`;
             const tModStart = _now();
             const mod = await import(JIEBA_TW_WASM_MODULE_URL);
-            console.log(`[VectHare CJK] Jieba TW: WASM module imported in ${_ms(tModStart)}ms`);
+            console.log(`[VectFox CJK] Jieba TW: WASM module imported in ${_ms(tModStart)}ms`);
 
             if (typeof mod.default !== 'function') {
-                console.warn('[VectHare CJK] Jieba TW module loaded but init() is unavailable');
+                console.warn('[VectFox CJK] Jieba TW module loaded but init() is unavailable');
                 return false;
             }
 
@@ -144,10 +144,10 @@ async function ensureJiebaTwLoaded() {
             stage = `WASM binary init (${JIEBA_TW_WASM_BINARY_URL})`;
             const tWasmStart = _now();
             await mod.default({ module_or_path: JIEBA_TW_WASM_BINARY_URL });
-            console.log(`[VectHare CJK] Jieba TW: WASM binary initialized in ${_ms(tWasmStart)}ms`);
+            console.log(`[VectFox CJK] Jieba TW: WASM binary initialized in ${_ms(tWasmStart)}ms`);
 
             if (typeof mod.with_dict !== 'function' || typeof mod.cut !== 'function') {
-                console.warn('[VectHare CJK] Jieba TW module missing with_dict() or cut()');
+                console.warn('[VectFox CJK] Jieba TW module missing with_dict() or cut()');
                 return false;
             }
 
@@ -156,10 +156,10 @@ async function ensureJiebaTwLoaded() {
             // CDN is obvious from the log alone.
             stage = `dict fetch (${JIEBA_TW_DICT_URL})`;
             const tFetchStart = _now();
-            console.log(`[VectHare CJK] Jieba TW: fetching TW dictionary from ${JIEBA_TW_DICT_URL} (30s timeout)…`);
+            console.log(`[VectFox CJK] Jieba TW: fetching TW dictionary from ${JIEBA_TW_DICT_URL} (30s timeout)…`);
             const resp = await fetch(JIEBA_TW_DICT_URL, { signal: AbortSignal.timeout(30000) });
             if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
-            console.log(`[VectHare CJK] Jieba TW: dict HTTP response in ${_ms(tFetchStart)}ms (status=${resp.status})`);
+            console.log(`[VectFox CJK] Jieba TW: dict HTTP response in ${_ms(tFetchStart)}ms (status=${resp.status})`);
 
             // Stage 4 — read the response body (streaming download time goes
             // here on slow networks; the HTTP status above can return quickly
@@ -167,25 +167,25 @@ async function ensureJiebaTwLoaded() {
             stage = 'dict body read';
             const tBodyStart = _now();
             const dictText = await resp.text();
-            console.log(`[VectHare CJK] Jieba TW: dict body read in ${_ms(tBodyStart)}ms (${dictText.length.toLocaleString()} chars)`);
+            console.log(`[VectFox CJK] Jieba TW: dict body read in ${_ms(tBodyStart)}ms (${dictText.length.toLocaleString()} chars)`);
 
             // Stage 5 — apply dict to the loaded WASM tokenizer
             stage = 'with_dict() apply';
             const tApplyStart = _now();
             mod.with_dict(dictText);
-            console.log(`[VectHare CJK] Jieba TW: with_dict() applied in ${_ms(tApplyStart)}ms`);
+            console.log(`[VectFox CJK] Jieba TW: with_dict() applied in ${_ms(tApplyStart)}ms`);
 
             jiebaTwCutFunction = mod.cut;
-            console.log(`[VectHare CJK] Jieba TW tokenizer ready (total ${_ms(tStart)}ms)`);
+            console.log(`[VectFox CJK] Jieba TW tokenizer ready (total ${_ms(tStart)}ms)`);
             return true;
         } catch (error) {
             const msg = error?.message || String(error);
             const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError' || /aborted|timeout|timed out/i.test(msg);
             const elapsed = _ms(tStart);
             if (isTimeout) {
-                console.warn(`[VectHare CJK] Jieba TW: TIMED OUT during stage "${stage}" after ${elapsed}ms total. Falling back to Intl.Segmenter. This is usually a slow/blocked CDN — try reloading, or check that jsdelivr.net is reachable from your network.`);
+                console.warn(`[VectFox CJK] Jieba TW: TIMED OUT during stage "${stage}" after ${elapsed}ms total. Falling back to Intl.Segmenter. This is usually a slow/blocked CDN — try reloading, or check that jsdelivr.net is reachable from your network.`);
             } else {
-                console.warn(`[VectHare CJK] Jieba TW: failed during stage "${stage}" after ${elapsed}ms total: ${msg}`);
+                console.warn(`[VectFox CJK] Jieba TW: failed during stage "${stage}" after ${elapsed}ms total: ${msg}`);
             }
             return false;
         }
@@ -881,7 +881,7 @@ function _segmentWithJieba(span) {
             .filter(t => t.length > 0);
         return tokens.length > 0 ? tokens : null;
     } catch (error) {
-        console.warn('[VectHare CJK] Jieba tokenization failed, falling back:', error?.message || error);
+        console.warn('[VectFox CJK] Jieba tokenization failed, falling back:', error?.message || error);
         return null;
     }
 }
@@ -896,7 +896,7 @@ function _segmentWithJiebaTw(span) {
             .filter(t => t.length > 0);
         return tokens.length > 0 ? tokens : null;
     } catch (error) {
-        console.warn('[VectHare CJK] Jieba TW tokenization failed, falling back:', error?.message || error);
+        console.warn('[VectFox CJK] Jieba TW tokenization failed, falling back:', error?.message || error);
         return null;
     }
 }
@@ -910,7 +910,7 @@ function _segmentWithTinySegmenter(span) {
             .filter(t => t.length > 0);
         return tokens.length > 0 ? tokens : null;
     } catch (error) {
-        console.warn('[VectHare CJK] TinySegmenter failed, falling back:', error?.message || error);
+        console.warn('[VectFox CJK] TinySegmenter failed, falling back:', error?.message || error);
         return null;
     }
 }

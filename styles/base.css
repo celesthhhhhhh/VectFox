@@ -8,19 +8,19 @@
  * ============================================================================ */
 
 :root {
-    --vecthare-primary: #6366f1;
-    --vecthare-primary-bright: #818cf8;
-    --vecthare-secondary: #8b5cf6;
-    --vecthare-success: #10b981;
-    --vecthare-warning: #f59e0b;
-    --vecthare-danger: #ef4444;
+    --vectfox-primary: #6366f1;
+    --vectfox-primary-bright: #818cf8;
+    --vectfox-secondary: #8b5cf6;
+    --vectfox-success: #10b981;
+    --vectfox-warning: #f59e0b;
+    --vectfox-danger: #ef4444;
 }
 
 /* ============================================================================
  * BASE ICON STYLES (SVG icons from icons.js)
  * ============================================================================ */
 
-.vecthare-icon {
+.vectfox-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -29,35 +29,35 @@
 }
 
 /* Icons in buttons */
-button .vecthare-icon,
-.vecthare-btn .vecthare-icon,
-.vecthare-btn-sm .vecthare-icon {
+button .vectfox-icon,
+.vectfox-btn .vectfox-icon,
+.vectfox-btn-sm .vectfox-icon {
     margin-right: 4px;
 }
 
 /* Icons in badges */
-.vecthare-badge .vecthare-icon {
+.vectfox-badge .vectfox-icon {
     margin-right: 3px;
 }
 
 /* Icons in headers */
-h3 .vecthare-icon,
-h4 .vecthare-icon {
+h3 .vectfox-icon,
+h4 .vectfox-icon {
     margin-right: 8px;
 }
 
 /* Icons in tabs */
-.vecthare-tab-btn .vecthare-icon {
+.vectfox-tab-btn .vectfox-icon {
     margin-right: 6px;
     opacity: 0.85;
 }
 
-.vecthare-tab-btn.active .vecthare-icon {
+.vectfox-tab-btn.active .vectfox-icon {
     opacity: 1;
 }
 
 /* Icons in filter labels */
-.vecthare-type-filters label .vecthare-icon {
+.vectfox-type-filters label .vectfox-icon {
     margin-right: 4px;
     opacity: 0.8;
 }

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE CHUNKING STRATEGIES
+ * VECTFOX CHUNKING STRATEGIES
  * ============================================================================
  * Unified chunking system for all content types.
  * Each strategy is a pure function that takes text and options, returns chunks.

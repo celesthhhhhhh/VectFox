@@ -1,12 +1,12 @@
 /**
  * ============================================================================
- * VECTHARE CONSTANTS
+ * VECTFOX CONSTANTS
  * ============================================================================
  * Centralized configuration values used across the extension.
  * Change these values here instead of hunting through the codebase.
  *
  * @author Coneja Chibi
- * @version 2.2.0-alpha
+ * @version 3.0.0
  * ============================================================================
  */
 
@@ -18,7 +18,7 @@
 export const EXTENSION_PROMPT_TAG = '3_vecthare';
 
 /** Extension name for logging and UI */
-export const EXTENSION_NAME = 'VectHarePlus';
+export const EXTENSION_NAME = 'VectFox';
 
 // =============================================================================
 // PERFORMANCE & RATE LIMITING

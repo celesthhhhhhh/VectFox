@@ -5,7 +5,7 @@
  * Tiny dispatcher that routes vector operations to the selected backend.
  * Keeps the abstraction layer clean and focused.
  *
- * @author VectHare
+ * @author VectFox
  * @version 2.2.0-alpha
  * ============================================================================
  */
@@ -247,7 +247,7 @@ function evictLRUBackendIfNeeded() {
             }
         }
         if (oldestBackend) {
-            console.log(`VectHare: Evicting LRU backend from cache: ${oldestBackend}`);
+            console.log(`VectFox: Evicting LRU backend from cache: ${oldestBackend}`);
             delete backendInstances[oldestBackend];
             delete backendHealthStatus[oldestBackend];
             delete backendAccessTimestamps[oldestBackend];
@@ -259,7 +259,7 @@ function evictLRUBackendIfNeeded() {
 /**
  * Initialize a specific backend (caches instances for reuse)
  * @param {string} backendName - 'standard' or 'qdrant'
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @param {boolean} throwOnFail - Whether to throw on health check failure (default: true)
  * @returns {Promise<VectorBackend|null>} The backend instance or null if failed and throwOnFail=false
  */
@@ -271,7 +271,7 @@ export async function initializeBackend(backendName, settings, throwOnFail = tru
     if (backendInstances[normalizedName] && backendHealthStatus[normalizedName]) {
         // If health cache is stale, re-verify health before returning
         if (isHealthCacheStale(normalizedName)) {
-            console.log(`VectHare: Health cache stale for ${normalizedName}, re-verifying...`);
+            console.log(`VectFox: Health cache stale for ${normalizedName}, re-verifying...`);
             try {
                 const healthy = await backendInstances[normalizedName].healthCheck();
                 recordHealthCheck(normalizedName, healthy); // VEC-18: Record health check
@@ -281,13 +281,13 @@ export async function initializeBackend(backendName, settings, throwOnFail = tru
                     return backendInstances[normalizedName];
                 } else {
                     // Health check failed, invalidate cache
-                    console.warn(`VectHare: Backend ${normalizedName} health re-check failed, invalidating cache`);
+                    console.warn(`VectFox: Backend ${normalizedName} health re-check failed, invalidating cache`);
                     delete backendInstances[normalizedName];
                     backendHealthStatus[normalizedName] = false;
                     delete backendHealthTimestamps[normalizedName];
                 }
             } catch (error) {
-                console.warn(`VectHare: Backend ${normalizedName} health re-check error:`, error.message);
+                console.warn(`VectFox: Backend ${normalizedName} health re-check error:`, error.message);
                 recordHealthCheck(normalizedName, false); // VEC-18: Record failed health check
                 recordError(normalizedName, error); // VEC-18: Record error
                 delete backendInstances[normalizedName];
@@ -309,11 +309,11 @@ export async function initializeBackend(backendName, settings, throwOnFail = tru
         if (throwOnFail) {
             throw new Error(`Unknown backend: ${backendName} (normalized: ${normalizedName}). Available: ${Object.keys(BACKENDS).join(', ')}`);
         }
-        console.warn(`VectHare: Unknown backend: ${backendName}`);
+        console.warn(`VectFox: Unknown backend: ${backendName}`);
         return null;
     }
 
-    console.log(`VectHare: Initializing ${normalizedName} backend${backendName !== normalizedName ? ` (from alias: ${backendName})` : ''}...`);
+    console.log(`VectFox: Initializing ${normalizedName} backend${backendName !== normalizedName ? ` (from alias: ${backendName})` : ''}...`);
 
     try {
         // Create and initialize new backend
@@ -328,7 +328,7 @@ export async function initializeBackend(backendName, settings, throwOnFail = tru
             if (throwOnFail) {
                 throw new Error(`Backend ${normalizedName} failed health check`);
             }
-            console.warn(`VectHare: Backend ${normalizedName} failed health check, marking as unavailable`);
+            console.warn(`VectFox: Backend ${normalizedName} failed health check, marking as unavailable`);
             return null;
         }
 
@@ -338,7 +338,7 @@ export async function initializeBackend(backendName, settings, throwOnFail = tru
         backendAccessTimestamps[normalizedName] = Date.now(); // VEC-25: Track access time
         backendHealthTimestamps[normalizedName] = Date.now(); // VEC-33: Track health verification time
 
-        console.log(`VectHare: Successfully initialized ${normalizedName} backend`);
+        console.log(`VectFox: Successfully initialized ${normalizedName} backend`);
         return backend;
     } catch (error) {
         backendHealthStatus[normalizedName] = false;
@@ -347,7 +347,7 @@ export async function initializeBackend(backendName, settings, throwOnFail = tru
         if (throwOnFail) {
             throw error;
         }
-        console.warn(`VectHare: Failed to initialize ${normalizedName} backend:`, error.message);
+        console.warn(`VectFox: Failed to initialize ${normalizedName} backend:`, error.message);
         return null;
     }
 }
@@ -355,7 +355,7 @@ export async function initializeBackend(backendName, settings, throwOnFail = tru
 /**
  * Get a backend instance for operations
  * Uses the backend specified in settings
- * @param {object} settings - VectHare settings (may include .vector_backend override)
+ * @param {object} settings - VectFox settings (may include .vector_backend override)
  * @param {string} [preferredBackend] - Optional specific backend to use (overrides settings)
  * @returns {Promise<VectorBackend>}
  */
@@ -363,7 +363,7 @@ export async function getBackend(settings, preferredBackend = null) {
     // Priority: explicit parameter > settings.vector_backend > global setting > 'standard'
     const backendName = preferredBackend
         || settings?.vector_backend
-        || extension_settings.vecthareplus?.vector_backend
+        || extension_settings.vectfox?.vector_backend
         || 'standard';
 
     // Try to get/initialize the requested backend - throw on failure
@@ -375,7 +375,7 @@ export async function getBackend(settings, preferredBackend = null) {
 /**
  * Get a backend for a specific collection (uses collection's stored backend)
  * @param {string} collectionBackend - The backend the collection was created with
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {Promise<VectorBackend>}
  */
 export async function getBackendForCollection(collectionBackend, settings) {
@@ -388,7 +388,7 @@ export async function getBackendForCollection(collectionBackend, settings) {
 /**
  * Check if a specific backend is available/healthy
  * @param {string} backendName - Backend to check
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {Promise<boolean>}
  */
 export async function isBackendAvailable(backendName, settings) {
@@ -419,7 +419,7 @@ export function resetBackendHealth(backendName = null) {
         delete backendHealthStatus[normalizedName];
         delete backendInstances[normalizedName];
         delete backendHealthTimestamps[normalizedName]; // VEC-33
-        console.log(`VectHare: Reset backend health status for ${normalizedName}${backendName !== normalizedName ? ` (alias: ${backendName})` : ''}`);
+        console.log(`VectFox: Reset backend health status for ${normalizedName}${backendName !== normalizedName ? ` (alias: ${backendName})` : ''}`);
     } else {
         // Reset all
         for (const name of Object.keys(backendHealthStatus)) {
@@ -427,7 +427,7 @@ export function resetBackendHealth(backendName = null) {
             delete backendInstances[name];
             delete backendHealthTimestamps[name]; // VEC-33
         }
-        console.log('VectHare: Reset backend health status for all backends');
+        console.log('VectFox: Reset backend health status for all backends');
     }
 }
 
@@ -445,7 +445,7 @@ export function invalidateBackendHealth(backendName, error = null) {
         backendHealthStatus[normalizedName] = false;
         delete backendHealthTimestamps[normalizedName];
         // Keep the instance but mark as unhealthy - next getBackend call will re-check
-        console.warn(`VectHare: Invalidated health cache for ${normalizedName} due to operation error${error ? `: ${error.message || error}` : ''}`);
+        console.warn(`VectFox: Invalidated health cache for ${normalizedName} due to operation error${error ? `: ${error.message || error}` : ''}`);
     }
 }
 

@@ -13,7 +13,7 @@
  *
  * Returns null when the collection has no sentinel (legacy / non-migrated collections).
  *
- * @author VectHare
+ * @author VectFox
  * @since Phase 2 — Qdrant native sparse vectors
  * ============================================================================
  */
@@ -67,7 +67,7 @@ export function invalidateCollectionMetadata(actualCollectionId) {
  * Compare saved tokenizer mode to the current setting. Returns null when no mismatch,
  * or `{ saved, current }` when the user must take action.
  *
- * @param {object} settings - VectHare settings (reads `cjk_tokenizer_mode`)
+ * @param {object} settings - VectFox settings (reads `cjk_tokenizer_mode`)
  * @param {string} actualCollectionId
  * @returns {Promise<{saved: string, current: string} | null>}
  */

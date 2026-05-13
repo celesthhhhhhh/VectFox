@@ -112,10 +112,10 @@ export function extractQueryKeywords(searchText, maxKeywords = 50) {
 
     const result = [...cjkTokens, ...latinTokens];
 
-    console.log(`[VectHare] extractQueryKeywords anchor CJK -> ${sortedAnchorCJK.length} unique (top ${anchorCJKTokens.length}): ${anchorCJKTokens.join(', ') || '(none)'}`);
-    console.log(`[VectHare] extractQueryKeywords context CJK -> ${sortedFullCJK.length} unique (top ${contextCJKTokens.length}): ${contextCJKTokens.join(', ') || '(none)'}`);
-    console.log(`[VectHare] extractQueryKeywords Latin -> ${sortedLatin.length} unique (top ${latinTokens.length}): ${latinTokens.join(', ') || '(none)'}`);
-    console.log(`[VectHare] extractQueryKeywords final -> ${result.length} tokens (fullCJK=${fullCJK}): ${result.join(', ')}`);
+    console.log(`[VectFox] extractQueryKeywords anchor CJK -> ${sortedAnchorCJK.length} unique (top ${anchorCJKTokens.length}): ${anchorCJKTokens.join(', ') || '(none)'}`);
+    console.log(`[VectFox] extractQueryKeywords context CJK -> ${sortedFullCJK.length} unique (top ${contextCJKTokens.length}): ${contextCJKTokens.join(', ') || '(none)'}`);
+    console.log(`[VectFox] extractQueryKeywords Latin -> ${sortedLatin.length} unique (top ${latinTokens.length}): ${latinTokens.join(', ') || '(none)'}`);
+    console.log(`[VectFox] extractQueryKeywords final -> ${result.length} tokens (fullCJK=${fullCJK}): ${result.join(', ')}`);
 
     return result;
 }

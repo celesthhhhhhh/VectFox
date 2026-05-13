@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE SEARCH DEBUG MODAL
+ * VectFox SEARCH DEBUG MODAL
  * ============================================================================
  * Shows detailed breakdown of the last RAG query pipeline:
  * - Query text used
@@ -145,7 +145,7 @@ export function setLastSearchDebug(data) {
         queryHistory.pop();
     }
 
-    console.log('VectHare Debug: Stored search debug data', {
+    console.log('VectFox Debug: Stored search debug data', {
         query: data.query?.substring(0, 50) + '...',
         stages: {
             initial: data.stages.initial.length,
@@ -182,25 +182,25 @@ export function getLastSearchDebug() {
  */
 export function openSearchDebugModal() {
     if (!lastDebugData) {
-        toastr.info('No search has been performed yet. Send a message to trigger a RAG query.', 'VectHare');
+        toastr.info('No search has been performed yet. Send a message to trigger a RAG query.', 'VectFox');
         return;
     }
 
     // Remove existing modal
-    $('#vecthare_search_debug_modal').remove();
+    $('#VectFox_search_debug_modal').remove();
 
     const html = createModalHtml(lastDebugData);
     $('body').append(html);
 
     bindEvents();
-    $('#vecthare_search_debug_modal').fadeIn(200);
+    $('#VectFox_search_debug_modal').fadeIn(200);
 }
 
 /**
  * Closes the search debug modal
  */
 export function closeSearchDebugModal() {
-    $('#vecthare_search_debug_modal').fadeOut(200, function() {
+    $('#VectFox_search_debug_modal').fadeOut(200, function() {
         $(this).remove();
     });
 }
@@ -219,7 +219,7 @@ function createModalHtml(data, historyIndex = 0) {
 
     // Build history tabs
     const historyTabs = queryHistory.length > 1 ? `
-        <div class="vecthare-debug-history-tabs">
+        <div class="vectfox-debug-history-tabs">
             ${queryHistory.map((q, idx) => {
                 const isActive = idx === historyIndex;
                 const tabTime = getTimeAgo(q.timestamp);
@@ -227,7 +227,7 @@ function createModalHtml(data, historyIndex = 0) {
                 const injectedCount = q.stages.injected?.length || 0;
                 const statusClass = injectedCount > 0 ? 'tab-success' : 'tab-empty';
                 return `
-                    <button class="vecthare-debug-history-tab ${isActive ? 'active' : ''} ${statusClass}"
+                    <button class="vectfox-debug-history-tab ${isActive ? 'active' : ''} ${statusClass}"
                             data-history-index="${idx}"
                             title="${escapeHtml(q.query.substring(0, 100))}">
                         <span class="tab-num">#${idx + 1}</span>
@@ -239,114 +239,114 @@ function createModalHtml(data, historyIndex = 0) {
     ` : '';
 
     return `
-        <div id="vecthare_search_debug_modal" class="vecthare-modal" style="display: none;">
-            <div class="vecthare-modal-overlay"></div>
-            <div class="vecthare-modal-content vecthare-search-debug-content">
+        <div id="VectFox_search_debug_modal" class="vectfox-modal" style="display: none;">
+            <div class="vectfox-modal-overlay"></div>
+            <div class="vectfox-modal-content vectfox-search-debug-content">
                 <!-- Header -->
-                <div class="vecthare-modal-header">
+                <div class="vectfox-modal-header">
                     <h3><i class="fa-solid fa-bug"></i> Search Debug</h3>
-                    <button class="vecthare-debug-copy-btn" id="vecthare_copy_diagnostic" title="Copy diagnostic dump">
+                    <button class="vectfox-debug-copy-btn" id="VectFox_copy_diagnostic" title="Copy diagnostic dump">
                         <i class="fa-solid fa-copy"></i> Copy Debug
                     </button>
-                    <button class="vecthare-modal-close" id="vecthare_search_debug_close">✕</button>
+                    <button class="vectfox-modal-close" id="VectFox_search_debug_close">✕</button>
                 </div>
 
                 <!-- History Tabs -->
                 ${historyTabs}
 
                 <!-- Body -->
-                <div class="vecthare-modal-body vecthare-search-debug-body">
+                <div class="vectfox-modal-body vectfox-search-debug-body">
 
                     <!-- Query Info Card (Clickable to expand) -->
-                    <div class="vecthare-debug-card vecthare-debug-query-card" id="vecthare_query_card">
-                        <div class="vecthare-debug-card-header vecthare-debug-clickable" id="vecthare_query_header">
+                    <div class="vectfox-debug-card vectfox-debug-query-card" id="VectFox_query_card">
+                        <div class="vectfox-debug-card-header vectfox-debug-clickable" id="VectFox_query_header">
                             <i class="fa-solid fa-magnifying-glass"></i>
                             <span>Query</span>
-                            <span class="vecthare-debug-timestamp">${timeAgo}</span>
-                            <i class="fa-solid fa-chevron-down vecthare-debug-expand-icon"></i>
+                            <span class="vectfox-debug-timestamp">${timeAgo}</span>
+                            <i class="fa-solid fa-chevron-down vectfox-debug-expand-icon"></i>
                         </div>
-                        <div class="vecthare-debug-card-body">
-                            <div class="vecthare-debug-query-preview">${escapeHtml(queryPreview)}</div>
-                            <div class="vecthare-debug-query-full" style="display: none;">
+                        <div class="vectfox-debug-card-body">
+                            <div class="vectfox-debug-query-preview">${escapeHtml(queryPreview)}</div>
+                            <div class="vectfox-debug-query-full" style="display: none;">
                                 <pre>${escapeHtml(data.query)}</pre>
                             </div>
                         </div>
                     </div>
 
                     <!-- Pipeline Overview -->
-                    <div class="vecthare-debug-pipeline">
-                        <div class="vecthare-debug-pipeline-title">
+                    <div class="vectfox-debug-pipeline">
+                        <div class="vectfox-debug-pipeline-title">
                             <i class="fa-solid fa-diagram-project"></i>
                             RAG Pipeline
                         </div>
-                        <div class="vecthare-debug-pipeline-stages">
+                        <div class="vectfox-debug-pipeline-stages">
                             ${createPipelineStage('Vector Search', data.stages.initial.length, data.stages.initial.length, 'fa-database', 'primary', false)}
-                            <div class="vecthare-debug-pipeline-arrow">→</div>
+                            <div class="vectfox-debug-pipeline-arrow">→</div>
                             ${createKeywordBoostStage(data)}
-                            <div class="vecthare-debug-pipeline-arrow">→</div>
+                            <div class="vectfox-debug-pipeline-arrow">→</div>
                             ${createPipelineStage('Threshold', data.stages.afterThreshold?.length ?? data.stages.initial.filter(c => c.score >= (data.settings.threshold || 0)).length, data.stages.initial.length, 'fa-filter', 'info', false)}
-                            <div class="vecthare-debug-pipeline-arrow">→</div>
+                            <div class="vectfox-debug-pipeline-arrow">→</div>
                             ${createPipelineStage('Decay', data.stages.afterDecay.length, data.stages.afterThreshold?.length ?? 0, 'fa-clock', 'warning', !data.settings.temporal_decay?.enabled)}
-                            <div class="vecthare-debug-pipeline-arrow">→</div>
+                            <div class="vectfox-debug-pipeline-arrow">→</div>
                             ${createPipelineStage('Conditions', data.stages.afterConditions.length, data.stages.afterDecay.length, 'fa-code-branch', 'secondary', false)}
-                            <div class="vecthare-debug-pipeline-arrow">→</div>
+                            <div class="vectfox-debug-pipeline-arrow">→</div>
                             ${createPipelineStage('Injected', data.stages.injected.length, data.stages.afterConditions.length, 'fa-syringe', 'success', false)}
                         </div>
                     </div>
 
                     <!-- Settings Used -->
-                    <div class="vecthare-debug-card vecthare-debug-settings">
-                        <div class="vecthare-debug-card-header">
+                    <div class="vectfox-debug-card vectfox-debug-settings">
+                        <div class="vectfox-debug-card-header">
                             <i class="fa-solid fa-gear"></i>
                             <span>Settings Used</span>
                         </div>
-                        <div class="vecthare-debug-card-body">
-                            <div class="vecthare-debug-settings-grid">
-                                <div class="vecthare-debug-setting">
-                                    <span class="vecthare-debug-setting-label">Threshold</span>
-                                    <span class="vecthare-debug-setting-value">${data.settings.threshold || 'N/A'}</span>
+                        <div class="vectfox-debug-card-body">
+                            <div class="vectfox-debug-settings-grid">
+                                <div class="vectfox-debug-setting">
+                                    <span class="vectfox-debug-setting-label">Threshold</span>
+                                    <span class="vectfox-debug-setting-value">${data.settings.threshold || 'N/A'}</span>
                                 </div>
-                                <div class="vecthare-debug-setting">
-                                    <span class="vecthare-debug-setting-label">Top K</span>
-                                    <span class="vecthare-debug-setting-value">${data.settings.topK || 'N/A'}</span>
+                                <div class="vectfox-debug-setting">
+                                    <span class="vectfox-debug-setting-label">Top K</span>
+                                    <span class="vectfox-debug-setting-value">${data.settings.topK || 'N/A'}</span>
                                 </div>
-                                <div class="vecthare-debug-setting">
-                                    <span class="vecthare-debug-setting-label">Temporal Decay</span>
-                                    <span class="vecthare-debug-setting-value">${data.settings.temporal_decay?.enabled ? 'On' : 'Off'}</span>
+                                <div class="vectfox-debug-setting">
+                                    <span class="vectfox-debug-setting-label">Temporal Decay</span>
+                                    <span class="vectfox-debug-setting-value">${data.settings.temporal_decay?.enabled ? 'On' : 'Off'}</span>
                                 </div>
-                                <div class="vecthare-debug-setting">
-                                    <span class="vecthare-debug-setting-label">Collection</span>
-                                    <span class="vecthare-debug-setting-value vecthare-debug-setting-mono">${data.collectionId || 'Unknown'}</span>
+                                <div class="vectfox-debug-setting">
+                                    <span class="vectfox-debug-setting-label">Collection</span>
+                                    <span class="vectfox-debug-setting-value vectfox-debug-setting-mono">${data.collectionId || 'Unknown'}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Chunks by Stage -->
-                    <div class="vecthare-debug-card">
-                        <div class="vecthare-debug-card-header">
+                    <div class="vectfox-debug-card">
+                        <div class="vectfox-debug-card-header">
                             <i class="fa-solid fa-layer-group"></i>
                             <span>Chunks by Stage</span>
                         </div>
-                        <div class="vecthare-debug-card-body">
+                        <div class="vectfox-debug-card-body">
                             <!-- Stage Tabs -->
-                            <div class="vecthare-debug-stage-tabs">
-                                <button class="vecthare-debug-stage-tab active" data-stage="initial">
+                            <div class="vectfox-debug-stage-tabs">
+                                <button class="vectfox-debug-stage-tab active" data-stage="initial">
                                     Initial (${data.stages.initial.length})
                                 </button>
-                                <button class="vecthare-debug-stage-tab" data-stage="afterDecay">
+                                <button class="vectfox-debug-stage-tab" data-stage="afterDecay">
                                     After Decay (${data.stages.afterDecay.length})
                                 </button>
-                                <button class="vecthare-debug-stage-tab" data-stage="afterConditions">
+                                <button class="vectfox-debug-stage-tab" data-stage="afterConditions">
                                     After Conditions (${data.stages.afterConditions.length})
                                 </button>
-                                <button class="vecthare-debug-stage-tab" data-stage="injected">
+                                <button class="vectfox-debug-stage-tab" data-stage="injected">
                                     Injected (${data.stages.injected.length})
                                 </button>
                             </div>
 
                             <!-- Stage Content -->
-                            <div class="vecthare-debug-stage-content" id="vecthare_debug_stage_content">
+                            <div class="vectfox-debug-stage-content" id="VectFox_debug_stage_content">
                                 ${renderStageChunks(data.stages.initial, 'initial', data)}
                             </div>
                         </div>
@@ -385,16 +385,16 @@ function createModalHtml(data, historyIndex = 0) {
 function createPipelineStage(label, count, fromCount, icon, colorClass, disabled = false) {
     // Only show loss if this stage actually received chunks AND lost some
     const lost = (fromCount > 0 && count < fromCount) ? fromCount - count : 0;
-    const disabledClass = disabled ? 'vecthare-debug-stage-disabled' : '';
+    const disabledClass = disabled ? 'vectfox-debug-stage-disabled' : '';
 
     return `
-        <div class="vecthare-debug-pipeline-stage vecthare-debug-stage-${colorClass} ${disabledClass}">
-            <div class="vecthare-debug-stage-icon">
+        <div class="vectfox-debug-pipeline-stage vectfox-debug-stage-${colorClass} ${disabledClass}">
+            <div class="vectfox-debug-stage-icon">
                 <i class="fa-solid ${icon}"></i>
             </div>
-            <div class="vecthare-debug-stage-count">${count}</div>
-            <div class="vecthare-debug-stage-label">${label}${disabled ? ' (off)' : ''}</div>
-            ${lost > 0 ? `<div class="vecthare-debug-stage-lost">-${lost}</div>` : ''}
+            <div class="vectfox-debug-stage-count">${count}</div>
+            <div class="vectfox-debug-stage-label">${label}${disabled ? ' (off)' : ''}</div>
+            ${lost > 0 ? `<div class="vectfox-debug-stage-lost">-${lost}</div>` : ''}
         </div>
     `;
 }
@@ -414,16 +414,16 @@ function createKeywordBoostStage(data) {
 
     // Show total matched keywords as the badge
     const badge = totalMatchedQueryKeywords > 0
-        ? `<div class="vecthare-debug-stage-boost">🔑${totalMatchedQueryKeywords}</div>`
+        ? `<div class="vectfox-debug-stage-boost">🔑${totalMatchedQueryKeywords}</div>`
         : '';
 
     return `
-        <div class="vecthare-debug-pipeline-stage vecthare-debug-stage-keyword">
-            <div class="vecthare-debug-stage-icon">
+        <div class="vectfox-debug-pipeline-stage vectfox-debug-stage-keyword">
+            <div class="vectfox-debug-stage-icon">
                 <i class="fa-solid fa-tags"></i>
             </div>
-            <div class="vecthare-debug-stage-count">${boostedCount}</div>
-            <div class="vecthare-debug-stage-label">Keywords</div>
+            <div class="vectfox-debug-stage-count">${boostedCount}</div>
+            <div class="vectfox-debug-stage-label">Keywords</div>
             ${badge}
         </div>
     `;
@@ -435,14 +435,14 @@ function createKeywordBoostStage(data) {
 function renderStageChunks(chunks, stageName, data) {
     if (!chunks || chunks.length === 0) {
         return `
-            <div class="vecthare-debug-empty">
+            <div class="vectfox-debug-empty">
                 <i class="fa-solid fa-inbox"></i>
                 <p>No chunks at this stage</p>
             </div>
         `;
     }
 
-    let html = '<div class="vecthare-debug-chunks-list">';
+    let html = '<div class="vectfox-debug-chunks-list">';
 
     chunks.forEach((chunk, idx) => {
         const textPreview = chunk.text
@@ -453,14 +453,14 @@ function renderStageChunks(chunks, stageName, data) {
 
         const scoreClass = getScoreClass(chunk.score);
         const decayInfo = chunk.decayApplied
-            ? `<span class="vecthare-debug-decay-badge" title="Original: ${chunk.originalScore?.toFixed(3)}">
+            ? `<span class="vectfox-debug-decay-badge" title="Original: ${chunk.originalScore?.toFixed(3)}">
                    Decay: ${((1 - chunk.decayMultiplier) * 100).toFixed(0)}%↓
                </span>`
             : '';
 
         // Show matched query keywords badge
         const keywordMatchInfo = chunk.matchedQueryKeywords && chunk.matchedQueryKeywords.length > 0
-            ? `<span class="vecthare-debug-keyword-match-badge" title="Matched query keywords: ${chunk.matchedQueryKeywords.join(', ')}">
+            ? `<span class="vectfox-debug-keyword-match-badge" title="Matched query keywords: ${chunk.matchedQueryKeywords.join(', ')}">
                    🔑 ${chunk.matchedQueryKeywords.length} keyword${chunk.matchedQueryKeywords.length > 1 ? 's' : ''}
                </span>`
             : '';
@@ -484,11 +484,11 @@ function renderStageChunks(chunks, stageName, data) {
                 const vectorPct = ((chunk.vectorScore || 0) * 100).toFixed(0);
                 const textPct = ((chunk.textScore || 0) * 100).toFixed(0);
                 scoreDisplay = `
-                    <span class="vecthare-debug-chunk-score-hybrid">
-                        <span class="vecthare-score-main ${scoreClass}">${finalScore}</span>
-                        <span class="vecthare-score-mini">
-                            <span class="vecthare-mini-vector" title="Semantic similarity (Qdrant cosine)">🔷${vectorPct}%</span>
-                            <span class="vecthare-mini-text" title="Keyword match score">📝${textPct}%</span>
+                    <span class="vectfox-debug-chunk-score-hybrid">
+                        <span class="vectfox-score-main ${scoreClass}">${finalScore}</span>
+                        <span class="vectfox-score-mini">
+                            <span class="vectfox-mini-vector" title="Semantic similarity (Qdrant cosine)">🔷${vectorPct}%</span>
+                            <span class="vectfox-mini-text" title="Keyword match score">📝${textPct}%</span>
                         </span>
                     </span>`;
             } else {
@@ -497,16 +497,16 @@ function renderStageChunks(chunks, stageName, data) {
                 const vectorPct = ((chunk.vectorScore || 0) * 100).toFixed(0);
                 const textPct = ((chunk.textScore || 0) * 100).toFixed(0);
                 scoreDisplay = `
-                    <span class="vecthare-debug-chunk-score-hybrid">
-                        <span class="vecthare-score-main ${scoreClass}">${finalPct}%</span>
-                        <span class="vecthare-score-mini">
-                            <span class="vecthare-mini-vector" title="Semantic similarity">🔷${vectorPct}%</span>
-                            <span class="vecthare-mini-text" title="Keyword match">📝${textPct}%</span>
+                    <span class="vectfox-debug-chunk-score-hybrid">
+                        <span class="vectfox-score-main ${scoreClass}">${finalPct}%</span>
+                        <span class="vectfox-score-mini">
+                            <span class="vectfox-mini-vector" title="Semantic similarity">🔷${vectorPct}%</span>
+                            <span class="vectfox-mini-text" title="Keyword match">📝${textPct}%</span>
                         </span>
                     </span>`;
             }
         } else {
-            scoreDisplay = `<span class="vecthare-debug-chunk-score ${scoreClass}">${chunk.score?.toFixed(3) || 'N/A'}</span>`;
+            scoreDisplay = `<span class="vectfox-debug-chunk-score ${scoreClass}">${chunk.score?.toFixed(3) || 'N/A'}</span>`;
         }
 
         // Build full metadata for expanded view
@@ -524,72 +524,72 @@ function renderStageChunks(chunks, stageName, data) {
         };
 
         html += `
-            <div class="vecthare-debug-chunk vecthare-debug-chunk-expandable ${wasExcluded ? 'vecthare-debug-chunk-excluded' : ''}" data-chunk-idx="${idx}">
-                <div class="vecthare-debug-chunk-header">
-                    <span class="vecthare-debug-chunk-rank">#${idx + 1}</span>
+            <div class="vectfox-debug-chunk vectfox-debug-chunk-expandable ${wasExcluded ? 'vectfox-debug-chunk-excluded' : ''}" data-chunk-idx="${idx}">
+                <div class="vectfox-debug-chunk-header">
+                    <span class="vectfox-debug-chunk-rank">#${idx + 1}</span>
                     ${scoreDisplay}
                     ${keywordMatchInfo}
                     ${decayInfo}
-                    ${wasExcluded ? `<span class="vecthare-debug-excluded-badge">${wasExcluded}</span>` : ''}
-                    <i class="fa-solid fa-chevron-down vecthare-debug-chunk-expand-icon"></i>
+                    ${wasExcluded ? `<span class="vectfox-debug-excluded-badge">${wasExcluded}</span>` : ''}
+                    <i class="fa-solid fa-chevron-down vectfox-debug-chunk-expand-icon"></i>
                 </div>
                 ${scoreBreakdown}
-                <div class="vecthare-debug-chunk-text-preview">${escapeHtml(textPreview)}</div>
+                <div class="vectfox-debug-chunk-text-preview">${escapeHtml(textPreview)}</div>
 
                 <!-- Expanded content (hidden by default) -->
-                <div class="vecthare-debug-chunk-expanded" style="display: none;">
-                    <div class="vecthare-debug-chunk-fulltext">
-                        <div class="vecthare-debug-chunk-fulltext-label">Full Text:</div>
+                <div class="vectfox-debug-chunk-expanded" style="display: none;">
+                    <div class="vectfox-debug-chunk-fulltext">
+                        <div class="vectfox-debug-chunk-fulltext-label">Full Text:</div>
                         <pre>${escapeHtml(chunk.text || '(no text)')}</pre>
                     </div>
-                    <div class="vecthare-debug-chunk-meta-full">
-                        <div class="vecthare-debug-meta-grid">
-                            <div class="vecthare-debug-meta-item">
+                    <div class="vectfox-debug-chunk-meta-full">
+                        <div class="vectfox-debug-meta-grid">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Hash</span>
                                 <span class="meta-value">${chunk.hash}</span>
                             </div>
                             ${chunk.index !== undefined ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Message #</span>
                                 <span class="meta-value">${chunk.index}</span>
                             </div>` : ''}
                             ${chunk.messageAge !== undefined ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Age</span>
                                 <span class="meta-value">${chunk.messageAge} messages</span>
                             </div>` : ''}
                             ${chunk.collection || chunk.collectionId ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Collection</span>
                                 <span class="meta-value">${chunk.collection || chunk.collectionId}</span>
                             </div>` : ''}
                             ${chunk.metadata?.keywords?.length ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Keywords</span>
                                 <span class="meta-value">${chunk.metadata.keywords.map(k => typeof k === 'object' ? `${k.text}(${k.weight}x)` : k).join(', ')}</span>
                             </div>` : ''}
                             ${chunk.matchedQueryKeywords?.length ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Matched Query Keywords</span>
-                                <span class="meta-value vecthare-matched-keywords">${chunk.matchedQueryKeywords.join(', ')}</span>
+                                <span class="meta-value vectfox-matched-keywords">${chunk.matchedQueryKeywords.join(', ')}</span>
                             </div>` : ''}
                             ${chunk.vectorRank !== undefined ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Vector Rank</span>
                                 <span class="meta-value">#${chunk.vectorRank}</span>
                             </div>` : ''}
                             ${chunk.keywordRank !== undefined && chunk.keywordRank !== Infinity ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Keyword Rank</span>
                                 <span class="meta-value">#${chunk.keywordRank}</span>
                             </div>` : ''}
                             ${chunk.matchedKeywords !== undefined ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Keywords Matched</span>
                                 <span class="meta-value">${chunk.matchedKeywords} keyword${chunk.matchedKeywords !== 1 ? 's' : ''}</span>
                             </div>` : ''}
                             ${chunk.fusionMethod ? `
-                            <div class="vecthare-debug-meta-item">
+                            <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Fusion Method</span>
                                 <span class="meta-value">${chunk.fusionMethod.toUpperCase()}</span>
                             </div>` : ''}
@@ -598,10 +598,10 @@ function renderStageChunks(chunks, stageName, data) {
                 </div>
 
                 <!-- Collapsed meta (shown when collapsed) -->
-                <div class="vecthare-debug-chunk-meta">
+                <div class="vectfox-debug-chunk-meta">
                     <span>Hash: ${String(chunk.hash).substring(0, 12)}...</span>
                     ${chunk.index !== undefined ? `<span>Msg #${chunk.index}</span>` : ''}
-                    ${hasMoreText ? `<span class="vecthare-debug-click-hint">Click to expand</span>` : ''}
+                    ${hasMoreText ? `<span class="vectfox-debug-click-hint">Click to expand</span>` : ''}
                 </div>
             </div>
         `;
@@ -690,9 +690,9 @@ function buildScoreBreakdown(chunk) {
 
         let matchIndicator = '';
         if (!hasTextMatch) {
-            matchIndicator = '<span class="vecthare-score-warning" title="No keyword match - semantic only">⚠️</span>';
+            matchIndicator = '<span class="vectfox-score-warning" title="No keyword match - semantic only">⚠️</span>';
         } else {
-            matchIndicator = '<span class="vecthare-score-good" title="Both semantic and keyword match">✓</span>';
+            matchIndicator = '<span class="vectfox-score-good" title="Both semantic and keyword match">✓</span>';
         }
 
         // RRF final score is raw, but vector/text scores are still percentages (from Qdrant)
@@ -707,16 +707,16 @@ function buildScoreBreakdown(chunk) {
             finalDisplay = ((chunk.score || 0) * 100).toFixed(1) + '%';
         }
 
-        return `<div class="vecthare-debug-score-breakdown vecthare-hybrid-breakdown">
-            <div class="vecthare-hybrid-scores">
-                <span class="vecthare-score-vector-badge" title="Semantic similarity">🔷 Vector: ${vectorDisplay}</span>
-                <span class="vecthare-score-text-badge" title="Keyword/BM25 match">📝 Text: ${textDisplay}</span>
+        return `<div class="vectfox-debug-score-breakdown vectfox-hybrid-breakdown">
+            <div class="vectfox-hybrid-scores">
+                <span class="vectfox-score-vector-badge" title="Semantic similarity">🔷 Vector: ${vectorDisplay}</span>
+                <span class="vectfox-score-text-badge" title="Keyword/BM25 match">📝 Text: ${textDisplay}</span>
                 ${matchIndicator}
             </div>
-            <div class="vecthare-score-math">
-                <span class="vecthare-score-fusion">${fusionMethod.toUpperCase()}</span>
-                <span class="vecthare-score-operator">→</span>
-                <span class="vecthare-score-final">${finalDisplay}</span>
+            <div class="vectfox-score-math">
+                <span class="vectfox-score-fusion">${fusionMethod.toUpperCase()}</span>
+                <span class="vectfox-score-operator">→</span>
+                <span class="vectfox-score-final">${finalDisplay}</span>
             </div>
         </div>`;
     }
@@ -734,14 +734,14 @@ function buildScoreBreakdown(chunk) {
 
     if (!hasKeywordBoost && !hasDecay && vectorScore === finalScore) {
         // No modifications, just show vector score
-        return `<div class="vecthare-debug-score-breakdown">
-            <span class="vecthare-score-math">Vector: ${vectorScore?.toFixed(3) || 'N/A'}</span>
+        return `<div class="vectfox-debug-score-breakdown">
+            <span class="vectfox-score-math">Vector: ${vectorScore?.toFixed(3) || 'N/A'}</span>
         </div>`;
     }
 
     // Build the math equation
     let mathParts = [];
-    mathParts.push(`<span class="vecthare-score-vector">${vectorScore?.toFixed(3) || '?'}</span>`);
+    mathParts.push(`<span class="vectfox-score-vector">${vectorScore?.toFixed(3) || '?'}</span>`);
 
     if (hasKeywordBoost) {
         // Show keyword breakdown with weights if available
@@ -754,17 +754,17 @@ function buildScoreBreakdown(chunk) {
         } else if (chunk.matchedKeywords?.length > 0) {
             boostTitle = `Matched: ${chunk.matchedKeywords.join(', ')}`;
         }
-        mathParts.push(`<span class="vecthare-score-operator">×</span>`);
-        mathParts.push(`<span class="vecthare-score-boost" title="${boostTitle}">${keywordBoost.toFixed(2)}x</span>`);
+        mathParts.push(`<span class="vectfox-score-operator">×</span>`);
+        mathParts.push(`<span class="vectfox-score-boost" title="${boostTitle}">${keywordBoost.toFixed(2)}x</span>`);
     }
 
     if (hasDecay) {
-        mathParts.push(`<span class="vecthare-score-operator">×</span>`);
-        mathParts.push(`<span class="vecthare-score-decay" title="Age: ${chunk.messageAge || '?'} msgs">${decayMultiplier.toFixed(2)}↓</span>`);
+        mathParts.push(`<span class="vectfox-score-operator">×</span>`);
+        mathParts.push(`<span class="vectfox-score-decay" title="Age: ${chunk.messageAge || '?'} msgs">${decayMultiplier.toFixed(2)}↓</span>`);
     }
 
-    mathParts.push(`<span class="vecthare-score-operator">=</span>`);
-    mathParts.push(`<span class="vecthare-score-final">${finalScore?.toFixed(3) || '?'}</span>`);
+    mathParts.push(`<span class="vectfox-score-operator">=</span>`);
+    mathParts.push(`<span class="vectfox-score-final">${finalScore?.toFixed(3) || '?'}</span>`);
 
     // Add keyword matches with weights if present
     let keywordInfo = '';
@@ -772,13 +772,13 @@ function buildScoreBreakdown(chunk) {
         const kwStr = chunk.matchedKeywordsWithWeights.map(k =>
             k.weight !== 1.5 ? `${k.text} (${k.weight}x)` : k.text
         ).join(', ');
-        keywordInfo = `<div class="vecthare-score-keywords">Keywords: ${kwStr}</div>`;
+        keywordInfo = `<div class="vectfox-score-keywords">Keywords: ${kwStr}</div>`;
     } else if (chunk.matchedKeywords?.length > 0) {
-        keywordInfo = `<div class="vecthare-score-keywords">Keywords: ${chunk.matchedKeywords.join(', ')}</div>`;
+        keywordInfo = `<div class="vectfox-score-keywords">Keywords: ${chunk.matchedKeywords.join(', ')}</div>`;
     }
 
-    return `<div class="vecthare-debug-score-breakdown">
-        <div class="vecthare-score-math">${mathParts.join(' ')}</div>
+    return `<div class="vectfox-debug-score-breakdown">
+        <div class="vectfox-score-math">${mathParts.join(' ')}</div>
         ${keywordInfo}
     </div>`;
 }
@@ -797,7 +797,7 @@ function renderInjectionVerification(data) {
     }
 
     const { verified, text, position, depth, charCount } = data.injection;
-    const statusClass = verified ? 'vecthare-verification-success' : 'vecthare-verification-failed';
+    const statusClass = verified ? 'vectfox-verification-success' : 'vectfox-verification-failed';
     const statusIcon = verified ? 'fa-circle-check' : 'fa-circle-xmark';
     const statusText = verified ? 'VERIFIED' : 'VERIFICATION FAILED';
 
@@ -814,31 +814,31 @@ function renderInjectionVerification(data) {
     const positionLabel = positionLabels[position] || `Position ${position}`;
 
     return `
-        <div class="vecthare-debug-card vecthare-debug-verification ${statusClass}">
-            <div class="vecthare-debug-card-header vecthare-debug-clickable" id="vecthare_verification_header">
+        <div class="vectfox-debug-card vectfox-debug-verification ${statusClass}">
+            <div class="vectfox-debug-card-header vectfox-debug-clickable" id="VectFox_verification_header">
                 <i class="fa-solid ${statusIcon}"></i>
                 <span>Injection Verification</span>
-                <span class="vecthare-verification-badge ${statusClass}">${statusText}</span>
-                <i class="fa-solid fa-chevron-down vecthare-debug-expand-icon"></i>
+                <span class="vectfox-verification-badge ${statusClass}">${statusText}</span>
+                <i class="fa-solid fa-chevron-down vectfox-debug-expand-icon"></i>
             </div>
-            <div class="vecthare-debug-card-body">
-                <div class="vecthare-verification-summary">
-                    <div class="vecthare-verification-stat">
+            <div class="vectfox-debug-card-body">
+                <div class="vectfox-verification-summary">
+                    <div class="vectfox-verification-stat">
                         <span class="stat-label">Position</span>
                         <span class="stat-value">${positionLabel}</span>
                     </div>
-                    <div class="vecthare-verification-stat">
+                    <div class="vectfox-verification-stat">
                         <span class="stat-label">Depth</span>
                         <span class="stat-value">${depth}</span>
                     </div>
-                    <div class="vecthare-verification-stat">
+                    <div class="vectfox-verification-stat">
                         <span class="stat-label">Characters</span>
                         <span class="stat-value">${charCount.toLocaleString()}</span>
                     </div>
                 </div>
-                <div class="vecthare-verification-text-wrapper" style="display: none;">
-                    <div class="vecthare-verification-text-label">Actual Injected Text:</div>
-                    <pre class="vecthare-verification-text">${escapeHtml(text)}</pre>
+                <div class="vectfox-verification-text-wrapper" style="display: none;">
+                    <div class="vectfox-verification-text-label">Actual Injected Text:</div>
+                    <pre class="vectfox-verification-text">${escapeHtml(text)}</pre>
                 </div>
             </div>
         </div>
@@ -861,14 +861,14 @@ function renderCriticalFailure(data) {
         : 'Unknown failure point';
 
     return `
-        <div class="vecthare-debug-critical-failure">
-            <div class="vecthare-debug-critical-header">
-                <div class="vecthare-debug-critical-icon">
+        <div class="vectfox-debug-critical-failure">
+            <div class="vectfox-debug-critical-header">
+                <div class="vectfox-debug-critical-icon">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <div>
-                    <div class="vecthare-debug-critical-title">No Chunks Injected — ${failureSummary}</div>
-                    <div class="vecthare-debug-critical-subtitle">
+                    <div class="vectfox-debug-critical-title">No Chunks Injected — ${failureSummary}</div>
+                    <div class="vectfox-debug-critical-subtitle">
                         ${data.stages.initial.length === 0
                             ? 'Vector search returned no results'
                             : `${data.stages.initial.length} chunks retrieved, but all were filtered out before injection`}
@@ -876,25 +876,25 @@ function renderCriticalFailure(data) {
                 </div>
             </div>
 
-            <div class="vecthare-debug-diagnosis">
-                <div class="vecthare-debug-diagnosis-title">
+            <div class="vectfox-debug-diagnosis">
+                <div class="vectfox-debug-diagnosis-title">
                     <i class="fa-solid fa-stethoscope"></i>
                     Pipeline Diagnosis
                 </div>
 
                 ${diagnosis.map((item, idx) => `
-                    <div class="vecthare-debug-diagnosis-item ${item.isCause ? 'is-cause' : ''} ${item.isOk ? 'is-ok' : ''}">
-                        <div class="vecthare-debug-diagnosis-number">${idx + 1}</div>
-                        <div class="vecthare-debug-diagnosis-content">
-                            <div class="vecthare-debug-diagnosis-label">
+                    <div class="vectfox-debug-diagnosis-item ${item.isCause ? 'is-cause' : ''} ${item.isOk ? 'is-ok' : ''}">
+                        <div class="vectfox-debug-diagnosis-number">${idx + 1}</div>
+                        <div class="vectfox-debug-diagnosis-content">
+                            <div class="vectfox-debug-diagnosis-label">
                                 ${item.label}
-                                <span class="vecthare-debug-diagnosis-status ${item.isOk ? 'status-ok' : 'status-fail'}">
+                                <span class="vectfox-debug-diagnosis-status ${item.isOk ? 'status-ok' : 'status-fail'}">
                                     ${item.isOk ? '✓ OK' : '✗ FAILED'}
                                 </span>
                             </div>
-                            <div class="vecthare-debug-diagnosis-detail">${item.detail}</div>
+                            <div class="vectfox-debug-diagnosis-detail">${item.detail}</div>
                             ${item.fix ? `
-                                <div class="vecthare-debug-diagnosis-fix">
+                                <div class="vectfox-debug-diagnosis-fix">
                                     <strong>Fix:</strong> ${item.fix}
                                 </div>
                             ` : ''}
@@ -1142,7 +1142,7 @@ function diagnosePipeline(data) {
             diagnosis.push({
                 label: 'Injection',
                 detail: `${afterConditionsCount} chunks passed all filters but none were injected. No specific reason was recorded.`,
-                fix: `This may be a bug. Open DevTools (F12) → Console tab, look for "VectHare" errors, and report the issue with console output.`,
+                fix: `This may be a bug. Open DevTools (F12) → Console tab, look for "VectFox" errors, and report the issue with console output.`,
                 isCause: true,
                 isOk: false
             });
@@ -1175,7 +1175,7 @@ function diagnosePipeline(data) {
         diagnosis.push({
             label: 'Unknown',
             detail: 'Pipeline completed but no chunks were injected. No specific cause identified.',
-            fix: `This may be a bug. Open DevTools (F12) → Console tab, look for "VectHare" errors, and report the issue with console output.`,
+            fix: `This may be a bug. Open DevTools (F12) → Console tab, look for "VectFox" errors, and report the issue with console output.`,
             isCause: true,
             isOk: false
         });
@@ -1223,53 +1223,53 @@ function renderExcludedAnalysis(data) {
     });
 
     return `
-        <div class="vecthare-debug-card vecthare-debug-exclusions">
-            <div class="vecthare-debug-card-header">
+        <div class="vectfox-debug-card vectfox-debug-exclusions">
+            <div class="vectfox-debug-card-header">
                 <i class="fa-solid fa-filter-circle-xmark"></i>
                 <span>Exclusion Analysis</span>
-                <span class="vecthare-debug-exclusion-count">${excluded.length} chunks excluded</span>
+                <span class="vectfox-debug-exclusion-count">${excluded.length} chunks excluded</span>
             </div>
-            <div class="vecthare-debug-card-body">
-                <div class="vecthare-debug-exclusion-categories">
+            <div class="vectfox-debug-card-body">
+                <div class="vectfox-debug-exclusion-categories">
                     ${belowThreshold.length > 0 ? `
-                        <div class="vecthare-debug-exclusion-category">
-                            <div class="vecthare-debug-exclusion-icon vecthare-debug-exclusion-threshold">
+                        <div class="vectfox-debug-exclusion-category">
+                            <div class="vectfox-debug-exclusion-icon vectfox-debug-exclusion-threshold">
                                 <i class="fa-solid fa-less-than"></i>
                             </div>
-                            <div class="vecthare-debug-exclusion-info">
+                            <div class="vectfox-debug-exclusion-info">
                                 <strong>${belowThreshold.length}</strong> below threshold
                                 <small>Score < ${data.settings.threshold}</small>
                             </div>
                         </div>
                     ` : ''}
                     ${lostToDecay.length > 0 ? `
-                        <div class="vecthare-debug-exclusion-category">
-                            <div class="vecthare-debug-exclusion-icon vecthare-debug-exclusion-decay">
+                        <div class="vectfox-debug-exclusion-category">
+                            <div class="vectfox-debug-exclusion-icon vectfox-debug-exclusion-decay">
                                 <i class="fa-solid fa-clock"></i>
                             </div>
-                            <div class="vecthare-debug-exclusion-info">
+                            <div class="vectfox-debug-exclusion-info">
                                 <strong>${lostToDecay.length}</strong> lost to temporal decay
                                 <small>Score reduced below threshold</small>
                             </div>
                         </div>
                     ` : ''}
                     ${failedConditions.length > 0 ? `
-                        <div class="vecthare-debug-exclusion-category">
-                            <div class="vecthare-debug-exclusion-icon vecthare-debug-exclusion-conditions">
+                        <div class="vectfox-debug-exclusion-category">
+                            <div class="vectfox-debug-exclusion-icon vectfox-debug-exclusion-conditions">
                                 <i class="fa-solid fa-code-branch"></i>
                             </div>
-                            <div class="vecthare-debug-exclusion-info">
+                            <div class="vectfox-debug-exclusion-info">
                                 <strong>${failedConditions.length}</strong> failed conditions
                                 <small>Chunk conditions not met</small>
                             </div>
                         </div>
                     ` : ''}
                     ${limitExceeded.length > 0 ? `
-                        <div class="vecthare-debug-exclusion-category">
-                            <div class="vecthare-debug-exclusion-icon vecthare-debug-exclusion-limit">
+                        <div class="vectfox-debug-exclusion-category">
+                            <div class="vectfox-debug-exclusion-icon vectfox-debug-exclusion-limit">
                                 <i class="fa-solid fa-ban"></i>
                             </div>
-                            <div class="vecthare-debug-exclusion-info">
+                            <div class="vectfox-debug-exclusion-info">
                                 <strong>${limitExceeded.length}</strong> hit injection limit
                                 <small>Top K limit reached</small>
                             </div>
@@ -1285,9 +1285,9 @@ function renderExcludedAnalysis(data) {
  * Gets CSS class for score value
  */
 function getScoreClass(score) {
-    if (score >= 0.7) return 'vecthare-debug-score-high';
-    if (score >= 0.4) return 'vecthare-debug-score-medium';
-    return 'vecthare-debug-score-low';
+    if (score >= 0.7) return 'vectfox-debug-score-high';
+    if (score >= 0.4) return 'vectfox-debug-score-medium';
+    return 'vectfox-debug-score-low';
 }
 
 /**
@@ -1327,16 +1327,16 @@ function renderTraceLog(data) {
     const startTime = data.trace[0]?.time || data.timestamp;
 
     return `
-        <div class="vecthare-debug-card vecthare-debug-trace">
-            <div class="vecthare-debug-card-header">
+        <div class="vectfox-debug-card vectfox-debug-trace">
+            <div class="vectfox-debug-card-header">
                 <i class="fa-solid fa-terminal"></i>
                 <span>Pipeline Trace Log</span>
-                <button class="vecthare-debug-toggle-btn" id="vecthare_toggle_trace">
+                <button class="vectfox-debug-toggle-btn" id="VectFox_toggle_trace">
                     <i class="fa-solid fa-chevron-down"></i>
                 </button>
             </div>
-            <div class="vecthare-debug-card-body vecthare-debug-trace-body" id="vecthare_trace_body" style="display: none;">
-                <div class="vecthare-debug-trace-list">
+            <div class="vectfox-debug-card-body vectfox-debug-trace-body" id="VectFox_trace_body" style="display: none;">
+                <div class="vectfox-debug-trace-list">
                     ${data.trace.map((entry, idx) => {
                         const relTime = entry.time - startTime;
                         const stageClass = getStageClass(entry.stage);
@@ -1348,12 +1348,12 @@ function renderTraceLog(data) {
                         );
 
                         return `
-                            <div class="vecthare-debug-trace-entry ${stageClass}">
-                                <div class="vecthare-debug-trace-time">+${relTime}ms</div>
-                                <div class="vecthare-debug-trace-stage">${entry.stage}</div>
-                                <div class="vecthare-debug-trace-action">${escapeHtml(entry.action)}</div>
+                            <div class="vectfox-debug-trace-entry ${stageClass}">
+                                <div class="vectfox-debug-trace-time">+${relTime}ms</div>
+                                <div class="vectfox-debug-trace-stage">${entry.stage}</div>
+                                <div class="vectfox-debug-trace-action">${escapeHtml(entry.action)}</div>
                                 ${detailsJson !== '{}' ? `
-                                    <pre class="vecthare-debug-trace-details">${escapeHtml(detailsJson)}</pre>
+                                    <pre class="vectfox-debug-trace-details">${escapeHtml(detailsJson)}</pre>
                                 ` : ''}
                             </div>
                         `;
@@ -1377,41 +1377,41 @@ function renderChunkFates(data) {
     const injected = fates.filter(f => f.finalFate === 'injected');
 
     return `
-        <div class="vecthare-debug-card vecthare-debug-fates">
-            <div class="vecthare-debug-card-header">
+        <div class="vectfox-debug-card vectfox-debug-fates">
+            <div class="vectfox-debug-card-header">
                 <i class="fa-solid fa-route"></i>
                 <span>Chunk Fate Tracker</span>
-                <span class="vecthare-debug-fate-summary">
-                    <span class="vecthare-fate-injected">${injected.length} injected</span>
-                    <span class="vecthare-fate-dropped">${dropped.length} dropped</span>
+                <span class="vectfox-debug-fate-summary">
+                    <span class="vectfox-fate-injected">${injected.length} injected</span>
+                    <span class="vectfox-fate-dropped">${dropped.length} dropped</span>
                 </span>
-                <button class="vecthare-debug-toggle-btn" id="vecthare_toggle_fates">
+                <button class="vectfox-debug-toggle-btn" id="VectFox_toggle_fates">
                     <i class="fa-solid fa-chevron-down"></i>
                 </button>
             </div>
-            <div class="vecthare-debug-card-body vecthare-debug-fates-body" id="vecthare_fates_body" style="display: none;">
-                <div class="vecthare-debug-fates-list">
+            <div class="vectfox-debug-card-body vectfox-debug-fates-body" id="VectFox_fates_body" style="display: none;">
+                <div class="vectfox-debug-fates-list">
                     ${fates.map(fate => {
                         const isDropped = fate.finalFate === 'dropped';
                         const hashShort = String(fate.hash).substring(0, 12);
 
                         return `
-                            <div class="vecthare-debug-fate-entry ${isDropped ? 'fate-dropped' : 'fate-injected'}">
-                                <div class="vecthare-debug-fate-header">
-                                    <span class="vecthare-debug-fate-hash" title="${fate.hash}">${hashShort}...</span>
-                                    <span class="vecthare-debug-fate-result ${isDropped ? 'result-dropped' : 'result-injected'}">
+                            <div class="vectfox-debug-fate-entry ${isDropped ? 'fate-dropped' : 'fate-injected'}">
+                                <div class="vectfox-debug-fate-header">
+                                    <span class="vectfox-debug-fate-hash" title="${fate.hash}">${hashShort}...</span>
+                                    <span class="vectfox-debug-fate-result ${isDropped ? 'result-dropped' : 'result-injected'}">
                                         ${isDropped ? `✗ Dropped at ${fate.droppedAt}` : '✓ Injected'}
                                     </span>
                                 </div>
                                 ${isDropped && fate.finalReason ? `
-                                    <div class="vecthare-debug-fate-reason">${escapeHtml(fate.finalReason)}</div>
+                                    <div class="vectfox-debug-fate-reason">${escapeHtml(fate.finalReason)}</div>
                                 ` : ''}
-                                <div class="vecthare-debug-fate-journey">
+                                <div class="vectfox-debug-fate-journey">
                                     ${fate.stages.map(s => `
-                                        <span class="vecthare-fate-stage ${s.fate === 'dropped' ? 'stage-dropped' : s.fate === 'injected' ? 'stage-injected' : 'stage-passed'}">
+                                        <span class="vectfox-fate-stage ${s.fate === 'dropped' ? 'stage-dropped' : s.fate === 'injected' ? 'stage-injected' : 'stage-passed'}">
                                             ${s.stage}${s.fate === 'dropped' ? ' ✗' : s.fate === 'injected' ? ' ✓' : ''}
                                         </span>
-                                    `).join('<span class="vecthare-fate-arrow">→</span>')}
+                                    `).join('<span class="vectfox-fate-arrow">→</span>')}
                                 </div>
                             </div>
                         `;
@@ -1477,7 +1477,7 @@ function generateDiagnosticDump(data) {
         : '  No chunks skipped';
 
     // Build human-readable dump
-    const dump = `VECTHARE DEBUG DUMP
+    const dump = `VectFox DEBUG DUMP
 ${'='.repeat(50)}
 Time: ${new Date(d.timestamp).toLocaleString()}
 Collection: ${d.collectionId}
@@ -1566,43 +1566,43 @@ let currentHistoryIndex = 0;
 
 function bindEvents() {
     // Close button
-    $('#vecthare_search_debug_close').on('click', closeSearchDebugModal);
+    $('#VectFox_search_debug_close').on('click', closeSearchDebugModal);
 
     // Copy diagnostic dump
-    $('#vecthare_copy_diagnostic').on('click', copyDiagnosticDump);
+    $('#VectFox_copy_diagnostic').on('click', copyDiagnosticDump);
 
     // Stop mousedown propagation (ST closes drawers on mousedown/touchstart)
-    $('#vecthare_search_debug_modal').on('mousedown touchstart', function(e) {
+    $('#VectFox_search_debug_modal').on('mousedown touchstart', function(e) {
         e.stopPropagation();
     });
 
     // Close on background click
-    $('#vecthare_search_debug_modal').on('click', function(e) {
+    $('#VectFox_search_debug_modal').on('click', function(e) {
         if (e.target === this) {
             closeSearchDebugModal();
         }
     });
 
     // History tabs - switch between past queries
-    $('.vecthare-debug-history-tab').on('click', function() {
+    $('.vectfox-debug-history-tab').on('click', function() {
         const historyIndex = parseInt($(this).data('history-index'));
         if (queryHistory[historyIndex]) {
             currentHistoryIndex = historyIndex;
             lastDebugData = queryHistory[historyIndex];
             // Refresh the modal content
             const newHtml = createModalHtml(lastDebugData, historyIndex);
-            $('#vecthare_search_debug_modal').replaceWith(newHtml);
-            $('#vecthare_search_debug_modal').show();
+            $('#VectFox_search_debug_modal').replaceWith(newHtml);
+            $('#VectFox_search_debug_modal').show();
             bindEvents();
         }
     });
 
     // Query card expand/collapse
-    $('#vecthare_query_header').on('click', function() {
-        const $card = $(this).closest('.vecthare-debug-query-card');
-        const $preview = $card.find('.vecthare-debug-query-preview');
-        const $full = $card.find('.vecthare-debug-query-full');
-        const $icon = $(this).find('.vecthare-debug-expand-icon');
+    $('#VectFox_query_header').on('click', function() {
+        const $card = $(this).closest('.vectfox-debug-query-card');
+        const $preview = $card.find('.vectfox-debug-query-preview');
+        const $full = $card.find('.vectfox-debug-query-full');
+        const $icon = $(this).find('.vectfox-debug-expand-icon');
 
         $preview.slideToggle(200);
         $full.slideToggle(200);
@@ -1610,25 +1610,25 @@ function bindEvents() {
     });
 
     // Verification card expand/collapse (shows actual injected text)
-    $('#vecthare_verification_header').on('click', function() {
-        const $card = $(this).closest('.vecthare-debug-verification');
-        const $textWrapper = $card.find('.vecthare-verification-text-wrapper');
-        const $icon = $(this).find('.vecthare-debug-expand-icon');
+    $('#VectFox_verification_header').on('click', function() {
+        const $card = $(this).closest('.vectfox-debug-verification');
+        const $textWrapper = $card.find('.vectfox-verification-text-wrapper');
+        const $icon = $(this).find('.vectfox-debug-expand-icon');
 
         $textWrapper.slideToggle(200);
         $icon.toggleClass('fa-chevron-down fa-chevron-up');
     });
 
     // Expandable chunks
-    $(document).off('click.chunkExpand').on('click.chunkExpand', '.vecthare-debug-chunk-expandable', function(e) {
+    $(document).off('click.chunkExpand').on('click.chunkExpand', '.vectfox-debug-chunk-expandable', function(e) {
         // Don't trigger if clicking on a link or button inside
         if ($(e.target).is('a, button')) return;
 
         const $chunk = $(this);
-        const $expanded = $chunk.find('.vecthare-debug-chunk-expanded');
-        const $preview = $chunk.find('.vecthare-debug-chunk-text-preview');
-        const $meta = $chunk.find('.vecthare-debug-chunk-meta');
-        const $icon = $chunk.find('.vecthare-debug-chunk-expand-icon');
+        const $expanded = $chunk.find('.vectfox-debug-chunk-expanded');
+        const $preview = $chunk.find('.vectfox-debug-chunk-text-preview');
+        const $meta = $chunk.find('.vectfox-debug-chunk-meta');
+        const $icon = $chunk.find('.vectfox-debug-chunk-expand-icon');
 
         $expanded.slideToggle(200);
         $preview.slideToggle(200);
@@ -1638,28 +1638,28 @@ function bindEvents() {
     });
 
     // Stage tabs
-    $('.vecthare-debug-stage-tab').on('click', function() {
+    $('.vectfox-debug-stage-tab').on('click', function() {
         const stage = $(this).data('stage');
-        $('.vecthare-debug-stage-tab').removeClass('active');
+        $('.vectfox-debug-stage-tab').removeClass('active');
         $(this).addClass('active');
 
         const data = lastDebugData;
         if (data && data.stages[stage]) {
-            $('#vecthare_debug_stage_content').html(
+            $('#VectFox_debug_stage_content').html(
                 renderStageChunks(data.stages[stage], stage, data)
             );
         }
     });
 
     // Toggle trace log
-    $('#vecthare_toggle_trace').on('click', function() {
-        $('#vecthare_trace_body').slideToggle();
+    $('#VectFox_toggle_trace').on('click', function() {
+        $('#VectFox_trace_body').slideToggle();
         $(this).find('i').toggleClass('fa-chevron-down fa-chevron-up');
     });
 
     // Toggle chunk fates
-    $('#vecthare_toggle_fates').on('click', function() {
-        $('#vecthare_fates_body').slideToggle();
+    $('#VectFox_toggle_fates').on('click', function() {
+        $('#VectFox_fates_body').slideToggle();
         $(this).find('i').toggleClass('fa-chevron-down fa-chevron-up');
     });
 }

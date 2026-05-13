@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE DIAGNOSTICS - PRODUCTION TESTS
+ * VectFox DIAGNOSTICS - PRODUCTION TESTS
  * ============================================================================
  * Integration tests for embedding, storage, and retrieval
  *
@@ -11,7 +11,7 @@
  * NOTE — DEAD-CHUNK-CHAT branches present in this file:
  * Some tests call `getChatCollectionId()`, which is now disabled (returns null).
  * Chat history runs through the EventBase pipeline; there are no more
- * `vecthare_chat_*` collections to test against. The dependent branches no-op.
+ * `VectFox_chat_*` collections to test against. The dependent branches no-op.
  * These tests should be rewritten to target EventBase collections.
  *
  * Search tag: DEAD-CHUNK-CHAT
@@ -27,13 +27,13 @@ import { reciprocalRankFusion, weightedCombination } from '../core/hybrid-search
 import { applyKeywordBoost, extractTextKeywords, extractLorebookKeywords } from '../core/keyword-boost.js';
 
 // DEAD-CHUNK-CHAT: tests that targeted the per-chat chunk collection are no longer
-// meaningful — chat history runs through EventBase, not `vecthare_chat_*`.
+// meaningful — chat history runs through EventBase, not `VectFox_chat_*`.
 const CHAT_NOT_APPLICABLE_MESSAGE = 'Not applicable (EventBase mode — chat is not stored as a chunk collection)';
 
 /**
  * Full cleanup for test collections - purges vectors AND unregisters from registry
  * @param {string} collectionId - The test collection to clean up
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  */
 async function cleanupTestCollection(collectionId, settings) {
     try {
@@ -53,7 +53,7 @@ async function cleanupTestCollection(collectionId, settings) {
 // new check pokes a fresh collection name.
 const DIAGNOSTIC_TEST_COLLECTION_PATTERNS = [
     /(^|:)vh:test:/,           // production test temp collections
-    /(^|:)vecthare_diag(_|$)/, // infrastructure endpoint probes
+    /(^|:)VectFox_diag(_|$)/, // infrastructure endpoint probes
     /(^|:)test$/,              // checkVectorsExtension probe
 ];
 
@@ -63,7 +63,7 @@ function isDiagnosticTestCollection(id) {
 }
 
 /**
- * Sweep any leftover diagnostic probe collections (`vh:test:*`, `vecthare_diag*`,
+ * Sweep any leftover diagnostic probe collections (`vh:test:*`, `VectFox_diag*`,
  * `test`) that were created by previous diagnostic runs and not cleaned up —
  * either because earlier code lacked try/finally, the process was killed
  * mid-run, or the backend creates the collection on first reference of a
@@ -149,7 +149,7 @@ function getProviderBody(settings) {
 /**
  * Helper: Get provider-specific body parameters for Similharity plugin requests
  * This ensures BananaBread and other providers that need special params get them
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {object} Additional body parameters for the request
  */
 function getPluginProviderParams(settings) {
@@ -259,7 +259,7 @@ export async function testVectorStorage(settings) {
     const testCollectionId = `vh:test:storage_${Date.now()}`;
     try {
         const testHash = String(Math.floor(Math.random() * 1000000));
-        const testText = 'VectHare storage test message';
+        const testText = 'VectFox storage test message';
         const backend = settings.vector_backend || 'standard';
         const backendType = backend === 'standard' ? 'vectra' : backend;
 
@@ -616,7 +616,7 @@ export async function fixDuplicateHashes(duplicates, collectionId, settings) {
                     }
                 }
             } catch (e) {
-                console.warn(`VectHare: Failed to get data for hash ${hash}:`, e);
+                console.warn(`VectFox: Failed to get data for hash ${hash}:`, e);
             }
         }
 
@@ -624,9 +624,9 @@ export async function fixDuplicateHashes(duplicates, collectionId, settings) {
         const hashesToDelete = duplicates.map(d => d.hash);
         try {
             await deleteVectorItems(collectionId, hashesToDelete, settings);
-            console.log(`VectHare: Deleted ${hashesToDelete.length} duplicate hashes`);
+            console.log(`VectFox: Deleted ${hashesToDelete.length} duplicate hashes`);
         } catch (e) {
-            console.warn('VectHare: Delete failed:', e);
+            console.warn('VectFox: Delete failed:', e);
             return {
                 success: false,
                 message: `Failed to delete duplicates: ${e.message}`
@@ -638,9 +638,9 @@ export async function fixDuplicateHashes(duplicates, collectionId, settings) {
             try {
                 await insertVectorItems(collectionId, chunksToReinsert, settings);
                 fixed = chunksToReinsert.length;
-                console.log(`VectHare: Re-inserted ${fixed} chunks (deduplicated)`);
+                console.log(`VectFox: Re-inserted ${fixed} chunks (deduplicated)`);
             } catch (e) {
-                console.warn('VectHare: Re-insert failed:', e);
+                console.warn('VectFox: Re-insert failed:', e);
                 return {
                     success: false,
                     message: `Deleted duplicates but failed to re-insert: ${e.message}. Re-vectorize chat to restore.`

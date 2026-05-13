@@ -1,9 +1,9 @@
 /**
  * ============================================================================
- * VECTHARE CONDITIONAL ACTIVATION SYSTEM
+ * VectFox CONDITIONAL ACTIVATION SYSTEM
  * ============================================================================
  * Evaluates conditions to determine if chunks should be activated
- * Ported from legacy VectHare with enhanced structure
+ * Ported from legacy VectFox with enhanced structure
  *
  * @author Coneja Chibi
  * @version 2.2.0-alpha
@@ -35,13 +35,13 @@ async function initExpressionsExtension() {
         expressionsExtensionStatus.available = true;
         expressionsExtensionStatus.enabled = true;
         expressionsExtensionStatus.lastCheck = Date.now();
-        console.log('VectHare Conditions: Character Expressions extension loaded for emotion detection');
+        console.log('VectFox Conditions: Character Expressions extension loaded for emotion detection');
     } catch (e) {
         expressionsExtensionStatus.available = false;
         expressionsExtensionStatus.enabled = false;
         expressionsExtensionStatus.error = e.message;
         expressionsExtensionStatus.lastCheck = Date.now();
-        console.log('VectHare Conditions: Character Expressions extension not available, using keyword-based emotion detection');
+        console.log('VectFox Conditions: Character Expressions extension not available, using keyword-based emotion detection');
     }
 }
 
@@ -151,7 +151,7 @@ function parseEmotionPattern(pattern) {
                 const regex = new RegExp(match[1], match[2]);
                 return (text) => regex.test(text);
             } catch (e) {
-                console.warn(`VectHare: Invalid regex pattern: ${pattern}`, e);
+                console.warn(`VectFox: Invalid regex pattern: ${pattern}`, e);
                 return () => false;
             }
         }
@@ -242,7 +242,7 @@ function evaluatePatternCondition(rule, context) {
                 const regex = new RegExp(regexPattern, flags);
                 return regex.test(searchText);
             } catch (e) {
-                console.warn(`VectHare: Invalid pattern regex: ${pattern}`, e);
+                console.warn(`VectFox: Invalid pattern regex: ${pattern}`, e);
                 return false;
             }
         }
@@ -400,7 +400,7 @@ function evaluateScoreThresholdCondition(rule, context) {
     const passes = chunkScore >= threshold;
 
     if (!passes) {
-        console.log(`VectHare: Chunk ${context.currentChunkHash} score ${chunkScore.toFixed(3)} below threshold ${threshold}`);
+        console.log(`VectFox: Chunk ${context.currentChunkHash} score ${chunkScore.toFixed(3)} below threshold ${threshold}`);
     }
 
     return passes;
@@ -469,7 +469,7 @@ function evaluateFrequencyCondition(rule, context) {
 
     // Check max activations
     if (chunkHistory.count >= maxActivations) {
-        console.log(`VectHare Conditions: Chunk ${chunkHash} reached max activations (${maxActivations})`);
+        console.log(`VectFox Conditions: Chunk ${chunkHash} reached max activations (${maxActivations})`);
         return false;
     }
 
@@ -477,7 +477,7 @@ function evaluateFrequencyCondition(rule, context) {
     if (cooldownMessages > 0 && chunkHistory.lastActivation !== null) {
         const messagesSinceLastActivation = context.messageCount - chunkHistory.lastActivation;
         if (messagesSinceLastActivation < cooldownMessages) {
-            console.log(`VectHare Conditions: Chunk ${chunkHash} on cooldown (${messagesSinceLastActivation}/${cooldownMessages} messages)`);
+            console.log(`VectFox Conditions: Chunk ${chunkHash} on cooldown (${messagesSinceLastActivation}/${cooldownMessages} messages)`);
             return false;
         }
     }
@@ -512,7 +512,7 @@ function evaluateTimeOfDayCondition(rule, context) {
             return currentTime >= start || currentTime <= end;
         }
     } catch (error) {
-        console.warn('VectHare Conditions: Invalid timeOfDay format');
+        console.warn('VectFox Conditions: Invalid timeOfDay format');
         return false;
     }
 }
@@ -536,7 +536,7 @@ function evaluateEmotionCondition(rule, context) {
     const targetEmotions = settings.values || [];
 
     if (targetEmotions.length === 0) {
-        console.warn('VectHare Conditions: No target emotions selected. Condition fails.');
+        console.warn('VectFox Conditions: No target emotions selected. Condition fails.');
         return false;
     }
 
@@ -559,13 +559,13 @@ function evaluateEmotionCondition(rule, context) {
                 );
 
                 if (expressionsResult) {
-                    console.log(`VectHare Conditions: Expressions match: "${detectedEmotion}" matches target [${targetEmotions.join(', ')}]`);
+                    console.log(`VectFox Conditions: Expressions match: "${detectedEmotion}" matches target [${targetEmotions.join(', ')}]`);
                 } else {
-                    console.log(`VectHare Conditions: Expressions detected "${detectedEmotion}" but not in targets [${targetEmotions.join(', ')}]`);
+                    console.log(`VectFox Conditions: Expressions detected "${detectedEmotion}" but not in targets [${targetEmotions.join(', ')}]`);
                 }
             }
         } catch (error) {
-            console.warn('VectHare Conditions: Failed to get expression:', error);
+            console.warn('VectFox Conditions: Failed to get expression:', error);
         }
     }
 
@@ -580,14 +580,14 @@ function evaluateEmotionCondition(rule, context) {
             const found = matchesEmotionPatterns(targetEmotion, emotionText);
 
             if (found) {
-                console.log(`VectHare Conditions: Pattern match: "${targetEmotion}" found in recent messages`);
+                console.log(`VectFox Conditions: Pattern match: "${targetEmotion}" found in recent messages`);
             }
 
             return found;
         });
 
         if (!patternsResult) {
-            console.log(`VectHare Conditions: No pattern match for [${targetEmotions.join(', ')}]`);
+            console.log(`VectFox Conditions: No pattern match for [${targetEmotions.join(', ')}]`);
         }
     }
 
@@ -600,7 +600,7 @@ function evaluateEmotionCondition(rule, context) {
         case 'expressions':
             // Expressions only - fail if not available
             if (expressionsResult === null) {
-                console.warn('VectHare Conditions: Expressions-only mode but extension not available');
+                console.warn('VectFox Conditions: Expressions-only mode but extension not available');
                 result = false;
             } else {
                 result = expressionsResult;
@@ -615,7 +615,7 @@ function evaluateEmotionCondition(rule, context) {
         case 'both':
             // Both must match (strict mode)
             if (expressionsResult === null) {
-                console.warn('VectHare Conditions: Both-mode requires expressions extension');
+                console.warn('VectFox Conditions: Both-mode requires expressions extension');
                 result = false;
             } else {
                 result = expressionsResult === true && patternsResult === true;
@@ -849,7 +849,7 @@ export function evaluateConditionRule(rule, context) {
 
 
         default:
-            console.warn(`VectHare Conditions: Unknown condition type: ${rule.type}`);
+            console.warn(`VectFox Conditions: Unknown condition type: ${rule.type}`);
             result = false;
     }
 
@@ -906,7 +906,7 @@ export function filterChunksByConditions(chunks, baseContext) {
         return evaluateConditions(chunk, chunkContext);
     });
 
-    console.log(`VectHare Conditions: Filtered ${chunks.length} chunks to ${filtered.length} based on conditions`);
+    console.log(`VectFox Conditions: Filtered ${chunks.length} chunks to ${filtered.length} based on conditions`);
 
     return filtered;
 }

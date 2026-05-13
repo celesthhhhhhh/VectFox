@@ -126,7 +126,7 @@ function _formatAsSummaryOnly(events) {
  * No hard cap is applied here; Top-K and retrieval filters control payload size.
  *
  * @param {object[]} events   - Re-ranked EventRecord objects (highest score first)
- * @param {object}   settings - VectHare settings
+ * @param {object}   settings - VectFox settings
  * @returns {string}          - Formatted string ready for injection (empty string if nothing fits)
  */
 export function formatEventsForInjectionDetailed(events, _settings) {

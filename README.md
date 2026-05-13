@@ -1,6 +1,6 @@
-# 🐰 VectHarePlus — Advanced RAG for SillyTavern
+# 🐰 VectFox — Advanced RAG for SillyTavern
 
-> *Persistent memory for long-running roleplay stories*. VectHarePlus delivers LLM-extracted story events, native sparse-vector hybrid search, and scalable performance powered by a real vector database.
+> *Persistent memory for long-running roleplay stories*. VectFox delivers LLM-extracted story events, native sparse-vector hybrid search, and scalable performance powered by a real vector database.
 
 ![License](https://img.shields.io/badge/license-GPLv3-blue) ![Status](https://img.shields.io/badge/status-Active-brightgreen)
 
@@ -8,9 +8,9 @@
 
 ---
 
-## 🎯 What is VectHarePlus?
+## 🎯 What is VectFox?
 
-Built on the excellent VectHare foundation, VectHarePlus is a **high-performance long-term memory system for SillyTavern**. It goes well beyond a language-extended fork — all intelligent retrieval logic runs server-side inside a real vector database (Qdrant), a structured event-based approach replaces raw chunk summarization for dramatically more accurate recall, and queries return in under 3 seconds even at 2,000+ messages. Natively multilingual: English, Japanese, Korean, Traditional Chinese, and Simplified Chinese.
+Built on the excellent VectHare foundation, VectFox is a **high-performance long-term memory system for SillyTavern**. It goes well beyond a language-extended fork — all intelligent retrieval logic runs server-side inside a real vector database (Qdrant), a structured event-based approach replaces raw chunk summarization for dramatically more accurate recall, and queries return in under 3 seconds even at 2,000+ messages. Natively multilingual: English, Japanese, Korean, Traditional Chinese, and Simplified Chinese.
 
 I branched the original VectHare to handle the massive scale of my personal [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) projects, which feature:
 - **Extreme scale: 2,000+ replies per story, with 1,000+ words per reply. Summary retrieval returns in less than 3 seconds**
@@ -24,23 +24,23 @@ Most memory extensions are designed for chats with 100 messages or fewer, and th
 
 Cars with square wheels will never solve the problem, no matter how much you fine-tune them. I need the right tool for the job. What I actually need is a dedicated vector database backend to properly store all these memories.
 
-To tackle this, VectHarePlus uses a dedicated vector database that stores **every single meaningful event** from the chat. Whether it's the first message or the 2,000th, every meaningful event stays in the database and is always available for SillyTavern to search.  I want a production grade memory vector system for SillyTavern which is scalable to 10k+ messages and round trip time within seconds.
+To tackle this, VectFox uses a dedicated vector database that stores **every single meaningful event** from the chat. Whether it's the first message or the 2,000th, every meaningful event stays in the database and is always available for SillyTavern to search.  I want a production grade memory vector system for SillyTavern which is scalable to 10k+ messages and round trip time within seconds.
 
 ### The Problem It Solves
-- 🧠 **The original VectHare doesn't think about what's worth remembering.** VectHarePlus adds an LLM-driven **EventBase** extraction layer on top: the AI decides which moments are meaningful events and tags each event with the characters, items, locations, and concepts involved.
-- 🤖 **The original VectHare doesn't reason about your query** — it only matches surface-level text similarity. VectHarePlus adds optional **Agent Mode** that uses a small LLM to plan multi-angle searches, surfacing memories your raw query wouldn't have found on its own.
+- 🧠 **The original VectFox doesn't think about what's worth remembering.** VectFox adds an LLM-driven **EventBase** extraction layer on top: the AI decides which moments are meaningful events and tags each event with the characters, items, locations, and concepts involved.
+- 🤖 **The original VectFox doesn't reason about your query** — it only matches surface-level text similarity. VectFox adds optional **Agent Mode** that uses a small LLM to plan multi-angle searches, surfacing memories your raw query wouldn't have found on its own.
 - 😩 Strip out all functional tags used by [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) before memory storage.
 - 🧠 Adding story-based memory on top of character-based memory in [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker).
 - 💸 Long conversations choke your token budget with irrelevant history.
 - ✍️ You no longer need to manually edit context to remind characters of key events.
 
-**VectHarePlus Solution:** Use **Qdrant** as a dedicated vector database that stores every meaningful event from the chat, no matter how long it gets. For users who aren't ready to run an extra service, a **"light" version using the A1 and A2 paths** runs on SillyTavern's built-in vector store with no additional software — it shares many features of the full vector DB at smaller scale. When you're ready for a real long-term memory system, upgrade to the **A3 path** with Qdrant.
+**VectFox Solution:** Use **Qdrant** as a dedicated vector database that stores every meaningful event from the chat, no matter how long it gets. For users who aren't ready to run an extra service, a **"light" version using the A1 and A2 paths** runs on SillyTavern's built-in vector store with no additional software — it shares many features of the full vector DB at smaller scale. When you're ready for a real long-term memory system, upgrade to the **A3 path** with Qdrant.
 
 Note: Qdrant is free and open source
 
 
-### What VectHarePlus is NOT trying to solve
-VectHarePlus is a **memory** system, not a tracker. It does not track quest progress, character stats, or live world state. For that, pair it with [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) — a character-based tracking system with a built-in GUI for quests, characters, and stats. Running both together covers roughly 90% of the memory and state problems that plague long-form SillyTavern roleplay.
+### What VectFox is NOT trying to solve
+VectFox is a **memory** system, not a tracker. It does not track quest progress, character stats, or live world state. For that, pair it with [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) — a character-based tracking system with a built-in GUI for quests, characters, and stats. Running both together covers roughly 90% of the memory and state problems that plague long-form SillyTavern roleplay.
 
 
 ---
@@ -49,7 +49,7 @@ VectHarePlus is a **memory** system, not a tracker. It does not track quest prog
 
 Vector search is like a really smart "find" function. Instead of matching exact words, it matches **meaning** — type "I'm hungry" and it can find a message that said "let's grab lunch" because the *meaning* is similar.
 
-VectHarePlus is built around two ideas that work together:
+VectFox is built around two ideas that work together:
 
 ### 1. EventBase — events extracted from windows, not summary-per-reply
 
@@ -74,7 +74,7 @@ If Tav had a long shopping trip with Astarion across 100 sentences of conversati
 }
 ```
 
-Later when you mention "remember the shopping trip?", VectHarePlus retrieves **the event** — not 100 raw sentences, and not a blurry summary that averaged the shopping trip with the unrelated banter that surrounded it.
+Later when you mention "remember the shopping trip?", VectFox retrieves **the event** — not 100 raw sentences, and not a blurry summary that averaged the shopping trip with the unrelated banter that surrounded it.
 
 ### 2. Why a dedicated vector DB is the natural fit
 
@@ -140,7 +140,7 @@ All four merge with the original search and feed the same 4-weight re-ranker. Th
 
 Most existing memory extensions use one of two approaches. Both lose detail as the chat grows. Here's why — and how EventBase avoids it:
 
-| Aspect | 📝 Rolling Summary <br>*(most "memory" extensions)* | ✂️ Raw Chunking <br>*(older vector RAG)* | 🧬 EventBase <br>*(VectHarePlus)* |
+| Aspect | 📝 Rolling Summary <br>*(most "memory" extensions)* | ✂️ Raw Chunking <br>*(older vector RAG)* | 🧬 EventBase <br>*(VectFox)* |
 |---|---|---|---|
 | **What gets stored** | One ever-growing summary text | Every message cut into raw chunks | Structured event records with metadata |
 | **At msg 100** | Mostly intact | Intact | Intact |
@@ -159,7 +159,7 @@ Most existing memory extensions use one of two approaches. Both lose detail as t
 
 ## 🔍 Hybrid Search: A1 vs A2 vs A3 Path
 
-VectHarePlus combines **two signals** to find the best results:
+VectFox combines **two signals** to find the best results:
 
 - **Signal 1 - Vector similarity** — meaning-based ("hungry" matches "let's grab lunch")
 - **Signal 2 - BM25 keyword score** — exact word match ("Astarion" matches "Astarion")
@@ -345,23 +345,23 @@ Use **Qdrant vector database** for any ultra fast and accurate delopment — A3 
 3. Click **"Install Extension"**
 4. Paste this URL:
    ```
-   https://github.com/KritBlade/VectHarePlus
+   https://github.com/KritBlade/VectFox
    ```
 5. Click **Install**
 
-That's it! VectHarePlus will be downloaded and enabled automatically.
+That's it! VectFox will be downloaded and enabled automatically.
 
-### Step 2: Configure VectHarePlus
-1. Open **VectHarePlus Settings** (Core tab in the extensions panel).
+### Step 2: Configure VectFox
+1. Open **VectFox Settings** (Core tab in the extensions panel).
 2. Choose your vector storage (Standard or Qdrant).
 3. Select your embedding provider (Transformers, OpenAI, Ollama, BananaBread, OpenRouter, etc.).
-   - 💡 **Recommended:** use `qwen/qwen3-embedding-8b` through **OpenRouter**. It's extremely cheap, multilingual (excellent CJK + Latin), and produces high-quality dense vectors for the corpus size VectHarePlus targets.
+   - 💡 **Recommended:** use `qwen/qwen3-embedding-8b` through **OpenRouter**. It's extremely cheap, multilingual (excellent CJK + Latin), and produces high-quality dense vectors for the corpus size VectFox targets.
 4. Select your Summarization LLM (OpenRouter or vLLM) — used by EventBase extraction during vectorization.
    - 💡 **Recommended cheap & fast models:** `openai/gpt-4o-mini` or `x-ai/grok-4.1-fast` through OpenRouter. Both are very cheap and fast enough to keep ingestion latency low. Same recommendation applies to the **Agent Mode LLM** (configured separately in the AgentMode tab) — if you leave the AgentMode model field blank it inherits this summarizer setting.
 5. Configure API keys if using cloud providers (OpenRouter / vLLM / OpenAI / Cohere).
 6. Under **Keyword Extraction**, choose the language of your story.
 7. Most settings work fine on default — feel free to tweak.
-8. Open your chat in SillyTavern, then click the VectHarePlus extension icon again. You **HAVE** to click "Vectorize Content" and choose **Chat History** to vectorize your first DB.
+8. Open your chat in SillyTavern, then click the VectFox extension icon again. You **HAVE** to click "Vectorize Content" and choose **Chat History** to vectorize your first DB.
 9. Enable Auto-Sync if needed in the **AutoSync** tab. Frequency is controlled by the EventBase tab under *Extraction > Window Size*.
 10. Vectorize your lorebook / World Info if needed in the **WorldInfo** tab.
 11. (Optional) Turn on **Agent Mode** in the AgentMode tab once everything else works. Leave provider/model/API-key blank to inherit from your summarizer config — that way the same cheap/fast model used in step 4 also drives the planner. See "How It Works → Agent Mode" above for what it does.
@@ -371,7 +371,7 @@ That's it! VectHarePlus will be downloaded and enabled automatically.
 ```bash
 Open Command prompt on Windows or Terminal on Linux/Mac or Get into Console if you are on docker
 cd SillyTavern/plugins
-git clone -b Similharity-Plugin https://github.com/KritBlade/VectHarePlus.git similharity
+git clone -b Similharity-Plugin https://github.com/KritBlade/VectFox.git similharity
 cd similharity
 npm install
 ```
@@ -387,7 +387,7 @@ Restart SillyTavern.
 
 ## 🔄 Auto-Updates
 
-VectHarePlus has `auto_update: true` in its manifest. If you installed via `git clone`, SillyTavern will automatically check for and apply updates!
+VectFox has `auto_update: true` in its manifest. If you installed via `git clone`, SillyTavern will automatically check for and apply updates!
 
 Look for the update notification in the Extensions panel, or manually check with the "Check for Updates" button.
 
@@ -398,7 +398,7 @@ Setting enableServerPlugin to true is required for Qdrant backend.
 ## ❓ FAQ
 
 **Why are there two separate pipelines under the hood?**
-Internally VectHarePlus routes content through one of two retrieval paths, picked by content type:
+Internally VectFox routes content through one of two retrieval paths, picked by content type:
 
 | Pipeline | What it handles |
 |---|---|
@@ -441,7 +441,7 @@ Scene support was removed (it was a chunk-based-chat-era feature, and chat now r
 
 ## 🙏 Credits
 
-**VectHarePlus** is branched from VectHare, originally created by **Coneja Chibi**. Thanks to the SillyTavern community for feedback and testing.
+**VectFox** is branched from VectHare, originally created by **Coneja Chibi**. Thanks to the SillyTavern community for feedback and testing.
 
 GPLv3 License — see LICENSE.
 

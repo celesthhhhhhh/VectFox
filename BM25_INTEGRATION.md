@@ -2,7 +2,7 @@
 
 ## Overview
 
-VectHare now includes BM25 (Best Match 25) keyword scoring as an alternative to the traditional keyword boost method. BM25 is a probabilistic ranking function widely used in information retrieval, inspired by Langchain's BM25 retriever implementation.
+VectFox now includes BM25 (Best Match 25) keyword scoring as an alternative to the traditional keyword boost method. BM25 is a probabilistic ranking function widely used in information retrieval, inspired by Langchain's BM25 retriever implementation.
 
 ## What is BM25?
 
@@ -30,7 +30,7 @@ Where:
 
 ## Scoring Methods
 
-VectHare offers three keyword scoring methods:
+VectFox offers three keyword scoring methods:
 
 ### 1. Keyword Boost (Traditional)
 - Uses manually extracted keywords with assigned weights
@@ -64,7 +64,7 @@ VectHare offers three keyword scoring methods:
 
 ### UI Controls
 
-In VectHare settings panel:
+In VectFox settings panel:
 1. **Keyword Scoring Method** dropdown: Choose scoring algorithm
 2. **BM25 k1**: Controls how quickly term frequency saturates
    - Lower (1.0): Terms saturate quickly
@@ -143,7 +143,7 @@ const settings = {
 };
 
 const results = await queryCollection(
-  'vecthare_chat_...',
+  'VectFox_chat_...',
   'What did we discuss about magic?',
   10,
   settings

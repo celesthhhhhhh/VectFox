@@ -1,4 +1,41 @@
 Generate entered
+index.js:19 [QR2] calling {args: Array(3), functionToCall: ƒ}
+index.js:19 [QR2] Before-generation hook skipped due to dryRun.
+script.js:4547 Core/all messages: 25/25
+vm-browserify.ts:18 An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+initIframe @ vm-browserify.ts:18
+constructor @ vm-browserify.ts:10
+handleWorldInfoLoaded @ handler.ts:94
+await in handleWorldInfoLoaded
+EventEmitter.emit @ eventemitter.js:146
+getSortedEntries @ world-info.js:4492
+await in getSortedEntries
+checkWorldInfo @ world-info.js:4632
+await in checkWorldInfo
+getWorldInfoPrompt @ world-info.js:895
+Generate @ script.js:4576
+await in Generate
+promptManager.tryGenerate @ openai.js:700
+(anonymous) @ PromptManager.js:872
+Promise.then
+render @ PromptManager.js:868
+(anonymous) @ utils.js:578
+setTimeout
+fn @ utils.js:578
+(anonymous) @ PromptManager.js:770
+Promise.then
+(anonymous) @ PromptManager.js:770
+EventEmitter.emit @ eventemitter.js:146
+getChat @ script.js:7610
+await in getChat
+selectCharacterById @ script.js:899
+await in selectCharacterById
+openRecentCharacterChat @ welcome-screen.js:486
+(anonymous) @ welcome-screen.js:362
+world-info.js:5159 [WI] Hypothetically adding 21 entries to prompt (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+script.js:4606 skipWIAN not active, adding WIAN
+openai.js:3449 Message role not set, defaulting to 'system' for identifier 'personaDescription'
+script.js:4232 Generate entered
 vm-browserify.ts:18 An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
 initIframe @ vm-browserify.ts:18
 constructor @ vm-browserify.ts:10
@@ -72,22 +109,12 @@ eventbase-workflow.js:321 [EventBase] Archive event collection skipped (not lock
 eventbase-workflow.js:408 [EventBase] Phase A: live=true, archiveCollections=0, searchText length=8718
 eventbase-workflow.js:422 [EventBase] Keyword query (user last message, 108 chars): that's ok, don't feel wierd.  I think it's kind of funny to hear that.  Tell me more about that curse thing.
 eventbase-retrieval.js:351 [EventBase] Retrieval start — topK overfetch=20, minImportance=1, method=bm25, nativePrefer=true, liveCollections=1, nativeRerank=true (compare ON)
-backend-manager.js:316 VectHare: Initializing qdrant backend...
-qdrant.js:126 VectHare: Initializing local Qdrant: 10.0.1.249:6333
-qdrant.js:129 VectHare: Sending Qdrant config to Similharity plugin: {"host":"10.0.1.249","port":6333,"url":null,"apiKey":null}
-backend-manager.js:316 VectHare: Initializing qdrant backend...
-qdrant.js:126 VectHare: Initializing local Qdrant: 10.0.1.249:6333
-qdrant.js:129 VectHare: Sending Qdrant config to Similharity plugin: {"host":"10.0.1.249","port":6333,"url":null,"apiKey":null}
-qdrant.js:143 VectHare: Qdrant initialization response: {success: true, message: 'Qdrant initialized'}
-qdrant.js:144 VectHare: Using Qdrant backend (production-grade vector search)
-qdrant.js:143 VectHare: Qdrant initialization response: {success: true, message: 'Qdrant initialized'}
-qdrant.js:144 VectHare: Using Qdrant backend (production-grade vector search)
-2backend-manager.js:341 VectHare: Successfully initialized qdrant backend
-qdrant.js:955 [EventBase] Hybrid+rerank request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=9 tokens, preview="that's ok, don't feel wierd. I think it's kind of funny to hear that. Tell me more about that curse thing."
-qdrant.js:955 [EventBase] Hybrid+rerank request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=468 tokens, preview="<think><combat_calculation> Background Check (Empathy): Reading Fuka's emotional threshold for this conversation. DC: 12 (Moderate - she is emotionally open, but volatile) Roll: D20=(17 * 13 + 13) mod 20 + 1 = 15 Result: Success Detailed Explanation: The AI dynamically set DC=12 "
+2backend-manager.js:274 VectHare: Health cache stale for qdrant, re-verifying...
+qdrant.js:958 [EventBase] Hybrid+rerank request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=468 tokens, preview="<think><combat_calculation> Background Check (Empathy): Reading Fuka's emotional threshold for this conversation. DC: 12 (Moderate - she is emotionally open, but volatile) Roll: D20=(17 * 13 + 13) mod 20 + 1 = 15 Result: Success Detailed Explanation: The AI dynamically set DC=12 "
+qdrant.js:958 [EventBase] Hybrid+rerank request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=9 tokens, preview="that's ok, don't feel wierd. I think it's kind of funny to hear that. Tell me more about that curse thing."
 character.ts:107  POST https://st.sduteam.com/api/plugins/similharity/chunks/hybrid-query-rerank 500 (Internal Server Error)
 (anonymous) @ character.ts:107
-hybridQueryWithRerank @ qdrant.js:961
+hybridQueryWithRerank @ qdrant.js:964
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:151
 await in _runOneLiveQuery
@@ -96,7 +123,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -157,8 +184,8 @@ value @ reactivity.esm-bundler.js:1550
 callWithErrorHandling @ runtime-core.esm-bundler.js:199
 callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
-qdrant.js:990 [Qdrant timing] hybrid+rerank FAILED after 801.8ms (HTTP 500), falling back to hybridQuery. Server said: {"error":"request to http://localhost:11434/api/embed failed, reason: "}
-hybridQueryWithRerank @ qdrant.js:990
+qdrant.js:993 [Qdrant timing] hybrid+rerank FAILED after 6142.8ms (HTTP 500), falling back to hybridQuery. Server said: {"error":"Qdrant POST /collections/vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831/points/query failed: 400 Wrong input: Vector dimension error: expected dim: 4096, got 2560"}
+hybridQueryWithRerank @ qdrant.js:993
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:151
 await in _runOneLiveQuery
@@ -167,7 +194,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -228,10 +255,10 @@ value @ reactivity.esm-bundler.js:1550
 callWithErrorHandling @ runtime-core.esm-bundler.js:199
 callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
-qdrant.js:827 [EventBase] Hybrid request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=9 tokens, terms=[ok, don, feel, wierd, kind, funny, hear, tell, curs], preview="that's ok, don't feel wierd. I think it's kind of funny to hear that. Tell me more about that curse thing."
+qdrant.js:829 [EventBase] Hybrid request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=468 tokens, terms=[combat_calculate, background, check, empathy, read, fuka, emotion, threshold, conversate, dc, 12, moderat, emotionally, open, volatil, roll, d20, 17, 13, mod, 20, 15, result, success, detail, explanate, ai, dynamically, set, consider, emotionalstability, 35, stress, 65, succeed, reveal, underly, nee, desperately, want, believ, not, tolerate, gametxt, head, snap, up, fast, motion, make, choppy, bang, whip, eyepatch, split, second, expression, pure, unguard, shock, lip, part, grey, eye, wide, didn, expect, rabbit, ask, chang, subject, let, weird, evaporat, spring, air, els, instead, call, funny, told, continu, voic, come, croak, singl, syllabl, crack, embarrassingly, middl, clear, throat, tri, finger, find, edg, bento, grip, lifelin, actually, hear, curs, search, face, hint, sarcasm, twitch, smile, tell, prank, none, tight, knot, shoulder, loosen, perhap, thread, ok, okay, take, deep, steady, breath, kind, mother, say, help, anxiety, though, scent, lawn, freshly, cut, grass, nerv, promis, bird, fall, sky, talk, ll, dodg, hold, pinky, tremble, slightly, seem, realiz, how, childish, look, yank, hand, down, bury, fold, cardigan, storybook, witch, appear, trip, third, rock, stare, half, eaten, lunch, tak, distant, quality, happen, all, start, mayb, six, seven, remember, anymor, pick, stray, grain, rice, cloth, absently, thumb, forefinger, clearly, grade, class, draw, color, pencil, teacher, whole, box, fell, floor, insid, broken, shudder, exhal, almost, laugh, speech, spee, word, tumble, faster, filter, dam, finally, year, blame, purpos, kept, hamster, escap, feed, duty, window, walk, past, school, field, bus, flat, tire, aquarium, sunny, perfect, road, ago, hous, burn, plainly, melodrama, tir, heavy, carri, alon, far, hurt, lucky, move, ve, mov, time, dry, breez, rustl, blue, beneath, flinch, glanc, upward, debri, slowly, drop, murmur, keep, luck, log, write, nearby, pattern, figur, why, spent, sav, spiritual, cleans, charm, stupid, work, trace, four, leaf, clover, leav, hesitat, flicker, toward, away, pale, cheek, flush, dusty, pink, kumada, han, neutral, trail, jaw, tighten, memory, gentl, correction, sting, swallow, rephras, sat, near, wasn, trying, close, blank, chopstick, shak, food, soft, clatter, somewher, desperat, hope, expectate, rejection, sound, crazy, delusional, girl, fortun, teller, don, morn, haven, onc, stomach, hasn, gotten, upset, nervou, throw, english, variabl, doesn, finish, sentenc, manag, re, power, coincidenc, psychologic, stay, barely, whisper, final, break, immediately, lap, bandag, twist, together, tightly, gauz, crinkl, tear, well, corner, uncover, blink, furiously, combat_log, isn, explain, theory, beg, permission, exist, risk, prove, safe, locate, updatevariabl, updateanalysi, activ, partner, key, advanc, approximately, pm, significant, unload, shar, history, disaster, real, reason, orbit, spoken, 30, huge, leap, deepest, trust, 10, 41, 51, informate, mock, comfort, 16, 26, non, request, directly, rais, sens, safety, 40, 25, tension, releas, honest, mood, shift, mortifi, confus, earnest, vulnerabl, embarrassment, 60, won, sure, affection, 48, 53, confidant, bond, recalculat, mappedtrust, 76, mappedrespect, 61, attraction, approximat, 47, thought, update, reflect, relief, vulnerability, positiv, create, event, jsonpatch, op, replac, path, world, valu, delta, silly, heart, go, explod, spot, add, positivememori, first_confession, desc, fire, listen, timestamp, april, 2026, statusplaceholderimpl, feel, wierd], preview="<think><combat_calculation> Background Check (Empathy): Reading Fuka's emotional threshold for this conversation. DC: 12 (Moderate - she is emotionally open, but volatile) Roll: D20=(17 * 13 + 13) mod 20 + 1 = 15 Result: Success Detailed Explanation: The AI dynamically set DC=12 "
 character.ts:107  POST https://st.sduteam.com/api/plugins/similharity/chunks/hybrid-query-rerank 500 (Internal Server Error)
 (anonymous) @ character.ts:107
-hybridQueryWithRerank @ qdrant.js:961
+hybridQueryWithRerank @ qdrant.js:964
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:151
 await in _runOneLiveQuery
@@ -240,7 +267,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -301,8 +328,8 @@ value @ reactivity.esm-bundler.js:1550
 callWithErrorHandling @ runtime-core.esm-bundler.js:199
 callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
-qdrant.js:990 [Qdrant timing] hybrid+rerank FAILED after 851.9ms (HTTP 500), falling back to hybridQuery. Server said: {"error":"request to http://localhost:11434/api/embed failed, reason: "}
-hybridQueryWithRerank @ qdrant.js:990
+qdrant.js:993 [Qdrant timing] hybrid+rerank FAILED after 6261.3ms (HTTP 500), falling back to hybridQuery. Server said: {"error":"Qdrant POST /collections/vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831/points/query failed: 400 Wrong input: Vector dimension error: expected dim: 4096, got 2560"}
+hybridQueryWithRerank @ qdrant.js:993
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:151
 await in _runOneLiveQuery
@@ -311,7 +338,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -372,12 +399,12 @@ value @ reactivity.esm-bundler.js:1550
 callWithErrorHandling @ runtime-core.esm-bundler.js:199
 callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
-qdrant.js:827 [EventBase] Hybrid request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=468 tokens, terms=[combat_calculate, background, check, empathy, read, fuka, emotion, threshold, conversate, dc, 12, moderat, emotionally, open, volatil, roll, d20, 17, 13, mod, 20, 15, result, success, detail, explanate, ai, dynamically, set, consider, emotionalstability, 35, stress, 65, succeed, reveal, underly, nee, desperately, want, believ, not, tolerate, gametxt, head, snap, up, fast, motion, make, choppy, bang, whip, eyepatch, split, second, expression, pure, unguard, shock, lip, part, grey, eye, wide, didn, expect, rabbit, ask, chang, subject, let, weird, evaporat, spring, air, els, instead, call, funny, told, continu, voic, come, croak, singl, syllabl, crack, embarrassingly, middl, clear, throat, tri, finger, find, edg, bento, grip, lifelin, actually, hear, curs, search, face, hint, sarcasm, twitch, smile, tell, prank, none, tight, knot, shoulder, loosen, perhap, thread, ok, okay, take, deep, steady, breath, kind, mother, say, help, anxiety, though, scent, lawn, freshly, cut, grass, nerv, promis, bird, fall, sky, talk, ll, dodg, hold, pinky, tremble, slightly, seem, realiz, how, childish, look, yank, hand, down, bury, fold, cardigan, storybook, witch, appear, trip, third, rock, stare, half, eaten, lunch, tak, distant, quality, happen, all, start, mayb, six, seven, remember, anymor, pick, stray, grain, rice, cloth, absently, thumb, forefinger, clearly, grade, class, draw, color, pencil, teacher, whole, box, fell, floor, insid, broken, shudder, exhal, almost, laugh, speech, spee, word, tumble, faster, filter, dam, finally, year, blame, purpos, kept, hamster, escap, feed, duty, window, walk, past, school, field, bus, flat, tire, aquarium, sunny, perfect, road, ago, hous, burn, plainly, melodrama, tir, heavy, carri, alon, far, hurt, lucky, move, ve, mov, time, dry, breez, rustl, blue, beneath, flinch, glanc, upward, debri, slowly, drop, murmur, keep, luck, log, write, nearby, pattern, figur, why, spent, sav, spiritual, cleans, charm, stupid, work, trace, four, leaf, clover, leav, hesitat, flicker, toward, away, pale, cheek, flush, dusty, pink, kumada, han, neutral, trail, jaw, tighten, memory, gentl, correction, sting, swallow, rephras, sat, near, wasn, trying, close, blank, chopstick, shak, food, soft, clatter, somewher, desperat, hope, expectate, rejection, sound, crazy, delusional, girl, fortun, teller, don, morn, haven, onc, stomach, hasn, gotten, upset, nervou, throw, english, variabl, doesn, finish, sentenc, manag, re, power, coincidenc, psychologic, stay, barely, whisper, final, break, immediately, lap, bandag, twist, together, tightly, gauz, crinkl, tear, well, corner, uncover, blink, furiously, combat_log, isn, explain, theory, beg, permission, exist, risk, prove, safe, locate, updatevariabl, updateanalysi, activ, partner, key, advanc, approximately, pm, significant, unload, shar, history, disaster, real, reason, orbit, spoken, 30, huge, leap, deepest, trust, 10, 41, 51, informate, mock, comfort, 16, 26, non, request, directly, rais, sens, safety, 40, 25, tension, releas, honest, mood, shift, mortifi, confus, earnest, vulnerabl, embarrassment, 60, won, sure, affection, 48, 53, confidant, bond, recalculat, mappedtrust, 76, mappedrespect, 61, attraction, approximat, 47, thought, update, reflect, relief, vulnerability, positiv, create, event, jsonpatch, op, replac, path, world, valu, delta, silly, heart, go, explod, spot, add, positivememori, first_confession, desc, fire, listen, timestamp, april, 2026, statusplaceholderimpl, feel, wierd], preview="<think><combat_calculation> Background Check (Empathy): Reading Fuka's emotional threshold for this conversation. DC: 12 (Moderate - she is emotionally open, but volatile) Roll: D20=(17 * 13 + 13) mod 20 + 1 = 15 Result: Success Detailed Explanation: The AI dynamically set DC=12 "
+qdrant.js:829 [EventBase] Hybrid request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=9 tokens, terms=[ok, don, feel, wierd, kind, funny, hear, tell, curs], preview="that's ok, don't feel wierd. I think it's kind of funny to hear that. Tell me more about that curse thing."
 character.ts:107  POST https://st.sduteam.com/api/plugins/similharity/chunks/hybrid-query 500 (Internal Server Error)
 (anonymous) @ character.ts:107
-hybridQuery @ qdrant.js:836
+hybridQuery @ qdrant.js:838
 await in hybridQuery
-hybridQueryWithRerank @ qdrant.js:999
+hybridQueryWithRerank @ qdrant.js:1002
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:151
 await in _runOneLiveQuery
@@ -386,7 +413,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -447,10 +474,10 @@ value @ reactivity.esm-bundler.js:1550
 callWithErrorHandling @ runtime-core.esm-bundler.js:199
 callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
-qdrant.js:865 [Qdrant timing] FAILED after 955.8ms (HTTP 500), falling back to vector-only. Server said: {"error":"request to http://localhost:11434/api/embed failed, reason: "}
-hybridQuery @ qdrant.js:865
+qdrant.js:867 [Qdrant timing] FAILED after 4291.5ms (HTTP 500), falling back to vector-only. Server said: {"error":"Qdrant POST /collections/vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831/points/query failed: 400 Wrong input: Vector dimension error: expected dim: 4096, got 2560"}
+hybridQuery @ qdrant.js:867
 await in hybridQuery
-hybridQueryWithRerank @ qdrant.js:999
+hybridQueryWithRerank @ qdrant.js:1002
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:151
 await in _runOneLiveQuery
@@ -459,7 +486,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -522,9 +549,9 @@ callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
 character.ts:107  POST https://st.sduteam.com/api/plugins/similharity/chunks/hybrid-query 500 (Internal Server Error)
 (anonymous) @ character.ts:107
-hybridQuery @ qdrant.js:836
+hybridQuery @ qdrant.js:838
 await in hybridQuery
-hybridQueryWithRerank @ qdrant.js:999
+hybridQueryWithRerank @ qdrant.js:1002
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:151
 await in _runOneLiveQuery
@@ -533,7 +560,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -594,10 +621,10 @@ value @ reactivity.esm-bundler.js:1550
 callWithErrorHandling @ runtime-core.esm-bundler.js:199
 callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
-qdrant.js:865 [Qdrant timing] FAILED after 743.1ms (HTTP 500), falling back to vector-only. Server said: {"error":"request to http://localhost:11434/api/embed failed, reason: "}
-hybridQuery @ qdrant.js:865
+qdrant.js:867 [Qdrant timing] FAILED after 4277.5ms (HTTP 500), falling back to vector-only. Server said: {"error":"Qdrant POST /collections/vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831/points/query failed: 400 Wrong input: Vector dimension error: expected dim: 4096, got 2560"}
+hybridQuery @ qdrant.js:867
 await in hybridQuery
-hybridQueryWithRerank @ qdrant.js:999
+hybridQueryWithRerank @ qdrant.js:1002
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:151
 await in _runOneLiveQuery
@@ -606,7 +633,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -667,16 +694,19 @@ value @ reactivity.esm-bundler.js:1550
 callWithErrorHandling @ runtime-core.esm-bundler.js:199
 callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
-core-vector-api.js:878 [VectHare] Hybrid search (native), dispatching to hybrid search module
+core-vector-api.js:879 [VectHare] Hybrid search (native), dispatching to hybrid search module
 hybrid-search.js:91 [HybridSearch] Using native hybrid search (QdrantBackend)
-qdrant.js:827 [EventBase] Hybrid request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=9 tokens, terms=[ok, don, feel, wierd, kind, funny, hear, tell, curs], preview="that's ok, don't feel wierd. I think it's kind of funny to hear that. Tell me more about that curse thing."
+qdrant.js:829 [EventBase] Hybrid request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=468 tokens, terms=[combat_calculate, background, check, empathy, read, fuka, emotion, threshold, conversate, dc, 12, moderat, emotionally, open, volatil, roll, d20, 17, 13, mod, 20, 15, result, success, detail, explanate, ai, dynamically, set, consider, emotionalstability, 35, stress, 65, succeed, reveal, underly, nee, desperately, want, believ, not, tolerate, gametxt, head, snap, up, fast, motion, make, choppy, bang, whip, eyepatch, split, second, expression, pure, unguard, shock, lip, part, grey, eye, wide, didn, expect, rabbit, ask, chang, subject, let, weird, evaporat, spring, air, els, instead, call, funny, told, continu, voic, come, croak, singl, syllabl, crack, embarrassingly, middl, clear, throat, tri, finger, find, edg, bento, grip, lifelin, actually, hear, curs, search, face, hint, sarcasm, twitch, smile, tell, prank, none, tight, knot, shoulder, loosen, perhap, thread, ok, okay, take, deep, steady, breath, kind, mother, say, help, anxiety, though, scent, lawn, freshly, cut, grass, nerv, promis, bird, fall, sky, talk, ll, dodg, hold, pinky, tremble, slightly, seem, realiz, how, childish, look, yank, hand, down, bury, fold, cardigan, storybook, witch, appear, trip, third, rock, stare, half, eaten, lunch, tak, distant, quality, happen, all, start, mayb, six, seven, remember, anymor, pick, stray, grain, rice, cloth, absently, thumb, forefinger, clearly, grade, class, draw, color, pencil, teacher, whole, box, fell, floor, insid, broken, shudder, exhal, almost, laugh, speech, spee, word, tumble, faster, filter, dam, finally, year, blame, purpos, kept, hamster, escap, feed, duty, window, walk, past, school, field, bus, flat, tire, aquarium, sunny, perfect, road, ago, hous, burn, plainly, melodrama, tir, heavy, carri, alon, far, hurt, lucky, move, ve, mov, time, dry, breez, rustl, blue, beneath, flinch, glanc, upward, debri, slowly, drop, murmur, keep, luck, log, write, nearby, pattern, figur, why, spent, sav, spiritual, cleans, charm, stupid, work, trace, four, leaf, clover, leav, hesitat, flicker, toward, away, pale, cheek, flush, dusty, pink, kumada, han, neutral, trail, jaw, tighten, memory, gentl, correction, sting, swallow, rephras, sat, near, wasn, trying, close, blank, chopstick, shak, food, soft, clatter, somewher, desperat, hope, expectate, rejection, sound, crazy, delusional, girl, fortun, teller, don, morn, haven, onc, stomach, hasn, gotten, upset, nervou, throw, english, variabl, doesn, finish, sentenc, manag, re, power, coincidenc, psychologic, stay, barely, whisper, final, break, immediately, lap, bandag, twist, together, tightly, gauz, crinkl, tear, well, corner, uncover, blink, furiously, combat_log, isn, explain, theory, beg, permission, exist, risk, prove, safe, locate, updatevariabl, updateanalysi, activ, partner, key, advanc, approximately, pm, significant, unload, shar, history, disaster, real, reason, orbit, spoken, 30, huge, leap, deepest, trust, 10, 41, 51, informate, mock, comfort, 16, 26, non, request, directly, rais, sens, safety, 40, 25, tension, releas, honest, mood, shift, mortifi, confus, earnest, vulnerabl, embarrassment, 60, won, sure, affection, 48, 53, confidant, bond, recalculat, mappedtrust, 76, mappedrespect, 61, attraction, approximat, 47, thought, update, reflect, relief, vulnerability, positiv, create, event, jsonpatch, op, replac, path, world, valu, delta, silly, heart, go, explod, spot, add, positivememori, first_confession, desc, fire, listen, timestamp, april, 2026, statusplaceholderimpl, feel, wierd], preview="<think><combat_calculation> Background Check (Empathy): Reading Fuka's emotional threshold for this conversation. DC: 12 (Moderate - she is emotionally open, but volatile) Roll: D20=(17 * 13 + 13) mod 20 + 1 = 15 Result: Success Detailed Explanation: The AI dynamically set DC=12 "
+core-vector-api.js:879 [VectHare] Hybrid search (native), dispatching to hybrid search module
+hybrid-search.js:91 [HybridSearch] Using native hybrid search (QdrantBackend)
+qdrant.js:829 [EventBase] Hybrid request: collection=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831, topK=20, sparse=9 tokens, terms=[ok, don, feel, wierd, kind, funny, hear, tell, curs], preview="that's ok, don't feel wierd. I think it's kind of funny to hear that. Tell me more about that curse thing."
 character.ts:107  POST https://st.sduteam.com/api/plugins/similharity/chunks/hybrid-query 500 (Internal Server Error)
 (anonymous) @ character.ts:107
-hybridQuery @ qdrant.js:836
+hybridQuery @ qdrant.js:838
 await in hybridQuery
 hybridSearch @ hybrid-search.js:94
 await in hybridSearch
-queryCollection @ core-vector-api.js:882
+queryCollection @ core-vector-api.js:883
 await in queryCollection
 _runOneLiveQuery @ eventbase-retrieval.js:169
 await in _runOneLiveQuery
@@ -685,7 +715,7 @@ runEventBaseRetrieval @ eventbase-workflow.js:459
 await in runEventBaseRetrieval
 rearrangeChat @ chat-vectorization.js:1709
 await in rearrangeChat
-vecthare_rearrangeChat @ index.js:263
+vecthare_rearrangeChat @ index.js:264
 runGenerationInterceptors @ extensions.js:2028
 await in runGenerationInterceptors
 Generate @ script.js:4505
@@ -746,4 +776,318 @@ value @ reactivity.esm-bundler.js:1550
 callWithErrorHandling @ runtime-core.esm-bundler.js:199
 callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
 (anonymous) @ runtime-dom.esm-bundler.js:745
-qdrant.js:865 [Qdrant timing] FAILED after 581.8ms (HTTP 500), falling back to vector-only. Server said: {"error":"request to http://localhost:11434/api/embed failed, reason: "}
+qdrant.js:867 [Qdrant timing] FAILED after 4290.3ms (HTTP 500), falling back to vector-only. Server said: {"error":"Qdrant POST /collections/vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831/points/query failed: 400 Wrong input: Vector dimension error: expected dim: 4096, got 2560"}
+hybridQuery @ qdrant.js:867
+await in hybridQuery
+hybridSearch @ hybrid-search.js:94
+await in hybridSearch
+queryCollection @ core-vector-api.js:883
+await in queryCollection
+_runOneLiveQuery @ eventbase-retrieval.js:169
+await in _runOneLiveQuery
+retrieveEvents @ eventbase-retrieval.js:378
+runEventBaseRetrieval @ eventbase-workflow.js:459
+await in runEventBaseRetrieval
+rearrangeChat @ chat-vectorization.js:1709
+await in rearrangeChat
+vecthare_rearrangeChat @ index.js:264
+runGenerationInterceptors @ extensions.js:2028
+await in runGenerationInterceptors
+Generate @ script.js:4505
+await in Generate
+triggerRefresh @ PromptViewer.vue:268
+(anonymous) @ PromptViewer.vue:250
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+(anonymous) @ runtime-core.esm-bundler.js:8140
+(anonymous) @ runtime-core.esm-bundler.js:8102
+(anonymous) @ runtime-core.esm-bundler.js:6023
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5919
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:1000
+(anonymous) @ runtime-core.esm-bundler.js:1026
+process @ runtime-core.esm-bundler.js:1060
+(anonymous) @ runtime-core.esm-bundler.js:5500
+(anonymous) @ runtime-core.esm-bundler.js:6137
+run @ reactivity.esm-bundler.js:260
+(anonymous) @ runtime-core.esm-bundler.js:6265
+(anonymous) @ runtime-core.esm-bundler.js:6037
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5861
+(anonymous) @ runtime-core.esm-bundler.js:5937
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:6217
+run @ reactivity.esm-bundler.js:260
+runIfDirty @ reactivity.esm-bundler.js:298
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+flushJobs @ runtime-core.esm-bundler.js:408
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+(anonymous) @ runtime-core.esm-bundler.js:6259
+trigger @ reactivity.esm-bundler.js:288
+endBatch @ reactivity.esm-bundler.js:346
+notify @ reactivity.esm-bundler.js:637
+trigger @ reactivity.esm-bundler.js:611
+value @ reactivity.esm-bundler.js:1550
+(anonymous) @ reactivity.esm-bundler.js:1580
+(anonymous) @ Toolbox.vue:36
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+(anonymous) @ runtime-dom.esm-bundler.js:745
+character.ts:107  POST https://st.sduteam.com/api/plugins/similharity/chunks/hybrid-query 500 (Internal Server Error)
+(anonymous) @ character.ts:107
+hybridQuery @ qdrant.js:838
+await in hybridQuery
+hybridSearch @ hybrid-search.js:94
+await in hybridSearch
+queryCollection @ core-vector-api.js:883
+await in queryCollection
+_runOneLiveQuery @ eventbase-retrieval.js:169
+await in _runOneLiveQuery
+retrieveEvents @ eventbase-retrieval.js:378
+runEventBaseRetrieval @ eventbase-workflow.js:459
+await in runEventBaseRetrieval
+rearrangeChat @ chat-vectorization.js:1709
+await in rearrangeChat
+vecthare_rearrangeChat @ index.js:264
+runGenerationInterceptors @ extensions.js:2028
+await in runGenerationInterceptors
+Generate @ script.js:4505
+await in Generate
+triggerRefresh @ PromptViewer.vue:268
+(anonymous) @ PromptViewer.vue:250
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+(anonymous) @ runtime-core.esm-bundler.js:8140
+(anonymous) @ runtime-core.esm-bundler.js:8102
+(anonymous) @ runtime-core.esm-bundler.js:6023
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5919
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:1000
+(anonymous) @ runtime-core.esm-bundler.js:1026
+process @ runtime-core.esm-bundler.js:1060
+(anonymous) @ runtime-core.esm-bundler.js:5500
+(anonymous) @ runtime-core.esm-bundler.js:6137
+run @ reactivity.esm-bundler.js:260
+(anonymous) @ runtime-core.esm-bundler.js:6265
+(anonymous) @ runtime-core.esm-bundler.js:6037
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5861
+(anonymous) @ runtime-core.esm-bundler.js:5937
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:6217
+run @ reactivity.esm-bundler.js:260
+runIfDirty @ reactivity.esm-bundler.js:298
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+flushJobs @ runtime-core.esm-bundler.js:408
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+(anonymous) @ runtime-core.esm-bundler.js:6259
+trigger @ reactivity.esm-bundler.js:288
+endBatch @ reactivity.esm-bundler.js:346
+notify @ reactivity.esm-bundler.js:637
+trigger @ reactivity.esm-bundler.js:611
+value @ reactivity.esm-bundler.js:1550
+(anonymous) @ reactivity.esm-bundler.js:1580
+(anonymous) @ Toolbox.vue:36
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+(anonymous) @ runtime-dom.esm-bundler.js:745
+qdrant.js:867 [Qdrant timing] FAILED after 4277.6ms (HTTP 500), falling back to vector-only. Server said: {"error":"Qdrant POST /collections/vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831/points/query failed: 400 Wrong input: Vector dimension error: expected dim: 4096, got 2560"}
+hybridQuery @ qdrant.js:867
+await in hybridQuery
+hybridSearch @ hybrid-search.js:94
+await in hybridSearch
+queryCollection @ core-vector-api.js:883
+await in queryCollection
+_runOneLiveQuery @ eventbase-retrieval.js:169
+await in _runOneLiveQuery
+retrieveEvents @ eventbase-retrieval.js:378
+runEventBaseRetrieval @ eventbase-workflow.js:459
+await in runEventBaseRetrieval
+rearrangeChat @ chat-vectorization.js:1709
+await in rearrangeChat
+vecthare_rearrangeChat @ index.js:264
+runGenerationInterceptors @ extensions.js:2028
+await in runGenerationInterceptors
+Generate @ script.js:4505
+await in Generate
+triggerRefresh @ PromptViewer.vue:268
+(anonymous) @ PromptViewer.vue:250
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+(anonymous) @ runtime-core.esm-bundler.js:8140
+(anonymous) @ runtime-core.esm-bundler.js:8102
+(anonymous) @ runtime-core.esm-bundler.js:6023
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5919
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:1000
+(anonymous) @ runtime-core.esm-bundler.js:1026
+process @ runtime-core.esm-bundler.js:1060
+(anonymous) @ runtime-core.esm-bundler.js:5500
+(anonymous) @ runtime-core.esm-bundler.js:6137
+run @ reactivity.esm-bundler.js:260
+(anonymous) @ runtime-core.esm-bundler.js:6265
+(anonymous) @ runtime-core.esm-bundler.js:6037
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5861
+(anonymous) @ runtime-core.esm-bundler.js:5937
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:6217
+run @ reactivity.esm-bundler.js:260
+runIfDirty @ reactivity.esm-bundler.js:298
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+flushJobs @ runtime-core.esm-bundler.js:408
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+(anonymous) @ runtime-core.esm-bundler.js:6259
+trigger @ reactivity.esm-bundler.js:288
+endBatch @ reactivity.esm-bundler.js:346
+notify @ reactivity.esm-bundler.js:637
+trigger @ reactivity.esm-bundler.js:611
+value @ reactivity.esm-bundler.js:1550
+(anonymous) @ reactivity.esm-bundler.js:1580
+(anonymous) @ Toolbox.vue:36
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+(anonymous) @ runtime-dom.esm-bundler.js:745
+core-vector-api.js:889 [VectHare] Hybrid search (RRF) response: 0 result(s) in 8563ms, scores=[]
+eventbase-retrieval.js:247 [EventBase compare] col=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 q="<think><combat_calculation> Background Check (Empathy): Reading Fuka's emotional" — overlap@0=0, spearmanRho=0.000, native=19408.7ms, js=8563.2ms
+core-vector-api.js:889 [VectHare] Hybrid search (RRF) response: 0 result(s) in 8555ms, scores=[]
+eventbase-retrieval.js:247 [EventBase compare] col=vecthare_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 q="that's ok, don't feel wierd. I think it's kind of funny to hear that. Tell me mo" — overlap@0=0, spearmanRho=0.000, native=19593.3ms, js=8555.4ms
+eventbase-retrieval.js:415 [EventBase] Live query: 1 collection(s) × 2 query/queries → 0 unique events
+eventbase-retrieval.js:439 [EventBase] After importance filter (>=1): 0 candidates
+eventbase-retrieval.js:632 [EventBase] Final events after dedup + trim: 0
+eventbase-workflow.js:471 [EventBase] Retrieval debug: {dualQuery: true, keywordScoringMethod: 'bm25', nativeHybridPrefer: true, fusionMethod: 'rrf', nativeRerank: true, …}
+eventbase-workflow.js:475 [EventBase] No events to inject
+chat-vectorization.js:1735 VectHare: Will query 1 collections: ['qdrant:vecthare_lorebook_qdrant_critblade_story1_1778514888106']
+chat-vectorization.js:1754 VectHare: Extracted 8 keywords from query: (8) ['background', 'check', 'fuka', 'roll', 'result', 'success', 'detailed', 'explanation']
+collection-metadata.js:895 [VectHare Activation Filter] Collection qdrant:vecthare_lorebook_qdrant_critblade_story1_1778514888106: hasTriggers=false, hasConditions=false
+collection-metadata.js:932 [VectHare Activation Filter] Collection qdrant:vecthare_lorebook_qdrant_critblade_story1_1778514888106: ✗ NOT_ACTIVATED (no trigger match, no condition pass, not locked)
+collection-metadata.js:953 [VectHare Activation Filter] Summary: 1 collections → 0 active
+chat-vectorization.js:1789 [VectHare ChunkBase] No active Standard/ChunkBase collections and World Info disabled — skipping non-chat chunk injection (this is normal if you only use EventBase).
+script.js:4547 Core/all messages: 25/25
+vm-browserify.ts:18 An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+initIframe @ vm-browserify.ts:18
+constructor @ vm-browserify.ts:10
+handleWorldInfoLoaded @ handler.ts:94
+await in handleWorldInfoLoaded
+EventEmitter.emit @ eventemitter.js:146
+getSortedEntries @ world-info.js:4492
+await in getSortedEntries
+checkWorldInfo @ world-info.js:4632
+await in checkWorldInfo
+getWorldInfoPrompt @ world-info.js:895
+Generate @ script.js:4576
+await in Generate
+triggerRefresh @ PromptViewer.vue:268
+(anonymous) @ PromptViewer.vue:250
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+(anonymous) @ runtime-core.esm-bundler.js:8140
+(anonymous) @ runtime-core.esm-bundler.js:8102
+(anonymous) @ runtime-core.esm-bundler.js:6023
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5919
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:1000
+(anonymous) @ runtime-core.esm-bundler.js:1026
+process @ runtime-core.esm-bundler.js:1060
+(anonymous) @ runtime-core.esm-bundler.js:5500
+(anonymous) @ runtime-core.esm-bundler.js:6137
+run @ reactivity.esm-bundler.js:260
+(anonymous) @ runtime-core.esm-bundler.js:6265
+(anonymous) @ runtime-core.esm-bundler.js:6037
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5861
+(anonymous) @ runtime-core.esm-bundler.js:5937
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:6217
+run @ reactivity.esm-bundler.js:260
+runIfDirty @ reactivity.esm-bundler.js:298
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+flushJobs @ runtime-core.esm-bundler.js:408
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+(anonymous) @ runtime-core.esm-bundler.js:6259
+trigger @ reactivity.esm-bundler.js:288
+endBatch @ reactivity.esm-bundler.js:346
+notify @ reactivity.esm-bundler.js:637
+trigger @ reactivity.esm-bundler.js:611
+value @ reactivity.esm-bundler.js:1550
+(anonymous) @ reactivity.esm-bundler.js:1580
+(anonymous) @ Toolbox.vue:36
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+(anonymous) @ runtime-dom.esm-bundler.js:745
+world-info.js:5159 [WI] Adding 21 entries to prompt (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index.js:19 [QR2] calling {args: Array(1), functionToCall: ƒ}
+script.js:4606 skipWIAN not active, adding WIAN
+openai.js:3449 Message role not set, defaulting to 'system' for identifier 'personaDescription'

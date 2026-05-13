@@ -1819,13 +1819,13 @@ export async function rearrangeChat(chat, settings, type) {
 
         // === STAGE 4: Query all collections and merge results ===
         if (settings.retrieval_popup_on_start) {
-            toastr.info(`Retrieving context from ${activeCollections.length} collection(s)...`, 'VectHarePlus Retrieval');
+            toastr.info(`Retrieving context from ${activeCollections.length} collection(s)...`, 'VectFox Retrieval');
         }
 
         let chunks = await queryAndMergeCollections(activeCollections, queryText, settings, chat, debugData);
 
         if (settings.retrieval_popup_on_result) {
-            toastr.success(`Retrieved ${chunks.length} result(s) from backend`, 'VectHarePlus Retrieval');
+            toastr.success(`Retrieved ${chunks.length} result(s) from backend`, 'VectFox Retrieval');
         }
 
         // === STAGE 4.3: Boost chunks with matching query keywords ===

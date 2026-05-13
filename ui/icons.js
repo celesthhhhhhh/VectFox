@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE ICONS
+ * VectFox ICONS
  * ============================================================================
  * Clean SVG icons from Lucide via Iconify
  * Usage: icons.pause, icons.play, etc.
@@ -18,7 +18,7 @@
  * @returns {string} SVG HTML string
  */
 function icon(body, size = 18, className = '') {
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="vecthare-icon ${className}">${body}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="vectfox-icon ${className}">${body}</svg>`;
 }
 
 /**

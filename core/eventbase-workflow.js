@@ -46,7 +46,7 @@ const EVENTBASE_PROMPT_TAG = `${EXTENSION_PROMPT_TAG}_eventbase`;
  * @param {object} params
  * @param {object[]} params.messages    - Chat messages to process (array of ST message objects)
  * @param {string}  [params.chatUUID]   - Override chat UUID
- * @param {object}   params.settings    - VectHare settings
+ * @param {object}   params.settings    - VectFox settings
  * @param {AbortSignal|null} [params.abortSignal]
  * @param {{ strategy?: string, batchSize?: number, totalChunks?: number }|null} [params.progressPlan]
  * @returns {Promise<{ eventsExtracted: number, windowsProcessed: number, windowsSkipped: number }>}
@@ -83,7 +83,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
 
     // If the fingerprint cache says windows were extracted but Qdrant has no data
     // (e.g. collection was deleted externally), reset the cache so we start fresh.
-    const cacheEntries = extension_settings?.vecthareplus?.eventbase_extracted_windows?.[uuid];
+    const cacheEntries = extension_settings?.VectFoxplus?.eventbase_extracted_windows?.[uuid];
     if (Array.isArray(cacheEntries) && cacheEntries.length > 0) {
         try {
             const existingHashes = collectionId ? await getSavedHashes(collectionId, settings) : [];
@@ -176,7 +176,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                 // Fire auto-sync popup on first real extraction (not dedup-skipped)
                 if (isAutoSync && !autosyncPopupShown && settings.eventbase_autosync_popup !== false) {
                     autosyncPopupShown = true;
-                    try { toastr.info('Auto-Sync: extracting events...', 'VectHare', { timeOut: 3000 }); } catch (_) {}
+                    try { toastr.info('Auto-Sync: extracting events...', 'VectFox', { timeOut: 3000 }); } catch (_) {}
                 }
 
                 // LLM extraction
@@ -215,7 +215,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                     console.log(`[EventBase] Window ${wIdx}: dropped ${annotated.length - toStore.length} event(s) below minImportance=${minImportanceStore}`);
                 }
 
-                // Insert — pass collectionId so archive uploads go to vecthare_archiveevent_*
+                // Insert — pass collectionId so archive uploads go to VectFox_archiveevent_*
                 if (toStore.length > 0) {
                     await insertEvents(toStore, settings, abortSignal, collectionId);
                 }
@@ -286,7 +286,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
 // ---------------------------------------------------------------------------
 
 /**
- * Scan the registry for archive event collections (vecthare_archiveevent_*) that are
+ * Scan the registry for archive event collections (VectFox_archiveevent_*) that are
  * enabled and locked to the current chat. These are included in Phase A retrieval.
  *
  * Uses direct enabled + lock checks (not shouldCollectionActivate) because archive
@@ -303,7 +303,7 @@ function _gatherArchiveEventCollections(currentChatId, debugLog) {
     for (const registryKey of registry) {
         const parsed = parseRegistryKey(registryKey);
         const colId = parsed.collectionId;
-        if (!colId?.startsWith(COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT)) continue;
+        if (!colId?.startsWith(COLLECTION_PREFIXES.VectFox_ARCHIVE_EVENT)) continue;
 
         // Pause and lock metadata can live under either the registry key (backend:collectionId)
         // or the bare collectionId — the DB Browser pause toggle uses registry key while the
@@ -328,7 +328,7 @@ function _gatherArchiveEventCollections(currentChatId, debugLog) {
 }
 
 /**
- * Scan the registry for live EventBase collections (vecthare_eventbase_*) that
+ * Scan the registry for live EventBase collections (VectFox_eventbase_*) that
  * are enabled and locked to the current chat.
  *
  * The chat UUID embedded in the ID is only used for write-side collision
@@ -347,7 +347,7 @@ function _gatherLockedEventBaseCollections(currentChatId, debugLog) {
     for (const registryKey of registry) {
         const parsed = parseRegistryKey(registryKey);
         const colId = parsed.collectionId;
-        if (!colId?.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE)) continue;
+        if (!colId?.startsWith(COLLECTION_PREFIXES.VectFox_EVENTBASE)) continue;
 
         const candidateKeys = [registryKey, colId].filter(Boolean);
 
@@ -374,7 +374,7 @@ function _gatherLockedEventBaseCollections(currentChatId, debugLog) {
  * @param {object} params
  * @param {object[]} params.chat       - Full ST chat array
  * @param {string}   params.searchText - Query text (from buildSearchQuery)
- * @param {object}   params.settings   - VectHare settings
+ * @param {object}   params.settings   - VectFox settings
  * @param {string}  [params.chatUUID]  - Override chat UUID
  * @returns {Promise<void>}
  */
@@ -409,7 +409,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     }
 
     if (settings.retrieval_popup_on_start) {
-        toastr.info('Retrieving context from EventBase...', 'VectHarePlus Retrieval');
+        toastr.info('Retrieving context from EventBase...', 'VectFoxPlus Retrieval');
     }
 
     // Extract the user's most recent message for focused keyword extraction.
@@ -478,7 +478,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
             const msg = rawCount > 0
                 ? `EventBase: ${rawCount} event(s) already in context`
                 : 'EventBase: no events matched';
-            toastr.info(msg, 'VectHarePlus Retrieval');
+            toastr.info(msg, 'VectFoxPlus Retrieval');
         }
         setExtensionPrompt(EVENTBASE_PROMPT_TAG, '', settings.position, settings.depth, false);
         return;
@@ -522,7 +522,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     }
 
     if (settings.retrieval_popup_on_result) {
-        toastr.success(`EventBase: injected ${injectedCount} event(s)`, 'VectHarePlus Retrieval');
+        toastr.success(`EventBase: injected ${injectedCount} event(s)`, 'VectFoxPlus Retrieval');
     }
 }
 

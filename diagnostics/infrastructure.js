@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE DIAGNOSTICS - INFRASTRUCTURE
+ * VectFox DIAGNOSTICS - INFRASTRUCTURE
  * ============================================================================
  * Backend, provider, and plugin availability checks
  *
@@ -27,7 +27,7 @@ import {
 /**
  * Helper: Get provider-specific body parameters for Similharity plugin requests
  * This ensures BananaBread and other providers that need special params get them
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {object} Additional body parameters for the request
  */
 function getPluginProviderParams(settings) {
@@ -114,7 +114,7 @@ export async function checkVectorsExtension() {
  * Check: ST Vector API endpoints
  * Tests all /api/vector/* endpoints comprehensively
  * NOTE: Always uses 'transformers' source for this check because native ST
- * endpoints don't recognize custom sources like bananabread. VectHare uses
+ * endpoints don't recognize custom sources like bananabread. VectFox uses
  * the Similharity plugin endpoints for actual operations, not these.
  */
 export async function checkBackendEndpoints(settings) {
@@ -124,11 +124,11 @@ export async function checkBackendEndpoints(settings) {
     const source = 'transformers';
 
     const endpoints = [
-        { name: 'list', method: 'POST', url: '/api/vector/list', body: { collectionId: 'vecthare_diag', source } },
-        { name: 'query', method: 'POST', url: '/api/vector/query', body: { collectionId: 'vecthare_diag', searchText: 'test', topK: 1, source } },
-        { name: 'insert', method: 'POST', url: '/api/vector/insert', body: { collectionId: 'vecthare_diag', items: [], source } },
-        { name: 'delete', method: 'POST', url: '/api/vector/delete', body: { collectionId: 'vecthare_diag', hashes: [], source } },
-        { name: 'purge', method: 'POST', url: '/api/vector/purge', body: { collectionId: 'vecthare_diag_nonexistent' } },
+        { name: 'list', method: 'POST', url: '/api/vector/list', body: { collectionId: 'VectFox_diag', source } },
+        { name: 'query', method: 'POST', url: '/api/vector/query', body: { collectionId: 'VectFox_diag', searchText: 'test', topK: 1, source } },
+        { name: 'insert', method: 'POST', url: '/api/vector/insert', body: { collectionId: 'VectFox_diag', items: [], source } },
+        { name: 'delete', method: 'POST', url: '/api/vector/delete', body: { collectionId: 'VectFox_diag', hashes: [], source } },
+        { name: 'purge', method: 'POST', url: '/api/vector/purge', body: { collectionId: 'VectFox_diag_nonexistent' } },
     ];
 
     for (const endpoint of endpoints) {
@@ -181,7 +181,7 @@ export async function checkBackendEndpoints(settings) {
 }
 
 /**
- * Check: VectHare Server Plugin (similharity)
+ * Check: VectFox Server Plugin (similharity)
  * Provides advanced features: Qdrant, collection browser, full metadata
  */
 export async function checkServerPlugin() {
@@ -193,7 +193,7 @@ export async function checkServerPlugin() {
 
         if (!response.ok) {
             return {
-                name: 'VectHare Plugin',
+                name: 'VectFox Plugin',
                 status: 'warning',
                 message: 'Plugin not installed (optional - enables Qdrant, advanced features)',
                 fixable: false,
@@ -205,7 +205,7 @@ export async function checkServerPlugin() {
 
         if (data.status !== 'ok') {
             return {
-                name: 'VectHare Plugin',
+                name: 'VectFox Plugin',
                 status: 'warning',
                 message: `Plugin unhealthy: ${data.status}`,
                 category: 'infrastructure'
@@ -214,14 +214,14 @@ export async function checkServerPlugin() {
 
         const features = data.features?.join(', ') || 'core';
         return {
-            name: 'VectHare Plugin',
+            name: 'VectFox Plugin',
             status: 'pass',
             message: `v${data.version} - Features: ${features}`,
             category: 'infrastructure'
         };
     } catch (error) {
         return {
-            name: 'VectHare Plugin',
+            name: 'VectFox Plugin',
             status: 'warning',
             message: 'Plugin not available (standard mode only)',
             category: 'infrastructure'
@@ -230,7 +230,7 @@ export async function checkServerPlugin() {
 }
 
 /**
- * Check: VectHare Plugin API Endpoints
+ * Check: VectFox Plugin API Endpoints
  * Tests all plugin-provided endpoints for advanced functionality
  */
 export async function checkPluginEndpoints() {
@@ -267,9 +267,9 @@ export async function checkPluginEndpoints() {
         { name: 'collections', method: 'GET', url: `/api/plugins/similharity/collections` },
         { name: 'sources', method: 'GET', url: '/api/plugins/similharity/sources' },
         { name: 'chunks/list', method: 'POST', url: '/api/plugins/similharity/chunks/list',
-          body: { backend: 'vectra', collectionId: 'vecthare_diag', source: testSource, limit: 1 } },
+          body: { backend: 'vectra', collectionId: 'VectFox_diag', source: testSource, limit: 1 } },
         { name: 'chunks/query', method: 'POST', url: '/api/plugins/similharity/chunks/query',
-          body: { backend: 'vectra', collectionId: 'vecthare_diag', searchText: 'test', topK: 1, source: testSource } },
+          body: { backend: 'vectra', collectionId: 'VectFox_diag', searchText: 'test', topK: 1, source: testSource } },
         { name: 'backend/health', method: 'GET', url: '/api/plugins/similharity/backend/health/vectra' },
     ];
 
@@ -853,7 +853,7 @@ export function checkWebLlmExtension(settings) {
         return {
             name: 'WebLLM Extension',
             status: 'warning',
-            message: 'WebLLM extension is installed but no model is selected. Select a model in VectHare settings.',
+            message: 'WebLLM extension is installed but no model is selected. Select a model in VectFox settings.',
             fixable: false,
             category: 'infrastructure'
         };

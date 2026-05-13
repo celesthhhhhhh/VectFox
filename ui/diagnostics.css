@@ -29,8 +29,8 @@
     justify-content: space-between;
     padding: 12px 16px;
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-primary) 15%, transparent) 0%,
-        color-mix(in srgb, var(--vecthare-primary) 8%, transparent) 100%);
+        color-mix(in srgb, var(--vectfox-primary) 15%, transparent) 0%,
+        color-mix(in srgb, var(--vectfox-primary) 8%, transparent) 100%);
     border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 30%, transparent);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -39,8 +39,8 @@
 
 .diagnostic-category-header:hover {
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-primary) 20%, transparent) 0%,
-        color-mix(in srgb, var(--vecthare-primary) 12%, transparent) 100%);
+        color-mix(in srgb, var(--vectfox-primary) 20%, transparent) 0%,
+        color-mix(in srgb, var(--vectfox-primary) 12%, transparent) 100%);
 }
 
 .diagnostic-category-header[data-collapsed="true"] {
@@ -58,7 +58,7 @@
 }
 
 .diagnostic-category-title i {
-    color: var(--vecthare-primary-bright);
+    color: var(--vectfox-primary-bright);
     font-size: 1.1em;
 }
 
@@ -89,18 +89,18 @@
 }
 
 .diag-cat-stat.pass {
-    background: color-mix(in srgb, var(--vecthare-success) 20%, transparent);
-    color: var(--vecthare-success);
+    background: color-mix(in srgb, var(--vectfox-success) 20%, transparent);
+    color: var(--vectfox-success);
 }
 
 .diag-cat-stat.warning {
-    background: color-mix(in srgb, var(--vecthare-warning) 20%, transparent);
-    color: var(--vecthare-warning);
+    background: color-mix(in srgb, var(--vectfox-warning) 20%, transparent);
+    color: var(--vectfox-warning);
 }
 
 .diag-cat-stat.fail {
-    background: color-mix(in srgb, var(--vecthare-danger) 20%, transparent);
-    color: var(--vecthare-danger);
+    background: color-mix(in srgb, var(--vectfox-danger) 20%, transparent);
+    color: var(--vectfox-danger);
 }
 
 /* Category Content (collapsible) */
@@ -109,7 +109,7 @@
     background: color-mix(in srgb, var(--SmartThemeBlurTintColor) 50%, transparent);
 }
 
-.vecthare-diagnostics {
+.vectfox-diagnostics {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -140,24 +140,24 @@
 }
 
 .diagnostic-item.pass {
-    border-left-color: var(--vecthare-success);
+    border-left-color: var(--vectfox-success);
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-success) 8%, var(--SmartThemeBlurTintColor)) 0%,
-        color-mix(in srgb, var(--vecthare-success) 4%, var(--SmartThemeBlurTintColor)) 100%);
+        color-mix(in srgb, var(--vectfox-success) 8%, var(--SmartThemeBlurTintColor)) 0%,
+        color-mix(in srgb, var(--vectfox-success) 4%, var(--SmartThemeBlurTintColor)) 100%);
 }
 
 .diagnostic-item.warning {
-    border-left-color: var(--vecthare-warning);
+    border-left-color: var(--vectfox-warning);
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-warning) 8%, var(--SmartThemeBlurTintColor)) 0%,
-        color-mix(in srgb, var(--vecthare-warning) 4%, var(--SmartThemeBlurTintColor)) 100%);
+        color-mix(in srgb, var(--vectfox-warning) 8%, var(--SmartThemeBlurTintColor)) 0%,
+        color-mix(in srgb, var(--vectfox-warning) 4%, var(--SmartThemeBlurTintColor)) 100%);
 }
 
 .diagnostic-item.fail {
-    border-left-color: var(--vecthare-danger);
+    border-left-color: var(--vectfox-danger);
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-danger) 8%, var(--SmartThemeBlurTintColor)) 0%,
-        color-mix(in srgb, var(--vecthare-danger) 4%, var(--SmartThemeBlurTintColor)) 100%);
+        color-mix(in srgb, var(--vectfox-danger) 8%, var(--SmartThemeBlurTintColor)) 0%,
+        color-mix(in srgb, var(--vectfox-danger) 4%, var(--SmartThemeBlurTintColor)) 100%);
 }
 
 .diagnostic-item.skipped {
@@ -190,9 +190,9 @@
     align-self: flex-end;
     padding: 8px 16px;
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-primary) 70%, transparent) 0%,
-        color-mix(in srgb, var(--vecthare-primary) 50%, transparent) 100%);
-    border: 1px solid color-mix(in srgb, var(--vecthare-primary) 40%, transparent);
+        color-mix(in srgb, var(--vectfox-primary) 70%, transparent) 0%,
+        color-mix(in srgb, var(--vectfox-primary) 50%, transparent) 100%);
+    border: 1px solid color-mix(in srgb, var(--vectfox-primary) 40%, transparent);
     border-radius: 6px;
     color: var(--SmartThemeBodyColor);
     font-size: 0.85em;
@@ -202,28 +202,28 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--vecthare-primary) 15%, transparent);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--vectfox-primary) 15%, transparent);
 }
 
 .diagnostic-fix-btn:hover {
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-primary) 85%, transparent) 0%,
-        color-mix(in srgb, var(--vecthare-primary) 65%, transparent) 100%);
-    border-color: color-mix(in srgb, var(--vecthare-primary) 60%, transparent);
+        color-mix(in srgb, var(--vectfox-primary) 85%, transparent) 0%,
+        color-mix(in srgb, var(--vectfox-primary) 65%, transparent) 100%);
+    border-color: color-mix(in srgb, var(--vectfox-primary) 60%, transparent);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--vecthare-primary) 25%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--vectfox-primary) 25%, transparent);
 }
 
 .diagnostic-fix-btn:active {
     transform: translateY(0);
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--vecthare-primary) 20%, transparent);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--vectfox-primary) 20%, transparent);
 }
 
 .diagnostic-fix-btn i {
     font-size: 1.1em;
 }
 
-.vecthare-diagnostics-summary {
+.vectfox-diagnostics-summary {
     margin-top: 16px;
     padding: 16px 20px;
     background: color-mix(in srgb, var(--SmartThemeBlurTintColor) 80%, transparent);
@@ -239,37 +239,37 @@
  * DIAGNOSTICS MODAL - REVAMPED
  * ============================================================================ */
 
-.vecthare-diagnostics-modal {
+.vectfox-diagnostics-modal {
     max-width: 650px !important;
 }
 
-.vecthare-diagnostics-phase {
+.vectfox-diagnostics-phase {
     min-height: 200px;
 }
 
-.vecthare-diagnostics-intro {
+.vectfox-diagnostics-intro {
     margin: 0 0 20px 0;
     color: color-mix(in srgb, var(--SmartThemeBodyColor) 80%, transparent);
     font-size: 0.95em;
 }
 
 /* Category Selection Cards */
-.vecthare-diagnostics-categories {
+.vectfox-diagnostics-categories {
     display: flex;
     flex-direction: column;
     gap: 12px;
     margin-bottom: 24px;
 }
 
-.vecthare-diagnostics-category-option {
+.vectfox-diagnostics-category-option {
     cursor: pointer;
 }
 
-.vecthare-diagnostics-category-option input[type="checkbox"] {
+.vectfox-diagnostics-category-option input[type="checkbox"] {
     display: none;
 }
 
-.vecthare-diagnostics-category-card {
+.vectfox-diagnostics-category-card {
     display: flex;
     align-items: center;
     gap: 16px;
@@ -280,41 +280,41 @@
     transition: all 0.2s ease;
 }
 
-.vecthare-diagnostics-category-option input:checked + .vecthare-diagnostics-category-card {
-    border-color: var(--vecthare-primary);
-    background: color-mix(in srgb, var(--vecthare-primary) 10%, var(--SmartThemeBlurTintColor));
-    box-shadow: 0 0 0 1px var(--vecthare-primary);
+.vectfox-diagnostics-category-option input:checked + .vectfox-diagnostics-category-card {
+    border-color: var(--vectfox-primary);
+    background: color-mix(in srgb, var(--vectfox-primary) 10%, var(--SmartThemeBlurTintColor));
+    box-shadow: 0 0 0 1px var(--vectfox-primary);
 }
 
-.vecthare-diagnostics-category-card:hover {
-    border-color: color-mix(in srgb, var(--vecthare-primary) 50%, transparent);
+.vectfox-diagnostics-category-card:hover {
+    border-color: color-mix(in srgb, var(--vectfox-primary) 50%, transparent);
 }
 
-.vecthare-diagnostics-category-card i {
+.vectfox-diagnostics-category-card i {
     font-size: 1.5em;
-    color: var(--vecthare-primary);
+    color: var(--vectfox-primary);
     min-width: 32px;
     text-align: center;
 }
 
-.vecthare-diagnostics-category-info {
+.vectfox-diagnostics-category-info {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.vecthare-diagnostics-category-info strong {
+.vectfox-diagnostics-category-info strong {
     font-size: 1em;
     color: var(--SmartThemeBodyColor);
 }
 
-.vecthare-diagnostics-category-info span {
+.vectfox-diagnostics-category-info span {
     font-size: 0.85em;
     color: color-mix(in srgb, var(--SmartThemeBodyColor) 60%, transparent);
 }
 
 /* Actions row */
-.vecthare-diagnostics-actions {
+.vectfox-diagnostics-actions {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -323,7 +323,7 @@
 }
 
 /* Running spinner */
-.vecthare-diagnostics-spinner {
+.vectfox-diagnostics-spinner {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -333,17 +333,17 @@
     color: color-mix(in srgb, var(--SmartThemeBodyColor) 70%, transparent);
 }
 
-.vecthare-diagnostics-spinner i {
+.vectfox-diagnostics-spinner i {
     font-size: 2.5em;
-    color: var(--vecthare-primary);
+    color: var(--vectfox-primary);
 }
 
-.vecthare-diagnostics-spinner span {
+.vectfox-diagnostics-spinner span {
     font-size: 1.1em;
 }
 
 /* Results Stats Bar (Clickable Filters) */
-.vecthare-diagnostics-stats {
+.vectfox-diagnostics-stats {
     display: flex;
     gap: 12px;
     margin-bottom: 16px;
@@ -352,7 +352,7 @@
     border-radius: 12px;
 }
 
-.vecthare-diag-stat {
+.vectfox-diag-stat {
     flex: 1;
     display: flex;
     align-items: center;
@@ -365,69 +365,69 @@
     border: 2px solid transparent;
 }
 
-.vecthare-diag-stat:hover {
+.vectfox-diag-stat:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px color-mix(in srgb, black 15%, transparent);
 }
 
-.vecthare-diag-stat.pass {
-    border-left: 4px solid var(--vecthare-success);
+.vectfox-diag-stat.pass {
+    border-left: 4px solid var(--vectfox-success);
 }
 
-.vecthare-diag-stat.pass:hover,
-.vecthare-diag-stat.pass.active {
-    background: color-mix(in srgb, var(--vecthare-success) 15%, var(--SmartThemeBlurTintColor));
-    border-color: var(--vecthare-success);
+.vectfox-diag-stat.pass:hover,
+.vectfox-diag-stat.pass.active {
+    background: color-mix(in srgb, var(--vectfox-success) 15%, var(--SmartThemeBlurTintColor));
+    border-color: var(--vectfox-success);
 }
 
-.vecthare-diag-stat.warning {
-    border-left: 4px solid var(--vecthare-warning);
+.vectfox-diag-stat.warning {
+    border-left: 4px solid var(--vectfox-warning);
 }
 
-.vecthare-diag-stat.warning:hover,
-.vecthare-diag-stat.warning.active {
-    background: color-mix(in srgb, var(--vecthare-warning) 15%, var(--SmartThemeBlurTintColor));
-    border-color: var(--vecthare-warning);
+.vectfox-diag-stat.warning:hover,
+.vectfox-diag-stat.warning.active {
+    background: color-mix(in srgb, var(--vectfox-warning) 15%, var(--SmartThemeBlurTintColor));
+    border-color: var(--vectfox-warning);
 }
 
-.vecthare-diag-stat.fail {
-    border-left: 4px solid var(--vecthare-danger);
+.vectfox-diag-stat.fail {
+    border-left: 4px solid var(--vectfox-danger);
 }
 
-.vecthare-diag-stat.fail:hover,
-.vecthare-diag-stat.fail.active {
-    background: color-mix(in srgb, var(--vecthare-danger) 15%, var(--SmartThemeBlurTintColor));
-    border-color: var(--vecthare-danger);
+.vectfox-diag-stat.fail:hover,
+.vectfox-diag-stat.fail.active {
+    background: color-mix(in srgb, var(--vectfox-danger) 15%, var(--SmartThemeBlurTintColor));
+    border-color: var(--vectfox-danger);
 }
 
-.vecthare-diag-stat-count {
+.vectfox-diag-stat-count {
     font-size: 1.5em;
     font-weight: 700;
 }
 
-.vecthare-diag-stat-label {
+.vectfox-diag-stat-label {
     font-size: 0.85em;
     color: color-mix(in srgb, var(--SmartThemeBodyColor) 60%, transparent);
 }
 
 /* Filter Notice Bar */
-.vecthare-diag-filter-notice {
+.vectfox-diag-filter-notice {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 16px;
     margin-bottom: 16px;
-    background: color-mix(in srgb, var(--vecthare-primary) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--vecthare-primary) 30%, transparent);
+    background: color-mix(in srgb, var(--vectfox-primary) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vectfox-primary) 30%, transparent);
     border-radius: 8px;
     font-size: 0.9em;
 }
 
-.vecthare-diag-filter-notice span {
+.vectfox-diag-filter-notice span {
     color: var(--SmartThemeBodyColor);
 }
 
-.vecthare-diag-clear-filter {
+.vectfox-diag-clear-filter {
     padding: 6px 12px;
     background: transparent;
     border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor) 30%, transparent);
@@ -441,7 +441,7 @@
     gap: 6px;
 }
 
-.vecthare-diag-clear-filter:hover {
+.vectfox-diag-clear-filter:hover {
     background: color-mix(in srgb, var(--SmartThemeBodyColor) 10%, transparent);
     border-color: var(--SmartThemeBodyColor);
 }
@@ -466,7 +466,7 @@
 }
 
 /* Results Footer */
-.vecthare-diagnostics-footer {
+.vectfox-diagnostics-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -476,16 +476,16 @@
     border-top: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor) 10%, transparent);
 }
 
-.vecthare-diagnostics-footer .vecthare-btn-primary {
+.vectfox-diagnostics-footer .vectfox-btn-primary {
     margin-left: auto;
 }
 
 /* Danger button for Fix All */
-.vecthare-btn-danger {
+.vectfox-btn-danger {
     padding: 10px 20px;
     border-radius: 8px;
     border: none;
-    background: linear-gradient(135deg, var(--vecthare-danger) 0%, #dc2626 100%);
+    background: linear-gradient(135deg, var(--vectfox-danger) 0%, #dc2626 100%);
     color: white;
     font-weight: 600;
     cursor: pointer;
@@ -495,8 +495,8 @@
     gap: 8px;
 }
 
-.vecthare-btn-danger:hover {
+.vectfox-btn-danger:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--vecthare-danger) 40%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--vectfox-danger) 40%, transparent);
 }
 

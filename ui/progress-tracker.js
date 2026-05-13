@@ -1,11 +1,11 @@
 /**
  * ============================================================================
- * VECTHARE PROGRESS TRACKER
+ * VectFox PROGRESS TRACKER
  * ============================================================================
  * Real-time progress panel for vectorization operations
  * Shows detailed status, progress bars, and live updates
  *
- * @author VectHare
+ * @author VectFox
  * @version 2.2.0-alpha
  * ============================================================================
  */
@@ -13,7 +13,7 @@
 import { extension_settings } from '../../../../extensions.js';
 
 function isDebugVectorizingLogEnabled() {
-    return extension_settings?.vecthareplus?.debug_vectorizing_log === true;
+    return extension_settings?.VectFoxplus?.debug_vectorizing_log === true;
 }
 
 /**
@@ -297,62 +297,62 @@ export class ProgressTracker {
      */
     createPanel() {
         const panelHTML = `
-            <div id="vecthare_progress_panel" class="vecthare-progress-panel">
-                <div class="vecthare-progress-header">
-                    <h3 id="vecthare_progress_title">VectHare Progress</h3>
-                    <div class="vecthare-progress-actions">
-                        <button id="vecthare_progress_stop" class="vecthare-progress-stop" style="display: none;">
+            <div id="VectFox_progress_panel" class="vectfox-progress-panel">
+                <div class="vectfox-progress-header">
+                    <h3 id="VectFox_progress_title">VectFox Progress</h3>
+                    <div class="vectfox-progress-actions">
+                        <button id="VectFox_progress_stop" class="vectfox-progress-stop" style="display: none;">
                             <i class="fa-solid fa-stop"></i> Stop
                         </button>
-                        <button id="vecthare_progress_close" class="vecthare-progress-close">
+                        <button id="VectFox_progress_close" class="vectfox-progress-close">
                             <i class="fa-solid fa-times"></i>
                         </button>
                     </div>
                 </div>
-                <div class="vecthare-progress-body">
+                <div class="vectfox-progress-body">
                     <!-- Main Progress Bar -->
-                    <div class="vecthare-progress-section">
-                        <div class="vecthare-progress-label">
-                            <span id="vecthare_progress_status">Initializing...</span>
-                            <span id="vecthare_progress_percent">0%</span>
+                    <div class="vectfox-progress-section">
+                        <div class="vectfox-progress-label">
+                            <span id="VectFox_progress_status">Initializing...</span>
+                            <span id="VectFox_progress_percent">0%</span>
                         </div>
-                        <div class="vecthare-progress-bar-container">
-                            <div id="vecthare_progress_bar" class="vecthare-progress-bar" style="width: 0%"></div>
+                        <div class="vectfox-progress-bar-container">
+                            <div id="VectFox_progress_bar" class="vectfox-progress-bar" style="width: 0%"></div>
                         </div>
                     </div>
 
                     <!-- Current Item Progress -->
-                    <div id="vecthare_progress_current" class="vecthare-progress-current" style="display: none;">
-                        <span id="vecthare_progress_current_text">Processing...</span>
+                    <div id="VectFox_progress_current" class="vectfox-progress-current" style="display: none;">
+                        <span id="VectFox_progress_current_text">Processing...</span>
                     </div>
 
                     <!-- Stats Grid -->
-                    <div class="vecthare-progress-stats">
-                        <div class="vecthare-progress-stat">
-                            <div id="vecthare_progress_stat_label" class="vecthare-progress-stat-label">Progress</div>
-                            <div id="vecthare_progress_processed" class="vecthare-progress-stat-value">0 / 0</div>
+                    <div class="vectfox-progress-stats">
+                        <div class="vectfox-progress-stat">
+                            <div id="VectFox_progress_stat_label" class="vectfox-progress-stat-label">Progress</div>
+                            <div id="VectFox_progress_processed" class="vectfox-progress-stat-value">0 / 0</div>
                         </div>
-                        <div class="vecthare-progress-stat">
-                            <div class="vecthare-progress-stat-label">Chunks</div>
-                            <div id="vecthare_progress_chunks" class="vecthare-progress-stat-value">0</div>
+                        <div class="vectfox-progress-stat">
+                            <div class="vectfox-progress-stat-label">Chunks</div>
+                            <div id="VectFox_progress_chunks" class="vectfox-progress-stat-value">0</div>
                         </div>
-                        <div class="vecthare-progress-stat">
-                            <div class="vecthare-progress-stat-label">Time</div>
-                            <div id="vecthare_progress_time" class="vecthare-progress-stat-value">0.0s</div>
+                        <div class="vectfox-progress-stat">
+                            <div class="vectfox-progress-stat-label">Time</div>
+                            <div id="VectFox_progress_time" class="vectfox-progress-stat-value">0.0s</div>
                         </div>
-                        <div class="vecthare-progress-stat">
-                            <div class="vecthare-progress-stat-label">Speed</div>
-                            <div id="vecthare_progress_speed" class="vecthare-progress-stat-value">0/s</div>
+                        <div class="vectfox-progress-stat">
+                            <div class="vectfox-progress-stat-label">Speed</div>
+                            <div id="VectFox_progress_speed" class="vectfox-progress-stat-value">0/s</div>
                         </div>
                     </div>
 
                     <!-- Errors (hidden by default) -->
-                    <div id="vecthare_progress_errors" class="vecthare-progress-errors" style="display: none;">
-                        <div class="vecthare-progress-errors-header">
+                    <div id="VectFox_progress_errors" class="vectfox-progress-errors" style="display: none;">
+                        <div class="vectfox-progress-errors-header">
                             <i class="fa-solid fa-exclamation-triangle"></i>
                             <span>Errors</span>
                         </div>
-                        <div id="vecthare_progress_errors_list" class="vecthare-progress-errors-list"></div>
+                        <div id="VectFox_progress_errors_list" class="vectfox-progress-errors-list"></div>
                     </div>
                 </div>
             </div>
@@ -363,25 +363,25 @@ export class ProgressTracker {
         container.innerHTML = panelHTML;
         document.body.appendChild(container.firstElementChild);
 
-        this.panel = document.getElementById('vecthare_progress_panel');
+        this.panel = document.getElementById('VectFox_progress_panel');
 
         // PERF: Cache all DOM element references to avoid repeated getElementById calls
         this.elements = {
-            title: document.getElementById('vecthare_progress_title'),
-            status: document.getElementById('vecthare_progress_status'),
-            percent: document.getElementById('vecthare_progress_percent'),
-            bar: document.getElementById('vecthare_progress_bar'),
-            processed: document.getElementById('vecthare_progress_processed'),
-            chunks: document.getElementById('vecthare_progress_chunks'),
-            time: document.getElementById('vecthare_progress_time'),
-            speed: document.getElementById('vecthare_progress_speed'),
-            current: document.getElementById('vecthare_progress_current'),
-            currentText: document.getElementById('vecthare_progress_current_text'),
-            statLabel: document.getElementById('vecthare_progress_stat_label'),
-            errors: document.getElementById('vecthare_progress_errors'),
-            errorsList: document.getElementById('vecthare_progress_errors_list'),
-            stopBtn: document.getElementById('vecthare_progress_stop'),
-            closeBtn: document.getElementById('vecthare_progress_close'),
+            title: document.getElementById('VectFox_progress_title'),
+            status: document.getElementById('VectFox_progress_status'),
+            percent: document.getElementById('VectFox_progress_percent'),
+            bar: document.getElementById('VectFox_progress_bar'),
+            processed: document.getElementById('VectFox_progress_processed'),
+            chunks: document.getElementById('VectFox_progress_chunks'),
+            time: document.getElementById('VectFox_progress_time'),
+            speed: document.getElementById('VectFox_progress_speed'),
+            current: document.getElementById('VectFox_progress_current'),
+            currentText: document.getElementById('VectFox_progress_current_text'),
+            statLabel: document.getElementById('VectFox_progress_stat_label'),
+            errors: document.getElementById('VectFox_progress_errors'),
+            errorsList: document.getElementById('VectFox_progress_errors_list'),
+            stopBtn: document.getElementById('VectFox_progress_stop'),
+            closeBtn: document.getElementById('VectFox_progress_close'),
         };
 
         if (this.elements.stopBtn) {
@@ -420,7 +420,7 @@ export class ProgressTracker {
         const els = this.elements;
 
         // Update title
-        if (els.title) els.title.textContent = this.currentOperation || 'VectHare Progress';
+        if (els.title) els.title.textContent = this.currentOperation || 'VectFox Progress';
 
         // Update status
         const status = statusOverride || this.generateStatusMessage();
@@ -510,7 +510,7 @@ export class ProgressTracker {
         const errorsList = this.elements?.errorsList;
         if (errorsList) {
             errorsList.innerHTML = this.stats.errors
-                .map(err => `<div class="vecthare-progress-error-item">${err.message}</div>`)
+                .map(err => `<div class="vectfox-progress-error-item">${err.message}</div>`)
                 .join('');
         }
     }

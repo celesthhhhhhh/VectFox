@@ -23,10 +23,10 @@ const KNOWN_BACKENDS = ['standard', 'vectra', 'qdrant'];
  * Find the storage backend a collection lives in.
  *
  * Tries, in order:
- *   1. Registry-key prefix:  "qdrant:vecthare_..."  → "qdrant"
+ *   1. Registry-key prefix:  "qdrant:VectFox_..."  → "qdrant"
  *   2. Embedded backend tag in new-style names — collection IDs built via
  *      collection-ids.js include the backend as the first segment after the
- *      type prefix, e.g. "vecthare_eventbase_standard_..." → "standard".
+ *      type prefix, e.g. "VectFox_eventbase_standard_..." → "standard".
  *   3. null (caller falls back to user's active backend).
  *
  * This matters because the DB Browser searches across mixed-backend collections.
@@ -36,11 +36,11 @@ function resolveCollectionBackend(collectionId) {
     if (fromRegistry) return fromRegistry;
 
     const TYPE_PREFIXES = [
-        COLLECTION_PREFIXES.VECTHARE_EVENTBASE,
-        COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT,
-        COLLECTION_PREFIXES.VECTHARE_LOREBOOK,
-        COLLECTION_PREFIXES.VECTHARE_CHARACTER,
-        COLLECTION_PREFIXES.VECTHARE_DOCUMENT,
+        COLLECTION_PREFIXES.VectFox_EVENTBASE,
+        COLLECTION_PREFIXES.VectFox_ARCHIVE_EVENT,
+        COLLECTION_PREFIXES.VectFox_LOREBOOK,
+        COLLECTION_PREFIXES.VectFox_CHARACTER,
+        COLLECTION_PREFIXES.VectFox_DOCUMENT,
     ];
     for (const prefix of TYPE_PREFIXES) {
         if (collectionId.startsWith(prefix)) {
@@ -61,7 +61,7 @@ export const DEFAULT_RRF_K = 60;
  * @param {string} collectionId - Collection to search
  * @param {string} searchText - Query text
  * @param {number} topK - Number of results to return
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @param {object} options - Hybrid search options
  * @returns {Promise<{hashes: number[], metadata: object[]}>}
  */
@@ -126,7 +126,7 @@ export async function hybridSearch(collectionId, searchText, topK, settings, opt
  * @param {string} collectionId - Collection to search
  * @param {string} searchText - Query text
  * @param {number} topK - Number of results to return
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @param {object} options - Fusion options
  * @returns {Promise<{hashes: number[], metadata: object[]}>}
  */

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE COLLECTION ID UTILITIES
+ * VECTFOX COLLECTION ID UTILITIES
  * ============================================================================
  * Single source of truth for all collection ID operations:
  * - Building/generating collection IDs
@@ -18,17 +18,32 @@ import { getCurrentChatId, chat_metadata } from '../../../../../script.js';
 // CONSTANTS
 // ============================================================================
 
-/** Prefix for new VectHare format (not currently used for chats, but available) */
+/** Prefix for new VectFox format (not currently used for writes, but readers accept it) */
+export const VF_PREFIX = 'vf';
+
+/** Legacy prefix for backward compatibility - kept indefinitely for reading stored data */
 export const VH_PREFIX = 'vh';
 
 /** Internal system collection IDs that must never participate in retrieval */
 export const INTERNAL_COLLECTION_IDS = Object.freeze([
-    '__vecthare_health_check__',
+    '__vectfox_health_check__',
 ]);
 
-/** All known collection prefixes for backwards compatibility */
+/** All known collection prefixes for backwards compatibility.
+ * NOTE: `vecthare_*` storage prefixes are kept verbatim for on-disk compatibility
+ * with existing user data. Readers support both old and new formats.
+ * See plans/vectfox-rename-plan.md §1.5.
+ */
 export const COLLECTION_PREFIXES = {
-    // VectHare formats
+    // New VectFox formats (used for new collections)
+    VECTFOX_CHAT: 'vf_chat_',
+    VECTFOX_LOREBOOK: 'vf_lorebook_',
+    VECTFOX_CHARACTER: 'vf_character_',
+    VECTFOX_DOCUMENT: 'vf_document_',
+    VECTFOX_ARCHIVE_EVENT: 'vf_archiveevent_',
+    VECTFOX_EVENTBASE: 'vf_eventbase_',
+
+    // Legacy VectHare formats (kept for backward read compatibility)
     VECTHARE_CHAT: 'vecthare_chat_',
     VECTHARE_LOREBOOK: 'vecthare_lorebook_',
     VECTHARE_CHARACTER: 'vecthare_character_',
@@ -107,7 +122,7 @@ export function getChatUUID() {
     // Fallback: use chatId (less ideal but works for old chats)
     const chatId = getCurrentChatId();
     if (chatId) {
-        console.warn('VectHare: chat_metadata.integrity not found, falling back to chatId');
+        console.warn('VectFox: chat_metadata.integrity not found, falling back to chatId');
         return chatId;
     }
     return null;
@@ -206,9 +221,9 @@ function _currentHandleId() {
 
 /**
  * Builds a lorebook collection ID following the unified protocol:
- *   vecthare_lorebook_<backend>_<handle>_<name>_<timestamp>
+ *   vf_lorebook_<backend>_<handle>_<name>_<timestamp>
  * Backend is optional but recommended; without it the format drops the backend segment:
- *   vecthare_lorebook_<handle>_<name>_<timestamp>
+ *   vf_lorebook_<handle>_<name>_<timestamp>
  *
  * @param {string} lorebookName Lorebook name
  * @param {string} [backend]    Vector backend (e.g. 'qdrant', 'standard')
@@ -221,14 +236,14 @@ export function buildLorebookCollectionId(lorebookName, backend, timestamp) {
     const normalizedBackend = normalizeBackendForId(backend);
     const ts = timestamp || Date.now();
     if (normalizedBackend) {
-        return `${COLLECTION_PREFIXES.VECTHARE_LOREBOOK}${normalizedBackend}_${handle}_${sanitizedName}_${ts}`;
+        return `${COLLECTION_PREFIXES.VECTFOX_LOREBOOK}${normalizedBackend}_${handle}_${sanitizedName}_${ts}`;
     }
-    return `${COLLECTION_PREFIXES.VECTHARE_LOREBOOK}${handle}_${sanitizedName}_${ts}`;
+    return `${COLLECTION_PREFIXES.VECTFOX_LOREBOOK}${handle}_${sanitizedName}_${ts}`;
 }
 
 /**
  * Builds a character collection ID following the unified protocol:
- *   vecthare_character_<backend>_<handle>_<name>_<timestamp>
+ *   vf_character_<backend>_<handle>_<name>_<timestamp>
  *
  * @param {string} characterName Character name
  * @param {string} [backend]     Vector backend
@@ -241,14 +256,14 @@ export function buildCharacterCollectionId(characterName, backend, timestamp) {
     const normalizedBackend = normalizeBackendForId(backend);
     const ts = timestamp || Date.now();
     if (normalizedBackend) {
-        return `${COLLECTION_PREFIXES.VECTHARE_CHARACTER}${normalizedBackend}_${handle}_${sanitizedName}_${ts}`;
+        return `${COLLECTION_PREFIXES.VECTFOX_CHARACTER}${normalizedBackend}_${handle}_${sanitizedName}_${ts}`;
     }
-    return `${COLLECTION_PREFIXES.VECTHARE_CHARACTER}${handle}_${sanitizedName}_${ts}`;
+    return `${COLLECTION_PREFIXES.VECTFOX_CHARACTER}${handle}_${sanitizedName}_${ts}`;
 }
 
 /**
  * Builds a document collection ID following the unified protocol:
- *   vecthare_document_<backend>_<handle>_<name>_<timestamp>
+ *   vf_document_<backend>_<handle>_<name>_<timestamp>
  *
  * @param {string} documentName Document name
  * @param {string} [backend]    Vector backend
@@ -261,15 +276,15 @@ export function buildDocumentCollectionId(documentName, backend, timestamp) {
     const normalizedBackend = normalizeBackendForId(backend);
     const ts = timestamp || Date.now();
     if (normalizedBackend) {
-        return `${COLLECTION_PREFIXES.VECTHARE_DOCUMENT}${normalizedBackend}_${handle}_${sanitizedName}_${ts}`;
+        return `${COLLECTION_PREFIXES.VECTFOX_DOCUMENT}${normalizedBackend}_${handle}_${sanitizedName}_${ts}`;
     }
-    return `${COLLECTION_PREFIXES.VECTHARE_DOCUMENT}${handle}_${sanitizedName}_${ts}`;
+    return `${COLLECTION_PREFIXES.VECTFOX_DOCUMENT}${handle}_${sanitizedName}_${ts}`;
 }
 
 /**
  * Builds an EventBase collection ID for the given chat.
- * New format (backend-aware): vecthare_eventbase_{backend}_{handleId}_{charName}_{chatUUID}
- * Legacy format (no backend):  vecthare_eventbase_{handleId}_{charName}_{chatUUID}
+ * New format (backend-aware): vf_eventbase_{backend}_{handleId}_{charName}_{chatUUID}
+ * Legacy format (no backend):  vf_eventbase_{handleId}_{charName}_{chatUUID}
  * Kept in collection-ids.js as the single source of truth for IDs.
  * @param {string} [chatUUID] Optional UUID override
  * @param {string} [backend] Optional backend name; when omitted, returns legacy format
@@ -296,15 +311,15 @@ export function buildEventBaseCollectionId(chatUUID, backend) {
 
     const normalizedBackend = normalizeBackendForId(backend);
     if (normalizedBackend) {
-        return `${COLLECTION_PREFIXES.VECTHARE_EVENTBASE}${normalizedBackend}_${sanitizedHandle}_${sanitizedChar}_${uuid}`;
+        return `${COLLECTION_PREFIXES.VECTFOX_EVENTBASE}${normalizedBackend}_${sanitizedHandle}_${sanitizedChar}_${uuid}`;
     }
 
-    return `${COLLECTION_PREFIXES.VECTHARE_EVENTBASE}${sanitizedHandle}_${sanitizedChar}_${uuid}`;
+    return `${COLLECTION_PREFIXES.VECTFOX_EVENTBASE}${sanitizedHandle}_${sanitizedChar}_${uuid}`;
 }
 
 /**
  * Builds a collection ID for an archived chat's EventBase events.
- * Format: vecthare_archiveevent_{backend}_{handle}_{filenameCharName}_{archiveUUID}
+ * Format: vf_archiveevent_{backend}_{handle}_{filenameCharName}_{archiveUUID}
  *
  * The ID is independent of the current chat's UUID — same archive uploaded from
  * any ST chat produces the same ID, enabling fingerprint-cache dedup across re-uploads.
@@ -335,9 +350,9 @@ export function buildArchiveEventCollectionId({ filenameCharName, archiveUUID, b
 
     const normalizedBackend = normalizeBackendForId(backend);
     if (normalizedBackend) {
-        return `${COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT}${normalizedBackend}_${sanitizedHandle}_${sanitizedChar}_${archiveUUID}`;
+        return `${COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT}${normalizedBackend}_${sanitizedHandle}_${sanitizedChar}_${archiveUUID}`;
     }
-    return `${COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT}${sanitizedHandle}_${sanitizedChar}_${archiveUUID}`;
+    return `${COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT}${sanitizedHandle}_${sanitizedChar}_${archiveUUID}`;
 }
 
 /**
@@ -385,7 +400,67 @@ export function parseCollectionId(collectionId) {
         }
     }
 
-    // VectHare chat format: vecthare_chat_*
+    // VectFox chat format: vf_chat_*
+    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_CHAT)) {
+        return {
+            type: COLLECTION_TYPES.CHAT,
+            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTFOX_CHAT, ''),
+            scope: COLLECTION_SCOPES.CHAT,
+            format: 'vectfox',
+        };
+    }
+
+    // VectFox lorebook format: vf_lorebook_*
+    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_LOREBOOK)) {
+        return {
+            type: COLLECTION_TYPES.LOREBOOK,
+            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTFOX_LOREBOOK, ''),
+            scope: COLLECTION_SCOPES.GLOBAL,
+            format: 'vectfox',
+        };
+    }
+
+    // VectFox character format: vf_character_*
+    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_CHARACTER)) {
+        return {
+            type: COLLECTION_TYPES.CHARACTER,
+            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTFOX_CHARACTER, ''),
+            scope: COLLECTION_SCOPES.CHARACTER,
+            format: 'vectfox',
+        };
+    }
+
+    // VectFox document format: vf_document_*
+    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_DOCUMENT)) {
+        return {
+            type: COLLECTION_TYPES.DOCUMENT,
+            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTFOX_DOCUMENT, ''),
+            scope: COLLECTION_SCOPES.GLOBAL,
+            format: 'vectfox',
+        };
+    }
+
+    // VectFox eventbase format: vf_eventbase_*
+    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE)) {
+        return {
+            type: COLLECTION_TYPES.CHAT,
+            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTFOX_EVENTBASE, ''),
+            scope: COLLECTION_SCOPES.CHAT,
+            format: 'vectfox',
+        };
+    }
+
+    // VectFox archive event format: vf_archiveevent_*
+    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT)) {
+        return {
+            type: COLLECTION_TYPES.ARCHIVE_EVENT,
+            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT, ''),
+            scope: COLLECTION_SCOPES.GLOBAL,
+            format: 'vectfox',
+        };
+    }
+
+    // Legacy VectHare chat format: vecthare_chat_*
     if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_CHAT)) {
         return {
             type: COLLECTION_TYPES.CHAT,
@@ -395,7 +470,7 @@ export function parseCollectionId(collectionId) {
         };
     }
 
-    // VectHare lorebook format: vecthare_lorebook_*
+    // Legacy VectHare lorebook format: vecthare_lorebook_*
     if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_LOREBOOK)) {
         return {
             type: COLLECTION_TYPES.LOREBOOK,
@@ -405,7 +480,7 @@ export function parseCollectionId(collectionId) {
         };
     }
 
-    // VectHare character format: vecthare_character_*
+    // Legacy VectHare character format: vecthare_character_*
     if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_CHARACTER)) {
         return {
             type: COLLECTION_TYPES.CHARACTER,
@@ -415,7 +490,7 @@ export function parseCollectionId(collectionId) {
         };
     }
 
-    // VectHare document format: vecthare_document_*
+    // Legacy VectHare document format: vecthare_document_*
     if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_DOCUMENT)) {
         return {
             type: COLLECTION_TYPES.DOCUMENT,
@@ -425,7 +500,17 @@ export function parseCollectionId(collectionId) {
         };
     }
 
-    // VectHare archive event format: vecthare_archiveevent_*
+    // Legacy VectHare eventbase format: vecthare_eventbase_*
+    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE)) {
+        return {
+            type: COLLECTION_TYPES.CHAT,
+            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTHARE_EVENTBASE, ''),
+            scope: COLLECTION_SCOPES.CHAT,
+            format: 'vecthare',
+        };
+    }
+
+    // Legacy VectHare archive event format: vecthare_archiveevent_*
     if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT)) {
         return {
             type: COLLECTION_TYPES.ARCHIVE_EVENT,

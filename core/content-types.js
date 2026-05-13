@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE CONTENT TYPES REGISTRY
+ * VectFox CONTENT TYPES REGISTRY
  * ============================================================================
  * Unified system for handling different content types with type-appropriate
  * features while sharing the same pipeline infrastructure.

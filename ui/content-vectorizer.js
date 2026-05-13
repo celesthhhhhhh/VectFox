@@ -92,9 +92,9 @@ export function openContentVectorizer(initialType = null) {
     // Only show subsequent sections if type is pre-selected
     if (currentContentType) {
         updateUIForContentType();
-        $('.vecthare-cv-subsequent').show();
+        $('.vectfox-cv-subsequent').show();
     } else {
-        $('.vecthare-cv-subsequent').hide();
+        $('.vectfox-cv-subsequent').hide();
     }
 
     // Stop mousedown propagation (ST closes drawers on mousedown/touchstart)
@@ -124,25 +124,25 @@ function createModal() {
     const contentTypes = getAllContentTypes(); // All types including chat
 
     const html = `
-        <div id="vecthare_content_vectorizer_modal" class="vecthare-modal">
-            <div class="vecthare-modal-overlay"></div>
-            <div class="vecthare-modal-content vecthare-content-vectorizer">
-                <div class="vecthare-modal-header">
+        <div id="vecthare_content_vectorizer_modal" class="vectfox-modal">
+            <div class="vectfox-modal-overlay"></div>
+            <div class="vectfox-modal-content vectfox-content-vectorizer">
+                <div class="vectfox-modal-header">
                     <h3>
                         <i class="fa-solid fa-database"></i>
                         Vectorize Content
                     </h3>
-                    <button class="vecthare-modal-close" id="vecthare_cv_close">
+                    <button class="vectfox-modal-close" id="vecthare_cv_close">
                         <i class="fa-solid fa-times"></i>
                     </button>
                 </div>
 
-                <div class="vecthare-cv-body">
+                <div class="vectfox-cv-body">
                     <!-- Step 1: Content Type Selection - BIG DROPDOWN -->
-                    <div class="vecthare-cv-section vecthare-cv-type-section">
-                        <div class="vecthare-cv-type-dropdown-wrapper">
-                            <label class="vecthare-cv-main-label">What do you want to vectorize?</label>
-                            <select id="vecthare_cv_type_select" class="vecthare-cv-type-dropdown">
+                    <div class="vectfox-cv-section vectfox-cv-type-section">
+                        <div class="vectfox-cv-type-dropdown-wrapper">
+                            <label class="vectfox-cv-main-label">What do you want to vectorize?</label>
+                            <select id="vecthare_cv_type_select" class="vectfox-cv-type-dropdown">
                                 <option value="">-- Choose content type --</option>
                                 ${contentTypes.map(type => `
                                     <option value="${type.id}" ${type.id === currentContentType ? 'selected' : ''}>
@@ -150,91 +150,91 @@ function createModal() {
                                     </option>
                                 `).join('')}
                             </select>
-                            <span class="vecthare-cv-type-hint" id="vecthare_cv_type_hint">
+                            <span class="vectfox-cv-type-hint" id="vecthare_cv_type_hint">
                                 Select a content type to continue
                             </span>
                         </div>
                     </div>
 
                     <!-- Step 1: Backfill Range (chat only) -->
-                    <div class="vecthare-cv-section vecthare-cv-startfrom-section vecthare-cv-subsequent" id="vecthare_cv_startfrom_section" style="display:none;">
-                        <div class="vecthare-cv-section-header">
-                            <span class="vecthare-cv-step-number">1</span>
-                            <span class="vecthare-cv-section-title">Backfill Range</span>
+                    <div class="vectfox-cv-section vectfox-cv-startfrom-section vectfox-cv-subsequent" id="vecthare_cv_startfrom_section" style="display:none;">
+                        <div class="vectfox-cv-section-header">
+                            <span class="vectfox-cv-step-number">1</span>
+                            <span class="vectfox-cv-section-title">Backfill Range</span>
                         </div>
-                        <div class="vecthare-cv-section-body">
-                            <div class="vecthare-cv-startfrom-row">
+                        <div class="vectfox-cv-section-body">
+                            <div class="vectfox-cv-startfrom-row">
                                 <label for="vecthare_cv_startfrom">Start From Message</label>
-                                <input type="number" id="vecthare_cv_startfrom" class="vecthare-input" min="1" step="1" value="1" style="width:100px;">
+                                <input type="number" id="vecthare_cv_startfrom" class="vectfox-input" min="1" step="1" value="1" style="width:100px;">
                             </div>
-                            <span class="vecthare-cv-type-hint">Default 1 = entire chat. Enter e.g. 2000 to start from message 2000 onward.</span>
+                            <span class="vectfox-cv-type-hint">Default 1 = entire chat. Enter e.g. 2000 to start from message 2000 onward.</span>
                         </div>
                     </div>
 
                     <!-- Step 2: Source Selection (changes based on type) -->
-                    <div class="vecthare-cv-section vecthare-cv-source-section vecthare-cv-subsequent">
-                        <div class="vecthare-cv-section-header">
-                            <span class="vecthare-cv-step-number">2</span>
-                            <span class="vecthare-cv-section-title" id="vecthare_cv_source_title">Select Source</span>
+                    <div class="vectfox-cv-section vectfox-cv-source-section vectfox-cv-subsequent">
+                        <div class="vectfox-cv-section-header">
+                            <span class="vectfox-cv-step-number">2</span>
+                            <span class="vectfox-cv-section-title" id="vecthare_cv_source_title">Select Source</span>
                         </div>
-                        <div id="vecthare_cv_source_content" class="vecthare-cv-section-body">
+                        <div id="vecthare_cv_source_content" class="vectfox-cv-section-body">
                             <!-- Dynamically populated based on content type -->
                         </div>
                     </div>
 
                     <!-- Step 3: Chunking Settings -->
-                    <div class="vecthare-cv-section vecthare-cv-chunking-section vecthare-cv-subsequent">
-                        <div class="vecthare-cv-section-header">
-                            <span class="vecthare-cv-step-number">3</span>
-                            <span class="vecthare-cv-section-title">Chunking Strategy</span>
-                            <button class="vecthare-cv-collapse-btn" data-target="chunking">
+                    <div class="vectfox-cv-section vectfox-cv-chunking-section vectfox-cv-subsequent">
+                        <div class="vectfox-cv-section-header">
+                            <span class="vectfox-cv-step-number">3</span>
+                            <span class="vectfox-cv-section-title">Chunking Strategy</span>
+                            <button class="vectfox-cv-collapse-btn" data-target="chunking">
                                 <i class="fa-solid fa-chevron-down"></i>
                             </button>
                         </div>
-                        <div class="vecthare-cv-collapsible" id="vecthare_cv_chunking_content">
-                            <div class="vecthare-cv-strategy-select" id="vecthare_cv_strategy_select_wrapper">
+                        <div class="vectfox-cv-collapsible" id="vecthare_cv_chunking_content">
+                            <div class="vectfox-cv-strategy-select" id="vecthare_cv_strategy_select_wrapper">
                                 <label>Strategy</label>
-                                <select id="vecthare_cv_strategy" class="vecthare-select">
+                                <select id="vecthare_cv_strategy" class="vectfox-select">
                                     <!-- Populated dynamically -->
                                 </select>
-                                <span class="vecthare-cv-strategy-desc" id="vecthare_cv_strategy_desc"></span>
+                                <span class="vectfox-cv-strategy-desc" id="vecthare_cv_strategy_desc"></span>
                             </div>
 
                             <!-- Size/Overlap controls - only shown for text-based strategies -->
-                            <div class="vecthare-cv-size-controls" id="vecthare_cv_size_controls">
-                                <div class="vecthare-cv-slider-row" id="vecthare_cv_chunk_size_row">
+                            <div class="vectfox-cv-size-controls" id="vecthare_cv_size_controls">
+                                <div class="vectfox-cv-slider-row" id="vecthare_cv_chunk_size_row">
                                     <label>
                                         Chunk Size
-                                        <span class="vecthare-cv-value" id="vecthare_cv_chunk_size_val">400</span> chars
+                                        <span class="vectfox-cv-value" id="vecthare_cv_chunk_size_val">400</span> chars
                                     </label>
                                     <input type="range" id="vecthare_cv_chunk_size"
                                            min="100" max="1000" step="50" value="400">
-                                    <div class="vecthare-cv-slider-hints">
+                                    <div class="vectfox-cv-slider-hints">
                                         <span>Precise</span>
                                         <span>Contextual</span>
                                     </div>
                                 </div>
-                                <div class="vecthare-cv-slider-row" id="vecthare_cv_overlap_row">
+                                <div class="vectfox-cv-slider-row" id="vecthare_cv_overlap_row">
                                     <label>
                                         Chunk Overlap
-                                        <span class="vecthare-cv-value" id="vecthare_cv_overlap_val">50</span> chars
+                                        <span class="vectfox-cv-value" id="vecthare_cv_overlap_val">50</span> chars
                                     </label>
                                     <input type="range" id="vecthare_cv_overlap"
                                            min="0" max="200" step="10" value="50">
-                                    <div class="vecthare-cv-slider-hints">
+                                    <div class="vectfox-cv-slider-hints">
                                         <span>Off</span>
                                         <span>High</span>
                                     </div>
                                 </div>
                                 <!-- Batch size - only shown for message_batch strategy -->
-                                <div class="vecthare-cv-slider-row" id="vecthare_cv_batch_size_row" style="display:none;">
+                                <div class="vectfox-cv-slider-row" id="vecthare_cv_batch_size_row" style="display:none;">
                                     <label>
                                         Messages per Batch
-                                        <span class="vecthare-cv-value" id="vecthare_cv_batch_size_val">4</span>
+                                        <span class="vectfox-cv-value" id="vecthare_cv_batch_size_val">4</span>
                                     </label>
                                     <input type="range" id="vecthare_cv_batch_size"
                                            min="1" max="20" step="1" value="4">
-                                    <div class="vecthare-cv-slider-hints">
+                                    <div class="vectfox-cv-slider-hints">
                                         <span>1 msg</span>
                                         <span>20 msgs</span>
                                     </div>
@@ -242,14 +242,14 @@ function createModal() {
                             </div>
 
                             <!-- Parallel Windows - EventBase/chat only -->
-                            <div class="vecthare-cv-slider-row" id="vecthare_cv_parallel_row" style="display:none;">
+                            <div class="vectfox-cv-slider-row" id="vecthare_cv_parallel_row" style="display:none;">
                                 <label>
                                     Parallel Windows
-                                    <span class="vecthare-cv-value" id="vecthare_cv_parallel_val">3</span>
+                                    <span class="vectfox-cv-value" id="vecthare_cv_parallel_val">3</span>
                                 </label>
                                 <input type="range" id="vecthare_cv_parallel_windows"
                                        min="1" max="8" step="1" value="3">
-                                <div class="vecthare-cv-slider-hints">
+                                <div class="vectfox-cv-slider-hints">
                                     <span>1 (safe)</span>
                                     <span>8 (fast)</span>
                                 </div>
@@ -258,40 +258,40 @@ function createModal() {
                     </div>
 
                     <!-- Step 4: Type-Specific Options -->
-                    <div class="vecthare-cv-section vecthare-cv-options-section vecthare-cv-subsequent">
-                        <div class="vecthare-cv-section-header">
-                            <span class="vecthare-cv-step-number">4</span>
-                            <span class="vecthare-cv-section-title">Options</span>
-                            <button class="vecthare-cv-collapse-btn" data-target="options">
+                    <div class="vectfox-cv-section vectfox-cv-options-section vectfox-cv-subsequent">
+                        <div class="vectfox-cv-section-header">
+                            <span class="vectfox-cv-step-number">4</span>
+                            <span class="vectfox-cv-section-title">Options</span>
+                            <button class="vectfox-cv-collapse-btn" data-target="options">
                                 <i class="fa-solid fa-chevron-down"></i>
                             </button>
                         </div>
-                        <div class="vecthare-cv-collapsible" id="vecthare_cv_options_content">
+                        <div class="vectfox-cv-collapsible" id="vecthare_cv_options_content">
                             <!-- Dynamically populated based on content type -->
                         </div>
                     </div>
 
                     <!-- Preview Section -->
-                    <div class="vecthare-cv-section vecthare-cv-preview-section" style="display: none;">
-                        <div class="vecthare-cv-section-header">
-                            <span class="vecthare-cv-step-number"><i class="fa-solid fa-eye"></i></span>
-                            <span class="vecthare-cv-section-title">Preview</span>
+                    <div class="vectfox-cv-section vectfox-cv-preview-section" style="display: none;">
+                        <div class="vectfox-cv-section-header">
+                            <span class="vectfox-cv-step-number"><i class="fa-solid fa-eye"></i></span>
+                            <span class="vectfox-cv-section-title">Preview</span>
                         </div>
-                        <div id="vecthare_cv_preview_content" class="vecthare-cv-preview">
+                        <div id="vecthare_cv_preview_content" class="vectfox-cv-preview">
                             <!-- Preview of chunks will appear here -->
                         </div>
                     </div>
                 </div>
 
-                <div class="vecthare-cv-footer">
-                    <button class="vecthare-btn-secondary" id="vecthare_cv_cancel">Cancel</button>
-                    <button class="vecthare-btn-secondary" id="vecthare_cv_preview_btn">
+                <div class="vectfox-cv-footer">
+                    <button class="vectfox-btn-secondary" id="vecthare_cv_cancel">Cancel</button>
+                    <button class="vectfox-btn-secondary" id="vecthare_cv_preview_btn">
                         <i class="fa-solid fa-eye"></i> Preview Chunks
                     </button>
-                    <button class="vecthare-btn-secondary" id="vecthare_cv_continue" style="display: none;">
+                    <button class="vectfox-btn-secondary" id="vecthare_cv_continue" style="display: none;">
                         <i class="fa-solid fa-forward"></i> Continue
                     </button>
-                    <button class="vecthare-btn-primary" id="vecthare_cv_vectorize">
+                    <button class="vectfox-btn-primary" id="vecthare_cv_vectorize">
                         <i class="fa-solid fa-bolt"></i> Vectorize
                     </button>
                 </div>
@@ -376,23 +376,23 @@ function renderUrlSource(type) {
     const options = type.sourceOptions;
 
     return `
-        <div class="vecthare-cv-url-source">
+        <div class="vectfox-cv-url-source">
             <label>Enter URL</label>
-            <div class="vecthare-cv-url-input-row">
+            <div class="vectfox-cv-url-input-row">
                 <input type="text" id="vecthare_cv_url_input"
-                       class="vecthare-input"
+                       class="vectfox-input"
                        placeholder="${options.placeholder || 'https://example.com'}">
-                <button id="vecthare_cv_fetch_url" class="vecthare-btn-primary">
+                <button id="vecthare_cv_fetch_url" class="vectfox-btn-primary">
                     <i class="fa-solid fa-download"></i> Fetch
                 </button>
             </div>
-            <div class="vecthare-cv-url-status" id="vecthare_cv_url_status"></div>
-            <div class="vecthare-cv-url-preview" id="vecthare_cv_url_preview" style="display: none;">
-                <div class="vecthare-cv-url-preview-header">
+            <div class="vectfox-cv-url-status" id="vecthare_cv_url_status"></div>
+            <div class="vectfox-cv-url-preview" id="vecthare_cv_url_preview" style="display: none;">
+                <div class="vectfox-cv-url-preview-header">
                     <i class="fa-solid fa-check-circle"></i>
                     <span id="vecthare_cv_url_title">Page loaded</span>
                 </div>
-                <div class="vecthare-cv-url-preview-stats">
+                <div class="vectfox-cv-url-preview-stats">
                     <span><strong id="vecthare_cv_url_chars">0</strong> characters</span>
                 </div>
             </div>
@@ -410,40 +410,40 @@ function renderChatSource(type) {
     const options = type.sourceOptions;
 
     return `
-        <div class="vecthare-cv-chat-source">
-            <div class="vecthare-cv-source-tabs">
-                <button class="vecthare-cv-source-tab ${hasChat ? 'active' : ''}" data-source="current" ${!hasChat ? 'disabled' : ''}>
+        <div class="vectfox-cv-chat-source">
+            <div class="vectfox-cv-source-tabs">
+                <button class="vectfox-cv-source-tab ${hasChat ? 'active' : ''}" data-source="current" ${!hasChat ? 'disabled' : ''}>
                     <i class="fa-solid fa-comment-dots"></i> Current Chat
                 </button>
-                <button class="vecthare-cv-source-tab ${!hasChat ? 'active' : ''}" data-source="upload">
+                <button class="vectfox-cv-source-tab ${!hasChat ? 'active' : ''}" data-source="upload">
                     <i class="fa-solid fa-upload"></i> Upload
                 </button>
             </div>
 
             <!-- Current Chat Panel -->
-            <div class="vecthare-cv-source-panel" data-panel="current" ${!hasChat ? 'style="display: none;"' : ''}>
+            <div class="vectfox-cv-source-panel" data-panel="current" ${!hasChat ? 'style="display: none;"' : ''}>
                 ${hasChat ? `
-                    <div class="vecthare-cv-chat-info">
-                        <div class="vecthare-cv-chat-stats">
-                            <div class="vecthare-cv-stat">
-                                <span class="vecthare-cv-stat-value">${messageCount}</span>
-                                <span class="vecthare-cv-stat-label">Messages</span>
+                    <div class="vectfox-cv-chat-info">
+                        <div class="vectfox-cv-chat-stats">
+                            <div class="vectfox-cv-stat">
+                                <span class="vectfox-cv-stat-value">${messageCount}</span>
+                                <span class="vectfox-cv-stat-label">Messages</span>
                             </div>
-                            <div class="vecthare-cv-stat">
-                                <span class="vecthare-cv-stat-value">${context?.name2 || 'Unknown'}</span>
-                                <span class="vecthare-cv-stat-label">Character</span>
+                            <div class="vectfox-cv-stat">
+                                <span class="vectfox-cv-stat-value">${context?.name2 || 'Unknown'}</span>
+                                <span class="vectfox-cv-stat-label">Character</span>
                             </div>
                         </div>
-                        <div class="vecthare-cv-chat-uuid" style="text-align: center; margin-top: 8px;">
+                        <div class="vectfox-cv-chat-uuid" style="text-align: center; margin-top: 8px;">
                             <code style="font-size: 0.7em; opacity: 0.6; user-select: all;">${getChatUUID() || 'unknown'}</code>
                         </div>
-                        <div class="vecthare-cv-chat-note">
+                        <div class="vectfox-cv-chat-note">
                             <i class="fa-solid fa-info-circle"></i>
                             Will vectorize all messages in the current chat
                         </div>
                     </div>
                 ` : `
-                    <div class="vecthare-cv-no-chat">
+                    <div class="vectfox-cv-no-chat">
                         <i class="fa-solid fa-comment-slash"></i>
                         <span>No chat is currently open</span>
                     </div>
@@ -451,27 +451,27 @@ function renderChatSource(type) {
             </div>
 
             <!-- Upload Panel -->
-            <div class="vecthare-cv-source-panel" data-panel="upload" ${hasChat ? 'style="display: none;"' : ''}>
-                <div class="vecthare-cv-upload-zone" id="vecthare_cv_chat_upload_zone">
+            <div class="vectfox-cv-source-panel" data-panel="upload" ${hasChat ? 'style="display: none;"' : ''}>
+                <div class="vectfox-cv-upload-zone" id="vecthare_cv_chat_upload_zone">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                     <span>Drop chat file here or click to browse</span>
-                    <span class="vecthare-cv-upload-formats">
+                    <span class="vectfox-cv-upload-formats">
                         Formats: ${options.uploadFormats.join(', ')}
                     </span>
                     <input type="file" id="vecthare_cv_chat_file_input"
                            accept="${options.uploadFormats.join(',')}" hidden>
                 </div>
-                <div class="vecthare-cv-upload-info" id="vecthare_cv_chat_upload_info" style="display: none;">
+                <div class="vectfox-cv-upload-info" id="vecthare_cv_chat_upload_info" style="display: none;">
                     <i class="fa-solid fa-file"></i>
                     <span id="vecthare_cv_chat_upload_filename"></span>
-                    <button class="vecthare-cv-upload-clear" id="vecthare_cv_chat_upload_clear">
+                    <button class="vectfox-cv-upload-clear" id="vecthare_cv_chat_upload_clear">
                         <i class="fa-solid fa-times"></i>
                     </button>
                 </div>
-                <div class="vecthare-cv-chat-upload-stats" id="vecthare_cv_chat_upload_stats" style="display: none;">
+                <div class="vectfox-cv-chat-upload-stats" id="vecthare_cv_chat_upload_stats" style="display: none;">
                     <!-- Populated after file upload -->
                 </div>
-                <div class="vecthare-cv-upload-hint">
+                <div class="vectfox-cv-upload-hint">
                     <strong>Supported formats:</strong><br>
                     • <code>.jsonl</code> - JSON Lines (one message per line)<br>
                     • <code>.json</code> - SillyTavern chat export<br>
@@ -492,30 +492,30 @@ function renderCurrentChatSource(type) {
 
     if (!hasChat) {
         return `
-            <div class="vecthare-cv-no-chat">
+            <div class="vectfox-cv-no-chat">
                 <i class="fa-solid fa-comment-slash"></i>
                 <span>No chat is currently open</span>
-                <span class="vecthare-cv-hint">Open a chat to vectorize its messages</span>
+                <span class="vectfox-cv-hint">Open a chat to vectorize its messages</span>
             </div>
         `;
     }
 
     return `
-        <div class="vecthare-cv-chat-info">
-            <div class="vecthare-cv-chat-stats">
-                <div class="vecthare-cv-stat">
-                    <span class="vecthare-cv-stat-value">${messageCount}</span>
-                    <span class="vecthare-cv-stat-label">Messages</span>
+        <div class="vectfox-cv-chat-info">
+            <div class="vectfox-cv-chat-stats">
+                <div class="vectfox-cv-stat">
+                    <span class="vectfox-cv-stat-value">${messageCount}</span>
+                    <span class="vectfox-cv-stat-label">Messages</span>
                 </div>
-                <div class="vecthare-cv-stat">
-                    <span class="vecthare-cv-stat-value">${context?.name2 || 'Unknown'}</span>
-                    <span class="vecthare-cv-stat-label">Character</span>
+                <div class="vectfox-cv-stat">
+                    <span class="vectfox-cv-stat-value">${context?.name2 || 'Unknown'}</span>
+                    <span class="vectfox-cv-stat-label">Character</span>
                 </div>
             </div>
-            <div class="vecthare-cv-chat-uuid" style="text-align: center; margin-top: 8px;">
+            <div class="vectfox-cv-chat-uuid" style="text-align: center; margin-top: 8px;">
                 <code style="font-size: 0.7em; opacity: 0.6; user-select: all;">${getChatUUID() || 'unknown'}</code>
             </div>
-            <div class="vecthare-cv-chat-note">
+            <div class="vectfox-cv-chat-note">
                 <i class="fa-solid fa-info-circle"></i>
                 Will vectorize all messages in the current chat
             </div>
@@ -530,47 +530,47 @@ function renderSelectSource(type) {
     const options = type.sourceOptions;
 
     return `
-        <div class="vecthare-cv-source-select">
-            <div class="vecthare-cv-source-tabs">
-                <button class="vecthare-cv-source-tab active" data-source="existing">
+        <div class="vectfox-cv-source-select">
+            <div class="vectfox-cv-source-tabs">
+                <button class="vectfox-cv-source-tab active" data-source="existing">
                     <i class="fa-solid fa-list"></i> Existing
                 </button>
                 ${options.allowUpload ? `
-                    <button class="vecthare-cv-source-tab" data-source="upload">
+                    <button class="vectfox-cv-source-tab" data-source="upload">
                         <i class="fa-solid fa-upload"></i> Upload
                     </button>
                 ` : ''}
             </div>
 
-            <div class="vecthare-cv-source-panel" data-panel="existing">
+            <div class="vectfox-cv-source-panel" data-panel="existing">
                 <label>${options.selectLabel || 'Select'}</label>
-                <select id="vecthare_cv_source_select" class="vecthare-select">
+                <select id="vecthare_cv_source_select" class="vectfox-select">
                     <option value="">-- Select --</option>
                     <!-- Populated dynamically -->
                 </select>
                 <!-- Stats display (shown after selection) -->
-                <div class="vecthare-cv-source-stats" id="vecthare_cv_source_stats" style="display: none;">
-                    <div class="vecthare-cv-stats-loading">
+                <div class="vectfox-cv-source-stats" id="vecthare_cv_source_stats" style="display: none;">
+                    <div class="vectfox-cv-stats-loading">
                         <i class="fa-solid fa-spinner fa-spin"></i> Loading info...
                     </div>
                 </div>
             </div>
 
             ${options.allowUpload ? `
-                <div class="vecthare-cv-source-panel" data-panel="upload" style="display: none;">
-                    <div class="vecthare-cv-upload-zone" id="vecthare_cv_upload_zone">
+                <div class="vectfox-cv-source-panel" data-panel="upload" style="display: none;">
+                    <div class="vectfox-cv-upload-zone" id="vecthare_cv_upload_zone">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
                         <span>Drop file here or click to browse</span>
-                        <span class="vecthare-cv-upload-formats">
+                        <span class="vectfox-cv-upload-formats">
                             Formats: ${options.uploadFormats.join(', ')}
                         </span>
                         <input type="file" id="vecthare_cv_file_input"
                                accept="${options.uploadFormats.join(',')}" hidden>
                     </div>
-                    <div class="vecthare-cv-upload-info" id="vecthare_cv_upload_info" style="display: none;">
+                    <div class="vectfox-cv-upload-info" id="vecthare_cv_upload_info" style="display: none;">
                         <i class="fa-solid fa-file"></i>
                         <span id="vecthare_cv_upload_filename"></span>
-                        <button class="vecthare-cv-upload-clear" id="vecthare_cv_upload_clear">
+                        <button class="vectfox-cv-upload-clear" id="vecthare_cv_upload_clear">
                             <i class="fa-solid fa-times"></i>
                         </button>
                     </div>
@@ -587,10 +587,10 @@ function renderInputSource(type) {
     const methods = type.sourceOptions.methods;
 
     return `
-        <div class="vecthare-cv-input-source">
-            <div class="vecthare-cv-input-tabs">
+        <div class="vectfox-cv-input-source">
+            <div class="vectfox-cv-input-tabs">
                 ${methods.map((m, i) => `
-                    <button class="vecthare-cv-input-tab ${i === 0 ? 'active' : ''}" data-method="${m.id}">
+                    <button class="vectfox-cv-input-tab ${i === 0 ? 'active' : ''}" data-method="${m.id}">
                         <i class="fa-solid ${m.icon}"></i>
                         <span>${m.name}</span>
                     </button>
@@ -598,18 +598,18 @@ function renderInputSource(type) {
             </div>
 
             <!-- Paste Text Panel -->
-            <div class="vecthare-cv-input-panel" data-panel="paste">
+            <div class="vectfox-cv-input-panel" data-panel="paste">
                 <textarea id="vecthare_cv_paste_text"
                           placeholder="Paste or type your text here..."
                           rows="8"></textarea>
             </div>
 
             <!-- Upload File Panel -->
-            <div class="vecthare-cv-input-panel" data-panel="upload" style="display: none;">
-                <div class="vecthare-cv-upload-zone" id="vecthare_cv_doc_upload_zone">
+            <div class="vectfox-cv-input-panel" data-panel="upload" style="display: none;">
+                <div class="vectfox-cv-upload-zone" id="vecthare_cv_doc_upload_zone">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                     <span>Drop file here or click to browse</span>
-                    <span class="vecthare-cv-upload-formats">
+                    <span class="vectfox-cv-upload-formats">
                         Formats: ${methods.find(m => m.id === 'upload')?.formats?.join(', ') || '.txt, .md'}
                     </span>
                     <input type="file" id="vecthare_cv_doc_file_input"
@@ -618,19 +618,19 @@ function renderInputSource(type) {
             </div>
 
             <!-- URL Fetch Panel -->
-            <div class="vecthare-cv-input-panel" data-panel="url" style="display: none;">
-                <div class="vecthare-cv-url-input">
+            <div class="vectfox-cv-input-panel" data-panel="url" style="display: none;">
+                <div class="vectfox-cv-url-input">
                     <input type="text" id="vecthare_cv_url_input"
                            placeholder="https://example.com/article">
-                    <button id="vecthare_cv_fetch_url" class="vecthare-btn-secondary">
+                    <button id="vecthare_cv_fetch_url" class="vectfox-btn-secondary">
                         <i class="fa-solid fa-download"></i> Fetch
                     </button>
                 </div>
-                <div class="vecthare-cv-url-status" id="vecthare_cv_url_status"></div>
+                <div class="vectfox-cv-url-status" id="vecthare_cv_url_status"></div>
             </div>
 
             <!-- Document Name -->
-            <div class="vecthare-cv-doc-name">
+            <div class="vectfox-cv-doc-name">
                 <label>Collection Name</label>
                 <input type="text" id="vecthare_cv_doc_name"
                        placeholder="My Document">
@@ -646,16 +646,16 @@ function renderWikiSource(type) {
     const options = type.sourceOptions;
 
     return `
-        <div class="vecthare-cv-wiki-source">
+        <div class="vectfox-cv-wiki-source">
             <!-- Plugin Status -->
-            <div class="vecthare-cv-wiki-plugin-status" id="vecthare_cv_wiki_plugin_status">
+            <div class="vectfox-cv-wiki-plugin-status" id="vecthare_cv_wiki_plugin_status">
                 <i class="fa-solid fa-spinner fa-spin"></i> Checking plugin availability...
             </div>
 
             <!-- Wiki Type Selection -->
-            <div class="vecthare-cv-wiki-type">
+            <div class="vectfox-cv-wiki-type">
                 <label>Wiki Type</label>
-                <select id="vecthare_cv_wiki_type" class="vecthare-select">
+                <select id="vecthare_cv_wiki_type" class="vectfox-select">
                     ${options.types.map(t => `
                         <option value="${t.id}">${t.name}</option>
                     `).join('')}
@@ -663,42 +663,42 @@ function renderWikiSource(type) {
             </div>
 
             <!-- Wiki URL/ID Input -->
-            <div class="vecthare-cv-wiki-url">
+            <div class="vectfox-cv-wiki-url">
                 <label>Wiki URL or ID</label>
                 <input type="text" id="vecthare_cv_wiki_url"
-                       class="vecthare-input"
+                       class="vectfox-input"
                        placeholder="${options.types[0].placeholder}">
             </div>
 
             <!-- Page Filter (for bulk scraping) -->
-            <div class="vecthare-cv-wiki-filter">
+            <div class="vectfox-cv-wiki-filter">
                 <label>
                     Page Filter
-                    <span class="vecthare-cv-optional">(optional)</span>
+                    <span class="vectfox-cv-optional">(optional)</span>
                 </label>
                 <input type="text" id="vecthare_cv_wiki_filter"
-                       class="vecthare-input"
+                       class="vectfox-input"
                        placeholder="${options.filterPlaceholder}">
-                <div class="vecthare-cv-hint">
+                <div class="vectfox-cv-hint">
                     Leave empty to scrape single page, or enter comma-separated page names for bulk scrape
                 </div>
             </div>
 
             <!-- Scrape Button -->
-            <div class="vecthare-cv-wiki-actions">
-                <button id="vecthare_cv_scrape_wiki" class="vecthare-btn-primary">
+            <div class="vectfox-cv-wiki-actions">
+                <button id="vecthare_cv_scrape_wiki" class="vectfox-btn-primary">
                     <i class="fa-solid fa-download"></i> Scrape Wiki
                 </button>
             </div>
 
             <!-- Status/Preview -->
-            <div class="vecthare-cv-wiki-status" id="vecthare_cv_wiki_status"></div>
-            <div class="vecthare-cv-wiki-preview" id="vecthare_cv_wiki_preview" style="display: none;">
-                <div class="vecthare-cv-wiki-preview-header">
+            <div class="vectfox-cv-wiki-status" id="vecthare_cv_wiki_status"></div>
+            <div class="vectfox-cv-wiki-preview" id="vecthare_cv_wiki_preview" style="display: none;">
+                <div class="vectfox-cv-wiki-preview-header">
                     <i class="fa-solid fa-check-circle"></i>
                     <span id="vecthare_cv_wiki_title">Wiki content loaded</span>
                 </div>
-                <div class="vecthare-cv-wiki-preview-stats">
+                <div class="vectfox-cv-wiki-preview-stats">
                     <span><strong id="vecthare_cv_wiki_pages">0</strong> pages</span>
                     <span><strong id="vecthare_cv_wiki_chars">0</strong> characters</span>
                 </div>
@@ -714,44 +714,44 @@ function renderYouTubeSource(type) {
     const options = type.sourceOptions;
 
     return `
-        <div class="vecthare-cv-youtube-source">
+        <div class="vectfox-cv-youtube-source">
             <!-- URL Input -->
-            <div class="vecthare-cv-youtube-url">
+            <div class="vectfox-cv-youtube-url">
                 <label>YouTube URL or Video ID</label>
-                <div class="vecthare-cv-youtube-input-row">
+                <div class="vectfox-cv-youtube-input-row">
                     <input type="text" id="vecthare_cv_youtube_url"
-                           class="vecthare-input"
+                           class="vectfox-input"
                            placeholder="${options.placeholder}">
-                    <button id="vecthare_cv_fetch_youtube" class="vecthare-btn-primary">
+                    <button id="vecthare_cv_fetch_youtube" class="vectfox-btn-primary">
                         <i class="fa-brands fa-youtube"></i> Fetch
                     </button>
                 </div>
             </div>
 
             <!-- Language (optional) -->
-            <div class="vecthare-cv-youtube-lang">
+            <div class="vectfox-cv-youtube-lang">
                 <label>
                     Language Code
-                    <span class="vecthare-cv-optional">(optional)</span>
+                    <span class="vectfox-cv-optional">(optional)</span>
                 </label>
                 <input type="text" id="vecthare_cv_youtube_lang"
-                       class="vecthare-input vecthare-input-sm"
+                       class="vectfox-input vectfox-input-sm"
                        placeholder="${options.langPlaceholder}"
                        maxlength="5"
                        style="width: 100px;">
-                <div class="vecthare-cv-hint">
+                <div class="vectfox-cv-hint">
                     ISO 639-1 code (e.g., "en", "es", "ja"). Leave blank for auto-detect.
                 </div>
             </div>
 
             <!-- Status/Preview -->
-            <div class="vecthare-cv-youtube-status" id="vecthare_cv_youtube_status"></div>
-            <div class="vecthare-cv-youtube-preview" id="vecthare_cv_youtube_preview" style="display: none;">
-                <div class="vecthare-cv-youtube-preview-header">
+            <div class="vectfox-cv-youtube-status" id="vecthare_cv_youtube_status"></div>
+            <div class="vectfox-cv-youtube-preview" id="vecthare_cv_youtube_preview" style="display: none;">
+                <div class="vectfox-cv-youtube-preview-header">
                     <i class="fa-solid fa-check-circle"></i>
                     <span id="vecthare_cv_youtube_title">Transcript loaded</span>
                 </div>
-                <div class="vecthare-cv-youtube-preview-stats">
+                <div class="vectfox-cv-youtube-preview-stats">
                     <span><strong id="vecthare_cv_youtube_chars">0</strong> characters</span>
                     <span><strong id="vecthare_cv_youtube_duration">~0</strong> min estimated</span>
                 </div>
@@ -771,7 +771,7 @@ function updateChunkingSection(type) {
 
     // Default: ensure section is visible. The chat branch below may hide it for the
     // archive+EventBase route; non-chat types always need it visible.
-    $('.vecthare-cv-chunking-section').show();
+    $('.vectfox-cv-chunking-section').show();
 
     const strategySelect = $('#vecthare_cv_strategy');
     strategySelect.empty();
@@ -808,7 +808,7 @@ function updateChunkingSection(type) {
     if (isChatType) {
         $('#vecthare_cv_strategy_desc').text('');
         $('#vecthare_cv_size_controls').hide();
-        $('.vecthare-cv-chunking-section').show();
+        $('.vectfox-cv-chunking-section').show();
         $('#vecthare_cv_parallel_row').show();
         return;
     }
@@ -868,14 +868,14 @@ function updateOptionsSection(type) {
 
     // Keyword extraction settings
     html += `
-        <div class="vecthare-cv-option-row vecthare-cv-keyword-settings">
-            <div class="vecthare-cv-keyword-header">
+        <div class="vectfox-cv-option-row vectfox-cv-keyword-settings">
+            <div class="vectfox-cv-keyword-header">
                 <span>Keyword Extraction</span>
             </div>
-            <div class="vecthare-cv-keyword-controls">
-                <div class="vecthare-cv-keyword-level">
+            <div class="vectfox-cv-keyword-controls">
+                <div class="vectfox-cv-keyword-level">
                     <label for="vecthare_cv_keyword_level">Level:</label>
-                    <select id="vecthare_cv_keyword_level" class="vecthare-select">
+                    <select id="vecthare_cv_keyword_level" class="vectfox-select">
                         <option value="off" ${currentSettings.keywordLevel === 'off' ? 'selected' : ''}>
                             Off - Manual only
                         </option>
@@ -890,16 +890,16 @@ function updateOptionsSection(type) {
                         </option>
                     </select>
                 </div>
-                <div class="vecthare-cv-keyword-weight">
+                <div class="vectfox-cv-keyword-weight">
                     <label for="vecthare_cv_keyword_weight">Base Weight:</label>
                     <input type="number" id="vecthare_cv_keyword_weight"
                            min="0.01" max="3.0" step="0.01"
                            value="${currentSettings.keywordBaseWeight || 1.5}"
-                           class="vecthare-input-number">
-                    <span class="vecthare-cv-weight-hint">×</span>
+                           class="vectfox-input-number">
+                    <span class="vectfox-cv-weight-hint">×</span>
                 </div>
             </div>
-            <span class="vecthare-cv-option-hint">
+            <span class="vectfox-cv-option-hint">
                 ${type.id === 'lorebook'
                     ? 'WI trigger keys always included. Auto-extraction adds more based on text frequency.'
                     : 'Higher frequency words get higher weights. Base weight applies to all extracted keywords.'}
@@ -915,15 +915,15 @@ function updateOptionsSection(type) {
     // Lorebook-specific: respect disabled entries
     if (hasFeature(type.id, 'respectDisabled')) {
         html += `
-            <div class="vecthare-cv-option-row">
-                <label class="vecthare-cv-toggle-label">
+            <div class="vectfox-cv-option-row">
+                <label class="vectfox-cv-toggle-label">
                     <span>Include Disabled Entries</span>
-                    <label class="vecthare-toggle-switch">
+                    <label class="vectfox-toggle-switch">
                         <input type="checkbox" id="vecthare_cv_include_disabled">
-                        <span class="vecthare-toggle-slider"></span>
+                        <span class="vectfox-toggle-slider"></span>
                     </label>
                 </label>
-                <span class="vecthare-cv-option-hint">
+                <span class="vectfox-cv-option-hint">
                     Vectorize entries even if disabled in World Info
                 </span>
             </div>
@@ -981,18 +981,18 @@ function renderScopeOptions(type) {
     ];
 
     return `
-        <div class="vecthare-cv-scope-select">
+        <div class="vectfox-cv-scope-select">
             <label>Scope</label>
-            <div class="vecthare-cv-scope-options">
+            <div class="vectfox-cv-scope-options">
                 ${scopeData.map(scope => `
-                    <label class="vecthare-cv-scope-option ${scope.id === defaultScope ? 'selected' : ''} ${!scope.enabled ? 'disabled' : ''}">
+                    <label class="vectfox-cv-scope-option ${scope.id === defaultScope ? 'selected' : ''} ${!scope.enabled ? 'disabled' : ''}">
                         <input type="radio" name="vecthare_cv_scope" value="${scope.id}"
                                ${scope.id === defaultScope ? 'checked' : ''}
                                ${!scope.enabled ? 'disabled' : ''}>
-                        <div class="vecthare-cv-scope-card">
+                        <div class="vectfox-cv-scope-card">
                             <i class="fa-solid ${scope.icon}"></i>
-                            <span class="vecthare-cv-scope-name">${scope.name}</span>
-                            <span class="vecthare-cv-scope-desc">${scope.desc}</span>
+                            <span class="vectfox-cv-scope-name">${scope.name}</span>
+                            <span class="vectfox-cv-scope-desc">${scope.desc}</span>
                         </div>
                     </label>
                 `).join('')}
@@ -1008,15 +1008,15 @@ function renderFieldSelection() {
     const defaults = getContentTypeDefaults('character');
 
     return `
-        <div class="vecthare-cv-field-select">
+        <div class="vectfox-cv-field-select">
             <label>Fields to Vectorize</label>
-            <div class="vecthare-cv-field-grid">
+            <div class="vectfox-cv-field-grid">
                 ${CHARACTER_FIELDS.map(field => `
-                    <label class="vecthare-cv-field-option">
+                    <label class="vectfox-cv-field-option">
                         <input type="checkbox" name="vecthare_cv_field"
                                value="${field.id}"
                                ${defaults.fields?.[field.id] ? 'checked' : ''}>
-                        <span class="vecthare-cv-field-name">${field.name}</span>
+                        <span class="vectfox-cv-field-name">${field.name}</span>
                     </label>
                 `).join('')}
             </div>
@@ -1038,37 +1038,37 @@ function renderTemporalDecayOptions() {
     const maxBoost = decay.maxBoost || 1.2;
 
     return `
-        <div class="vecthare-cv-option-row vecthare-cv-temporal-settings ${isEnabled ? 'enabled' : ''}">
-            <div class="vecthare-cv-temporal-header">
+        <div class="vectfox-cv-option-row vectfox-cv-temporal-settings ${isEnabled ? 'enabled' : ''}">
+            <div class="vectfox-cv-temporal-header">
                 <span>Temporal Weighting</span>
-                <label class="vecthare-toggle-switch">
+                <label class="vectfox-toggle-switch">
                     <input type="checkbox" id="vecthare_cv_temporal_decay"
                            ${isEnabled ? 'checked' : ''}>
-                    <span class="vecthare-toggle-slider"></span>
+                    <span class="vectfox-toggle-slider"></span>
                 </label>
             </div>
-            <span class="vecthare-cv-option-hint">
+            <span class="vectfox-cv-option-hint">
                 Adjust relevance based on message age
             </span>
 
-            <div class="vecthare-cv-decay-type-section" style="display: ${isEnabled ? 'block' : 'none'};">
+            <div class="vectfox-cv-decay-type-section" style="display: ${isEnabled ? 'block' : 'none'};">
                 <!-- Type: Decay vs Nostalgia -->
-                <div class="vecthare-type-toggle">
-                    <label class="vecthare-type-option ${decayType === 'decay' ? 'selected' : ''}" data-type="decay">
+                <div class="vectfox-type-toggle">
+                    <label class="vectfox-type-option ${decayType === 'decay' ? 'selected' : ''}" data-type="decay">
                         <input type="radio" name="vecthare_cv_decay_type" value="decay" ${decayType === 'decay' ? 'checked' : ''}>
-                        <div class="vecthare-type-card">
-                            <div class="vecthare-type-header">
-                                <span class="vecthare-type-icon">📉</span>
+                        <div class="vectfox-type-card">
+                            <div class="vectfox-type-header">
+                                <span class="vectfox-type-icon">📉</span>
                                 <strong>Decay</strong>
                             </div>
                             <small>Recent messages score higher. Older memories fade over time.</small>
                         </div>
                     </label>
-                    <label class="vecthare-type-option ${decayType === 'nostalgia' ? 'selected' : ''}" data-type="nostalgia">
+                    <label class="vectfox-type-option ${decayType === 'nostalgia' ? 'selected' : ''}" data-type="nostalgia">
                         <input type="radio" name="vecthare_cv_decay_type" value="nostalgia" ${decayType === 'nostalgia' ? 'checked' : ''}>
-                        <div class="vecthare-type-card">
-                            <div class="vecthare-type-header">
-                                <span class="vecthare-type-icon">📈</span>
+                        <div class="vectfox-type-card">
+                            <div class="vectfox-type-header">
+                                <span class="vectfox-type-icon">📈</span>
                                 <strong>Nostalgia</strong>
                             </div>
                             <small>Older messages score higher. Ancient history becomes more relevant.</small>
@@ -1077,23 +1077,23 @@ function renderTemporalDecayOptions() {
                 </div>
 
                 <!-- Curve: Exponential vs Linear -->
-                <div class="vecthare-curve-label">Curve</div>
-                <div class="vecthare-type-toggle vecthare-curve-toggle">
-                    <label class="vecthare-type-option ${decayMode === 'exponential' ? 'selected' : ''}" data-mode="exponential">
+                <div class="vectfox-curve-label">Curve</div>
+                <div class="vectfox-type-toggle vectfox-curve-toggle">
+                    <label class="vectfox-type-option ${decayMode === 'exponential' ? 'selected' : ''}" data-mode="exponential">
                         <input type="radio" name="vecthare_cv_decay_mode" value="exponential" ${decayMode === 'exponential' ? 'checked' : ''}>
-                        <div class="vecthare-type-card">
-                            <div class="vecthare-type-header">
-                                <span class="vecthare-type-icon">📐</span>
+                        <div class="vectfox-type-card">
+                            <div class="vectfox-type-header">
+                                <span class="vectfox-type-icon">📐</span>
                                 <strong>Exponential</strong>
                             </div>
                             <small>Smooth half-life curve. Effect halves every N messages. Natural decay pattern.</small>
                         </div>
                     </label>
-                    <label class="vecthare-type-option ${decayMode === 'linear' ? 'selected' : ''}" data-mode="linear">
+                    <label class="vectfox-type-option ${decayMode === 'linear' ? 'selected' : ''}" data-mode="linear">
                         <input type="radio" name="vecthare_cv_decay_mode" value="linear" ${decayMode === 'linear' ? 'checked' : ''}>
-                        <div class="vecthare-type-card">
-                            <div class="vecthare-type-header">
-                                <span class="vecthare-type-icon">📏</span>
+                        <div class="vectfox-type-card">
+                            <div class="vectfox-type-header">
+                                <span class="vectfox-type-icon">📏</span>
                                 <strong>Linear</strong>
                             </div>
                             <small>Fixed rate per message. Predictable, steady change. Hits limits faster.</small>
@@ -1102,37 +1102,37 @@ function renderTemporalDecayOptions() {
                 </div>
 
                 <!-- Exponential settings -->
-                <div class="vecthare-cv-decay-exponential" style="display: ${decayMode === 'exponential' ? 'block' : 'none'};">
-                    <div class="vecthare-cv-inline-setting">
+                <div class="vectfox-cv-decay-exponential" style="display: ${decayMode === 'exponential' ? 'block' : 'none'};">
+                    <div class="vectfox-cv-inline-setting">
                         <label>Half-life:</label>
-                        <input type="number" id="vecthare_cv_decay_halflife" min="1" max="500" value="${halfLife}" class="vecthare-input-number">
+                        <input type="number" id="vecthare_cv_decay_halflife" min="1" max="500" value="${halfLife}" class="vectfox-input-number">
                         <small>messages until 50% effect</small>
                     </div>
                 </div>
 
                 <!-- Linear settings -->
-                <div class="vecthare-cv-decay-linear" style="display: ${decayMode === 'linear' ? 'block' : 'none'};">
-                    <div class="vecthare-cv-inline-setting">
+                <div class="vectfox-cv-decay-linear" style="display: ${decayMode === 'linear' ? 'block' : 'none'};">
+                    <div class="vectfox-cv-inline-setting">
                         <label>Rate:</label>
-                        <input type="number" id="vecthare_cv_decay_rate" min="0.001" max="0.5" step="0.001" value="${linearRate}" class="vecthare-input-number">
+                        <input type="number" id="vecthare_cv_decay_rate" min="0.001" max="0.5" step="0.001" value="${linearRate}" class="vectfox-input-number">
                         <small>per message (0.01 = 1%)</small>
                     </div>
                 </div>
 
                 <!-- Decay floor (for decay mode) -->
-                <div class="vecthare-cv-decay-floor" style="display: ${decayType === 'decay' ? 'block' : 'none'};">
-                    <div class="vecthare-cv-inline-setting">
+                <div class="vectfox-cv-decay-floor" style="display: ${decayType === 'decay' ? 'block' : 'none'};">
+                    <div class="vectfox-cv-inline-setting">
                         <label>Min relevance:</label>
-                        <input type="number" id="vecthare_cv_decay_min" min="0" max="1" step="0.05" value="${minRelevance}" class="vecthare-input-number">
+                        <input type="number" id="vecthare_cv_decay_min" min="0" max="1" step="0.05" value="${minRelevance}" class="vectfox-input-number">
                         <small>floor (0-1)</small>
                     </div>
                 </div>
 
                 <!-- Nostalgia ceiling (for nostalgia mode) -->
-                <div class="vecthare-cv-nostalgia-ceiling" style="display: ${decayType === 'nostalgia' ? 'block' : 'none'};">
-                    <div class="vecthare-cv-inline-setting">
+                <div class="vectfox-cv-nostalgia-ceiling" style="display: ${decayType === 'nostalgia' ? 'block' : 'none'};">
+                    <div class="vectfox-cv-inline-setting">
                         <label>Max boost:</label>
-                        <input type="number" id="vecthare_cv_decay_max_boost" min="1" max="3" step="0.1" value="${maxBoost}" class="vecthare-input-number">
+                        <input type="number" id="vecthare_cv_decay_max_boost" min="1" max="3" step="0.1" value="${maxBoost}" class="vectfox-input-number">
                         <small>ceiling (1.2 = 20% boost)</small>
                     </div>
                 </div>
@@ -1160,17 +1160,17 @@ function renderTextCleaningOptions() {
     const currentPreset = currentSettings.cleaningPreset || getCleaningSettings().selectedPreset || 'custom';
 
     return `
-        <div class="vecthare-cv-option-row vecthare-cv-cleaning-settings">
-            <div class="vecthare-cv-cleaning-header">
+        <div class="vectfox-cv-option-row vectfox-cv-cleaning-settings">
+            <div class="vectfox-cv-cleaning-header">
                 <span>Text Cleaning</span>
-                <button class="vecthare-btn-icon" id="vecthare_cv_manage_cleaning" title="Manage Cleaning Patterns">
+                <button class="vectfox-btn-icon" id="vecthare_cv_manage_cleaning" title="Manage Cleaning Patterns">
                     <i class="fa-solid fa-gear"></i>
                 </button>
             </div>
-            <div class="vecthare-cv-cleaning-controls">
-                <div class="vecthare-cv-cleaning-preset">
+            <div class="vectfox-cv-cleaning-controls">
+                <div class="vectfox-cv-cleaning-preset">
                     <label for="vecthare_cv_cleaning_preset">Preset:</label>
-                    <select id="vecthare_cv_cleaning_preset" class="vecthare-select">
+                    <select id="vecthare_cv_cleaning_preset" class="vectfox-select">
                         ${presets.map(p => `
                             <option value="${p.id}" ${p.id === currentPreset ? 'selected' : ''}>
                                 ${p.name}
@@ -1179,7 +1179,7 @@ function renderTextCleaningOptions() {
                     </select>
                 </div>
             </div>
-            <span class="vecthare-cv-option-hint" id="vecthare_cv_cleaning_hint">
+            <span class="vectfox-cv-option-hint" id="vecthare_cv_cleaning_hint">
                 ${presets.find(p => p.id === currentPreset)?.desc || ''}
             </span>
         </div>
@@ -1203,7 +1203,7 @@ function bindEvents() {
         }
         closeContentVectorizer();
     });
-    $('#vecthare_content_vectorizer_modal .vecthare-modal-overlay').on('click', function() {
+    $('#vecthare_content_vectorizer_modal .vectfox-modal-overlay').on('click', function() {
         if (!isVectorizing) closeContentVectorizer();
     });
 
@@ -1215,7 +1215,7 @@ function bindEvents() {
             // No selection - hide subsequent sections
             currentContentType = null;
             currentSettings = {};
-            $('.vecthare-cv-subsequent').slideUp(200);
+            $('.vectfox-cv-subsequent').slideUp(200);
             $('#vecthare_cv_type_hint').text('Select a content type to continue');
             return;
         }
@@ -1228,7 +1228,7 @@ function bindEvents() {
         $('#vecthare_cv_type_hint').text(typeInfo?.description || '');
 
         // Show subsequent sections and update UI
-        $('.vecthare-cv-subsequent').slideDown(200);
+        $('.vectfox-cv-subsequent').slideDown(200);
         updateUIForContentType();
     });
 
@@ -1240,7 +1240,7 @@ function bindEvents() {
     });
 
     // Collapse toggles
-    $('.vecthare-cv-collapse-btn').on('click', function() {
+    $('.vectfox-cv-collapse-btn').on('click', function() {
         const target = $(this).data('target');
         const content = $(`#vecthare_cv_${target}_content`);
         const icon = $(this).find('i');
@@ -1288,8 +1288,8 @@ function bindEvents() {
     // Scope selection
     $(document).on('change', 'input[name="vecthare_cv_scope"]', function() {
         currentSettings.scope = $(this).val();
-        $('.vecthare-cv-scope-option').removeClass('selected');
-        $(this).closest('.vecthare-cv-scope-option').addClass('selected');
+        $('.vectfox-cv-scope-option').removeClass('selected');
+        $(this).closest('.vectfox-cv-scope-option').addClass('selected');
     });
 
     // Keyword level dropdown
@@ -1311,9 +1311,9 @@ function bindEvents() {
             currentSettings.temporalDecay = { enabled: false, type: 'decay', mode: 'exponential' };
         }
         currentSettings.temporalDecay.enabled = isEnabled;
-        $('.vecthare-cv-decay-type-section').toggle(isEnabled);
+        $('.vectfox-cv-decay-type-section').toggle(isEnabled);
         // Toggle the enabled class for purple styling
-        $('.vecthare-cv-temporal-settings').toggleClass('enabled', isEnabled);
+        $('.vectfox-cv-temporal-settings').toggleClass('enabled', isEnabled);
     });
 
     // Temporal weighting type toggle (decay vs nostalgia)
@@ -1324,11 +1324,11 @@ function bindEvents() {
         }
         currentSettings.temporalDecay.type = type;
         // Update visual selection state for type cards only
-        $('.vecthare-cv-decay-options .vecthare-type-toggle:not(.vecthare-curve-toggle) .vecthare-type-option').removeClass('selected');
-        $(this).closest('.vecthare-type-option').addClass('selected');
+        $('.vectfox-cv-decay-options .vectfox-type-toggle:not(.vectfox-curve-toggle) .vectfox-type-option').removeClass('selected');
+        $(this).closest('.vectfox-type-option').addClass('selected');
         // Show/hide floor vs ceiling based on type
-        $('.vecthare-cv-decay-floor').toggle(type === 'decay');
-        $('.vecthare-cv-nostalgia-ceiling').toggle(type === 'nostalgia');
+        $('.vectfox-cv-decay-floor').toggle(type === 'decay');
+        $('.vectfox-cv-nostalgia-ceiling').toggle(type === 'nostalgia');
     });
 
     // Temporal weighting curve toggle (exponential vs linear)
@@ -1339,11 +1339,11 @@ function bindEvents() {
         }
         currentSettings.temporalDecay.mode = mode;
         // Update visual selection state for curve cards only
-        $('.vecthare-curve-toggle .vecthare-type-option').removeClass('selected');
-        $(this).closest('.vecthare-type-option').addClass('selected');
+        $('.vectfox-curve-toggle .vectfox-type-option').removeClass('selected');
+        $(this).closest('.vectfox-type-option').addClass('selected');
         // Show/hide exponential vs linear settings
-        $('.vecthare-cv-decay-exponential').toggle(mode === 'exponential');
-        $('.vecthare-cv-decay-linear').toggle(mode === 'linear');
+        $('.vectfox-cv-decay-exponential').toggle(mode === 'exponential');
+        $('.vectfox-cv-decay-linear').toggle(mode === 'linear');
     });
 
     // Temporal weighting numeric inputs
@@ -1408,13 +1408,13 @@ function bindEvents() {
  */
 function bindSourceEvents(type) {
     // Source tabs (skip disabled tabs)
-    $('.vecthare-cv-source-tab:not([disabled])').on('click', function() {
+    $('.vectfox-cv-source-tab:not([disabled])').on('click', function() {
         if ($(this).prop('disabled')) return;
         const source = $(this).data('source');
-        $('.vecthare-cv-source-tab').removeClass('active');
+        $('.vectfox-cv-source-tab').removeClass('active');
         $(this).addClass('active');
-        $('.vecthare-cv-source-panel').hide();
-        $(`.vecthare-cv-source-panel[data-panel="${source}"]`).show();
+        $('.vectfox-cv-source-panel').hide();
+        $(`.vectfox-cv-source-panel[data-panel="${source}"]`).show();
 
         // Clear sourceData when switching tabs
         sourceData = null;
@@ -1422,17 +1422,17 @@ function bindSourceEvents(type) {
         // Always hide chunking for chat uploads — EventBase uses its own window/overlap settings
         if (currentContentType === 'chat') {
             const hideChunking = source === 'upload';
-            $('.vecthare-cv-chunking-section').toggle(!hideChunking);
+            $('.vectfox-cv-chunking-section').toggle(!hideChunking);
         }
     });
 
     // Input method tabs (for document type)
-    $('.vecthare-cv-input-tab').on('click', function() {
+    $('.vectfox-cv-input-tab').on('click', function() {
         const method = $(this).data('method');
-        $('.vecthare-cv-input-tab').removeClass('active');
+        $('.vectfox-cv-input-tab').removeClass('active');
         $(this).addClass('active');
-        $('.vecthare-cv-input-panel').hide();
-        $(`.vecthare-cv-input-panel[data-panel="${method}"]`).show();
+        $('.vectfox-cv-input-panel').hide();
+        $(`.vectfox-cv-input-panel[data-panel="${method}"]`).show();
     });
 
     // Upload zone click (all upload zones)
@@ -1527,7 +1527,7 @@ function bindSourceEvents(type) {
  */
 async function loadSourceStats(contentType, sourceId) {
     const statsContainer = $('#vecthare_cv_source_stats');
-    statsContainer.show().html('<div class="vecthare-cv-stats-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading info...</div>');
+    statsContainer.show().html('<div class="vectfox-cv-stats-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading info...</div>');
 
     try {
         if (contentType === 'lorebook') {
@@ -1542,23 +1542,23 @@ async function loadSourceStats(contentType, sourceId) {
                 const totalChars = entries.reduce((sum, e) => sum + (e.content?.length || 0), 0);
 
                 statsContainer.html(`
-                    <div class="vecthare-cv-stats-grid">
-                        <div class="vecthare-cv-stat">
-                            <span class="vecthare-cv-stat-value">${entries.length}</span>
-                            <span class="vecthare-cv-stat-label">Total Entries</span>
+                    <div class="vectfox-cv-stats-grid">
+                        <div class="vectfox-cv-stat">
+                            <span class="vectfox-cv-stat-value">${entries.length}</span>
+                            <span class="vectfox-cv-stat-label">Total Entries</span>
                         </div>
-                        <div class="vecthare-cv-stat">
-                            <span class="vecthare-cv-stat-value">${enabledEntries.length}</span>
-                            <span class="vecthare-cv-stat-label">Enabled</span>
+                        <div class="vectfox-cv-stat">
+                            <span class="vectfox-cv-stat-value">${enabledEntries.length}</span>
+                            <span class="vectfox-cv-stat-label">Enabled</span>
                         </div>
-                        <div class="vecthare-cv-stat">
-                            <span class="vecthare-cv-stat-value">${(totalChars / 1000).toFixed(1)}k</span>
-                            <span class="vecthare-cv-stat-label">Characters</span>
+                        <div class="vectfox-cv-stat">
+                            <span class="vectfox-cv-stat-value">${(totalChars / 1000).toFixed(1)}k</span>
+                            <span class="vectfox-cv-stat-label">Characters</span>
                         </div>
                     </div>
                 `);
             } else {
-                statsContainer.html('<div class="vecthare-cv-stats-info">Lorebook selected</div>');
+                statsContainer.html('<div class="vectfox-cv-stats-info">Lorebook selected</div>');
             }
 
         } else if (contentType === 'character') {
@@ -1572,24 +1572,24 @@ async function loadSourceStats(contentType, sourceId) {
                 const totalChars = fields.reduce((sum, f) => sum + (character[f]?.length || 0), 0);
 
                 statsContainer.html(`
-                    <div class="vecthare-cv-stats-grid">
-                        <div class="vecthare-cv-stat">
-                            <span class="vecthare-cv-stat-value">${filledFields.length}/${fields.length}</span>
-                            <span class="vecthare-cv-stat-label">Fields Used</span>
+                    <div class="vectfox-cv-stats-grid">
+                        <div class="vectfox-cv-stat">
+                            <span class="vectfox-cv-stat-value">${filledFields.length}/${fields.length}</span>
+                            <span class="vectfox-cv-stat-label">Fields Used</span>
                         </div>
-                        <div class="vecthare-cv-stat">
-                            <span class="vecthare-cv-stat-value">${(totalChars / 1000).toFixed(1)}k</span>
-                            <span class="vecthare-cv-stat-label">Characters</span>
+                        <div class="vectfox-cv-stat">
+                            <span class="vectfox-cv-stat-value">${(totalChars / 1000).toFixed(1)}k</span>
+                            <span class="vectfox-cv-stat-label">Characters</span>
                         </div>
                     </div>
                 `);
             } else {
-                statsContainer.html('<div class="vecthare-cv-stats-info">Character selected</div>');
+                statsContainer.html('<div class="vectfox-cv-stats-info">Character selected</div>');
             }
         }
     } catch (e) {
         console.error('VectHare: Failed to load source stats:', e);
-        statsContainer.html('<div class="vecthare-cv-stats-info">Selected</div>');
+        statsContainer.html('<div class="vectfox-cv-stats-info">Selected</div>');
     }
 }
 
@@ -1939,7 +1939,7 @@ async function fetchUrl() {
 
     } catch (e) {
         console.error('VectHare: URL fetch failed:', e);
-        status.html(`<i class="fa-solid fa-times" style="color: var(--vecthare-danger);"></i> ${e.message}`);
+        status.html(`<i class="fa-solid fa-times" style="color: var(--vectfox-danger);"></i> ${e.message}`);
         toastr.error('Failed to fetch URL: ' + e.message);
     }
 }
@@ -1962,17 +1962,17 @@ async function checkWikiPluginStatus() {
 
     if (isAvailable) {
         statusEl.html(`
-            <i class="fa-solid fa-check-circle" style="color: var(--vecthare-success);"></i>
+            <i class="fa-solid fa-check-circle" style="color: var(--vectfox-success);"></i>
             <span>${wikiType === 'fandom' ? 'Fandom' : 'MediaWiki'} scraper ready</span>
         `);
         scrapeBtn.prop('disabled', false);
     } else {
         const type = getContentType('wiki');
         statusEl.html(`
-            <div class="vecthare-cv-wiki-plugin-warning">
-                <i class="fa-solid fa-exclamation-triangle" style="color: var(--vecthare-warning);"></i>
+            <div class="vectfox-cv-wiki-plugin-warning">
+                <i class="fa-solid fa-exclamation-triangle" style="color: var(--vectfox-warning);"></i>
                 <span>Wiki scraping requires the Fandom Scraper plugin</span>
-                <a href="${type.sourceOptions.pluginUrl}" target="_blank" rel="noopener" class="vecthare-cv-plugin-link">
+                <a href="${type.sourceOptions.pluginUrl}" target="_blank" rel="noopener" class="vectfox-cv-plugin-link">
                     <i class="fa-solid fa-external-link"></i> Install Plugin
                 </a>
             </div>
@@ -2083,7 +2083,7 @@ async function scrapeWiki() {
 
     } catch (e) {
         console.error('VectHare: Wiki scrape failed:', e);
-        status.html(`<i class="fa-solid fa-times" style="color: var(--vecthare-danger);"></i> ${e.message}`);
+        status.html(`<i class="fa-solid fa-times" style="color: var(--vectfox-danger);"></i> ${e.message}`);
         scrapeBtn.prop('disabled', false);
         toastr.error('Failed to scrape wiki: ' + e.message);
     }
@@ -2189,7 +2189,7 @@ async function fetchYouTubeTranscript() {
 
     } catch (e) {
         console.error('VectHare: YouTube fetch failed:', e);
-        status.html(`<i class="fa-solid fa-times" style="color: var(--vecthare-danger);"></i> ${e.message}`);
+        status.html(`<i class="fa-solid fa-times" style="color: var(--vectfox-danger);"></i> ${e.message}`);
         fetchBtn.prop('disabled', false);
         toastr.error('Failed to fetch transcript: ' + e.message);
     }
@@ -2391,18 +2391,18 @@ async function handleChatFileUpload(e) {
         const charCount = messages.filter(m => !m.is_user).length;
 
         $('#vecthare_cv_chat_upload_stats').show().html(`
-            <div class="vecthare-cv-stats-grid">
-                <div class="vecthare-cv-stat">
-                    <span class="vecthare-cv-stat-value">${messages.length}</span>
-                    <span class="vecthare-cv-stat-label">Messages</span>
+            <div class="vectfox-cv-stats-grid">
+                <div class="vectfox-cv-stat">
+                    <span class="vectfox-cv-stat-value">${messages.length}</span>
+                    <span class="vectfox-cv-stat-label">Messages</span>
                 </div>
-                <div class="vecthare-cv-stat">
-                    <span class="vecthare-cv-stat-value">${characterName}</span>
-                    <span class="vecthare-cv-stat-label">Character</span>
+                <div class="vectfox-cv-stat">
+                    <span class="vectfox-cv-stat-value">${characterName}</span>
+                    <span class="vectfox-cv-stat-label">Character</span>
                 </div>
-                <div class="vecthare-cv-stat">
-                    <span class="vecthare-cv-stat-value">${(totalChars / 1000).toFixed(1)}k</span>
-                    <span class="vecthare-cv-stat-label">Characters</span>
+                <div class="vectfox-cv-stat">
+                    <span class="vectfox-cv-stat-value">${(totalChars / 1000).toFixed(1)}k</span>
+                    <span class="vectfox-cv-stat-label">Characters</span>
                 </div>
             </div>
         `);
@@ -2441,9 +2441,9 @@ async function previewChunks() {
     }
 
     // Show preview section
-    $('.vecthare-cv-preview-section').show();
+    $('.vectfox-cv-preview-section').show();
     const container = $('#vecthare_cv_preview_content');
-    container.html('<div class="vecthare-cv-loading"><i class="fa-solid fa-spinner fa-spin"></i> Generating preview...</div>');
+    container.html('<div class="vectfox-cv-loading"><i class="fa-solid fa-spinner fa-spin"></i> Generating preview...</div>');
 
     try {
         // Import modules for content resolution and chunking
@@ -2455,7 +2455,7 @@ async function previewChunks() {
         const contentText = prepared.text;
 
         if (!contentText || (Array.isArray(contentText) && contentText.length === 0)) {
-            container.html('<div class="vecthare-cv-error">Could not load content. Please check your selection.</div>');
+            container.html('<div class="vectfox-cv-error">Could not load content. Please check your selection.</div>');
             return;
         }
 
@@ -2468,7 +2468,7 @@ async function previewChunks() {
 
         // Handle empty or undefined chunks
         if (!chunks || chunks.length === 0) {
-            container.html('<div class="vecthare-cv-error">No chunks generated. Content may be too short or empty.</div>');
+            container.html('<div class="vectfox-cv-error">No chunks generated. Content may be too short or empty.</div>');
             return;
         }
 
@@ -2479,27 +2479,27 @@ async function previewChunks() {
         const avgChars = Math.round(totalChars / chunks.length);
 
         container.html(`
-            <div class="vecthare-cv-preview-stats">
+            <div class="vectfox-cv-preview-stats">
                 <span><strong>${chunks.length}</strong> chunks</span>
                 <span>~<strong>${avgChars}</strong> chars avg</span>
             </div>
-            <div class="vecthare-cv-preview-list">
+            <div class="vectfox-cv-preview-list">
                 ${chunks.slice(0, 10).map((chunk, i) => {
                     const chunkText = chunk.text || chunk;
                     return `
-                    <div class="vecthare-cv-preview-chunk">
-                        <span class="vecthare-cv-preview-num">#${i + 1}</span>
-                        <span class="vecthare-cv-preview-text">${escapeHtml(chunkText.substring(0, 150))}${chunkText.length > 150 ? '...' : ''}</span>
-                        <span class="vecthare-cv-preview-size">${chunkText.length} chars</span>
+                    <div class="vectfox-cv-preview-chunk">
+                        <span class="vectfox-cv-preview-num">#${i + 1}</span>
+                        <span class="vectfox-cv-preview-text">${escapeHtml(chunkText.substring(0, 150))}${chunkText.length > 150 ? '...' : ''}</span>
+                        <span class="vectfox-cv-preview-size">${chunkText.length} chars</span>
                     </div>
                 `}).join('')}
-                ${chunks.length > 10 ? `<div class="vecthare-cv-preview-more">...and ${chunks.length - 10} more</div>` : ''}
+                ${chunks.length > 10 ? `<div class="vectfox-cv-preview-more">...and ${chunks.length - 10} more</div>` : ''}
             </div>
         `);
 
     } catch (e) {
         console.error('VectHare: Preview failed:', e);
-        container.html(`<div class="vecthare-cv-error">Preview failed: ${e.message}</div>`);
+        container.html(`<div class="vectfox-cv-error">Preview failed: ${e.message}</div>`);
     }
 }
 
@@ -2556,7 +2556,7 @@ function getSourceData() {
 
         case 'chat': {
             // Check which tab is active
-            const activeTab = $('.vecthare-cv-chat-source .vecthare-cv-source-tab.active').data('source');
+            const activeTab = $('.vectfox-cv-chat-source .vectfox-cv-source-tab.active').data('source');
 
             if (activeTab === 'current') {
                 // Use current chat
@@ -2625,7 +2625,7 @@ async function startContinueVectorization() {
 
     // currentSettings only carries content-type defaults — merge global VectHare settings
     // so the user's summarize_model / API key (set in Core → LLM Summarization) is visible.
-    const mergedSettings = { ...(extension_settings.vecthareplus || {}), ...currentSettings };
+    const mergedSettings = { ...(extension_settings.vectfox || {}), ...currentSettings };
     console.log('[VectHare] LLM config check (vectorize-content):', {
         provider: mergedSettings.summarize_provider,
         model: mergedSettings.summarize_model,
@@ -2669,7 +2669,7 @@ async function startContinueVectorization() {
         // Merge global VectHare settings (vector_backend, source, model, etc.) into currentSettings,
         // which by itself is only the content-type defaults. Without this, the collection-ID builder
         // sees `settings.vector_backend` as undefined and drops the backend segment from the name.
-        const mergedSettings = { ...(extension_settings.vecthareplus || {}), ...currentSettings };
+        const mergedSettings = { ...(extension_settings.vectfox || {}), ...currentSettings };
         const result = await vectorizeContent({
             contentType: currentContentType,
             source: source,
@@ -2720,7 +2720,7 @@ async function _runEventBaseBackfill() {
         const { runEventBaseIngestion } = await import('../core/eventbase-workflow.js');
         const { chunkText } = await import('../core/chunking.js');
         const context = getContext();
-        const settings = extension_settings.vecthareplus || {};
+        const settings = extension_settings.vectfox || {};
         const source = getSourceData();
 
         let messages, chatUUID, collectionIdOverride = null;
@@ -2854,7 +2854,7 @@ async function startVectorization() {
     // make LLM calls that share the summarize_* settings. Fail fast with a clear message
     // rather than letting it blow up mid-ingest. Merge global settings so the user's
     // summarize_model / API key set in Core → LLM Summarization is visible here.
-    const mergedSettings = { ...(extension_settings.vecthareplus || {}), ...currentSettings };
+    const mergedSettings = { ...(extension_settings.vectfox || {}), ...currentSettings };
     console.log('[VectHare] LLM config check (start-vectorization):', {
         provider: mergedSettings.summarize_provider,
         model: mergedSettings.summarize_model,
@@ -2923,7 +2923,7 @@ async function startVectorization() {
         const { vectorizeContent } = await import('../core/content-vectorization.js');
 
         // Merge global VectHare settings (vector_backend, source, model, etc.) into currentSettings.
-        const mergedSettings = { ...(extension_settings.vecthareplus || {}), ...currentSettings };
+        const mergedSettings = { ...(extension_settings.vectfox || {}), ...currentSettings };
         const result = await vectorizeContent({
             contentType: currentContentType,
             source: source,

@@ -1,13 +1,13 @@
 /**
  * ============================================================================
- * VECTHARE EMOTION CLASSIFIER
+ * VectFox EMOTION CLASSIFIER
  * ============================================================================
  * Provides emotion classification for Cotton-Tales integration.
  * Supports:
  * - Local transformers.js classifier models (no server needed)
  * - Using embedding similarity with emotion descriptions
  *
- * @author VectHare
+ * @author VectFox
  * @version 1.0.0
  * ============================================================================
  */
@@ -19,7 +19,7 @@ import { extension_settings } from '../../../../extensions.js';
 // CONSTANTS
 // =============================================================================
 
-const MODULE_NAME = 'VectHare-EmotionClassifier';
+const MODULE_NAME = 'VectFox-EmotionClassifier';
 
 /**
  * Known emotion classifier models that work well
@@ -77,13 +77,13 @@ export function isCottonTalesInstalled() {
 }
 
 /**
- * Check if Cotton-Tales is using VectHare for classification
+ * Check if Cotton-Tales is using VectFox for classification
  * @returns {boolean}
  */
-export function isCottonTalesUsingVectHare() {
+export function isCottonTalesUsingVectFox() {
     try {
         const ctSettings = extension_settings?.cotton_tales;
-        // EXPRESSION_API.vecthare = 4
+        // EXPRESSION_API.VectFox = 4
         return ctSettings?.expressionApi === 4;
     } catch {
         return false;
@@ -266,11 +266,11 @@ export async function testClassifierModel(model) {
 // =============================================================================
 
 /**
- * Get classifier settings from VectHare extension settings
+ * Get classifier settings from VectFox extension settings
  * @returns {Object} Classifier settings
  */
 export function getClassifierSettings() {
-    const vhSettings = extension_settings?.vecthare || {};
+    const vhSettings = extension_settings?.VectFox || {};
     return {
         enabled: vhSettings.emotion_classifier_enabled ?? DEFAULT_CLASSIFIER_SETTINGS.enabled,
         model: vhSettings.emotion_classifier_model ?? DEFAULT_CLASSIFIER_SETTINGS.model,
@@ -285,8 +285,8 @@ export function getClassifierSettings() {
  * @param {any} value - Setting value
  */
 export function updateClassifierSetting(key, value) {
-    if (!extension_settings.vecthareplus) {
-        extension_settings.vecthareplus = {};
+    if (!extension_settings.VectFoxplus) {
+        extension_settings.VectFoxplus = {};
     }
 
     const keyMap = {
@@ -297,7 +297,7 @@ export function updateClassifierSetting(key, value) {
     };
 
     const settingKey = keyMap[key] || key;
-    extension_settings.vecthareplus[settingKey] = value;
+    extension_settings.VectFoxplus[settingKey] = value;
 
     // Clear cache if model changes
     if (key === 'model') {
@@ -326,5 +326,5 @@ export const CottonTalesAPI = {
 
 // Expose to window for Cotton-Tales access
 if (typeof window !== 'undefined') {
-    window.VectHareEmotionClassifier = CottonTalesAPI;
+    window.VectFoxEmotionClassifier = CottonTalesAPI;
 }

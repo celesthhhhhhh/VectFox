@@ -1,11 +1,11 @@
 /**
  * ============================================================================
- * VECTHARE EMBEDDING PROVIDERS
+ * VectFox EMBEDDING PROVIDERS
  * ============================================================================
  * Single source of truth for embedding providers and their configurations.
  * Import this anywhere you need provider information.
  *
- * @author VectHare
+ * @author VectFox
  * @version 2.0.0
  * ============================================================================
  */

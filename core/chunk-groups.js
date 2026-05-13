@@ -15,7 +15,7 @@
  * Groups are stored in collection metadata and expanded at search time.
  * Inclusive mode reuses the existing chunk link system.
  *
- * @author VectHare Team
+ * @author VectFox Team
  * @version 1.0.0
  * ============================================================================
  */
@@ -71,7 +71,7 @@ export function expandInclusiveGroups(groups, matchedHashes) {
             }
         }
 
-        console.log(`VectHare Groups: Inclusive group "${group.name}" triggered by ${matchedMembers.length} member(s), creating ${linkType} links to ${group.members.length - matchedMembers.length} other member(s)`);
+        console.log(`VectFox Groups: Inclusive group "${group.name}" triggered by ${matchedMembers.length} member(s), creating ${linkType} links to ${group.members.length - matchedMembers.length} other member(s)`);
     }
 
     return virtualLinks;
@@ -122,7 +122,7 @@ export function applyExclusiveGroups(chunks, groups) {
             });
         }
 
-        console.log(`VectHare Groups: Exclusive group "${group.name}" - kept chunk ${String(winner.hash).substring(0, 8)}... (score: ${winner.score?.toFixed(3)}), excluded ${losers.length} lower-scoring member(s)`);
+        console.log(`VectFox Groups: Exclusive group "${group.name}" - kept chunk ${String(winner.hash).substring(0, 8)}... (score: ${winner.score?.toFixed(3)}), excluded ${losers.length} lower-scoring member(s)`);
     }
 
     const filteredChunks = chunks.filter(c => !excludedHashes.has(String(c.hash)));
@@ -166,7 +166,7 @@ export function enforceMandatoryGroups(chunks, groups, allChunksMap) {
             .filter(c => !c.disabled);
 
         if (availableMembers.length === 0) {
-            console.warn(`VectHare Groups: Mandatory group "${group.name}" has no available members to include`);
+            console.warn(`VectFox Groups: Mandatory group "${group.name}" has no available members to include`);
             continue;
         }
 
@@ -189,7 +189,7 @@ export function enforceMandatoryGroups(chunks, groups, allChunksMap) {
 
         resultHashes.add(String(chosen.hash));
 
-        console.log(`VectHare Groups: Mandatory group "${group.name}" - force-included chunk ${String(chosen.hash).substring(0, 8)}...`);
+        console.log(`VectFox Groups: Mandatory group "${group.name}" - force-included chunk ${String(chosen.hash).substring(0, 8)}...`);
     }
 
     return {

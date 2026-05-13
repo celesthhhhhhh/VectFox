@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE DIAGNOSTICS - ACTIVATION TESTS
+ * VectFox DIAGNOSTICS - ACTIVATION TESTS
  * ============================================================================
  * Comprehensive tests for conditional activation system
  * Tests all 11 condition types + activation triggers + chunk-only features

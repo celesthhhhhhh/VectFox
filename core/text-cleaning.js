@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE TEXT CLEANING
+ * VectFox TEXT CLEANING
  * ============================================================================
  * Pre-vectorization text cleaning with regex patterns.
  * Strips HTML, metadata blocks, and custom tags before chunking.
@@ -188,20 +188,20 @@ export const CLEANING_PRESETS = {
  * @returns {object} Cleaning settings
  */
 export function getCleaningSettings() {
-    if (!extension_settings.vecthareplus) {
-        extension_settings.vecthareplus = {};
+    if (!extension_settings.VectFoxplus) {
+        extension_settings.VectFoxplus = {};
     }
-    if (!extension_settings.vecthareplus.cleaning) {
+    if (!extension_settings.VectFoxplus.cleaning) {
         // Default: Custom preset with all MVU + standard patterns pre-checked
         // (equivalent to MVU Game Maker preset, but lets users toggle individual patterns)
         const defaultEnabled = Object.keys(BUILTIN_PATTERNS).filter(id => id !== 'strip_all_html');
-        extension_settings.vecthareplus.cleaning = {
+        extension_settings.VectFoxplus.cleaning = {
             selectedPreset: 'custom',
             customPatterns: [],
             enabledBuiltins: defaultEnabled,
         };
     }
-    return extension_settings.vecthareplus.cleaning;
+    return extension_settings.VectFoxplus.cleaning;
 }
 
 /**
@@ -209,10 +209,10 @@ export function getCleaningSettings() {
  * @param {object} settings - Settings to save
  */
 export function saveCleaningSettings(settings) {
-    if (!extension_settings.vecthareplus) {
-        extension_settings.vecthareplus = {};
+    if (!extension_settings.VectFoxplus) {
+        extension_settings.VectFoxplus = {};
     }
-    extension_settings.vecthareplus.cleaning = settings;
+    extension_settings.VectFoxplus.cleaning = settings;
 }
 
 /**
@@ -265,7 +265,7 @@ function applyPattern(text, pattern) {
         const regex = new RegExp(pattern.pattern, pattern.flags || 'g');
         return text.replace(regex, pattern.replacement || '');
     } catch (e) {
-        console.warn(`VectHare: Invalid regex pattern "${pattern.name || pattern.pattern}":`, e.message);
+        console.warn(`VectFox: Invalid regex pattern "${pattern.name || pattern.pattern}":`, e.message);
         return text;
     }
 }

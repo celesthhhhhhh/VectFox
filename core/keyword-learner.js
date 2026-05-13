@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE KEYWORD LEARNER
+ * VectFox KEYWORD LEARNER
  * ============================================================================
  * Analyzes individual entries to suggest keywords based on word frequency
  * within that entry's content.

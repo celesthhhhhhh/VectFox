@@ -39,7 +39,7 @@ const _windowCacheSet = new Map(); // chatUUID → Set<fingerprint>
  * Each event gets its own Qdrant point (vector = embedText embedding, payload = full record).
  *
  * @param {object[]} events      - Array of full EventRecord objects (with ingestion metadata)
- * @param {object}   settings    - VectHare settings
+ * @param {object}   settings    - VectFox settings
  * @param {AbortSignal|null} [abortSignal]
  * @returns {Promise<void>}
  */
@@ -113,7 +113,7 @@ export async function insertEvents(events, settings, abortSignal = null, collect
     // Auto-lock live EventBase collections to the current chat after first insert.
     // Archive event collections are NOT auto-locked — users must enable them manually
     // via the "Active for current chat" checkbox on the collection card.
-    const isArchive = collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT);
+    const isArchive = collectionId.startsWith(COLLECTION_PREFIXES.VectFox_ARCHIVE_EVENT);
     const currentChatId = getCurrentChatId();
     if (!isArchive && currentChatId) {
         setCollectionLock(collectionId, currentChatId);
@@ -236,7 +236,7 @@ export function markWindowExtracted(sourceHashes, chatUUID) {
     const uuid = chatUUID || getChatUUID();
     if (!uuid) return;
 
-    const store = extension_settings.vecthareplus;
+    const store = extension_settings.VectFoxplus;
     if (!store) return;
     if (!store.eventbase_extracted_windows) store.eventbase_extracted_windows = {};
     if (!store.eventbase_extracted_windows[uuid]) store.eventbase_extracted_windows[uuid] = [];
@@ -264,7 +264,7 @@ export function markWindowExtracted(sourceHashes, chatUUID) {
 export function clearWindowCacheForChat(chatUUID) {
     const uuid = chatUUID || getChatUUID();
     if (!uuid) return;
-    const store = extension_settings?.vecthareplus;
+    const store = extension_settings?.VectFoxplus;
     if (!store?.eventbase_extracted_windows) return;
     delete store.eventbase_extracted_windows[uuid];
     _windowCacheSet.delete(uuid);
@@ -297,7 +297,7 @@ export function isLastWindowExtracted(messages, windowSize, step, chatUUID, hash
     const hashes = lastMsgs.map(hashFn);
 
     if (!_windowCacheSet.has(uuid)) {
-        const arr = extension_settings?.vecthareplus?.eventbase_extracted_windows?.[uuid];
+        const arr = extension_settings?.VectFoxplus?.eventbase_extracted_windows?.[uuid];
         _windowCacheSet.set(uuid, new Set(Array.isArray(arr) ? arr : []));
     }
 
@@ -321,7 +321,7 @@ export async function isWindowAlreadyExtracted(sourceHashes, messageIds, setting
 
     // Build the Set from the persisted array on first access for this chat
     if (!_windowCacheSet.has(uuid)) {
-        const arr = extension_settings?.vecthareplus?.eventbase_extracted_windows?.[uuid];
+        const arr = extension_settings?.VectFoxplus?.eventbase_extracted_windows?.[uuid];
         _windowCacheSet.set(uuid, new Set(Array.isArray(arr) ? arr : []));
     }
 
@@ -353,7 +353,7 @@ export function findEventBaseCollectionIdsForChat(uuid, preferredBackend) {
     for (const registryKey of getCollectionRegistry()) {
         const parsed = parseRegistryKey(registryKey);
         const colId = parsed.collectionId;
-        if (!colId?.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE)) continue;
+        if (!colId?.startsWith(COLLECTION_PREFIXES.VectFox_EVENTBASE)) continue;
         if (!colId.endsWith(uuid)) continue;
         matches.push({ registryKey, collectionId: colId, backend: parsed.backend });
     }

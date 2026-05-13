@@ -5,7 +5,7 @@
  * Common interface that all vector backends must implement.
  * Keeps backends small, focused, and swappable.
  *
- * @author VectHare
+ * @author VectFox
  * @version 2.2.0-alpha
  * ============================================================================
  */
@@ -17,7 +17,7 @@
 export class VectorBackend {
     /**
      * Initialize the backend with settings
-     * @param {object} settings - VectHare settings
+     * @param {object} settings - VectFox settings
      */
     async initialize(settings) {
         throw new Error('Backend must implement initialize()');
@@ -146,7 +146,7 @@ export class VectorBackend {
      * @param {string} collectionId
      * @param {string} searchText
      * @param {number} topK
-     * @param {object} settings - VectHare settings
+     * @param {object} settings - VectFox settings
      * @param {object} hybridOptions - Hybrid search options
      * @param {number} hybridOptions.vectorWeight - Weight for vector scores (0-1)
      * @param {number} hybridOptions.textWeight - Weight for text scores (0-1)
@@ -156,7 +156,7 @@ export class VectorBackend {
      */
     async hybridQuery(collectionId, searchText, topK, settings, hybridOptions = {}) {
         // Default: fallback to vector-only search
-        console.warn(`VectHare: Backend ${this.constructor.name} does not support native hybrid search, using vector-only`);
+        console.warn(`VectFox: Backend ${this.constructor.name} does not support native hybrid search, using vector-only`);
         return this.queryCollection(collectionId, searchText, topK, settings);
     }
 }

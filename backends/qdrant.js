@@ -23,7 +23,7 @@
  *
  * Requires either a local Qdrant instance or Qdrant Cloud account.
  *
- * @author VectHare
+ * @author VectFox
  * @version 3.2.0
  * ============================================================================
  */
@@ -35,6 +35,9 @@ import { VECTOR_LIST_LIMIT } from '../core/constants.js';
 import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
 
 const BACKEND_TYPE = 'qdrant';
+
+// NOTE: `vecthare_multitenancy` is kept verbatim for on-disk compatibility
+// with existing user Qdrant data. Do not rebrand. See plans/vectfox-rename-plan.md §1.5.
 const MULTITENANCY_COLLECTION = 'vecthare_multitenancy';
 
 /**
@@ -89,7 +92,7 @@ function getPluginProviderParams(settings) {
 /**
  * Determines the actual collection name to use based on multitenancy setting
  * @param {string} collectionId - Original collection ID
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {string} - Actual collection name to use
  */
 function getActualCollectionId(collectionId, settings) {
@@ -114,7 +117,7 @@ export class QdrantBackend extends VectorBackend {
                 host: null,
                 port: null,
             };
-            console.log('VectHare: Initializing Qdrant Cloud:', config.url);
+            console.log('VectFox: Initializing Qdrant Cloud:', config.url);
         } else {
             // Local mode: use host and port
             config = {
@@ -124,10 +127,10 @@ export class QdrantBackend extends VectorBackend {
                 url: null,
                 apiKey: null,
             };
-            console.log('VectHare: Initializing local Qdrant:', `${config.host}:${config.port}`);
+            console.log('VectFox: Initializing local Qdrant:', `${config.host}:${config.port}`);
         }
 
-        console.log('VectHare: Sending Qdrant config to Similharity plugin:', JSON.stringify(config));
+        console.log('VectFox: Sending Qdrant config to Similharity plugin:', JSON.stringify(config));
 
         const response = await fetch('/api/plugins/similharity/backend/init/qdrant', {
             method: 'POST',
@@ -141,8 +144,8 @@ export class QdrantBackend extends VectorBackend {
         }
 
         const responseData = await response.json().catch(() => ({}));
-        console.log('VectHare: Qdrant initialization response:', responseData);
-        console.log('VectHare: Using Qdrant backend (production-grade vector search)');
+        console.log('VectFox: Qdrant initialization response:', responseData);
+        console.log('VectFox: Using Qdrant backend (production-grade vector search)');
     }
 
     async healthCheck() {
@@ -235,7 +238,7 @@ export class QdrantBackend extends VectorBackend {
         }
 
         // Fallback: assume it's a chat with raw ID
-        console.warn('VectHare: Unknown collection ID format:', collectionId);
+        console.warn('VectFox: Unknown collection ID format:', collectionId);
         return {
             type: 'chat',
             sourceId: collectionId
@@ -298,7 +301,7 @@ export class QdrantBackend extends VectorBackend {
             batches.push(items.slice(i, i + BATCH_SIZE));
         }
 
-        console.log(`VectHare Qdrant: Inserting ${items.length} vectors in ${batches.length} batch(es) of up to ${BATCH_SIZE} items`);
+        console.log(`VectFox Qdrant: Inserting ${items.length} vectors in ${batches.length} batch(es) of up to ${BATCH_SIZE} items`);
 
         // Process each batch
         for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
@@ -324,7 +327,7 @@ export class QdrantBackend extends VectorBackend {
 
                         const metadata = {
                             ...item.metadata,
-                            // Pass through VectHare-specific fields
+                            // Pass through VectFox-specific fields
                             importance: item.importance,
                             keywords: item.keywords,
                             customWeights: item.customWeights,
@@ -382,18 +385,18 @@ export class QdrantBackend extends VectorBackend {
                 throw new Error(`[Qdrant] Failed to insert ${items.length} vectors into ${actualCollectionId}: ${response.status} ${response.statusText} - ${errorBody}`);
             }
 
-            console.log(`VectHare Qdrant: Batch ${batchNum}/${batches.length} completed (${batch.length} vectors)`);
+            console.log(`VectFox Qdrant: Batch ${batchNum}/${batches.length} completed (${batch.length} vectors)`);
         }
         try {
             // Dynamic import to avoid circular dependency
             const { registerCollection } = await import('../core/collection-loader.js');
             registerCollection(collectionId);
         } catch (e) {
-            console.warn('VectHare: Failed to register collection after Qdrant insert:', e);
+            console.warn('VectFox: Failed to register collection after Qdrant insert:', e);
         }
 
         const mode = settings.qdrant_multitenancy ? 'multitenancy' : 'separate';
-        console.log(`VectHare Qdrant: Inserted ${items.length} vectors into ${actualCollectionId} (${mode} mode, content_type: ${strippedCollectionId})`);
+        console.log(`VectFox Qdrant: Inserted ${items.length} vectors into ${actualCollectionId} (${mode} mode, content_type: ${strippedCollectionId})`);
     }
 
     async deleteVectorItems(collectionId, hashes, settings) {
@@ -550,7 +553,7 @@ export class QdrantBackend extends VectorBackend {
                 } else {
                     const errorBody = await response.text().catch(() => 'No response body');
                     const errorMsg = `${response.status} ${response.statusText} - ${errorBody}`;
-                    console.error(`VectHare: Query failed for ${collectionId}: ${errorMsg}`);
+                    console.error(`VectFox: Query failed for ${collectionId}: ${errorMsg}`);
                     results[collectionId] = { hashes: [], metadata: [], error: errorMsg };
                 }
             } catch (error) {
@@ -580,7 +583,7 @@ export class QdrantBackend extends VectorBackend {
             throw new Error(`[Qdrant] Failed to purge collection ${collectionId}: ${response.status} ${response.statusText} - ${errorBody}`);
         }
 
-        console.log(`VectHare Qdrant: Purged ${actualCollectionId}`);
+        console.log(`VectFox Qdrant: Purged ${actualCollectionId}`);
     }
 
     async purgeFileVectorIndex(collectionId, settings) {
@@ -589,7 +592,7 @@ export class QdrantBackend extends VectorBackend {
 
     async purgeAllVectorIndexes(settings) {
         // Note: With separate collections per content type, we need to purge each collection individually
-        console.warn('VectHare: purgeAllVectorIndexes now requires calling purgeVectorIndex for each collection');
+        console.warn('VectFox: purgeAllVectorIndexes now requires calling purgeVectorIndex for each collection');
         throw new Error('purgeAllVectorIndexes requires collection IDs - call purgeVectorIndex for each collection instead');
     }
 
@@ -747,7 +750,7 @@ export class QdrantBackend extends VectorBackend {
      * @param {string} collectionId - Collection to query
      * @param {string} searchText - Query text
      * @param {number} topK - Number of results to return
-     * @param {object} settings - VectHare settings
+     * @param {object} settings - VectFox settings
      * @param {object} hybridOptions - Hybrid search options
      * @returns {Promise<{hashes: number[], metadata: object[]}>}
      */
@@ -892,7 +895,7 @@ export class QdrantBackend extends VectorBackend {
      * @param {string} collectionId
      * @param {string} searchText
      * @param {number} topK - Outer formula limit (typically finalTopK × 2 for dedup overfetch)
-     * @param {object} settings - VectHare settings
+     * @param {object} settings - VectFox settings
      * @param {object} rerankParams - { weights, chatLength, halfLife, minImportance, visibleThreshold, applyContextDedupFilter, rrfScoreScale? }
      * @param {object} hybridOptions - { prefetchLimit }
      * @returns {Promise<{hashes:number[], metadata:object[]}>}

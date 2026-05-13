@@ -11,14 +11,14 @@
  * STUNNING ACTION BUTTONS
  * ============================================================================ */
 
-.vecthare-actions-grid {
+.vectfox-actions-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-top: 24px;
 }
 
-.vecthare-action-btn {
+.vectfox-action-btn {
     padding: 18px 24px;
     border-radius: 12px;
     font-weight: 600;
@@ -35,7 +35,7 @@
     box-shadow: 0 4px 12px color-mix(in srgb, black 15%, transparent);
 }
 
-.vecthare-action-btn::before {
+.vectfox-action-btn::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -48,116 +48,116 @@
     transition: width 0.6s ease, height 0.6s ease;
 }
 
-.vecthare-action-btn:hover::before {
+.vectfox-action-btn:hover::before {
     width: 300px;
     height: 300px;
 }
 
-.vecthare-action-btn:hover {
+.vectfox-action-btn:hover {
     transform: translateY(-4px);
     box-shadow:
         0 8px 24px color-mix(in srgb, currentColor 30%, transparent),
         0 4px 8px color-mix(in srgb, black 20%, transparent);
 }
 
-.vecthare-action-btn:active {
+.vectfox-action-btn:active {
     transform: translateY(-2px);
 }
 
-.vecthare-action-btn i {
+.vectfox-action-btn i {
     font-size: 1.2em;
     position: relative;
     z-index: 1;
     transition: transform 0.3s ease;
 }
 
-.vecthare-action-btn:hover i {
+.vectfox-action-btn:hover i {
     transform: scale(1.2) rotate(5deg);
 }
 
-.vecthare-action-btn span {
+.vectfox-action-btn span {
     position: relative;
     z-index: 1;
 }
 
-.vecthare-btn-primary {
+.vectfox-btn-primary {
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-primary) 25%, var(--SmartThemeBlurTintColor)) 0%,
-        color-mix(in srgb, var(--vecthare-primary) 15%, var(--SmartThemeBlurTintColor)) 100%);
-    border-color: var(--vecthare-primary);
+        color-mix(in srgb, var(--vectfox-primary) 25%, var(--SmartThemeBlurTintColor)) 0%,
+        color-mix(in srgb, var(--vectfox-primary) 15%, var(--SmartThemeBlurTintColor)) 100%);
+    border-color: var(--vectfox-primary);
     color: var(--SmartThemeBodyColor);
 }
 
-.vecthare-btn-primary i {
-    color: var(--vecthare-primary-bright);
+.vectfox-btn-primary i {
+    color: var(--vectfox-primary-bright);
 }
 
-.vecthare-btn-danger {
+.vectfox-btn-danger {
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-danger) 25%, var(--SmartThemeBlurTintColor)) 0%,
-        color-mix(in srgb, var(--vecthare-danger) 15%, var(--SmartThemeBlurTintColor)) 100%);
-    border-color: var(--vecthare-danger);
+        color-mix(in srgb, var(--vectfox-danger) 25%, var(--SmartThemeBlurTintColor)) 0%,
+        color-mix(in srgb, var(--vectfox-danger) 15%, var(--SmartThemeBlurTintColor)) 100%);
+    border-color: var(--vectfox-danger);
     color: var(--SmartThemeBodyColor);
 }
 
-.vecthare-btn-danger i {
-    color: var(--vecthare-danger);
+.vectfox-btn-danger i {
+    color: var(--vectfox-danger);
 }
 
-.vecthare-btn-secondary {
+.vectfox-btn-secondary {
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-secondary) 25%, var(--SmartThemeBlurTintColor)) 0%,
-        color-mix(in srgb, var(--vecthare-secondary) 15%, var(--SmartThemeBlurTintColor)) 100%);
-    border-color: var(--vecthare-secondary);
+        color-mix(in srgb, var(--vectfox-secondary) 25%, var(--SmartThemeBlurTintColor)) 0%,
+        color-mix(in srgb, var(--vectfox-secondary) 15%, var(--SmartThemeBlurTintColor)) 100%);
+    border-color: var(--vectfox-secondary);
     color: var(--SmartThemeBodyColor);
 }
 
-.vecthare-btn-secondary i {
-    color: var(--vecthare-secondary);
+.vectfox-btn-secondary i {
+    color: var(--vectfox-secondary);
 }
 
 /* Featured action button - larger and more prominent */
-.vecthare-action-featured {
+.vectfox-action-featured {
     grid-column: span 2;
     padding: 22px 28px;
     font-size: 1.1em;
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-primary) 35%, var(--SmartThemeBlurTintColor)) 0%,
-        color-mix(in srgb, var(--vecthare-primary) 20%, var(--SmartThemeBlurTintColor)) 100%);
-    border: 2px solid color-mix(in srgb, var(--vecthare-primary) 60%, transparent);
+        color-mix(in srgb, var(--vectfox-primary) 35%, var(--SmartThemeBlurTintColor)) 0%,
+        color-mix(in srgb, var(--vectfox-primary) 20%, var(--SmartThemeBlurTintColor)) 100%);
+    border: 2px solid color-mix(in srgb, var(--vectfox-primary) 60%, transparent);
     box-shadow:
-        0 4px 16px color-mix(in srgb, var(--vecthare-primary) 25%, transparent),
+        0 4px 16px color-mix(in srgb, var(--vectfox-primary) 25%, transparent),
         inset 0 1px 0 color-mix(in srgb, white 10%, transparent);
 }
 
-.vecthare-action-featured:hover {
+.vectfox-action-featured:hover {
     background: linear-gradient(135deg,
-        color-mix(in srgb, var(--vecthare-primary) 45%, var(--SmartThemeBlurTintColor)) 0%,
-        color-mix(in srgb, var(--vecthare-primary) 30%, var(--SmartThemeBlurTintColor)) 100%);
-    border-color: var(--vecthare-primary);
+        color-mix(in srgb, var(--vectfox-primary) 45%, var(--SmartThemeBlurTintColor)) 0%,
+        color-mix(in srgb, var(--vectfox-primary) 30%, var(--SmartThemeBlurTintColor)) 100%);
+    border-color: var(--vectfox-primary);
     box-shadow:
-        0 8px 28px color-mix(in srgb, var(--vecthare-primary) 35%, transparent),
+        0 8px 28px color-mix(in srgb, var(--vectfox-primary) 35%, transparent),
         inset 0 1px 0 color-mix(in srgb, white 15%, transparent);
 }
 
-.vecthare-action-featured i {
+.vectfox-action-featured i {
     font-size: 1.3em;
-    color: var(--vecthare-primary-bright);
+    color: var(--vectfox-primary-bright);
 }
 
 /* Danger outline button - less prominent destructive action */
-.vecthare-btn-danger-outline {
+.vectfox-btn-danger-outline {
     background: transparent;
-    border: 1px solid color-mix(in srgb, var(--vecthare-danger) 50%, transparent);
-    color: var(--vecthare-danger);
+    border: 1px solid color-mix(in srgb, var(--vectfox-danger) 50%, transparent);
+    color: var(--vectfox-danger);
 }
 
-.vecthare-btn-danger-outline:hover {
-    background: color-mix(in srgb, var(--vecthare-danger) 15%, transparent);
-    border-color: var(--vecthare-danger);
+.vectfox-btn-danger-outline:hover {
+    background: color-mix(in srgb, var(--vectfox-danger) 15%, transparent);
+    border-color: var(--vectfox-danger);
 }
 
-.vecthare-btn-danger-outline i {
-    color: var(--vecthare-danger);
+.vectfox-btn-danger-outline i {
+    color: var(--vectfox-danger);
 }
 

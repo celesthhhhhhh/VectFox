@@ -1,8 +1,8 @@
 /**
  * ============================================================================
- * VECTHARE PNG EXPORT/IMPORT
+ * VectFox PNG EXPORT/IMPORT
  * ============================================================================
- * Embeds VectHare collection data into PNG files using zTXt chunks.
+ * Embeds VectFox collection data into PNG files using zTXt chunks.
  *
  * PNG Structure:
  * - 8-byte signature
@@ -16,7 +16,7 @@
  * Uses browser's native CompressionStream API for deflate compression.
  * Falls back to storing as tEXt (base64, uncompressed) if compression unavailable.
  *
- * @author VectHare
+ * @author VectFox
  * @version 1.0.0
  * ============================================================================
  */
@@ -28,8 +28,8 @@
 /** PNG file signature (magic bytes) */
 const PNG_SIGNATURE = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
 
-/** Keyword for VectHare data in PNG tEXt/zTXt chunks */
-const VECTHARE_KEYWORD = 'vecthare';
+/** Keyword for VectFox data in PNG tEXt/zTXt chunks */
+const VectFox_KEYWORD = 'VectFox';
 
 /** Maximum keyword length in PNG text chunks */
 const MAX_KEYWORD_LENGTH = 79;
@@ -110,7 +110,7 @@ async function compressDeflateRaw(data) {
             return result;
         } catch (e) {
             // deflate-raw might not be supported, try regular deflate
-            console.warn('VectHare PNG: deflate-raw not supported, trying deflate');
+            console.warn('VectFox PNG: deflate-raw not supported, trying deflate');
         }
 
         try {
@@ -144,7 +144,7 @@ async function compressDeflateRaw(data) {
             }
             return result;
         } catch (e) {
-            console.warn('VectHare PNG: Compression failed, will use uncompressed tEXt', e);
+            console.warn('VectFox PNG: Compression failed, will use uncompressed tEXt', e);
             return null;
         }
     }
@@ -183,7 +183,7 @@ async function decompressDeflateRaw(data) {
             return result;
         } catch (e) {
             // Try wrapping in zlib format for regular deflate decoder
-            console.warn('VectHare PNG: deflate-raw decompress failed, trying with zlib wrapper');
+            console.warn('VectFox PNG: deflate-raw decompress failed, trying with zlib wrapper');
         }
 
         try {
@@ -221,7 +221,7 @@ async function decompressDeflateRaw(data) {
             }
             return result;
         } catch (e) {
-            console.error('VectHare PNG: All decompression methods failed', e);
+            console.error('VectFox PNG: All decompression methods failed', e);
             throw new Error('Failed to decompress PNG data. Browser may not support required compression.');
         }
     }
@@ -346,12 +346,12 @@ async function createZTXtChunk(keyword, text) {
         data[keywordBytes.length + 1] = 0; // Compression method 0 = deflate
         data.set(compressed, keywordBytes.length + 2);
 
-        console.log(`VectHare PNG: Compressed ${textBytes.length} bytes to ${compressed.length} bytes (${Math.round(compressed.length / textBytes.length * 100)}%)`);
+        console.log(`VectFox PNG: Compressed ${textBytes.length} bytes to ${compressed.length} bytes (${Math.round(compressed.length / textBytes.length * 100)}%)`);
 
         return createChunk('zTXt', data);
     } else {
         // Fall back to tEXt with base64 encoding
-        console.warn('VectHare PNG: Using uncompressed tEXt chunk (compression unavailable)');
+        console.warn('VectFox PNG: Using uncompressed tEXt chunk (compression unavailable)');
         const base64 = btoa(String.fromCharCode(...textBytes));
         const base64Bytes = new TextEncoder().encode(base64);
 
@@ -463,7 +463,7 @@ export async function convertToPNG(imageFile) {
  * @param {string} text - Text to display
  * @returns {Promise<Uint8Array>} PNG data
  */
-export async function createDefaultPNG(width = 512, height = 512, text = 'VectHare Collection') {
+export async function createDefaultPNG(width = 512, height = 512, text = 'VectFox Collection') {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -503,7 +503,7 @@ export async function createDefaultPNG(width = 512, height = 512, text = 'VectHa
 
     ctx.font = '16px sans-serif';
     ctx.fillStyle = '#a78bfa';
-    ctx.fillText('VectHare Export', width/2, height - 30);
+    ctx.fillText('VectFox Export', width/2, height - 30);
 
     return new Promise((resolve, reject) => {
         canvas.toBlob((blob) => {
@@ -519,8 +519,8 @@ export async function createDefaultPNG(width = 512, height = 512, text = 'VectHa
 }
 
 /**
- * Embeds VectHare export data into a PNG image
- * @param {object} exportData - VectHare export data object
+ * Embeds VectFox export data into a PNG image
+ * @param {object} exportData - VectFox export data object
  * @param {Uint8Array|null} pngData - Base PNG image (null = use default)
  * @returns {Promise<Uint8Array>} PNG with embedded data
  */
@@ -536,36 +536,36 @@ export async function embedDataInPNG(exportData, pngData = null) {
     const jsonString = JSON.stringify(exportData);
 
     // Create zTXt chunk with compressed data
-    const textChunk = await createZTXtChunk(VECTHARE_KEYWORD, jsonString);
+    const textChunk = await createZTXtChunk(VectFox_KEYWORD, jsonString);
 
     // Insert chunk into PNG
     const result = insertChunkBeforeIEND(pngData, textChunk);
 
-    console.log(`VectHare PNG: Created PNG export (${result.length} bytes, original JSON: ${jsonString.length} bytes)`);
+    console.log(`VectFox PNG: Created PNG export (${result.length} bytes, original JSON: ${jsonString.length} bytes)`);
 
     return result;
 }
 
 /**
- * Extracts VectHare data from a PNG image
+ * Extracts VectFox data from a PNG image
  * @param {Uint8Array} pngData - PNG file data
  * @returns {Promise<object|null>} Extracted export data or null if not found
  */
 export async function extractDataFromPNG(pngData) {
     const chunks = parseChunks(pngData);
 
-    // Look for vecthare keyword in text chunks
+    // Look for VectFox keyword in text chunks
     for (const chunk of chunks) {
         if (chunk.type === 'tEXt' || chunk.type === 'zTXt') {
             try {
                 const textData = await readTextChunk(chunk);
-                if (textData && textData.keyword === VECTHARE_KEYWORD) {
+                if (textData && textData.keyword === VectFox_KEYWORD) {
                     const exportData = JSON.parse(textData.text);
-                    console.log('VectHare PNG: Successfully extracted data from PNG');
+                    console.log('VectFox PNG: Successfully extracted data from PNG');
                     return exportData;
                 }
             } catch (e) {
-                console.warn('VectHare PNG: Failed to read text chunk:', e);
+                console.warn('VectFox PNG: Failed to read text chunk:', e);
             }
         }
     }
@@ -590,7 +590,7 @@ export function downloadPNG(pngData, filename) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log(`VectHare PNG: Downloaded ${a.download}`);
+    console.log(`VectFox PNG: Downloaded ${a.download}`);
 }
 
 /**
@@ -604,11 +604,11 @@ export async function readPNGFile(file) {
 }
 
 /**
- * Checks if a file is a PNG with VectHare data
+ * Checks if a file is a PNG with VectFox data
  * @param {File} file - File to check
  * @returns {Promise<boolean>}
  */
-export async function isVectHarePNG(file) {
+export async function isVectFoxPNG(file) {
     if (!file.type.includes('png') && !file.name.toLowerCase().endsWith('.png')) {
         return false;
     }
@@ -616,7 +616,7 @@ export async function isVectHarePNG(file) {
     try {
         const data = await readPNGFile(file);
         const exportData = await extractDataFromPNG(data);
-        return exportData !== null && (exportData.generator === 'VectHare' || exportData.version);
+        return exportData !== null && (exportData.generator === 'VectFox' || exportData.version);
     } catch {
         return false;
     }

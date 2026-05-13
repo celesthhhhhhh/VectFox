@@ -278,6 +278,54 @@ Three retrieval paths exist after the keyword-level simplification. All paths ar
 | `hybrid_search_enabled` | Removed | Setting deleted. Hybrid is now always available; path chosen by backend and `keyword_scoring_method`. |
 | `deduplication_depth` | Yes | EventBase context deduplication — suppress events already visible in recent chat window. |
 | `eventbase_retrieval_top_k`, `eventbase_retrieval_min_importance`, EventBase rerank weights | Yes | Active for all three retrieval paths. |
+| `eventbase_native_rerank` | **Yes (A3 only)** | Default `true`. When enabled and Qdrant ≥ 1.13, the four-weight formula (cosine × RRF + importance + persist + recency) runs server-side as a `formula` query inside the Qdrant `/points/query` call. Set `false` to fall back to JS post-processing (6b path). |
+| `eventbase_compare_rerank` | **Yes (A3 only)** | Default `false`. When enabled alongside `eventbase_native_rerank`, fires the JS formula path in parallel for every query and logs `overlap@K` and Spearman ρ to the console. Pure logging — does not change what is injected into the prompt. |
+| `eventbase_compare_rerank_verbose` | **Yes (A3 only)** | Default `false`. When both compare settings are on, emits per-event score rows (`nativeScore`, `jsBase`, `jsFinal`) so individual score differences are visible. Very noisy — intended for development only. |
+
+### Native Formula Rerank (A3 + Qdrant ≥ 1.13)
+
+When `eventbase_native_rerank = true`, `_runOneLiveQuery()` in
+[core/eventbase-retrieval.js](../core/eventbase-retrieval.js) calls
+`backend.hybridQueryWithRerank()` instead of `backend.hybridQuery()`. This
+issues a single Qdrant `/points/query` with the four-weight formula baked in:
+
+```json
+{
+  "prefetch": [
+    { "query": "<denseVector>", "limit": "<prefetchLimit>" },
+    { "query": "<sparseVector>", "using": "text_sparse", "limit": "<prefetchLimit>" }
+  ],
+  "query": {
+    "formula": {
+      "sum": [
+        { "mult": [0.55, { "mult": [1.0, "$score"] }] },
+        { "mult": [0.20, { "div": { "left": "importance", "right": 10 } }] },
+        { "mult": [0.15, { "key": "should_persist", "match": { "value": true } }] },
+        { "mult": [0.10, { "exp_decay": { "x": "source_window_end", "target": "<chatLength>", "scale": "<halfLife>", "midpoint": 0.5 } }] }
+      ]
+    }
+  },
+  "filter": { "must_not": [{ "key": "type", "match": { "value": "_vecthare_meta" } }] },
+  "limit": "<topK>"
+}
+```
+
+`$score` is Qdrant's RRF fusion score (peaks at 1.0 when k=1 internally).
+The prefetch pool is `prefetchLimit` events (default: `topK × 3`), giving the
+formula access to a wider candidate set than the plain RRF top-K — this lets
+high-importance/high-recency events that ranked outside the top-K in plain RRF
+still surface in the final result.
+
+**What stays client-side even in 6a:**
+- **Anchor boost** — multi-token phrase substring match (e.g. `贖身的儀式`)
+  requires JS; Qdrant tokenizes terms individually and any-of matching would
+  miss phrases.
+- **Pairwise deduplication** — content-hash overlap across events.
+- **Cross-collection merge** — `Promise.all` per collection, concat-dedup-trim.
+
+**Version requirement:** Qdrant ≥ 1.13 for `formula` query support. If the
+request fails with a Qdrant error, check the server version and set
+`eventbase_native_rerank = false` to fall back to the JS path.
 
 ---
 
@@ -404,7 +452,7 @@ A3 leverages **all four** of Qdrant's relevant server-side features:
 | **Sparse vectors** (`modifier: "idf"`) | ✅ | Named slot `text_sparse`, FNV-1a-hashed token indices, raw TF values; Qdrant computes IDF globally |
 | **Hybrid fusion** (`/points/query` with `prefetch`) | ✅ | Single call with `prefetch: [dense, sparse]` |
 | **Native RRF** (`fusion: "rrf"`) | ✅ | Server-side fusion; alternative `"dbsf"` available but unused |
-| Reranking pipelines | ❌ | EventBase's own importance/persist/recency re-ranker runs in JS after retrieval; Qdrant's experimental reranker not used |
+| Reranking pipelines | ✅ (EventBase) / ❌ (BananaBread) | EventBase formula rerank (cosine × RRF + importance + persist + recency) runs **server-side** via `query: { formula: { sum: [...] } }` wrapping the prefetch when `eventbase_native_rerank = true` (Qdrant ≥ 1.13). BananaBread cross-encoder reranking is a separate post-retrieval stage — not wired into the Qdrant query. |
 
 ### Cross-reference
 

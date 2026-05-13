@@ -181,13 +181,16 @@ pipeline — it is an optional **post-retrieval** rerank stage:
 * Takes the retrieved chunks (from any backend / any retrieval path) and
   reorders them by the reranker's relevance score, replacing `chunk.score`.
 
-EventBase has its own re-ranker
-([core/eventbase-retrieval.js:130-200](../core/eventbase-retrieval.js#L130-L200))
-that weights cosine + importance + persist + recency. It also runs *after*
-retrieval, on whatever the hybrid (or vector-only) path returned.
+EventBase has its own re-ranker that weights cosine + importance + persist +
+recency. When `eventbase_native_rerank = true` (Qdrant ≥ 1.13, default), this
+formula runs **server-side inside the Qdrant `/points/query` call** via a
+`formula` query wrapping the `prefetch` — see Section 6a. When
+`eventbase_native_rerank = false`, the same formula runs client-side in
+JavaScript after retrieval
+([core/eventbase-retrieval.js](../core/eventbase-retrieval.js)) — see Section 6b.
 
-Neither reranker is wired into the Qdrant `/query` call itself; both operate
-on the already-fused result set.
+BananaBread cross-encoder reranking (`settings.bananabread_rerank`) is **not**
+wired into the Qdrant query call; it runs as a separate post-retrieval stage.
 
 == Path A2: Client-Side Hybrid (Standard Backend)
 
@@ -323,25 +326,78 @@ payload per point.
 
 === 6. EventBase Retrieval Context
 
-In `eventbase-retrieval.js`, the hybrid path is only used for the initial
-vector query (`queryEvents()` → `queryCollection()`). The re-ranking in
-`retrieveEvents()` (lines 130–200) is a **separate, additional re-ranking**
-that uses:
-- Cosine score (from the hybrid/vector result — A3 returns `vectorScore` from
-  the dense leg so the re-ranker's cosine weight retains its semantic meaning
-  regardless of fusion method)
-- Importance (from event metadata)
-- Persist bonus
-- Recency bonus
+EventBase has two sub-paths depending on the `eventbase_native_rerank` setting
+and the Qdrant version (≥ 1.13 required for formula queries).
 
-This means:
+==== 6a. A3 + Native Formula Rerank (`eventbase_native_rerank = true`, Qdrant ≥ 1.13)
 
-* **Native hybrid path (A3)**: The events returned already reflect global
-  BM25 recall fused with dense recall via Qdrant's RRF. The EventBase
-  re-ranker then re-weights this list with cosine/importance/persist/recency.
-* **Client-side hybrid path (A2)**: The events may miss keyword-relevant
-  events that weren't in the dense ANN top-K. The re-ranker can only work
-  with what it receives.
+`_runOneLiveQuery()` in `eventbase-retrieval.js` calls
+`backend.hybridQueryWithRerank()` ([backends/qdrant.js](../backends/qdrant.js)),
+which POSTs to `/api/plugins/similharity/chunks/hybrid-query-rerank`.
+The Similharity route calls `hybridQueryNativeWithRerank()`
+([similharity/qdrant-backend.js](../../similharity/qdrant-backend.js)), issuing
+**one** Qdrant request:
+
+[source,json]
+----
+{
+  "prefetch": [
+    { "query": <denseVector>,    "limit": prefetchLimit },
+    { "query": <sparseVector>,   "using": "text_sparse", "limit": prefetchLimit }
+  ],
+  "query": {
+    "formula": {
+      "sum": [
+        { "mult": [0.55, { "mult": [1.0, "$score"] }] },
+        { "mult": [0.20, { "div": { "left": "importance", "right": 10 } }] },
+        { "mult": [0.15, { "key": "should_persist", "match": { "value": true } }] },
+        { "mult": [0.10, { "exp_decay": { "x": "source_window_end",
+                                          "target": <chatLength>,
+                                          "scale": <halfLife>,
+                                          "midpoint": 0.5 } }] }
+      ]
+    }
+  },
+  "filter": { "must_not": [{ "key": "type", "match": { "value": "_vecthare_meta" } }] },
+  "limit": topK
+}
+----
+
+`$score` is Qdrant's fused RRF score (peak 1.0 with Qdrant's `k=1` normalisation).
+The formula embeds the four EventBase weights — cosine, importance, persist, recency — in
+a single server-side pass over the top `prefetchLimit` (80) candidates.
+
+What **still runs client-side** regardless of this path:
+
+* **Anchor boost** — multi-token keyword phrases (e.g. `贖身的儀式`) require JavaScript
+  substring matching; Qdrant's tokenized any-of would miss them.
+* **Pairwise dedup** — stateful per-candidate comparison across the merged event list.
+* **Cross-collection merge** — `Promise.all` per collection, concat-dedup-trim client-side.
+
+A side-by-side compare mode (`eventbase_compare_rerank = true`) runs the JS formula path
+in parallel for each query and logs `overlap@K` and Spearman ρ to the console.
+Both paths produce identical scores for shared events (confirmed in testing).
+
+==== 6b. A3 Plain Hybrid + Client-Side Formula (`eventbase_native_rerank = false`)
+
+`_runOneLiveQuery()` calls `queryCollection()` → `backend.hybridQuery()` →
+`/chunks/hybrid-query`. This is the standard A3 hybrid (dense + sparse + Qdrant RRF).
+After retrieval, `retrieveEvents()` applies the four-weight formula in JavaScript:
+
+----
+finalScore = cosineWeight × rrfScore
+           + importanceWeight × (importance / 10)
+           + persistWeight × (should_persist ? 1 : 0)
+           + recencyWeight × exp_decay(source_window_end, chatLength, halfLife)
+----
+
+The result is semantically identical to 6a — the same formula, same weights — but
+computed client-side over the already-returned top-K rather than server-side over
+the wider prefetch pool. The native path (6a) can therefore surface higher-importance
+events that plain RRF ranked outside the top-K.
+
+* **A2 (Standard backend)**: Events may miss keyword-relevant items not in the dense
+  ANN top-K. The client-side formula can only work with what it receives.
 
 == Summary: Why Server-Side Hybrid Is Better
 
@@ -372,10 +428,13 @@ hybrid call and do not affect how the dense+sparse fusion is computed.
   `hybrid_fusion_method` setting is not propagated to the plugin on the A3
   path. Enabling DBSF requires forwarding the setting through the route and
   exposing it in the GUI.
-* **Reranking pipelines inside the hybrid call** — Qdrant supports
-  prefetch-then-rerank query plans, but A3 currently uses only the simple
-  `prefetch + fusion` form. Cross-encoder reranking (e.g. BananaBread) runs as
-  a separate `/rerank` call post-retrieval, not as a Qdrant rerank stage.
+* **Cross-encoder reranking inside the hybrid call** — Qdrant supports
+  prefetch-then-rerank query plans with an external reranker. BananaBread
+  cross-encoder reranking still runs as a separate post-retrieval stage, not
+  as a Qdrant rerank stage. EventBase's four-weight formula IS now wired into
+  the Qdrant query via `query: { formula: { sum: [...] } }` (see Section 6a),
+  so the formula-rerank gap is resolved for EventBase; only cross-encoder
+  reranking remains unwired.
 
 == When Client-Side Hybrid Is Acceptable
 

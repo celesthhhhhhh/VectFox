@@ -80,7 +80,7 @@ import {
   downloadPNG,
   readPNGFile,
   convertToPNG,
-  isVectHarePNG,
+  isVectFoxPNG,
 } from "../core/png-export.js";
 
 // Plugin availability cache

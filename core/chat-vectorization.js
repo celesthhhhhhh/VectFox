@@ -502,14 +502,9 @@ export async function synchronizeChat(settings, batchSize = 5) {
         summarizationFailureLatch = null;
     }
 
-    // Build proper collection ID using chat UUID first
-    const collectionId = getChatCollectionId();
-    console.log(`🔍 VectHare DEBUG: getChatCollectionId() returned: "${collectionId}"`);
-    console.log(`🔍 VectHare DEBUG: settings.vector_backend = "${settings.vector_backend}"`);
-    console.log(`🔍 VectHare DEBUG: settings.source = "${settings.source}"`);
-    if (!collectionId) {
-        return { remaining: -1, messagesProcessed: 0, chunksCreated: 0 };
-    }
+    // DEAD-CHUNK-CHAT: chunk-based chat sync is permanently disabled; bail before
+    // calling getChatCollectionId() so the deprecated warning never fires.
+    return { remaining: -1, messagesProcessed: 0, chunksCreated: 0 };
 
     // Check per-collection autoSync setting instead of global enabled_chats
     const { isCollectionAutoSyncEnabled } = await import('./collection-metadata.js');

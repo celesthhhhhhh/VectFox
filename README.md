@@ -180,18 +180,37 @@ Same as A1, but adds:
 
 **Tradeoff:** Better fusion on browser with a faster computer, but still limited to the vector top-K 100 candidate pool. (It's still top 100 sample)
 
-### A3 — Qdrant native sparse + server-side RRF (best accuracy)
-Both searches run **inside Qdrant vector database in a single API call**. Each stored point has two vectors: a dense one (meaning) and a sparse one (keyword frequencies). Qdrant computes BM25 weights across the **full corpus** (true IDF, not biased), then fuses with native RRF. The keyword side isn't capped at the dense search's top results — if an event contains your query words, it's eligible, even if its meaning vector wasn't a close match. And the BM25 word-importance weights are calculated using statistics from **every event** in the database (not just a top-100 sample), so rare words get scored correctly.
+### A3 — Qdrant native sparse + server-side RRF + formula rerank (best accuracy)
+Both searches run **inside Qdrant vector database in a single API call** — but A3 goes well beyond just hybrid search. The entire memory-ranking pipeline moves server-side in the same request:
 
-**Example:** Searching "I cast Fireball at the dragon." Qdrant searches its dense index (for spell/attack meanings) and sparse index (for the literal words "Fireball" and "dragon") at the same time, fuses server-side, returns one ranked list.
+1. **Dense + sparse hybrid** — Qdrant searches its dense index (meaning) and sparse index (keywords) simultaneously against the **full corpus**, fuses via native RRF. BM25 IDF is computed globally across every event in the database, not just a top-K sample, so rare words score correctly.
 
-**Tradeoff:** Best accuracy, fastest at scale. However, you need an additional docker running Qdrant vector database.
+2. **Server-side formula rerank** — Qdrant then applies the 4-weight importance/persist/recency formula to those hybrid results inside the same call: `cosine × RRF score + importance weight + persistence bonus + recency decay`. The final ranked list comes back already sorted. No extra round-trip. No browser JavaScript doing the scoring.
+
+3. **Server-side filtering** — Minimum importance threshold and context dedup cutoff (events already visible in recent chat) are enforced inside Qdrant, not after the results arrive. Events below the threshold never leave the server.
+
+The browser only handles anchor boost (phrase matching), pairwise dedup, and the final merge across multiple collections.
+
+**Example:** Searching "I cast Fireball at the dragon." Qdrant searches dense (spell/attack meanings) and sparse (literal "Fireball" + "dragon") at the same time, fuses via RRF, ranks by importance/recency formula, filters low-importance events — and returns the final ready-to-inject list in one call.
+
+**Tradeoff:** Best accuracy, fastest at scale. Requires a Qdrant instance (free, open-source, ~1 GB RAM idle).
+
+| What runs where | A1 — Standard + BM25 | A2 — Standard + Hybrid | A3 — Qdrant Native |
+|---|---|---|---|
+| Requires Qdrant | ❌ No | ❌ No | ✅ Yes (free, open-source) |
+| BM25 keyword scope | Top ~100 vector results only | Top ~300 vector results only | **Full corpus** (globally accurate IDF) |
+| Dense + sparse fusion | Weighted blend, browser | RRF + dual-signal bonus, browser | **Server-side RRF, 1 call** |
+| Importance / recency re-ranking | Browser JS | Browser JS | **Server-side formula** (Qdrant ≥ 1.13) |
+| Minimum importance filter | Browser JS | Browser JS | **Server-side** |
+| Context dedup filter | Browser JS | Browser JS | **Server-side** |
+| Network calls per query | 1 | 1 | **1** (hybrid + rerank + filter all in one) |
+| Scale ceiling | ~500 events | ~500 events | **10,000+ events** |
 
 | Backend setting | Path you get |
 |---|---|
 | Standard (Vectra - standard SillyTavern vector format) + BM25 | A1 |
-| Standard (Vectra  - standard SillyTavern vector format) + Hybrid | A2 |
-| Qdrant (Dedicated Vector DB on a docker) | A3 |
+| Standard (Vectra - standard SillyTavern vector format) + Hybrid | A2 |
+| Qdrant (dedicated vector DB) | A3 |
 
 ---
 

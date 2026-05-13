@@ -113,7 +113,7 @@ export async function insertEvents(events, settings, abortSignal = null, collect
     // Auto-lock live EventBase collections to the current chat after first insert.
     // Archive event collections are NOT auto-locked — users must enable them manually
     // via the "Active for current chat" checkbox on the collection card.
-    const isArchive = collectionId.startsWith(COLLECTION_PREFIXES.VectFox_ARCHIVE_EVENT);
+    const isArchive = collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT);
     const currentChatId = getCurrentChatId();
     if (!isArchive && currentChatId) {
         setCollectionLock(collectionId, currentChatId);
@@ -353,7 +353,7 @@ export function findEventBaseCollectionIdsForChat(uuid, preferredBackend) {
     for (const registryKey of getCollectionRegistry()) {
         const parsed = parseRegistryKey(registryKey);
         const colId = parsed.collectionId;
-        if (!colId?.startsWith(COLLECTION_PREFIXES.VectFox_EVENTBASE)) continue;
+        if (!colId?.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE)) continue;
         if (!colId.endsWith(uuid)) continue;
         matches.push({ registryKey, collectionId: colId, backend: parsed.backend });
     }

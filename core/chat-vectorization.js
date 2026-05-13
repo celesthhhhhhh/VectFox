@@ -621,7 +621,9 @@ function gatherCollectionsToQuery(settings) {
 
         // EventBase and archive event collections are always owned by the EventBase pipeline
         if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE) ||
-            collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT)) {
+            collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT) ||
+            collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE) ||
+            collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT)) {
             continue;
         }
 

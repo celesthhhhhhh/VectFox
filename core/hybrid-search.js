@@ -36,11 +36,11 @@ function resolveCollectionBackend(collectionId) {
     if (fromRegistry) return fromRegistry;
 
     const TYPE_PREFIXES = [
-        COLLECTION_PREFIXES.VectFox_EVENTBASE,
-        COLLECTION_PREFIXES.VectFox_ARCHIVE_EVENT,
-        COLLECTION_PREFIXES.VectFox_LOREBOOK,
-        COLLECTION_PREFIXES.VectFox_CHARACTER,
-        COLLECTION_PREFIXES.VectFox_DOCUMENT,
+        COLLECTION_PREFIXES.VECTFOX_EVENTBASE,
+        COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT,
+        COLLECTION_PREFIXES.VECTFOX_LOREBOOK,
+        COLLECTION_PREFIXES.VECTFOX_CHARACTER,
+        COLLECTION_PREFIXES.VECTFOX_DOCUMENT,
     ];
     for (const prefix of TYPE_PREFIXES) {
         if (collectionId.startsWith(prefix)) {

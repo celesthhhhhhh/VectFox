@@ -303,7 +303,7 @@ function _gatherArchiveEventCollections(currentChatId, debugLog) {
     for (const registryKey of registry) {
         const parsed = parseRegistryKey(registryKey);
         const colId = parsed.collectionId;
-        if (!colId?.startsWith(COLLECTION_PREFIXES.VectFox_ARCHIVE_EVENT)) continue;
+        if (!colId?.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT)) continue;
 
         // Pause and lock metadata can live under either the registry key (backend:collectionId)
         // or the bare collectionId — the DB Browser pause toggle uses registry key while the
@@ -347,7 +347,7 @@ function _gatherLockedEventBaseCollections(currentChatId, debugLog) {
     for (const registryKey of registry) {
         const parsed = parseRegistryKey(registryKey);
         const colId = parsed.collectionId;
-        if (!colId?.startsWith(COLLECTION_PREFIXES.VectFox_EVENTBASE)) continue;
+        if (!colId?.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE)) continue;
 
         const candidateKeys = [registryKey, colId].filter(Boolean);
 

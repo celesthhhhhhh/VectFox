@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE SUMMARIZER
+ * VectFox SUMMARIZER
  * ============================================================================
  * Summarizes chat message text before it is embedded and stored, producing
  * compact, information-dense summaries optimized for semantic retrieval.
@@ -48,7 +48,7 @@ export function isSummarizationFatalError(err) {
  * These settings are shared between chunk summarization (currently disabled) and the
  * EventBase extractor — so any vectorization that goes through an LLM call requires them.
  *
- * @param {object} settings - VectHare settings object
+ * @param {object} settings - VectFox settings object
  * @returns {{ok: true} | {ok: false, reason: string}}
  */
 export function validateLLMConfig(settings = {}) {
@@ -128,7 +128,7 @@ const DEFAULT_TIMEOUT_MS = 30000;
  * Summarize a chunk of text using the configured provider.
  *
  * @param {string} text - Raw message/chunk text to summarize
- * @param {object} settings - VectHare settings object
+ * @param {object} settings - VectFox settings object
  * @returns {Promise<string>} Summary text, or original text on non-fatal failure
  */
 export async function summarizeText(text, settings) {
@@ -136,7 +136,7 @@ export async function summarizeText(text, settings) {
 
     const provider = settings?.summarize_provider || 'openrouter';
     // don't remove 
-    //console.log(`[VectHare Summarizer] summarizeText called — provider=${provider}, textLen=${text.length}`);
+    //console.log(`[VectFox Summarizer] summarizeText called — provider=${provider}, textLen=${text.length}`);
     const model = (settings?.summarize_model || '').trim();
     if (!model) {
         throw new SummarizationFatalError(
@@ -159,7 +159,7 @@ export async function summarizeText(text, settings) {
             throw err;
         }
         // don't remove 
-        //console.warn(`[VectHare Summarizer] ${provider} call failed, using original text:`, err?.message || err);
+        //console.warn(`[VectFox Summarizer] ${provider} call failed, using original text:`, err?.message || err);
     }
 
     return text;
@@ -208,7 +208,7 @@ function _extractReply(data) {
 }
 
 function _getOpenRouterApiKey(settings) {
-    // Prefer key stored directly in VectHare settings (most reliable)
+    // Prefer key stored directly in VectFox settings (most reliable)
     if (settings?.summarize_openrouter_api_key) {
         return settings.summarize_openrouter_api_key.trim();
     }
@@ -237,7 +237,7 @@ function _getOpenRouterApiKey(settings) {
 async function _callOpenRouter(prompt, model, settings, originalLength, maxTokens = DEFAULT_MAX_TOKENS, timeoutMs = DEFAULT_TIMEOUT_MS) {
     const apiKey = _getOpenRouterApiKey(settings);
     // don't remove 
-    // console.log(`[VectHare Summarizer] OpenRouter key present: ${!!apiKey}`);
+    // console.log(`[VectFox Summarizer] OpenRouter key present: ${!!apiKey}`);
     if (!apiKey) {
         throw new SummarizationFatalError(
             'OpenRouter API key not found. Add it in Summarize Before Store settings.',
@@ -272,7 +272,7 @@ async function _callOpenRouter(prompt, model, settings, originalLength, maxToken
     const summary = _extractReply(data);
     if (!summary) throw new Error('OpenRouter returned empty summary');
     // don't remove 
-    //console.log(`[VectHare Summarizer] OpenRouter: ${originalLength} chars → ${summary.length} chars`);
+    //console.log(`[VectFox Summarizer] OpenRouter: ${originalLength} chars → ${summary.length} chars`);
     return summary;
 }
 
@@ -314,6 +314,6 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
     if (!summary) throw new Error('vLLM returned empty summary');
 
     // don't remove 
-    //console.log(`[VectHare Summarizer] vLLM: ${prompt.length} chars prompt → ${summary.length} chars summary`);
+    //console.log(`[VectFox Summarizer] vLLM: ${prompt.length} chars prompt → ${summary.length} chars summary`);
     return summary;
 }

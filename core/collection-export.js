@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE COLLECTION EXPORT/IMPORT
+ * VECTFOX COLLECTION EXPORT/IMPORT
  * ============================================================================
  * Handles exporting collections to portable JSON files and importing them back.
  *
@@ -41,7 +41,7 @@ import { getStringHash } from '../../../../utils.js';
 /** Current export format version */
 const EXPORT_VERSION = '1.0.0';
 
-/** File extension for VectHare exports */
+/** File extension for VectFox exports */
 export const EXPORT_FILE_EXTENSION = '.vecthare.json';
 
 /** Maximum chunks to export at once (for progress updates) */
@@ -54,7 +54,7 @@ const EXPORT_BATCH_SIZE = 100;
 /**
  * Fetches chunks with vectors from the backend
  * @param {string} collectionId - Collection to fetch from
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {Promise<Array>} Chunks with vectors
  */
 async function fetchChunksWithVectors(collectionId, settings) {
@@ -87,7 +87,7 @@ async function fetchChunksWithVectors(collectionId, settings) {
 /**
  * Exports a single collection to a portable JSON format (includes vectors)
  * @param {string} collectionId - The collection to export
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @param {object} collectionInfo - Optional collection info (backend, source, model)
  * @returns {Promise<object>} Export data object
  */
@@ -140,7 +140,7 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
                 },
             };
 
-            // Get per-chunk metadata from VectHare settings
+            // Get per-chunk metadata from VectFox settings
             const chunkMeta = getChunkMetadata(chunk.hash);
             if (chunkMeta) {
                 chunk.chunkMeta = chunkMeta;
@@ -163,7 +163,7 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
             // Header
             version: EXPORT_VERSION,
             exportDate: new Date().toISOString(),
-            generator: 'VectHare',
+            generator: 'VectFox',
 
             // Embedding info - CRITICAL for import compatibility
             // NOTE: source + model must match for vectors to be compatible
@@ -240,7 +240,7 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
 /**
  * Exports multiple collections to a single file
  * @param {string[]} collectionIds - Collections to export
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {Promise<object>} Export data with multiple collections
  */
 export async function exportMultipleCollections(collectionIds, settings) {
@@ -331,7 +331,7 @@ export async function exportMultipleCollections(collectionIds, settings) {
                 },
             });
         } catch (error) {
-            console.error(`VectHare Export: Failed to export ${collectionId}:`, error);
+            console.error(`VectFox Export: Failed to export ${collectionId}:`, error);
             errors.push({ collectionId, error: error.message });
         }
     }
@@ -341,7 +341,7 @@ export async function exportMultipleCollections(collectionIds, settings) {
     return {
         version: EXPORT_VERSION,
         exportDate: new Date().toISOString(),
-        generator: 'VectHare',
+        generator: 'VectFox',
         type: 'multi',
         collections: exports,
         errors: errors,
@@ -376,7 +376,7 @@ export function downloadExport(exportData, filename = null) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log(`VectHare Export: Downloaded ${finalFilename}`);
+    console.log(`VectFox Export: Downloaded ${finalFilename}`);
 }
 
 // ============================================================================
@@ -386,7 +386,7 @@ export function downloadExport(exportData, filename = null) {
 /**
  * Validates an import file structure and checks embedding compatibility
  * @param {object} data - Parsed JSON data
- * @param {object} currentSettings - Current VectHare settings (to check compatibility)
+ * @param {object} currentSettings - Current VectFox settings (to check compatibility)
  * @returns {{ valid: boolean, errors: string[], warnings: string[], compatible: boolean, embeddingInfo: object }}
  */
 export function validateImportData(data, currentSettings = {}) {
@@ -467,7 +467,7 @@ export function validateImportData(data, currentSettings = {}) {
  * Inserts chunks directly with pre-computed vectors (bypasses embedding)
  * @param {string} collectionId - Collection to insert into
  * @param {Array} chunks - Chunks with vectors
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  */
 async function insertChunksWithVectors(collectionId, chunks, settings) {
     const backendName = settings.vector_backend || 'standard';
@@ -502,7 +502,7 @@ async function insertChunksWithVectors(collectionId, chunks, settings) {
  * Uses pre-computed vectors if available and settings match, otherwise re-embeds
  *
  * @param {object} exportData - Single collection export data (or one item from multi-export)
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @param {object} options - Import options
  * @param {string} options.collectionId - Override collection ID (for rename/duplicate)
  * @param {boolean} options.overwrite - If true, purge existing collection first
@@ -546,10 +546,10 @@ export async function importCollection(exportData, settings, options = {}) {
         if (options.overwrite) {
             try {
                 await purgeVectorIndex(collectionId, settings);
-                console.log(`VectHare Import: Purged existing collection ${collectionId}`);
+                console.log(`VectFox Import: Purged existing collection ${collectionId}`);
             } catch (e) {
                 // Collection might not exist, that's fine - log at debug level
-                console.debug(`VectHare Import: Could not purge ${collectionId} (may not exist):`, e.message);
+                console.debug(`VectFox Import: Could not purge ${collectionId} (may not exist):`, e.message);
             }
         }
 
@@ -570,7 +570,7 @@ export async function importCollection(exportData, settings, options = {}) {
             progressTracker.updateProgress(3, `Inserting ${preparedChunks.length} chunks (using existing vectors)...`);
             try {
                 await insertChunksWithVectors(collectionId, preparedChunks, settings);
-                console.log(`VectHare Import: Inserted ${preparedChunks.length} chunks with pre-computed vectors`);
+                console.log(`VectFox Import: Inserted ${preparedChunks.length} chunks with pre-computed vectors`);
             } catch (error) {
                 throw new Error(`Failed to insert chunks: ${error.message}`);
             }
@@ -579,7 +579,7 @@ export async function importCollection(exportData, settings, options = {}) {
             progressTracker.updateProgress(3, `Embedding ${preparedChunks.length} chunks...`);
             try {
                 await insertVectorItems(collectionId, preparedChunks, settings);
-                console.log(`VectHare Import: Embedded and inserted ${preparedChunks.length} chunks`);
+                console.log(`VectFox Import: Embedded and inserted ${preparedChunks.length} chunks`);
             } catch (error) {
                 throw new Error(`Failed to embed chunks: ${error.message}`);
             }
@@ -655,7 +655,7 @@ export async function importCollection(exportData, settings, options = {}) {
 /**
  * Imports multiple collections from a multi-export file
  * @param {object} multiExportData - Multi-collection export data
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @param {object} options - Import options
  * @returns {Promise<{ success: boolean, imported: number, failed: number, results: object[] }>}
  */
@@ -685,7 +685,7 @@ export async function importMultipleCollections(multiExportData, settings, optio
             results.push(result);
             imported++;
         } catch (error) {
-            console.error(`VectHare Import: Failed to import ${collectionId}:`, error);
+            console.error(`VectFox Import: Failed to import ${collectionId}:`, error);
             results.push({
                 success: false,
                 collectionId,
@@ -737,7 +737,7 @@ async function importCollectionSilent(exportData, settings, options = {}) {
             await purgeVectorIndex(collectionId, settings);
         } catch (e) {
             // Collection might not exist - log at debug level
-            console.debug(`VectHare Import: Could not purge ${collectionId} (may not exist):`, e.message);
+            console.debug(`VectFox Import: Could not purge ${collectionId} (may not exist):`, e.message);
         }
     }
 

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE DIAGNOSTICS - INDEX
+ * VectFox DIAGNOSTICS - INDEX
  * ============================================================================
  * Main entry point for diagnostics system
  * Every potential failure point needs a check and fix here
@@ -74,12 +74,12 @@ import { cleanupTestCollections } from '../core/collection-loader.js';
 
 /**
  * Runs all diagnostic checks
- * @param {object} settings VectHare settings
+ * @param {object} settings VectFox settings
  * @param {boolean} includeProductionTests Include integration/production tests
  * @returns {Promise<object>} Diagnostics results
  */
 export async function runDiagnostics(settings, includeProductionTests = false) {
-    console.log('VectHare Diagnostics: Running health checks...');
+    console.log('VectFox Diagnostics: Running health checks...');
 
     // Get version information
     let extensionVersion = 'Unknown';
@@ -88,21 +88,21 @@ export async function runDiagnostics(settings, includeProductionTests = false) {
     // Try to get extension version from manifest.json
     try {
         // Derive manifest URL from this module's location so it works regardless of
-        // the folder name the user installs the extension under (e.g. VectHare vs VectHarePlus).
+        // the folder name the user installs the extension under (e.g. VectFox vs VectFoxPlus).
         const manifestUrl = new URL('../manifest.json', import.meta.url).href + `?_=${Date.now()}`;
-        console.log('VectHare Diagnostics: Fetching manifest from:', manifestUrl);
+        console.log('VectFox Diagnostics: Fetching manifest from:', manifestUrl);
         const manifestResponse = await fetch(manifestUrl);
-        console.log('VectHare Diagnostics: Manifest response status:', manifestResponse.status);
+        console.log('VectFox Diagnostics: Manifest response status:', manifestResponse.status);
         if (manifestResponse.ok) {
             const manifest = await manifestResponse.json();
-            console.log('VectHare Diagnostics: Manifest data:', manifest);
+            console.log('VectFox Diagnostics: Manifest data:', manifest);
             extensionVersion = manifest.version || 'Unknown';
-            console.log('VectHare Diagnostics: Extension version:', extensionVersion);
+            console.log('VectFox Diagnostics: Extension version:', extensionVersion);
         } else {
-            console.warn('VectHare Diagnostics: Manifest fetch failed with status:', manifestResponse.status);
+            console.warn('VectFox Diagnostics: Manifest fetch failed with status:', manifestResponse.status);
         }
     } catch (error) {
-        console.error('VectHare Diagnostics: Could not fetch manifest.json', error);
+        console.error('VectFox Diagnostics: Could not fetch manifest.json', error);
     }
 
     // Try to get plugin version from health endpoint
@@ -122,7 +122,7 @@ export async function runDiagnostics(settings, includeProductionTests = false) {
     // Auto-clean any ghost test collections from the registry
     const testCollectionsCleaned = cleanupTestCollections();
     if (testCollectionsCleaned > 0) {
-        console.log(`VectHare Diagnostics: Cleaned ${testCollectionsCleaned} ghost test collections from registry`);
+        console.log(`VectFox Diagnostics: Cleaned ${testCollectionsCleaned} ghost test collections from registry`);
     }
 
     const categories = {
@@ -244,7 +244,7 @@ export async function runDiagnostics(settings, includeProductionTests = false) {
     }
 
     // Always run last: drop any diagnostic probe collections (`vh:test:*`,
-    // `vecthare_diag*`, `test`) created during this run by the infrastructure
+    // `VectFox_diag*`, `test`) created during this run by the infrastructure
     // checks or by tests that bailed without cleanup. Listed under infrastructure
     // so users see it whether or not production tests were enabled.
     categories.infrastructure.push(await sweepLeftoverTestCollections(settings));
@@ -274,10 +274,10 @@ export async function runDiagnostics(settings, includeProductionTests = false) {
         timestamp: new Date().toISOString()
     };
 
-    console.log('VectHare Diagnostics: Complete', results);
-    console.log('VectHare Diagnostics: Version object:', results.version);
-    console.log('VectHare Diagnostics: Extension version in results:', results.version.extension);
-    console.log('VectHare Diagnostics: Plugin version in results:', results.version.plugin);
+    console.log('VectFox Diagnostics: Complete', results);
+    console.log('VectFox Diagnostics: Version object:', results.version);
+    console.log('VectFox Diagnostics: Extension version in results:', results.version.extension);
+    console.log('VectFox Diagnostics: Plugin version in results:', results.version.plugin);
 
     return results;
 }
@@ -290,7 +290,7 @@ export async function runDiagnostics(settings, includeProductionTests = false) {
 export function getFixSuggestion(check) {
     switch (check.name) {
         case 'Embedding Provider':
-            return 'Go to VectHare settings and select an embedding provider. For local setup, choose "Transformers" or "Ollama".';
+            return 'Go to VectFox settings and select an embedding provider. For local setup, choose "Transformers" or "Ollama".';
 
         case 'API Key':
             return 'Go to SillyTavern Settings > API Connections and add your API key for the selected provider.';
@@ -299,13 +299,13 @@ export function getFixSuggestion(check) {
             return 'Go to SillyTavern Settings > API Connections and configure the server URL for your local embedding provider.';
 
         case 'Chat Vectors':
-            return 'Click the "Vectorize All" button in VectHare settings to vectorize this chat.';
+            return 'Click the "Vectorize All" button in VectFox settings to vectorize this chat.';
 
         case 'Settings Validation':
-            return 'Review your VectHare settings and adjust the values within recommended ranges.';
+            return 'Review your VectFox settings and adjust the values within recommended ranges.';
 
         case 'Qdrant Backend':
-            return 'Configure Qdrant settings in VectHare panel. For local: set host/port (default localhost:6333). Start Qdrant: docker run -p 6333:6333 qdrant/qdrant. Note: Qdrant Cloud may have connectivity issues - local instance recommended.';
+            return 'Configure Qdrant settings in VectFox panel. For local: set host/port (default localhost:6333). Start Qdrant: docker run -p 6333:6333 qdrant/qdrant. Note: Qdrant Cloud may have connectivity issues - local instance recommended.';
 
         case '[PROD] Chunk-Server Sync':
             return 'Click "Fix Now" to clean orphaned local metadata entries that no longer have corresponding vectors on the server.';
@@ -355,9 +355,9 @@ export async function executeFixAction(check) {
 
         case 'removeDuplicateHashes':
             if (check.data?.duplicates && check.data?.collectionId) {
-                // Need settings for the fix function - get from VectHare
-                const { getVectHareSettings } = await import('../ui/ui-settings.js');
-                const settings = getVectHareSettings();
+                // Need settings for the fix function - get from VectFox
+                const { getVectFoxSettings } = await import('../ui/ui-settings.js');
+                const settings = getVectFoxSettings();
                 return await fixDuplicateHashes(check.data.duplicates, check.data.collectionId, settings);
             }
             return { success: false, message: 'No duplicate data found in check' };
@@ -387,9 +387,9 @@ async function fixOrphanedGroupMembers() {
         const { getCollectionMeta, saveCollectionMeta } = await import('../core/collection-metadata.js');
         const { getCollectionRegistry } = await import('../core/collection-loader.js');
         const { getSavedHashes } = await import('../core/core-vector-api.js');
-        const { getVectHareSettings } = await import('../ui/ui-settings.js');
+        const { getVectFoxSettings } = await import('../ui/ui-settings.js');
 
-        const settings = getVectHareSettings();
+        const settings = getVectFoxSettings();
         const registry = getCollectionRegistry();
         let totalCleaned = 0;
         let collectionsFixed = 0;

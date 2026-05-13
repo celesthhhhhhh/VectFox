@@ -7,7 +7,7 @@
  *
  * This is the default backend - no setup required.
  *
- * @author VectHare
+ * @author VectFox
  * @version 3.1.0
  * ============================================================================
  */
@@ -32,7 +32,7 @@ function getModelFromSettings(settings) {
 
 /**
  * Build provider-specific parameters for API requests.
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @param {boolean} isQuery - Whether this is a query operation
  * @returns {object} Provider-specific parameters
  */
@@ -61,7 +61,7 @@ function getProviderSpecificParams(settings, isQuery = false) {
             params.apiUrl = settings.use_alt_endpoint
                 ? settings.alt_endpoint_url
                 : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
-            console.log(`VectHare DEBUG llamacpp: use_alt_endpoint=${settings.use_alt_endpoint}, alt_endpoint_url="${settings.alt_endpoint_url}", ST_url="${textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]}", final apiUrl="${params.apiUrl}"`);
+            console.log(`VectFox DEBUG llamacpp: use_alt_endpoint=${settings.use_alt_endpoint}, alt_endpoint_url="${settings.alt_endpoint_url}", ST_url="${textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]}", final apiUrl="${params.apiUrl}"`);
             break;
 
         case 'vllm':
@@ -110,10 +110,10 @@ export class StandardBackend extends VectorBackend {
 
     async initialize(settings) {
         // Check if plugin is available
-        console.log('VectHare DEBUG: Checking plugin availability...');
+        console.log('VectFox DEBUG: Checking plugin availability...');
         try {
             const response = await fetch('/api/plugins/similharity/health');
-            console.log('VectHare DEBUG: Plugin health check response:', response.status, response.ok);
+            console.log('VectFox DEBUG: Plugin health check response:', response.status, response.ok);
             this.pluginAvailable = response.ok;
 
             if (this.pluginAvailable) {
@@ -121,12 +121,12 @@ export class StandardBackend extends VectorBackend {
                     method: 'POST',
                     headers: getRequestHeaders(),
                 });
-                console.log('VectHare: Standard backend initialized (plugin available)');
+                console.log('VectFox: Standard backend initialized (plugin available)');
             } else {
-                console.log('VectHare: Standard backend initialized (native ST API only - health check failed)');
+                console.log('VectFox: Standard backend initialized (native ST API only - health check failed)');
             }
         } catch (e) {
-            console.log('VectHare: Standard backend initialized (native ST API only - error:', e.message, ')');
+            console.log('VectFox: Standard backend initialized (native ST API only - error:', e.message, ')');
             this.pluginAvailable = false;
         }
         
@@ -205,32 +205,32 @@ export class StandardBackend extends VectorBackend {
         // Count how many chunks have keywords
         const chunksWithKeywords = items.filter(item => item.keywords && item.keywords.length > 0).length;
 
-        console.log(`VectHare: Embedding ${items.length} chunks (avg: ${avgLen} chars, max: ${maxLen} chars at index ${longestChunkIndex}) - ${chunksWithKeywords} chunks have keywords`);
+        console.log(`VectFox: Embedding ${items.length} chunks (avg: ${avgLen} chars, max: ${maxLen} chars at index ${longestChunkIndex}) - ${chunksWithKeywords} chunks have keywords`);
 
         // Debug: Log first chunk's keywords if any
         if (chunksWithKeywords > 0) {
             const firstChunkWithKeywords = items.find(item => item.keywords && item.keywords.length > 0);
-            console.log(`VectHare DEBUG: First chunk keywords:`, firstChunkWithKeywords.keywords);
+            console.log(`VectFox DEBUG: First chunk keywords:`, firstChunkWithKeywords.keywords);
         }
 
         // Warn if chunks are unusually large (potential OOM risk)
         if (maxLen > 2000) {
-            console.warn(`VectHare: Large chunk detected (${maxLen} chars). If you see OOM errors, try reducing chunk size.`);
-            console.warn(`VectHare: Problematic chunk preview: "${(items[longestChunkIndex]?.text || '').substring(0, 100)}..."`);
+            console.warn(`VectFox: Large chunk detected (${maxLen} chars). If you see OOM errors, try reducing chunk size.`);
+            console.warn(`VectFox: Problematic chunk preview: "${(items[longestChunkIndex]?.text || '').substring(0, 100)}..."`);
         }
 
         try {
             // Try plugin API first (supports metadata) - fallback to native API if unavailable
-            console.log('VectHare DEBUG: this.pluginAvailable =', this.pluginAvailable);
+            console.log('VectFox DEBUG: this.pluginAvailable =', this.pluginAvailable);
             let usePluginApi = this.pluginAvailable;
             let endpoint = usePluginApi ? '/api/plugins/similharity/chunks/insert' : '/api/vector/insert';
 
-            console.log(`VectHare DEBUG: Using ${usePluginApi ? 'PLUGIN' : 'NATIVE'} API for insertion (${endpoint})`);
+            console.log(`VectFox DEBUG: Using ${usePluginApi ? 'PLUGIN' : 'NATIVE'} API for insertion (${endpoint})`);
             
             // Warn if keywords will be lost
             if (!usePluginApi && chunksWithKeywords > 0) {
-                console.warn(`⚠️ VectHare: ${chunksWithKeywords} chunks have keywords, but native ST API doesn't support metadata!`);
-                console.warn(`⚠️ VectHare: Install the Similharity plugin to save keywords: https://github.com/SillyTavern/SillyTavern-Extras-Similharity-plugin`);
+                console.warn(`⚠️ VectFox: ${chunksWithKeywords} chunks have keywords, but native ST API doesn't support metadata!`);
+                console.warn(`⚠️ VectFox: Install the Similharity plugin to save keywords: https://github.com/SillyTavern/SillyTavern-Extras-Similharity-plugin`);
             }
 
             const payload = usePluginApi ? {
@@ -256,7 +256,7 @@ export class StandardBackend extends VectorBackend {
                     };
                     // Debug: Log first item's metadata
                     if (item === items[0] && item.keywords?.length > 0) {
-                        console.log(`VectHare DEBUG: First item metadata being sent:`, mappedItem.metadata);
+                        console.log(`VectFox DEBUG: First item metadata being sent:`, mappedItem.metadata);
                     }
                     return mappedItem;
                 }),
@@ -294,12 +294,12 @@ export class StandardBackend extends VectorBackend {
                 throw new Error(`Failed to insert vectors: ${response.status} - ${errorBody}`);
             }
 
-            console.log(`VectHare Standard: Inserted ${items.length} vectors into ${collectionId}`);
+            console.log(`VectFox Standard: Inserted ${items.length} vectors into ${collectionId}`);
         } catch (error) {
             // Enhanced error logging for OOM debugging
             const isOOM = error.message?.includes('OrtRun') || error.message?.includes('error code = 6');
             if (isOOM) {
-                console.error(`VectHare: ONNX OOM Error while embedding. Diagnostics:`);
+                console.error(`VectFox: ONNX OOM Error while embedding. Diagnostics:`);
                 console.error(`  - Provider: ${settings.source}`);
                 console.error(`  - Model: ${model || '(default)'}`);
                 console.error(`  - Batch size: ${items.length} chunks`);
@@ -371,7 +371,7 @@ export class StandardBackend extends VectorBackend {
                 pluginBody.searchText = searchText;
             }
 
-            console.log(`[VectHare] queryCollection via plugin: collectionId=${bareCollectionId}, source=${source}, model=${model}, topK=${topK}, threshold=${threshold}, hasQueryVector=${!!queryVector}`);
+            console.log(`[VectFox] queryCollection via plugin: collectionId=${bareCollectionId}, source=${source}, model=${model}, topK=${topK}, threshold=${threshold}, hasQueryVector=${!!queryVector}`);
 
             const response = await fetch('/api/plugins/similharity/chunks/query', {
                 method: 'POST',
@@ -379,16 +379,16 @@ export class StandardBackend extends VectorBackend {
                 body: JSON.stringify(pluginBody),
             });
 
-            console.log(`[VectHare] plugin query response: status=${response.status} ok=${response.ok}`);
+            console.log(`[VectFox] plugin query response: status=${response.status} ok=${response.ok}`);
 
             if (!response.ok) {
                 const errorBody = await response.text().catch(() => 'No response body');
-                console.error(`[VectHare] plugin query failed: ${errorBody}`);
+                console.error(`[VectFox] plugin query failed: ${errorBody}`);
                 throw new Error(`Failed to query collection (plugin): ${response.status} ${response.statusText} - ${errorBody}`);
             }
 
             const data = await response.json();
-            console.log(`[VectHare] plugin query result: count=${data.count}, results.length=${data.results?.length}, error=${data.error || 'none'}`);
+            console.log(`[VectFox] plugin query result: count=${data.count}, results.length=${data.results?.length}, error=${data.error || 'none'}`);
 
             // Plugin returns { success, results: [{ hash, score, text, metadata }] }
             const results = data.results || [];
@@ -476,20 +476,20 @@ export class StandardBackend extends VectorBackend {
 
         if (!response.ok) {
             // Fallback: query each collection individually
-            console.warn('VectHare: query-multi failed, falling back to individual queries');
+            console.warn('VectFox: query-multi failed, falling back to individual queries');
             const results = {};
             const errors = [];
             for (const collectionId of collectionIds) {
                 try {
                     results[collectionId] = await this.queryCollection(collectionId, searchText, topK, settings, queryVector);
                 } catch (e) {
-                    console.error(`VectHare: Query failed for collection ${collectionId}:`, e.message);
+                    console.error(`VectFox: Query failed for collection ${collectionId}:`, e.message);
                     errors.push(`${collectionId}: ${e.message}`);
                     results[collectionId] = { hashes: [], metadata: [], error: e.message };
                 }
             }
             if (errors.length > 0) {
-                console.error(`VectHare: ${errors.length} collection(s) failed to query:`, errors);
+                console.error(`VectFox: ${errors.length} collection(s) failed to query:`, errors);
             }
             return results;
         }
@@ -565,7 +565,7 @@ export class StandardBackend extends VectorBackend {
                     return await response.json();
                 }
             } catch (e) {
-                console.warn('VectHare: Plugin listChunks failed, using native fallback');
+                console.warn('VectFox: Plugin listChunks failed, using native fallback');
             }
         }
 
@@ -599,7 +599,7 @@ export class StandardBackend extends VectorBackend {
                 return data.chunk;
             }
         } catch (e) {
-            console.warn('VectHare: Plugin getChunk failed');
+            console.warn('VectFox: Plugin getChunk failed');
         }
 
         return null;
@@ -684,7 +684,7 @@ export class StandardBackend extends VectorBackend {
                     return data.stats;
                 }
             } catch (e) {
-                console.warn('VectHare: Plugin getStats failed, using native fallback');
+                console.warn('VectFox: Plugin getStats failed, using native fallback');
             }
         }
 
@@ -717,7 +717,7 @@ export class StandardBackend extends VectorBackend {
                     }));
                 }
             } catch (e) {
-                console.warn('VectHare: Plugin discoverCollections failed');
+                console.warn('VectFox: Plugin discoverCollections failed');
             }
         }
 

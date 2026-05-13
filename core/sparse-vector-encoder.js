@@ -12,7 +12,7 @@
  * Token → index mapping: 32-bit FNV-1a hash. Hash collisions at ~50k unique
  * tokens are statistically negligible.
  *
- * @author VectHare
+ * @author VectFox
  * @since Phase 1 — Qdrant native sparse vectors
  * ============================================================================
  */

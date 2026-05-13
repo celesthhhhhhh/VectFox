@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE CHUNK VISUALIZER
+ * VectFox CHUNK VISUALIZER
  * ============================================================================
  * Split-panel master/detail layout for browsing and editing chunks
  * Left panel: scrollable chunk list with search/filter/sort
@@ -150,7 +150,7 @@ function updateChunkData(hash, updates) {
 async function saveAllChanges() {
     const count = pendingChanges.size;
     if (count === 0) {
-        toastr.info('No changes to save', 'VectHare');
+        toastr.info('No changes to save', 'VectFox');
         return;
     }
 
@@ -207,7 +207,7 @@ async function saveAllChanges() {
                 try {
                     await updateChunkMetadata(currentCollectionId, hash, metadataUpdates, currentSettings);
                 } catch (e) {
-                    console.warn('VectHare: Failed to update metadata in backend:', e);
+                    console.warn('VectFox: Failed to update metadata in backend:', e);
                     // Don't fail - local metadata was already saved
                 }
             }
@@ -215,10 +215,10 @@ async function saveAllChanges() {
 
         pendingChanges.clear();
         hasUnsavedChanges = false;
-        toastr.success(`Saved changes to ${count} chunk(s)`, 'VectHare');
+        toastr.success(`Saved changes to ${count} chunk(s)`, 'VectFox');
     } catch (error) {
-        console.error('VectHare: Failed to save changes', error);
-        toastr.error(`Failed to save changes: ${error.message}`, 'VectHare');
+        console.error('VectFox: Failed to save changes', error);
+        toastr.error(`Failed to save changes: ${error.message}`, 'VectFox');
     }
 }
 
@@ -268,18 +268,18 @@ export function openVisualizer(results, collectionId, settings, onReload = null)
     // Sync persisted UI state into the freshly-rendered dropdowns. createModal()
     // rebuilds the HTML, so without this the dropdowns silently revert to their
     // first option on reload while sortBy/filterBy retain the user's choice.
-    $('#vecthare_chunk_sort').val(sortBy);
-    $('#vecthare_chunk_filter').val(filterBy);
+    $('#VectFox_chunk_sort').val(sortBy);
+    $('#VectFox_chunk_filter').val(filterBy);
     renderChunkList();
     renderDetailPanel();
     bindEvents();
 
-    $('#vecthare_visualizer_modal').fadeIn(200);
+    $('#VectFox_visualizer_modal').fadeIn(200);
 
     // Async fetch collection-level metadata (sentinel point) and render in footer.
     // Read-only — surfaces internal lock state without making it look editable.
     _loadAndRenderCollectionMetaFooter(collectionId, settings).catch(err => {
-        console.debug('[VectHare] Collection metadata footer load skipped:', err?.message);
+        console.debug('[VectFox] Collection metadata footer load skipped:', err?.message);
     });
 }
 
@@ -324,7 +324,7 @@ async function _loadAndRenderCollectionMetaFooter(collectionId, settings) {
         .map(([k, v]) => `<span style="margin-right:1.2em;"><b>${escapeHtml(k)}</b>: ${escapeHtml(v)}</span>`)
         .join('');
 
-    $('#vecthare_collection_meta_footer')
+    $('#VectFox_collection_meta_footer')
         .html(`<span style="margin-right:0.8em;">🔒 Collection metadata (read-only, internal — do not delete the sentinel point in Qdrant):</span>${lines}`)
         .show();
 }
@@ -336,7 +336,7 @@ export function closeVisualizer() {
         }
     }
     hasUnsavedChanges = false;
-    $('#vecthare_visualizer_modal').fadeOut(200);
+    $('#VectFox_visualizer_modal').fadeOut(200);
     currentResults = null;
     currentCollectionId = null;
     selectedChunkId = null;
@@ -415,7 +415,7 @@ function applyFilters() {
 
 function createModal() {
     // Remove existing
-    $('#vecthare_visualizer_modal').remove();
+    $('#VectFox_visualizer_modal').remove();
 
     const collectionName = currentCollectionId || 'Collection';
     const icon = getCollectionIcon();
@@ -425,40 +425,40 @@ function createModal() {
         : 'Unknown';
 
     const html = `
-        <div id="vecthare_visualizer_modal" class="vecthare-visualizer-modal">
-            <div class="vecthare-visualizer-container">
+        <div id="VectFox_visualizer_modal" class="vectfox-visualizer-modal">
+            <div class="vectfox-visualizer-container">
                 <!-- Header -->
-                <div class="vecthare-visualizer-header">
-                    <div class="vecthare-visualizer-title">
-                        <span class="vecthare-visualizer-title-icon">${icon}</span>
+                <div class="vectfox-visualizer-header">
+                    <div class="vectfox-visualizer-title">
+                        <span class="vectfox-visualizer-title-icon">${icon}</span>
                         <span>${escapeHtml(collectionName)}</span>
                     </div>
-                    <div class="vecthare-visualizer-header-actions">
-                        <button class="vecthare-visualizer-save" id="vecthare_visualizer_save" title="Save changes">
+                    <div class="vectfox-visualizer-header-actions">
+                        <button class="vectfox-visualizer-save" id="VectFox_visualizer_save" title="Save changes">
                             <i class="fa-solid fa-floppy-disk"></i> Save
                         </button>
-                        <button class="vecthare-visualizer-close" id="vecthare_visualizer_close">✕</button>
+                        <button class="vectfox-visualizer-close" id="VectFox_visualizer_close">✕</button>
                     </div>
                 </div>
 
                 <!-- Tab Bar -->
-                <div class="vecthare-visualizer-tabs">
-                    <button class="vecthare-visualizer-tab active" data-tab="chunks">
+                <div class="vectfox-visualizer-tabs">
+                    <button class="vectfox-visualizer-tab active" data-tab="chunks">
                         <i class="fa-solid fa-puzzle-piece"></i> Chunks
                     </button>
-                    <button class="vecthare-visualizer-tab" data-tab="groups">
+                    <button class="vectfox-visualizer-tab" data-tab="groups">
                         <i class="fa-solid fa-layer-group"></i> Groups
                     </button>
                 </div>
 
                 <!-- Body: Split Panel (Chunks Tab) -->
-                <div class="vecthare-visualizer-body vecthare-vis-tab-content active" data-tab="chunks">
+                <div class="vectfox-visualizer-body vectfox-vis-tab-content active" data-tab="chunks">
                     <!-- Left: Chunk List -->
-                    <div class="vecthare-chunk-list-panel">
-                        <div class="vecthare-list-toolbar">
-                            <input type="text" class="vecthare-list-search" id="vecthare_chunk_search" placeholder="🔍 Search...">
-                            <div class="vecthare-list-controls">
-                                <select class="vecthare-list-sort" id="vecthare_chunk_sort">
+                    <div class="vectfox-chunk-list-panel">
+                        <div class="vectfox-list-toolbar">
+                            <input type="text" class="vectfox-list-search" id="VectFox_chunk_search" placeholder="🔍 Search...">
+                            <div class="vectfox-list-controls">
+                                <select class="vectfox-list-sort" id="VectFox_chunk_sort">
                                     <option value="index">Sort: Message Order</option>
                                     <option value="length-desc">Sort: Longest First</option>
                                     <option value="length-asc">Sort: Shortest First</option>
@@ -467,7 +467,7 @@ function createModal() {
                                     <option value="index-r">Sort: Message order Reversed</option>
 
                                 </select>
-                                <select class="vecthare-list-filter" id="vecthare_chunk_filter">
+                                <select class="vectfox-list-filter" id="VectFox_chunk_filter">
                                     <option value="all">Filter: All</option>
                                     <option value="enabled">Enabled</option>
                                     <option value="disabled">Disabled</option>
@@ -476,43 +476,43 @@ function createModal() {
                                     <option value="blind">Decay Immune</option>
                                 </select>
                             </div>
-                                <div class="vecthare-fetch-limit-control">
+                                <div class="vectfox-fetch-limit-control">
                                     <label>Fetch limit:</label>
-                                    <input type="number" id="vecthare_fetch_limit" min="100" max="99999" step="100" value="${chunkFetchLimit}" title="Max chunks loaded from server">
-                                    <button id="vecthare_reload_chunks" title="Reload chunks from server with new limit">↺ Reload</button>
+                                    <input type="number" id="VectFox_fetch_limit" min="100" max="99999" step="100" value="${chunkFetchLimit}" title="Max chunks loaded from server">
+                                    <button id="VectFox_reload_chunks" title="Reload chunks from server with new limit">↺ Reload</button>
                                 </div>
-                                <div class="vecthare-db-total" id="vecthare_db_chunk_total">DB max chunks: ${dbChunkText}</div>
+                                <div class="vectfox-db-total" id="VectFox_db_chunk_total">DB max chunks: ${dbChunkText}</div>
                         </div>
-                        <div class="vecthare-chunk-list" id="vecthare_chunk_list"></div>
-                        <div class="vecthare-bulk-actions">
-                            <label class="vecthare-bulk-toggle">
-                                <input type="checkbox" id="vecthare_bulk_mode">
+                        <div class="vectfox-chunk-list" id="VectFox_chunk_list"></div>
+                        <div class="vectfox-bulk-actions">
+                            <label class="vectfox-bulk-toggle">
+                                <input type="checkbox" id="VectFox_bulk_mode">
                                 <span>Bulk Select Mode</span>
                             </label>
-                            <div class="vecthare-bulk-buttons" id="vecthare_bulk_buttons" style="display: none;">
-                                <button class="vecthare-bulk-btn" id="vecthare_bulk_enable">Enable All</button>
-                                <button class="vecthare-bulk-btn" id="vecthare_bulk_disable">Disable All</button>
+                            <div class="vectfox-bulk-buttons" id="VectFox_bulk_buttons" style="display: none;">
+                                <button class="vectfox-bulk-btn" id="VectFox_bulk_enable">Enable All</button>
+                                <button class="vectfox-bulk-btn" id="VectFox_bulk_disable">Disable All</button>
                             </div>
                         </div>
-                        <div class="vecthare-list-status" id="vecthare_list_status"></div>
+                        <div class="vectfox-list-status" id="VectFox_list_status"></div>
                     </div>
 
                     <!-- Right: Detail Panel -->
-                    <div class="vecthare-chunk-detail-panel" id="vecthare_detail_panel">
-                        <div class="vecthare-detail-empty">Select a chunk to view details</div>
+                    <div class="vectfox-chunk-detail-panel" id="VectFox_detail_panel">
+                        <div class="vectfox-detail-empty">Select a chunk to view details</div>
                     </div>
                 </div>
 
                 <!-- Groups Tab Content -->
-                <div class="vecthare-visualizer-body vecthare-vis-tab-content vecthare-groups-tab" data-tab="groups">
-                    <div class="vecthare-groups-toolbar">
-                        <button class="vecthare-btn-primary" id="vecthare_create_group">
+                <div class="vectfox-visualizer-body vectfox-vis-tab-content vectfox-groups-tab" data-tab="groups">
+                    <div class="vectfox-groups-toolbar">
+                        <button class="vectfox-btn-primary" id="VectFox_create_group">
                             <i class="fa-solid fa-plus"></i> New Group
                         </button>
-                        <div class="vecthare-groups-stats" id="vecthare_groups_stats"></div>
+                        <div class="vectfox-groups-stats" id="VectFox_groups_stats"></div>
                     </div>
-                    <div class="vecthare-groups-container" id="vecthare_groups_container">
-                        <div class="vecthare-groups-empty">
+                    <div class="vectfox-groups-container" id="VectFox_groups_container">
+                        <div class="vectfox-groups-empty">
                             <i class="fa-solid fa-layer-group"></i>
                             <p>No groups defined</p>
                             <span>Groups let you bundle chunks together for collective activation or mutual exclusion</span>
@@ -521,7 +521,7 @@ function createModal() {
                 </div>
 
                 <!-- Read-only collection metadata footer (sentinel point). Populated async after modal opens. -->
-                <div class="vecthare-visualizer-meta-footer" id="vecthare_collection_meta_footer" style="display:none; padding: 8px 16px; border-top: 1px solid var(--grey30); font-size: 0.78em; color: var(--SmartThemeBodyColor); opacity: 0.7; font-family: monospace;"></div>
+                <div class="vectfox-visualizer-meta-footer" id="VectFox_collection_meta_footer" style="display:none; padding: 8px 16px; border-top: 1px solid var(--grey30); font-size: 0.78em; color: var(--SmartThemeBodyColor); opacity: 0.7; font-family: monospace;"></div>
             </div>
         </div>
     `;
@@ -558,26 +558,26 @@ function saveGroups(groups) {
  * Renders the groups tab content
  */
 function renderGroupsTab() {
-    const container = $('#vecthare_groups_container');
+    const container = $('#VectFox_groups_container');
     if (!container.length) return;
 
     const groups = getGroups();
     const stats = getGroupStats(groups);
 
     // Update stats display
-    $('#vecthare_groups_stats').html(
+    $('#VectFox_groups_stats').html(
         groups.length > 0
             ? `<span>${stats.totalGroups} group${stats.totalGroups !== 1 ? 's' : ''}</span>
-               <span class="vecthare-stat-divider">|</span>
+               <span class="vectfox-stat-divider">|</span>
                <span>${stats.inclusiveGroups} inclusive</span>
-               <span class="vecthare-stat-divider">|</span>
+               <span class="vectfox-stat-divider">|</span>
                <span>${stats.exclusiveGroups} exclusive</span>`
             : ''
     );
     bindGroupsTabEvents();
     if (groups.length === 0) {
         container.html(`
-            <div class="vecthare-groups-empty">
+            <div class="vectfox-groups-empty">
                 <i class="fa-solid fa-layer-group"></i>
                 <p>No groups defined</p>
                 <span>Groups let you bundle chunks together for collective activation or mutual exclusion</span>
@@ -588,11 +588,11 @@ function renderGroupsTab() {
 
     // Split-panel layout
     container.html(`
-        <div class="vecthare-group-list-panel">
-            <div class="vecthare-group-list" id="vecthare_group_list"></div>
+        <div class="vectfox-group-list-panel">
+            <div class="vectfox-group-list" id="VectFox_group_list"></div>
         </div>
-        <div class="vecthare-group-detail-panel" id="vecthare_group_detail">
-            <div class="vecthare-detail-empty">Select a group to view details</div>
+        <div class="vectfox-group-detail-panel" id="VectFox_group_detail">
+            <div class="vectfox-detail-empty">Select a group to view details</div>
         </div>
     `);
     renderGroupList();    
@@ -602,7 +602,7 @@ function renderGroupsTab() {
  * Renders the group list (left panel)
  */
 function renderGroupList() {
-    const container = $('#vecthare_group_list');
+    const container = $('#VectFox_group_list');
     const groups = getGroups();
 
     const html = groups.map(group => {
@@ -614,14 +614,14 @@ function renderGroupList() {
             : (group.mandatory ? 'Exclusive (Mandatory)' : 'Exclusive');
 
         return `
-            <div class="vecthare-group-item ${isSelected ? 'selected' : ''}" data-group-id="${group.id}">
-                <div class="vecthare-group-item-header">
+            <div class="vectfox-group-item ${isSelected ? 'selected' : ''}" data-group-id="${group.id}">
+                <div class="vectfox-group-item-header">
                     <i class="fa-solid ${modeIcon}"></i>
-                    <span class="vecthare-group-name">${escapeHtml(group.name)}</span>
+                    <span class="vectfox-group-name">${escapeHtml(group.name)}</span>
                 </div>
-                <div class="vecthare-group-item-meta">
-                    <span class="vecthare-group-mode">${modeLabel}</span>
-                    <span class="vecthare-group-count">${memberCount} chunk${memberCount !== 1 ? 's' : ''}</span>
+                <div class="vectfox-group-item-meta">
+                    <span class="vectfox-group-mode">${modeLabel}</span>
+                    <span class="vectfox-group-count">${memberCount} chunk${memberCount !== 1 ? 's' : ''}</span>
                 </div>
             </div>
         `;
@@ -634,12 +634,12 @@ function renderGroupList() {
  * Renders the group detail panel (right panel)
  */
 function renderGroupDetailPanel() {
-    const container = $('#vecthare_group_detail');
+    const container = $('#VectFox_group_detail');
     const groups = getGroups();
     const group = groups.find(g => g.id === selectedGroupId);
 
     if (!group) {
-        container.html('<div class="vecthare-detail-empty">Select a group to view details</div>');
+        container.html('<div class="vectfox-detail-empty">Select a group to view details</div>');
         return;
     }
 
@@ -659,65 +659,65 @@ function renderGroupDetailPanel() {
     `;
 
     container.html(`
-        <div class="vecthare-group-detail-content">
-            <div class="vecthare-group-detail-header">
-                <input type="text" class="vecthare-group-name-input" id="vecthare_group_name"
+        <div class="vectfox-group-detail-content">
+            <div class="vectfox-group-detail-header">
+                <input type="text" class="vectfox-group-name-input" id="VectFox_group_name"
                        value="${escapeHtml(group.name)}" placeholder="Group name">
-                <button class="vecthare-btn-danger" id="vecthare_delete_group" title="Delete group">
+                <button class="vectfox-btn-danger" id="VectFox_delete_group" title="Delete group">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </div>
 
-            <div class="vecthare-group-settings">
-                <div class="vecthare-group-setting-row">
+            <div class="vectfox-group-settings">
+                <div class="vectfox-group-setting-row">
                     <label>Mode</label>
-                    <select id="vecthare_group_mode" class="vecthare-group-select">
+                    <select id="VectFox_group_mode" class="vectfox-group-select">
                         ${modeOptions}
                     </select>
                 </div>
 
-                <div class="vecthare-group-setting-row vecthare-inclusive-settings" style="${group.mode !== 'inclusive' ? 'display:none' : ''}">
+                <div class="vectfox-group-setting-row vectfox-inclusive-settings" style="${group.mode !== 'inclusive' ? 'display:none' : ''}">
                     <label>Link Type</label>
-                    <select id="vecthare_group_link_type" class="vecthare-group-select">
+                    <select id="VectFox_group_link_type" class="vectfox-group-select">
                         ${linkTypeOptions}
                     </select>
                 </div>
 
-                <div class="vecthare-group-setting-row vecthare-inclusive-settings vecthare-soft-settings"
+                <div class="vectfox-group-setting-row vectfox-inclusive-settings vectfox-soft-settings"
                      style="${group.mode !== 'inclusive' || group.linkType !== 'soft' ? 'display:none' : ''}">
                     <label>Score Boost</label>
-                    <input type="number" id="vecthare_group_boost" class="vecthare-group-input"
+                    <input type="number" id="VectFox_group_boost" class="vectfox-group-input"
                            value="${group.boost || 0.15}" min="0" max="1" step="0.05">
                 </div>
 
-                <div class="vecthare-group-setting-row vecthare-exclusive-settings" style="${group.mode !== 'exclusive' ? 'display:none' : ''}">
+                <div class="vectfox-group-setting-row vectfox-exclusive-settings" style="${group.mode !== 'exclusive' ? 'display:none' : ''}">
                     <label>
-                        <input type="checkbox" id="vecthare_group_mandatory" ${group.mandatory ? 'checked' : ''}>
+                        <input type="checkbox" id="VectFox_group_mandatory" ${group.mandatory ? 'checked' : ''}>
                         Mandatory (at least one must be included)
                     </label>
                 </div>
             </div>
 
-            <div class="vecthare-group-members-section">
-                <div class="vecthare-group-members-header">
+            <div class="vectfox-group-members-section">
+                <div class="vectfox-group-members-header">
                     <h4><i class="fa-solid fa-puzzle-piece"></i> Members (${memberChunks.length})</h4>
-                    <button class="vecthare-btn-small" id="vecthare_add_group_member">
+                    <button class="vectfox-btn-small" id="VectFox_add_group_member">
                         <i class="fa-solid fa-plus"></i> Add
                     </button>
                 </div>
-                <div class="vecthare-group-members-list" id="vecthare_group_members">
-                    ${memberChunks.length === 0 ? '<div class="vecthare-empty-hint">No members yet. Click "Add" to add chunks.</div>' : ''}
+                <div class="vectfox-group-members-list" id="VectFox_group_members">
+                    ${memberChunks.length === 0 ? '<div class="vectfox-empty-hint">No members yet. Click "Add" to add chunks.</div>' : ''}
                     ${memberChunks.map(({ hash, chunk }) => `
-                        <div class="vecthare-group-member" data-hash="${hash}">
-                            <div class="vecthare-group-member-info">
+                        <div class="vectfox-group-member" data-hash="${hash}">
+                            <div class="vectfox-group-member-info">
                                 ${chunk
-                                    ? `<span class="vecthare-member-preview">${escapeHtml((chunk.data?.text || '').substring(0, 60))}...</span>
-                                       <span class="vecthare-member-hash">#${String(hash).substring(0, 8)}</span>`
-                                    : `<span class="vecthare-member-missing">Chunk not found</span>
-                                       <span class="vecthare-member-hash">#${String(hash).substring(0, 8)}</span>`
+                                    ? `<span class="vectfox-member-preview">${escapeHtml((chunk.data?.text || '').substring(0, 60))}...</span>
+                                       <span class="vectfox-member-hash">#${String(hash).substring(0, 8)}</span>`
+                                    : `<span class="vectfox-member-missing">Chunk not found</span>
+                                       <span class="vectfox-member-hash">#${String(hash).substring(0, 8)}</span>`
                                 }
                             </div>
-                            <button class="vecthare-member-remove" data-hash="${hash}" title="Remove from group">
+                            <button class="vectfox-member-remove" data-hash="${hash}" title="Remove from group">
                                 <i class="fa-solid fa-times"></i>
                             </button>
                         </div>
@@ -747,33 +747,33 @@ function openAddMemberDialog() {
     }
 
     const overlay = $(`
-        <div class="vecthare-editor-overlay">
-            <div class="vecthare-editor-dialog vecthare-add-member-dialog">
-                <div class="vecthare-editor-header">
+        <div class="vectfox-editor-overlay">
+            <div class="vectfox-editor-dialog vectfox-add-member-dialog">
+                <div class="vectfox-editor-header">
                     <h3><i class="fa-solid fa-plus"></i> Add Chunk to Group</h3>
-                    <button class="vecthare-editor-close" id="vecthare_member_close">
+                    <button class="vectfox-editor-close" id="VectFox_member_close">
                         <i class="fa-solid fa-times"></i>
                     </button>
                 </div>
-                <div class="vecthare-editor-body">
-                    <div class="vecthare-member-search">
-                        <input type="text" id="vecthare_member_search" placeholder="Search chunks...">
+                <div class="vectfox-editor-body">
+                    <div class="vectfox-member-search">
+                        <input type="text" id="VectFox_member_search" placeholder="Search chunks...">
                     </div>
-                    <div class="vecthare-member-list" id="vecthare_available_members">
+                    <div class="vectfox-member-list" id="VectFox_available_members">
                         ${availableChunks.slice(0, 50).map(c => `
-                            <div class="vecthare-member-option" data-hash="${c.hash}">
-                                <span class="vecthare-member-preview">${escapeHtml((c.data?.text || '').substring(0, 80))}...</span>
-                                <span class="vecthare-member-hash">#${String(c.hash).substring(0, 8)}</span>
+                            <div class="vectfox-member-option" data-hash="${c.hash}">
+                                <span class="vectfox-member-preview">${escapeHtml((c.data?.text || '').substring(0, 80))}...</span>
+                                <span class="vectfox-member-hash">#${String(c.hash).substring(0, 8)}</span>
                             </div>
                         `).join('')}
-                        ${availableChunks.length > 50 ? `<div class="vecthare-member-more">${availableChunks.length - 50} more chunks (use search)</div>` : ''}
+                        ${availableChunks.length > 50 ? `<div class="vectfox-member-more">${availableChunks.length - 50} more chunks (use search)</div>` : ''}
                     </div>
                 </div>
             </div>
         </div>
     `);
 
-    $('.vecthare-visualizer-container').append(overlay);
+    $('.vectfox-visualizer-container').append(overlay);
 
     // Stop propagation to prevent extension panel close
     overlay.on('click', function(e) {
@@ -781,30 +781,30 @@ function openAddMemberDialog() {
         if (e.target === this) overlay.remove();
     });
 
-    $('#vecthare_member_close').on('click', () => overlay.remove());
+    $('#VectFox_member_close').on('click', () => overlay.remove());
 
     // Search filtering
-    $('#vecthare_member_search').on('input', function() {
+    $('#VectFox_member_search').on('input', function() {
         const query = $(this).val().toLowerCase();
         const filtered = availableChunks.filter(c =>
             (c.data?.text || '').toLowerCase().includes(query) ||
             String(c.hash).includes(query)
         );
 
-        $('#vecthare_available_members').html(
+        $('#VectFox_available_members').html(
             filtered.slice(0, 50).map(c => `
-                <div class="vecthare-member-option" data-hash="${c.hash}">
-                    <span class="vecthare-member-preview">${escapeHtml((c.data?.text || '').substring(0, 80))}...</span>
-                    <span class="vecthare-member-hash">#${String(c.hash).substring(0, 8)}</span>
+                <div class="vectfox-member-option" data-hash="${c.hash}">
+                    <span class="vectfox-member-preview">${escapeHtml((c.data?.text || '').substring(0, 80))}...</span>
+                    <span class="vectfox-member-hash">#${String(c.hash).substring(0, 8)}</span>
                 </div>
             `).join('') +
-            (filtered.length > 50 ? `<div class="vecthare-member-more">${filtered.length - 50} more results</div>` : '') +
-            (filtered.length === 0 ? '<div class="vecthare-empty-hint">No matching chunks</div>' : '')
+            (filtered.length > 50 ? `<div class="vectfox-member-more">${filtered.length - 50} more results</div>` : '') +
+            (filtered.length === 0 ? '<div class="vectfox-empty-hint">No matching chunks</div>' : '')
         );
     });
 
     // Click to add
-    overlay.on('click', '.vecthare-member-option', function (e) {
+    overlay.on('click', '.vectfox-member-option', function (e) {
         e.stopPropagation(); // Prevent overlay close
         const hash = $(this).data('hash');
         addMemberToGroup(String(hash));
@@ -900,10 +900,10 @@ function updateGroupSetting(key, value) {
  */
 function bindGroupsTabEvents() {
     // Create new group
-    $('#vecthare_create_group').off('click').on('click', createNewGroup);
+    $('#VectFox_create_group').off('click').on('click', createNewGroup);
 
     // Select group
-    $(document).off('click', '.vecthare-group-item').on('click', '.vecthare-group-item', function() {
+    $(document).off('click', '.vectfox-group-item').on('click', '.vectfox-group-item', function() {
         selectedGroupId = $(this).data('group-id');
         renderGroupList();
         renderGroupDetailPanel();
@@ -915,41 +915,41 @@ function bindGroupsTabEvents() {
  */
 function bindGroupDetailEvents() {
     // Name change
-    $('#vecthare_group_name').off('input').on('input', function() {
+    $('#VectFox_group_name').off('input').on('input', function() {
         updateGroupSetting('name', $(this).val());
         renderGroupList(); // Update name in list
     });
 
     // Delete group
-    $('#vecthare_delete_group').off('click').on('click', deleteCurrentGroup);
+    $('#VectFox_delete_group').off('click').on('click', deleteCurrentGroup);
 
     // Mode change
-    $('#vecthare_group_mode').off('change').on('change', function() {
+    $('#VectFox_group_mode').off('change').on('change', function() {
         updateGroupSetting('mode', $(this).val());
         renderGroupDetailPanel();
     });
 
     // Link type change
-    $('#vecthare_group_link_type').off('change').on('change', function() {
+    $('#VectFox_group_link_type').off('change').on('change', function() {
         updateGroupSetting('linkType', $(this).val());
         renderGroupDetailPanel();
     });
 
     // Boost change
-    $('#vecthare_group_boost').off('input').on('input', function() {
+    $('#VectFox_group_boost').off('input').on('input', function() {
         updateGroupSetting('boost', parseFloat($(this).val()) || 0.15);
     });
 
     // Mandatory toggle
-    $('#vecthare_group_mandatory').off('change').on('change', function() {
+    $('#VectFox_group_mandatory').off('change').on('change', function() {
         updateGroupSetting('mandatory', $(this).prop('checked'));
     });
 
     // Add member
-    $('#vecthare_add_group_member').off('click').on('click', openAddMemberDialog);
+    $('#VectFox_add_group_member').off('click').on('click', openAddMemberDialog);
 
     // Remove member
-    $('.vecthare-member-remove').off('click').on('click', function(e) {
+    $('.vectfox-member-remove').off('click').on('click', function(e) {
         e.stopPropagation();
         const hash = $(this).data('hash');
         removeMemberFromGroup(String(hash));
@@ -961,13 +961,13 @@ function bindGroupDetailEvents() {
 // ============================================================================
 
 function renderChunkList() {
-    const container = $('#vecthare_chunk_list');
+    const container = $('#VectFox_chunk_list');
     const displayChunks = filteredChunks.slice(0, displayLimit);
 
     let html = displayChunks.map((chunk, idx) => renderChunkItem(chunk, idx)).join('');
 
     if (filteredChunks.length > displayLimit) {
-        html += `<div class="vecthare-load-more" id="vecthare_load_more">[Load ${Math.min(50, filteredChunks.length - displayLimit)} more...]</div>`;
+        html += `<div class="vectfox-load-more" id="VectFox_load_more">[Load ${Math.min(50, filteredChunks.length - displayLimit)} more...]</div>`;
     }
 
     container.html(html);
@@ -1003,29 +1003,29 @@ function renderChunkItem(chunk, listIndex) {
 
     // Build info badges
     const infoBadges = [];
-    infoBadges.push(`<span class="vecthare-chunk-item-badge msg">Msg ${msgId}</span>`);
+    infoBadges.push(`<span class="vectfox-chunk-item-badge msg">Msg ${msgId}</span>`);
     if (totalChunks > 1) {
-        infoBadges.push(`<span class="vecthare-chunk-item-badge chunk-part">${chunkIdx + 1}/${totalChunks}</span>`);
+        infoBadges.push(`<span class="vectfox-chunk-item-badge chunk-part">${chunkIdx + 1}/${totalChunks}</span>`);
     }
-    infoBadges.push(`<span class="vecthare-chunk-item-badge chars">${textLengthDisplay} chars</span>`);
+    infoBadges.push(`<span class="vectfox-chunk-item-badge chars">${textLengthDisplay} chars</span>`);
 
     // Build feature badges
     const featureBadges = [];
-    if (hasConditions) featureBadges.push(`<span class="vecthare-chunk-item-badge conditions" title="Has ${data.conditions.rules.length} condition(s)">⚡${data.conditions.rules.length}</span>`);
-    if (hasKeywords) featureBadges.push(`<span class="vecthare-chunk-item-badge keywords" title="Has ${data.keywords.length} keyword(s)">🏷️${data.keywords.length}</span>`);
-    if (data.temporallyBlind) featureBadges.push(`<span class="vecthare-chunk-item-badge blind" title="Immune to temporal decay">🛡️</span>`);
+    if (hasConditions) featureBadges.push(`<span class="vectfox-chunk-item-badge conditions" title="Has ${data.conditions.rules.length} condition(s)">⚡${data.conditions.rules.length}</span>`);
+    if (hasKeywords) featureBadges.push(`<span class="vectfox-chunk-item-badge keywords" title="Has ${data.keywords.length} keyword(s)">🏷️${data.keywords.length}</span>`);
+    if (data.temporallyBlind) featureBadges.push(`<span class="vectfox-chunk-item-badge blind" title="Immune to temporal decay">🛡️</span>`);
 
     return `
-        <div class="vecthare-chunk-item ${isSelected ? 'selected' : ''} ${!data.enabled ? 'disabled' : ''}"
+        <div class="vectfox-chunk-item ${isSelected ? 'selected' : ''} ${!data.enabled ? 'disabled' : ''}"
              data-uid="${chunk.uniqueId}" data-list-index="${listIndex}">
-            <div class="vecthare-chunk-item-content">
-                <div class="vecthare-chunk-item-header">
-                    <span class="vecthare-chunk-item-index">${displayNumber}.</span>
-                    <span class="vecthare-chunk-item-name">${escapeHtml(displayName)}</span>
+            <div class="vectfox-chunk-item-content">
+                <div class="vectfox-chunk-item-header">
+                    <span class="vectfox-chunk-item-index">${displayNumber}.</span>
+                    <span class="vectfox-chunk-item-name">${escapeHtml(displayName)}</span>
                 </div>
-                <div class="vecthare-chunk-item-stats">
-                    <div class="vecthare-chunk-item-badges info-badges">${infoBadges.join('')}</div>
-                    ${featureBadges.length > 0 ? `<div class="vecthare-chunk-item-badges feature-badges">${featureBadges.join('')}</div>` : ''}
+                <div class="vectfox-chunk-item-stats">
+                    <div class="vectfox-chunk-item-badges info-badges">${infoBadges.join('')}</div>
+                    ${featureBadges.length > 0 ? `<div class="vectfox-chunk-item-badges feature-badges">${featureBadges.join('')}</div>` : ''}
                 </div>
             </div>
         </div>
@@ -1044,7 +1044,7 @@ function updateStatusBar() {
         if (c.data.temporallyBlind) blind++;
     }
 
-    $('#vecthare_list_status').html(`
+    $('#VectFox_list_status').html(`
         <span>${shown} chunks</span>
         ${withKeywords > 0 ? `<span>• 🏷️${withKeywords}</span>` : ''}
         ${withConditions > 0 ? `<span>• ⚡${withConditions}</span>` : ''}
@@ -1057,18 +1057,18 @@ function updateStatusBar() {
 // ============================================================================
 
 function renderDetailPanel() {
-    const panel = $('#vecthare_detail_panel');
+    const panel = $('#VectFox_detail_panel');
 
     if (!selectedChunkId) {
-        panel.html('<div class="vecthare-detail-empty">Select a chunk to view details</div>');
+        panel.html('<div class="vectfox-detail-empty">Select a chunk to view details</div>');
         return;
     }
 
     // PERF: Use Map for O(1) lookup instead of O(n) find()
     const chunk = allChunksMap.get(selectedChunkId);
     if (!chunk) {
-        console.error('VectHare: Chunk not found for uniqueId:', selectedChunkId);
-        panel.html('<div class="vecthare-detail-empty">Chunk not found</div>');
+        console.error('VectFox: Chunk not found for uniqueId:', selectedChunkId);
+        panel.html('<div class="vectfox-detail-empty">Chunk not found</div>');
         return;
     }
 
@@ -1085,201 +1085,201 @@ function renderDetailPanel() {
 
     panel.html(`
         <!-- Header -->
-        <div class="vecthare-detail-header">
+        <div class="vectfox-detail-header">
             <!-- Chunk Name - Primary/Biggest -->
-            <div class="vecthare-detail-name-section">
-                <input type="text" class="vecthare-chunk-name-input" id="vecthare_chunk_name"
+            <div class="vectfox-detail-name-section">
+                <input type="text" class="vectfox-chunk-name-input" id="VectFox_chunk_name"
                        placeholder="Name this chunk..."
                        value="${escapeHtml(data.name || '')}">
             </div>
-            <button class="vecthare-detail-delete" id="vecthare_delete_chunk">
+            <button class="vectfox-detail-delete" id="VectFox_delete_chunk">
                 <i class="fa-solid fa-trash"></i> Delete
             </button>
         </div>
 
         <!-- Chunk Info Bar - Secondary -->
-        <div class="vecthare-detail-info-bar">
-            <span class="vecthare-info-item">
-                <span class="vecthare-info-label">Chunk</span>
-                <span class="vecthare-info-value">#${displayNumber}</span>
+        <div class="vectfox-detail-info-bar">
+            <span class="vectfox-info-item">
+                <span class="vectfox-info-label">Chunk</span>
+                <span class="vectfox-info-value">#${displayNumber}</span>
             </span>
-            <span class="vecthare-info-divider">•</span>
-            <span class="vecthare-info-item">
-                <span class="vecthare-info-label">from Message</span>
-                <span class="vecthare-info-value">#${chunk.index}</span>
+            <span class="vectfox-info-divider">•</span>
+            <span class="vectfox-info-item">
+                <span class="vectfox-info-label">from Message</span>
+                <span class="vectfox-info-value">#${chunk.index}</span>
             </span>
-            <span class="vecthare-info-divider">•</span>
-            <span class="vecthare-info-item vecthare-info-hash" title="Click to copy hash" id="vecthare_copy_hash">
-                <span class="vecthare-info-value">${chunk.hash}</span>
+            <span class="vectfox-info-divider">•</span>
+            <span class="vectfox-info-item vectfox-info-hash" title="Click to copy hash" id="VectFox_copy_hash">
+                <span class="vectfox-info-value">${chunk.hash}</span>
             </span>
         </div>
 
         <!-- Content -->
-        <div class="vecthare-detail-content">
+        <div class="vectfox-detail-content">
             <!-- Text Block - Inline Editable -->
-            <div class="vecthare-detail-text-block">
-                <div class="vecthare-detail-text" id="vecthare_chunk_text" contenteditable="true">${escapeHtml(data.text)}</div>
-                <div class="vecthare-detail-text-meta">
+            <div class="vectfox-detail-text-block">
+                <div class="vectfox-detail-text" id="VectFox_chunk_text" contenteditable="true">${escapeHtml(data.text)}</div>
+                <div class="vectfox-detail-text-meta">
                     <span>${wordCount} words • ~${tokenEstimate} tokens</span>
-                    <button class="vecthare-detail-save-btn vecthare-hidden" id="vecthare_save_text">
+                    <button class="vectfox-detail-save-btn vectfox-hidden" id="VectFox_save_text">
                         <i class="fa-solid fa-save"></i> Save & Re-embed
                     </button>
                 </div>
             </div>
 
             <!-- Status Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-title">Status</div>
-                <div class="vecthare-detail-status-row">
-                    <div class="vecthare-detail-toggle-item">
-                        <span class="vecthare-toggle-label">Enabled</span>
-                        <label class="vecthare-toggle-switch">
-                            <input type="checkbox" id="vecthare_detail_enabled" ${data.enabled ? 'checked' : ''}>
-                            <span class="vecthare-toggle-slider"></span>
+            <div class="vectfox-detail-section">
+                <div class="vectfox-detail-section-title">Status</div>
+                <div class="vectfox-detail-status-row">
+                    <div class="vectfox-detail-toggle-item">
+                        <span class="vectfox-toggle-label">Enabled</span>
+                        <label class="vectfox-toggle-switch">
+                            <input type="checkbox" id="VectFox_detail_enabled" ${data.enabled ? 'checked' : ''}>
+                            <span class="vectfox-toggle-slider"></span>
                         </label>
                     </div>
-                    <div class="vecthare-detail-toggle-item">
-                        <span class="vecthare-toggle-label">Decay Immune</span>
-                        <label class="vecthare-toggle-switch">
-                            <input type="checkbox" id="vecthare_detail_blind" ${data.temporallyBlind ? 'checked' : ''}>
-                            <span class="vecthare-toggle-slider"></span>
+                    <div class="vectfox-detail-toggle-item">
+                        <span class="vectfox-toggle-label">Decay Immune</span>
+                        <label class="vectfox-toggle-switch">
+                            <input type="checkbox" id="VectFox_detail_blind" ${data.temporallyBlind ? 'checked' : ''}>
+                            <span class="vectfox-toggle-slider"></span>
                         </label>
                     </div>
                 </div>
             </div>
 
             <!-- Prompt Context Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-title">
+            <div class="vectfox-detail-section">
+                <div class="vectfox-detail-section-title">
                     <i class="fa-solid fa-quote-left"></i> Prompt Context
-                    <span class="vecthare-section-hint">(help AI understand this chunk)</span>
+                    <span class="vectfox-section-hint">(help AI understand this chunk)</span>
                 </div>
-                <div class="vecthare-detail-context">
-                    <textarea class="vecthare-chunk-context-input" id="vecthare_chunk_context"
+                <div class="vectfox-detail-context">
+                    <textarea class="vectfox-chunk-context-input" id="VectFox_chunk_context"
                               placeholder="e.g., A secret {{char}} keeps hidden from {{user}}"
                               rows="2">${escapeHtml(data.context || '')}</textarea>
-                    <div class="vecthare-context-xmltag-row">
+                    <div class="vectfox-context-xmltag-row">
                         <label>XML tag:</label>
-                        <input type="text" class="vecthare-chunk-xmltag-input" id="vecthare_chunk_xmltag"
+                        <input type="text" class="vectfox-chunk-xmltag-input" id="VectFox_chunk_xmltag"
                                placeholder="e.g., secret" value="${escapeHtml(data.xmlTag || '')}">
                     </div>
-                    <div class="vecthare-context-injection-row">
+                    <div class="vectfox-context-injection-row">
                         <label>Injection position:</label>
-                        <select id="vecthare_chunk_position" class="vecthare-chunk-position-select">
+                        <select id="VectFox_chunk_position" class="vectfox-chunk-position-select">
                             <option value="" ${data.position == null ? 'selected' : ''}>Use default</option>
                             <option value="2" ${data.position === 2 ? 'selected' : ''}>Before Main Prompt</option>
                             <option value="0" ${data.position === 0 ? 'selected' : ''}>After Main Prompt</option>
                             <option value="1" ${data.position === 1 ? 'selected' : ''}>In-Chat @ Depth</option>
                         </select>
                     </div>
-                    <div class="vecthare-context-depth-row" id="vecthare_chunk_depth_row" style="display: ${data.position === 1 ? 'flex' : 'none'};">
-                        <label>Depth: <span id="vecthare_chunk_depth_value">${data.depth ?? 2}</span></label>
-                        <input type="range" id="vecthare_chunk_depth" class="vecthare-chunk-depth-slider"
+                    <div class="vectfox-context-depth-row" id="VectFox_chunk_depth_row" style="display: ${data.position === 1 ? 'flex' : 'none'};">
+                        <label>Depth: <span id="VectFox_chunk_depth_value">${data.depth ?? 2}</span></label>
+                        <input type="range" id="VectFox_chunk_depth" class="vectfox-chunk-depth-slider"
                                min="0" max="50" step="1" value="${data.depth ?? 2}">
                     </div>
-                    <div class="vecthare-context-hint">Supports {{user}} and {{char}}. XML tag wraps just this chunk.</div>
+                    <div class="vectfox-context-hint">Supports {{user}} and {{char}}. XML tag wraps just this chunk.</div>
                 </div>
             </div>
 
             <!-- Keywords Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-header">
-                    <span class="vecthare-detail-section-title">Keywords <span class="vecthare-section-hint">(boost when query matches)</span></span>
-                    <button class="vecthare-keyword-mode-toggle" id="vecthare_keyword_mode" title="Toggle plaintext mode">
+            <div class="vectfox-detail-section">
+                <div class="vectfox-detail-section-header">
+                    <span class="vectfox-detail-section-title">Keywords <span class="vectfox-section-hint">(boost when query matches)</span></span>
+                    <button class="vectfox-keyword-mode-toggle" id="VectFox_keyword_mode" title="Toggle plaintext mode">
                         <i class="fa-solid ${plaintextKeywordMode ? 'fa-tag' : 'fa-code'}"></i>
                     </button>
                 </div>
-                <div class="vecthare-detail-keywords" id="vecthare_keywords_container">
+                <div class="vectfox-detail-keywords" id="VectFox_keywords_container">
                     ${plaintextKeywordMode ? `
-                        <textarea class="vecthare-keyword-plaintext" id="vecthare_keywords_plaintext" placeholder="keyword:1.5x, another:2x, plain">${data.keywords.map(k => k.weight !== 1.0 ? `${k.text}:${k.weight}x` : k.text).join(', ')}</textarea>
-                        <div class="vecthare-keyword-plaintext-hint">Format: keyword:2x for boost, or just keyword (defaults to 1.5x)</div>
+                        <textarea class="vectfox-keyword-plaintext" id="VectFox_keywords_plaintext" placeholder="keyword:1.5x, another:2x, plain">${data.keywords.map(k => k.weight !== 1.0 ? `${k.text}:${k.weight}x` : k.text).join(', ')}</textarea>
+                        <div class="vectfox-keyword-plaintext-hint">Format: keyword:2x for boost, or just keyword (defaults to 1.5x)</div>
                     ` : `
-                        <div class="vecthare-keywords-list">
+                        <div class="vectfox-keywords-list">
                             ${data.keywords.map((k, idx) => `
-                                <span class="vecthare-keyword-tag" data-index="${idx}">
-                                    <span class="vecthare-keyword-tag-text">${escapeHtml(k.text || 'unnamed')}</span>
-                                    <span class="vecthare-keyword-tag-weight">${k.weight}x</span>
-                                    <i class="fa-solid fa-xmark vecthare-keyword-remove" data-index="${idx}"></i>
+                                <span class="vectfox-keyword-tag" data-index="${idx}">
+                                    <span class="vectfox-keyword-tag-text">${escapeHtml(k.text || 'unnamed')}</span>
+                                    <span class="vectfox-keyword-tag-weight">${k.weight}x</span>
+                                    <i class="fa-solid fa-xmark vectfox-keyword-remove" data-index="${idx}"></i>
                                 </span>
                             `).join('')}
                         </div>
-                        <button class="vecthare-keyword-add" id="vecthare_add_keyword">+ Add keyword...</button>
+                        <button class="vectfox-keyword-add" id="VectFox_add_keyword">+ Add keyword...</button>
                     `}
                 </div>
             </div>
 
             <!-- Conditions Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-title">Conditions</div>
-                <div class="vecthare-detail-conditions">
-                    <div class="vecthare-conditions-header">
-                        <label class="vecthare-conditions-toggle">
-                            <input type="checkbox" id="vecthare_conditions_enabled" ${data.conditions?.enabled ? 'checked' : ''}>
+            <div class="vectfox-detail-section">
+                <div class="vectfox-detail-section-title">Conditions</div>
+                <div class="vectfox-detail-conditions">
+                    <div class="vectfox-conditions-header">
+                        <label class="vectfox-conditions-toggle">
+                            <input type="checkbox" id="VectFox_conditions_enabled" ${data.conditions?.enabled ? 'checked' : ''}>
                             <span>Enable conditional activation</span>
                         </label>
-                        <div class="vecthare-conditions-logic">
-                            <button class="vecthare-logic-btn ${data.conditions?.logic === 'AND' ? 'active' : ''}" data-logic="AND">AND</button>
-                            <button class="vecthare-logic-btn ${data.conditions?.logic === 'OR' ? 'active' : ''}" data-logic="OR">OR</button>
+                        <div class="vectfox-conditions-logic">
+                            <button class="vectfox-logic-btn ${data.conditions?.logic === 'AND' ? 'active' : ''}" data-logic="AND">AND</button>
+                            <button class="vectfox-logic-btn ${data.conditions?.logic === 'OR' ? 'active' : ''}" data-logic="OR">OR</button>
                         </div>
                     </div>
-                    <div class="vecthare-conditions-list" id="vecthare_conditions_list">
+                    <div class="vectfox-conditions-list" id="VectFox_conditions_list">
                         ${(data.conditions?.rules || []).map((rule, i) => `
-                            <div class="vecthare-condition-item" data-index="${i}">
-                                <span class="vecthare-condition-item-num">${i + 1}.</span>
-                                <span class="vecthare-condition-item-text">${escapeHtml(formatConditionRule(rule))}</span>
-                                <i class="fa-solid fa-xmark vecthare-condition-item-remove"></i>
+                            <div class="vectfox-condition-item" data-index="${i}">
+                                <span class="vectfox-condition-item-num">${i + 1}.</span>
+                                <span class="vectfox-condition-item-text">${escapeHtml(formatConditionRule(rule))}</span>
+                                <i class="fa-solid fa-xmark vectfox-condition-item-remove"></i>
                             </div>
                         `).join('')}
                     </div>
-                    <button class="vecthare-add-condition-btn" id="vecthare_add_condition">+ Add Condition Rule</button>
+                    <button class="vectfox-add-condition-btn" id="VectFox_add_condition">+ Add Condition Rule</button>
                 </div>
             </div>
 
             <!-- Chunk Links Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-title">
+            <div class="vectfox-detail-section">
+                <div class="vectfox-detail-section-title">
                     <i class="fa-solid fa-link"></i> Chunk Links
-                    <span class="vecthare-section-hint">(pull related chunks into results)</span>
+                    <span class="vectfox-section-hint">(pull related chunks into results)</span>
                 </div>
-                <div class="vecthare-detail-links">
-                    <div class="vecthare-links-list" id="vecthare_links_list">
+                <div class="vectfox-detail-links">
+                    <div class="vectfox-links-list" id="VectFox_links_list">
                         ${(data.chunkLinks || []).map((link, i) => `
-                            <div class="vecthare-link-item ${link.mode}" data-index="${i}">
-                                <span class="vecthare-link-mode-badge ${link.mode}">${link.mode === 'force' ? '🔗 Force' : '〰️ Soft'}</span>
-                                <span class="vecthare-link-target" title="Target hash: ${link.targetHash}">${link.targetHash.toString().substring(0, 12)}...</span>
-                                <i class="fa-solid fa-xmark vecthare-link-item-remove"></i>
+                            <div class="vectfox-link-item ${link.mode}" data-index="${i}">
+                                <span class="vectfox-link-mode-badge ${link.mode}">${link.mode === 'force' ? '🔗 Force' : '〰️ Soft'}</span>
+                                <span class="vectfox-link-target" title="Target hash: ${link.targetHash}">${link.targetHash.toString().substring(0, 12)}...</span>
+                                <i class="fa-solid fa-xmark vectfox-link-item-remove"></i>
                             </div>
                         `).join('')}
                     </div>
-                    <div class="vecthare-links-help">
-                        <span class="vecthare-help-badge force">Force</span> = Target chunk MUST appear if this chunk appears<br>
-                        <span class="vecthare-help-badge soft">Soft</span> = Target chunk gets score boost if this chunk appears
+                    <div class="vectfox-links-help">
+                        <span class="vectfox-help-badge force">Force</span> = Target chunk MUST appear if this chunk appears<br>
+                        <span class="vectfox-help-badge soft">Soft</span> = Target chunk gets score boost if this chunk appears
                     </div>
-                    <button class="vecthare-add-link-btn" id="vecthare_add_link">+ Add Link</button>
+                    <button class="vectfox-add-link-btn" id="VectFox_add_link">+ Add Link</button>
                 </div>
             </div>
 
             <!-- Summaries Section -->
-            <div class="vecthare-detail-section">
-                <div class="vecthare-detail-section-title">Dual-Vector Summaries</div>
-                <div class="vecthare-detail-summaries">
-                    <div class="vecthare-summaries-header">
+            <div class="vectfox-detail-section">
+                <div class="vectfox-detail-section-title">Dual-Vector Summaries</div>
+                <div class="vectfox-detail-summaries">
+                    <div class="vectfox-summaries-header">
                         <span>Alternative search vectors for this chunk</span>
                     </div>
-                    <div class="vecthare-summaries-list" id="vecthare_summaries_list">
+                    <div class="vectfox-summaries-list" id="VectFox_summaries_list">
                         ${(data.summaries || []).map((summary, i) => {
                             const summaryHash = getStringHash(summary);
                             return `
-                            <div class="vecthare-summary-item" data-index="${i}">
-                                <div class="vecthare-summary-item-content">
-                                    <span class="vecthare-summary-item-text">${escapeHtml(summary)}</span>
-                                    <span class="vecthare-summary-item-hash" title="Summary vector hash">#${summaryHash}</span>
+                            <div class="vectfox-summary-item" data-index="${i}">
+                                <div class="vectfox-summary-item-content">
+                                    <span class="vectfox-summary-item-text">${escapeHtml(summary)}</span>
+                                    <span class="vectfox-summary-item-hash" title="Summary vector hash">#${summaryHash}</span>
                                 </div>
-                                <i class="fa-solid fa-xmark vecthare-summary-item-remove"></i>
+                                <i class="fa-solid fa-xmark vectfox-summary-item-remove"></i>
                             </div>
                         `}).join('')}
                     </div>
-                    <button class="vecthare-add-summary-btn" id="vecthare_add_summary">+ Add Summary</button>
+                    <button class="vectfox-add-summary-btn" id="VectFox_add_summary">+ Add Summary</button>
                 </div>
             </div>
         </div>
@@ -1331,33 +1331,33 @@ function formatConditionRule(rule) {
 
 function bindEvents() {
     // Save
-    $('#vecthare_visualizer_save').on('click', saveAllChanges);
+    $('#VectFox_visualizer_save').on('click', saveAllChanges);
 
     // Close
-    $('#vecthare_visualizer_close').on('click', closeVisualizer);
+    $('#VectFox_visualizer_close').on('click', closeVisualizer);
     // Stop mousedown propagation (ST closes drawers on mousedown/touchstart)
-    $('#vecthare_visualizer_modal').on('mousedown touchstart', function(e) {
+    $('#VectFox_visualizer_modal').on('mousedown touchstart', function(e) {
         e.stopPropagation();
     });
     // Close on background click
-    $('#vecthare_visualizer_modal').on('click', function(e) {
+    $('#VectFox_visualizer_modal').on('click', function(e) {
         if (e.target === this) closeVisualizer();
     });
 
     // Tab switching
-    $('.vecthare-visualizer-tab').on('click', function() {
+    $('.vectfox-visualizer-tab').on('click', function() {
         const tab = $(this).data('tab');
         if (tab === activeTab) return;
 
         activeTab = tab;
 
         // Update tab button states
-        $('.vecthare-visualizer-tab').removeClass('active');
+        $('.vectfox-visualizer-tab').removeClass('active');
         $(this).addClass('active');
 
         // Show/hide tab content
-        $('.vecthare-vis-tab-content').removeClass('active');
-        $(`.vecthare-vis-tab-content[data-tab="${tab}"]`).addClass('active');
+        $('.vectfox-vis-tab-content').removeClass('active');
+        $(`.vectfox-vis-tab-content[data-tab="${tab}"]`).addClass('active');
 
         // Render tab content when switching
         if (tab === 'groups') {
@@ -1366,46 +1366,46 @@ function bindEvents() {
     });
 
     // Search
-    $('#vecthare_chunk_search').on('input', debounce(function() {
+    $('#VectFox_chunk_search').on('input', debounce(function() {
         searchQuery = $(this).val();
         applyFilters();
         renderChunkList();
     }, 200));
 
     // Sort
-    $('#vecthare_chunk_sort').on('change', function() {
+    $('#VectFox_chunk_sort').on('change', function() {
         sortBy = $(this).val();
         applyFilters();
         renderChunkList();
     });
 
     // Filter
-    $('#vecthare_chunk_filter').on('change', function() {
+    $('#VectFox_chunk_filter').on('change', function() {
         filterBy = $(this).val();
         applyFilters();
         renderChunkList();
     });
 
     // Fetch limit
-    $('#vecthare_fetch_limit').on('change', function() {
+    $('#VectFox_fetch_limit').on('change', function() {
         const val = parseInt($(this).val());
         chunkFetchLimit = isNaN(val) || val < 100 ? 1000 : val;
         $(this).val(chunkFetchLimit);
     });
 
     // Reload button
-    $('#vecthare_reload_chunks').off('click').on('click', function() {
+    $('#VectFox_reload_chunks').off('click').on('click', function() {
         if (onReloadCallback) onReloadCallback(chunkFetchLimit);
     });
 
     // Chunk selection - bind to container, not document (because modal stops propagation)
-    $('#vecthare_visualizer_modal').on('click', '.vecthare-chunk-item', function(e) {
+    $('#VectFox_visualizer_modal').on('click', '.vectfox-chunk-item', function(e) {
         e.preventDefault();
         e.stopPropagation();
         const uid = $(this).attr('data-uid');
-        console.log('VectHare: Clicked chunk with uniqueId:', uid);
+        console.log('VectFox: Clicked chunk with uniqueId:', uid);
         if (!uid) {
-            console.error('VectHare: No uniqueId found on clicked element');
+            console.error('VectFox: No uniqueId found on clicked element');
             return;
         }
         // Warn if switching chunks with unsaved changes
@@ -1421,19 +1421,19 @@ function bindEvents() {
     });
 
     // Load more
-    $('#vecthare_visualizer_modal').on('click', '#vecthare_load_more', function() {
+    $('#VectFox_visualizer_modal').on('click', '#VectFox_load_more', function() {
         displayLimit += 50;
         renderChunkList();
     });
 
     // Bulk mode
-    $('#vecthare_bulk_mode').on('change', function() {
+    $('#VectFox_bulk_mode').on('change', function() {
         bulkSelectMode = $(this).is(':checked');
-        $('#vecthare_bulk_buttons').toggle(bulkSelectMode);
+        $('#VectFox_bulk_buttons').toggle(bulkSelectMode);
     });
 
-    $('#vecthare_bulk_enable').on('click', () => bulkSetEnabled(true));
-    $('#vecthare_bulk_disable').on('click', () => bulkSetEnabled(false));
+    $('#VectFox_bulk_enable').on('click', () => bulkSetEnabled(true));
+    $('#VectFox_bulk_disable').on('click', () => bulkSetEnabled(false));
 }
 
 function bindDetailEvents() {
@@ -1444,7 +1444,7 @@ function bindDetailEvents() {
     const originalText = chunk.data.text;
 
     // Chunk name input
-    $('#vecthare_chunk_name').on('input', debounce(function() {
+    $('#VectFox_chunk_name').on('input', debounce(function() {
         const name = $(this).val().trim();
         chunk.data.name = name || null;
         updateChunkData(chunk.hash, { name: chunk.data.name });
@@ -1452,20 +1452,20 @@ function bindDetailEvents() {
     }, 300));
 
     // Inline text editing - track changes
-    $('#vecthare_chunk_text').on('input', function() {
+    $('#VectFox_chunk_text').on('input', function() {
         const newText = $(this).text().trim();
         if (newText !== originalText) {
             hasUnsavedChanges = true;
-            $('#vecthare_save_text').removeClass('vecthare-hidden');
+            $('#VectFox_save_text').removeClass('vectfox-hidden');
         } else {
             hasUnsavedChanges = false;
-            $('#vecthare_save_text').addClass('vecthare-hidden');
+            $('#VectFox_save_text').addClass('vectfox-hidden');
         }
     });
 
     // Save text changes
-    $('#vecthare_save_text').on('click', async function() {
-        const newText = $('#vecthare_chunk_text').text().trim();
+    $('#VectFox_save_text').on('click', async function() {
+        const newText = $('#VectFox_chunk_text').text().trim();
         if (!newText) return;
 
         $(this).prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Saving...');
@@ -1497,16 +1497,16 @@ function bindDetailEvents() {
 
             renderChunkList();
             renderDetailPanel();
-            toastr.success('Chunk updated successfully', 'VectHare');
+            toastr.success('Chunk updated successfully', 'VectFox');
         } catch (error) {
             console.error('Failed to update chunk:', error);
-            toastr.error('Failed to update chunk', 'VectHare');
+            toastr.error('Failed to update chunk', 'VectFox');
             $(this).prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save & Re-embed');
         }
     });
 
     // Enabled toggle
-    $('#vecthare_detail_enabled').on('change', function() {
+    $('#VectFox_detail_enabled').on('change', function() {
         const enabled = $(this).is(':checked');
         updateChunkData(chunk.hash, { enabled });
         chunk.data.enabled = enabled;
@@ -1514,7 +1514,7 @@ function bindDetailEvents() {
     });
 
     // Blind toggle
-    $('#vecthare_detail_blind').on('change', function() {
+    $('#VectFox_detail_blind').on('change', function() {
         const blind = $(this).is(':checked');
         setChunkTemporallyBlind(chunk.hash, blind);
         chunk.data.temporallyBlind = blind;
@@ -1522,14 +1522,14 @@ function bindDetailEvents() {
     });
 
     // Prompt context input
-    $('#vecthare_chunk_context').on('input', debounce(function() {
+    $('#VectFox_chunk_context').on('input', debounce(function() {
         const context = $(this).val();
         chunk.data.context = context || '';
         updateChunkData(chunk.hash, { context: chunk.data.context });
     }, 300));
 
     // XML tag input (sanitize to alphanumeric + underscore/hyphen)
-    $('#vecthare_chunk_xmltag').on('input', debounce(function() {
+    $('#VectFox_chunk_xmltag').on('input', debounce(function() {
         const sanitized = $(this).val().replace(/[^a-zA-Z0-9_-]/g, '');
         $(this).val(sanitized);
         chunk.data.xmlTag = sanitized || '';
@@ -1537,31 +1537,31 @@ function bindDetailEvents() {
     }, 300));
 
     // Injection position select
-    $('#vecthare_chunk_position').on('change', function() {
+    $('#VectFox_chunk_position').on('change', function() {
         const val = $(this).val();
         const position = val === '' ? null : parseInt(val);
         chunk.data.position = position;
         updateChunkData(chunk.hash, { position: chunk.data.position });
         // Show/hide depth row
-        $('#vecthare_chunk_depth_row').toggle(position === 1);
+        $('#VectFox_chunk_depth_row').toggle(position === 1);
     });
 
     // Injection depth slider
-    $('#vecthare_chunk_depth').on('input', function() {
+    $('#VectFox_chunk_depth').on('input', function() {
         const depth = parseInt($(this).val()) || 2;
-        $('#vecthare_chunk_depth_value').text(depth);
+        $('#VectFox_chunk_depth_value').text(depth);
         chunk.data.depth = depth;
         updateChunkData(chunk.hash, { depth: chunk.data.depth });
     });
 
     // Delete chunk
-    $('#vecthare_delete_chunk').on('click', () => deleteChunk(chunk));
+    $('#VectFox_delete_chunk').on('click', () => deleteChunk(chunk));
 
     // Keyword mode toggle (plaintext vs badge)
-    $('#vecthare_keyword_mode').on('click', function() {
+    $('#VectFox_keyword_mode').on('click', function() {
         // If in plaintext mode, parse and save before switching
         if (plaintextKeywordMode) {
-            const plaintext = $('#vecthare_keywords_plaintext').val();
+            const plaintext = $('#VectFox_keywords_plaintext').val();
             chunk.data.keywords = parsePlaintextKeywords(plaintext);
             updateChunkData(chunk.hash, { keywords: chunk.data.keywords });
         }
@@ -1570,16 +1570,16 @@ function bindDetailEvents() {
     });
 
     // Plaintext keywords - save on blur
-    $('#vecthare_keywords_plaintext').on('blur', function() {
+    $('#VectFox_keywords_plaintext').on('blur', function() {
         const plaintext = $(this).val();
         chunk.data.keywords = parsePlaintextKeywords(plaintext);
         updateChunkData(chunk.hash, { keywords: chunk.data.keywords });
     });
 
     // Keywords - add new
-    $('#vecthare_add_keyword').on('click', function() {
-        $(this).replaceWith('<input type="text" class="vecthare-keyword-input" id="vecthare_keyword_input" placeholder="Enter keyword...">');
-        $('#vecthare_keyword_input').focus().on('keydown', function(e) {
+    $('#VectFox_add_keyword').on('click', function() {
+        $(this).replaceWith('<input type="text" class="vectfox-keyword-input" id="VectFox_keyword_input" placeholder="Enter keyword...">');
+        $('#VectFox_keyword_input').focus().on('keydown', function(e) {
             if (e.key === 'Enter') {
                 const keyword = $(this).val().trim();
                 if (keyword && !chunk.data.keywords.some(k => k.text === keyword)) {
@@ -1596,7 +1596,7 @@ function bindDetailEvents() {
     });
 
     // Keyword remove button
-    $('.vecthare-keyword-remove').on('click', function() {
+    $('.vectfox-keyword-remove').on('click', function() {
         const index = $(this).data('index');
         chunk.data.keywords.splice(index, 1);
         updateChunkData(chunk.hash, { keywords: chunk.data.keywords });
@@ -1604,21 +1604,21 @@ function bindDetailEvents() {
     });
 
     // Conditions
-    $('#vecthare_conditions_enabled').on('change', function() {
+    $('#VectFox_conditions_enabled').on('change', function() {
         chunk.data.conditions.enabled = $(this).is(':checked');
         updateChunkData(chunk.hash, { conditions: chunk.data.conditions });
     });
 
-    $('.vecthare-logic-btn').on('click', function() {
+    $('.vectfox-logic-btn').on('click', function() {
         const logic = $(this).data('logic');
         chunk.data.conditions.logic = logic;
         updateChunkData(chunk.hash, { conditions: chunk.data.conditions });
-        $('.vecthare-logic-btn').removeClass('active');
+        $('.vectfox-logic-btn').removeClass('active');
         $(this).addClass('active');
     });
 
-    $('.vecthare-condition-item-remove').on('click', function() {
-        const index = $(this).closest('.vecthare-condition-item').data('index');
+    $('.vectfox-condition-item-remove').on('click', function() {
+        const index = $(this).closest('.vectfox-condition-item').data('index');
         chunk.data.conditions.rules.splice(index, 1);
         updateChunkData(chunk.hash, { conditions: chunk.data.conditions });
         renderDetailPanel();
@@ -1626,25 +1626,25 @@ function bindDetailEvents() {
     });
 
     // Add condition rule
-    $('#vecthare_add_condition').on('click', function() {
+    $('#VectFox_add_condition').on('click', function() {
         openConditionEditor(chunk);
     });
 
     // Chunk links
-    $('#vecthare_add_link').on('click', function() {
+    $('#VectFox_add_link').on('click', function() {
         openLinkEditor(chunk);
     });
 
-    $('.vecthare-link-item-remove').on('click', function() {
-        const index = $(this).closest('.vecthare-link-item').data('index');
+    $('.vectfox-link-item-remove').on('click', function() {
+        const index = $(this).closest('.vectfox-link-item').data('index');
         chunk.data.chunkLinks.splice(index, 1);
         updateChunkData(chunk.hash, { chunkLinks: chunk.data.chunkLinks });
         renderDetailPanel();
     });
 
     // Summaries
-    $('.vecthare-summary-item-remove').on('click', function() {
-        const index = $(this).closest('.vecthare-summary-item').data('index');
+    $('.vectfox-summary-item-remove').on('click', function() {
+        const index = $(this).closest('.vectfox-summary-item').data('index');
         const summaryText = chunk.data.summaries[index];
 
         // Track for deletion on save
@@ -1657,7 +1657,7 @@ function bindDetailEvents() {
         renderDetailPanel();
     });
 
-    $('#vecthare_add_summary').on('click', function() {
+    $('#VectFox_add_summary').on('click', function() {
         const summary = prompt('Enter summary text:');
         if (summary && summary.trim()) {
             const summaryText = summary.trim();
@@ -1700,31 +1700,31 @@ function parsePlaintextKeywords(text) {
 
 function openTextEditor(chunk) {
     const overlay = $(`
-        <div class="vecthare-text-editor-overlay" id="vecthare_text_editor_overlay">
-            <div class="vecthare-text-editor-modal">
-                <div class="vecthare-text-editor-header">
+        <div class="vectfox-text-editor-overlay" id="VectFox_text_editor_overlay">
+            <div class="vectfox-text-editor-modal">
+                <div class="vectfox-text-editor-header">
                     <h4>Edit Chunk Text</h4>
                 </div>
-                <div class="vecthare-text-editor-body">
-                    <textarea class="vecthare-text-editor-textarea" id="vecthare_text_editor_textarea">${escapeHtml(chunk.data.text)}</textarea>
+                <div class="vectfox-text-editor-body">
+                    <textarea class="vectfox-text-editor-textarea" id="VectFox_text_editor_textarea">${escapeHtml(chunk.data.text)}</textarea>
                 </div>
-                <div class="vecthare-text-editor-footer">
-                    <button class="vecthare-text-editor-btn vecthare-text-editor-cancel" id="vecthare_text_cancel">Cancel</button>
-                    <button class="vecthare-text-editor-btn vecthare-text-editor-save" id="vecthare_text_save">Save & Re-embed</button>
+                <div class="vectfox-text-editor-footer">
+                    <button class="vectfox-text-editor-btn vectfox-text-editor-cancel" id="VectFox_text_cancel">Cancel</button>
+                    <button class="vectfox-text-editor-btn vectfox-text-editor-save" id="VectFox_text_save">Save & Re-embed</button>
                 </div>
             </div>
         </div>
     `);
 
-    $('.vecthare-visualizer-container').append(overlay);
+    $('.vectfox-visualizer-container').append(overlay);
 
-    $('#vecthare_text_cancel').on('click', () => overlay.remove());
+    $('#VectFox_text_cancel').on('click', () => overlay.remove());
     overlay.on('click', function(e) {
         if (e.target === this) overlay.remove();
     });
 
-    $('#vecthare_text_save').on('click', async function() {
-        const newText = $('#vecthare_text_editor_textarea').val().trim();
+    $('#VectFox_text_save').on('click', async function() {
+        const newText = $('#VectFox_text_editor_textarea').val().trim();
         if (!newText) return;
 
         $(this).prop('disabled', true).text('Saving...');
@@ -1757,10 +1757,10 @@ function openTextEditor(chunk) {
             overlay.remove();
             renderChunkList();
             renderDetailPanel();
-            toastr.success('Chunk updated successfully', 'VectHare');
+            toastr.success('Chunk updated successfully', 'VectFox');
         } catch (error) {
             console.error('Failed to update chunk:', error);
-            toastr.error('Failed to update chunk', 'VectHare');
+            toastr.error('Failed to update chunk', 'VectFox');
             $(this).prop('disabled', false).text('Save & Re-embed');
         }
     });
@@ -1782,52 +1782,52 @@ const CONDITION_TYPES = [
 
 function openConditionEditor(chunk) {
     const overlay = $(`
-        <div class="vecthare-editor-overlay" id="vecthare_condition_editor">
-            <div class="vecthare-editor-modal">
-                <div class="vecthare-editor-header">
+        <div class="vectfox-editor-overlay" id="VectFox_condition_editor">
+            <div class="vectfox-editor-modal">
+                <div class="vectfox-editor-header">
                     <h4><i class="fa-solid fa-bolt"></i> Add Condition Rule</h4>
-                    <button class="vecthare-editor-close" id="vecthare_condition_close">×</button>
+                    <button class="vectfox-editor-close" id="VectFox_condition_close">×</button>
                 </div>
-                <div class="vecthare-editor-body">
-                    <div class="vecthare-editor-field">
+                <div class="vectfox-editor-body">
+                    <div class="vectfox-editor-field">
                         <label>Condition Type</label>
-                        <select id="vecthare_condition_type" class="vecthare-editor-select">
+                        <select id="VectFox_condition_type" class="vectfox-editor-select">
                             ${CONDITION_TYPES.map(t => `<option value="${t.value}">${t.icon} ${t.label}</option>`).join('')}
                         </select>
                     </div>
-                    <div class="vecthare-editor-field" id="vecthare_condition_settings">
+                    <div class="vectfox-editor-field" id="VectFox_condition_settings">
                         <label>Pattern</label>
-                        <input type="text" id="vecthare_condition_value" class="vecthare-editor-input" placeholder="Enter pattern or value...">
+                        <input type="text" id="VectFox_condition_value" class="vectfox-editor-input" placeholder="Enter pattern or value...">
                     </div>
-                    <div class="vecthare-editor-field">
-                        <label class="vecthare-editor-checkbox">
-                            <input type="checkbox" id="vecthare_condition_negate">
+                    <div class="vectfox-editor-field">
+                        <label class="vectfox-editor-checkbox">
+                            <input type="checkbox" id="VectFox_condition_negate">
                             <span>Negate (NOT)</span>
                         </label>
                     </div>
                 </div>
-                <div class="vecthare-editor-footer">
-                    <button class="vecthare-editor-btn cancel" id="vecthare_condition_cancel">Cancel</button>
-                    <button class="vecthare-editor-btn primary" id="vecthare_condition_add">Add Condition</button>
+                <div class="vectfox-editor-footer">
+                    <button class="vectfox-editor-btn cancel" id="VectFox_condition_cancel">Cancel</button>
+                    <button class="vectfox-editor-btn primary" id="VectFox_condition_add">Add Condition</button>
                 </div>
             </div>
         </div>
     `);
 
-    $('.vecthare-visualizer-container').append(overlay);
+    $('.vectfox-visualizer-container').append(overlay);
 
-    $('#vecthare_condition_close, #vecthare_condition_cancel').on('click', () => overlay.remove());
+    $('#VectFox_condition_close, #VectFox_condition_cancel').on('click', () => overlay.remove());
     overlay.on('click', function(e) {
         if (e.target === this) overlay.remove();
     });
 
-    $('#vecthare_condition_add').on('click', function() {
-        const type = $('#vecthare_condition_type').val();
-        const value = $('#vecthare_condition_value').val().trim();
-        const negated = $('#vecthare_condition_negate').is(':checked');
+    $('#VectFox_condition_add').on('click', function() {
+        const type = $('#VectFox_condition_type').val();
+        const value = $('#VectFox_condition_value').val().trim();
+        const negated = $('#VectFox_condition_negate').is(':checked');
 
         if (!value && type !== 'isGroupChat' && type !== 'randomChance') {
-            toastr.warning('Please enter a value', 'VectHare');
+            toastr.warning('Please enter a value', 'VectFox');
             return;
         }
 
@@ -1846,7 +1846,7 @@ function openConditionEditor(chunk) {
         overlay.remove();
         renderDetailPanel();
         renderChunkList();
-        toastr.success('Condition added', 'VectHare');
+        toastr.success('Condition added', 'VectFox');
     });
 }
 
@@ -1859,27 +1859,27 @@ function openLinkEditor(chunk) {
     const availableChunks = allChunks.filter(c => c.hash !== chunk.hash);
 
     const overlay = $(`
-        <div class="vecthare-editor-overlay" id="vecthare_link_editor">
-            <div class="vecthare-editor-modal">
-                <div class="vecthare-editor-header">
+        <div class="vectfox-editor-overlay" id="VectFox_link_editor">
+            <div class="vectfox-editor-modal">
+                <div class="vectfox-editor-header">
                     <h4><i class="fa-solid fa-link"></i> Add Chunk Link</h4>
-                    <button class="vecthare-editor-close" id="vecthare_link_close">×</button>
+                    <button class="vectfox-editor-close" id="VectFox_link_close">×</button>
                 </div>
-                <div class="vecthare-editor-body">
-                    <div class="vecthare-editor-field">
+                <div class="vectfox-editor-body">
+                    <div class="vectfox-editor-field">
                         <label>Link Mode</label>
-                        <div class="vecthare-link-mode-selector">
-                            <label class="vecthare-link-mode-option">
+                        <div class="vectfox-link-mode-selector">
+                            <label class="vectfox-link-mode-option">
                                 <input type="radio" name="link_mode" value="force" checked>
-                                <span class="vecthare-link-mode-card force">
+                                <span class="vectfox-link-mode-card force">
                                     <span class="icon">🔗</span>
                                     <span class="title">Force Link</span>
                                     <span class="desc">Target MUST appear when this chunk appears</span>
                                 </span>
                             </label>
-                            <label class="vecthare-link-mode-option">
+                            <label class="vectfox-link-mode-option">
                                 <input type="radio" name="link_mode" value="soft">
-                                <span class="vecthare-link-mode-card soft">
+                                <span class="vectfox-link-mode-card soft">
                                     <span class="icon">〰️</span>
                                     <span class="title">Soft Link</span>
                                     <span class="desc">Target gets score boost when this chunk appears</span>
@@ -1887,9 +1887,9 @@ function openLinkEditor(chunk) {
                             </label>
                         </div>
                     </div>
-                    <div class="vecthare-editor-field">
+                    <div class="vectfox-editor-field">
                         <label>Target Chunk</label>
-                        <select id="vecthare_link_target" class="vecthare-editor-select">
+                        <select id="VectFox_link_target" class="vectfox-editor-select">
                             ${availableChunks.map(c => {
                                 const preview = c.data.text.substring(0, 40).replace(/\s+/g, ' ') + '...';
                                 const name = c.data.name || preview;
@@ -1898,33 +1898,33 @@ function openLinkEditor(chunk) {
                         </select>
                     </div>
                 </div>
-                <div class="vecthare-editor-footer">
-                    <button class="vecthare-editor-btn cancel" id="vecthare_link_cancel">Cancel</button>
-                    <button class="vecthare-editor-btn primary" id="vecthare_link_add">Add Link</button>
+                <div class="vectfox-editor-footer">
+                    <button class="vectfox-editor-btn cancel" id="VectFox_link_cancel">Cancel</button>
+                    <button class="vectfox-editor-btn primary" id="VectFox_link_add">Add Link</button>
                 </div>
             </div>
         </div>
     `);
 
-    $('.vecthare-visualizer-container').append(overlay);
+    $('.vectfox-visualizer-container').append(overlay);
 
-    $('#vecthare_link_close, #vecthare_link_cancel').on('click', () => overlay.remove());
+    $('#VectFox_link_close, #VectFox_link_cancel').on('click', () => overlay.remove());
     overlay.on('click', function(e) {
         if (e.target === this) overlay.remove();
     });
 
-    $('#vecthare_link_add').on('click', function() {
+    $('#VectFox_link_add').on('click', function() {
         const mode = $('input[name="link_mode"]:checked').val();
-        const targetHash = $('#vecthare_link_target').val();
+        const targetHash = $('#VectFox_link_target').val();
 
         if (!targetHash) {
-            toastr.warning('Please select a target chunk', 'VectHare');
+            toastr.warning('Please select a target chunk', 'VectFox');
             return;
         }
 
         // Check for duplicate
         if (chunk.data.chunkLinks.some(l => l.targetHash === targetHash)) {
-            toastr.warning('Link to this chunk already exists', 'VectHare');
+            toastr.warning('Link to this chunk already exists', 'VectFox');
             return;
         }
 
@@ -1933,7 +1933,7 @@ function openLinkEditor(chunk) {
 
         overlay.remove();
         renderDetailPanel();
-        toastr.success('Link added', 'VectHare');
+        toastr.success('Link added', 'VectFox');
     });
 }
 
@@ -1956,10 +1956,10 @@ async function deleteChunk(chunk) {
         applyFilters();
         renderChunkList();
         renderDetailPanel();
-        toastr.success('Chunk deleted', 'VectHare');
+        toastr.success('Chunk deleted', 'VectFox');
     } catch (error) {
         console.error('Failed to delete chunk:', error);
-        toastr.error('Failed to delete chunk', 'VectHare');
+        toastr.error('Failed to delete chunk', 'VectFox');
     }
 }
 
@@ -1974,7 +1974,7 @@ function bulkSetEnabled(enabled) {
     }
     renderChunkList();
     if (selectedChunkId) renderDetailPanel();
-    toastr.success(`${enabled ? 'Enabled' : 'Disabled'} ${filteredChunks.length} chunks`, 'VectHare');
+    toastr.success(`${enabled ? 'Enabled' : 'Disabled'} ${filteredChunks.length} chunks`, 'VectFox');
 }
 
 // ============================================================================
@@ -2005,7 +2005,7 @@ function debounce(func, wait) {
  * Called from index.js on extension load
  */
 export function initializeVisualizer() {
-    console.log('VectHare: Chunk visualizer initialized');
+    console.log('VectFox: Chunk visualizer initialized');
     // No DOM setup needed - modal is created dynamically when opened
 }
 

@@ -1,11 +1,11 @@
 /**
  * ============================================================================
- * VECTHARE WORLD INFO INTEGRATION
+ * VectFox WORLD INFO INTEGRATION
  * ============================================================================
  * Enhanced integration between vectorized lorebooks and ST's world info system
  * Provides semantic activation of WI entries based on vector similarity
  *
- * @author VectHare Team
+ * @author VectFox Team
  * @version 1.0.0
  * ============================================================================
  */
@@ -31,7 +31,7 @@ import { buildSearchContext } from './conditional-activation.js';
  *
  * @param {string[]} recentMessages - Recent chat messages to use as query
  * @param {object[]} activeEntries - Currently active WI entries (from keyword matching)
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {Promise<object[]>} Array of WI entries to activate { uid, key, content, score }
  */
 export async function getSemanticWorldInfoEntries(recentMessages, activeEntries, settings) {
@@ -45,7 +45,7 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
         return [];
     }
 
-    console.log(`VectHare: Querying vectorized lorebooks for semantic WI activation...`);
+    console.log(`VectFox: Querying vectorized lorebooks for semantic WI activation...`);
 
     const semanticEntries = [];
     // Lower threshold for hybrid retrieval since RRF/weighted fusion produces lower absolute scores
@@ -109,12 +109,12 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
                         const keyDisplay = Array.isArray(entry.key)
                             ? entry.key.map(k => typeof k === 'object' ? (k.text || k.keyword || JSON.stringify(k)) : k).join(', ')
                             : (entry.key || 'unknown');
-                        console.log(`VectHare: Semantic WI activation: "${keyDisplay}" (score: ${score.toFixed(3)})`);
+                        console.log(`VectFox: Semantic WI activation: "${keyDisplay}" (score: ${score.toFixed(3)})`);
                     }
                 }
             }
         } catch (error) {
-            console.warn(`VectHare: Failed to query lorebook collection ${collection.id}:`, error);
+            console.warn(`VectFox: Failed to query lorebook collection ${collection.id}:`, error);
         }
     }
 
@@ -124,19 +124,19 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
     // Deduplicate with already active entries (avoid duplicates from keyword matching)
     const deduplicatedEntries = deduplicateWithActiveEntries(semanticEntries, activeEntries);
 
-    console.log(`VectHare: Found ${deduplicatedEntries.length} semantic WI entries to activate`);
+    console.log(`VectFox: Found ${deduplicatedEntries.length} semantic WI entries to activate`);
     return deduplicatedEntries;
 }
 
 /**
  * Get all enabled lorebook collections that pass activation filters
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @param {object} searchContext - Search context for activation filter evaluation
  * @returns {Promise<Array<{id: string, name: string}>>}
  */
 async function getEnabledLorebookCollections(settings, searchContext) {
     const collections = [];
-    const collectionRegistry = settings.vecthare_collection_registry || [];
+    const collectionRegistry = settings.VectFox_collection_registry || [];
 
     for (const collectionId of collectionRegistry) {
         // Check if this is a lorebook collection
@@ -152,7 +152,7 @@ async function getEnabledLorebookCollections(settings, searchContext) {
         // Check if collection passes activation filters
         const passesActivation = await shouldCollectionActivate(collectionId, searchContext);
         if (!passesActivation) {
-            console.log(`VectHare WI: Lorebook collection ${collectionId} did not pass activation filters, skipping`);
+            console.log(`VectFox WI: Lorebook collection ${collectionId} did not pass activation filters, skipping`);
             continue;
         }
 
@@ -163,7 +163,7 @@ async function getEnabledLorebookCollections(settings, searchContext) {
         collections.push({ id: collectionId, name });
     }
 
-    console.log(`VectHare WI: ${collections.length} lorebook collection(s) passed activation filters`);
+    console.log(`VectFox WI: ${collections.length} lorebook collection(s) passed activation filters`);
     return collections;
 }
 
@@ -221,10 +221,10 @@ function _sanitizeLorebookName(name) {
 function _findLorebookRegistryEntry(lorebookName, settings) {
     const sanitizedName = _sanitizeLorebookName(lorebookName);
     if (!sanitizedName) return null;
-    const lorebookPrefix = 'vecthare_lorebook_';
+    const lorebookPrefix = 'VectFox_lorebook_';
     const nameNeedle = `_${sanitizedName}_`;
 
-    const registry = settings.vecthare_collection_registry || [];
+    const registry = settings.VectFox_collection_registry || [];
     for (const key of registry) {
         // Registry keys can be "backend:collectionId" or bare "collectionId".
         const id = String(key).includes(':') ? String(key).split(':').slice(1).join(':') : String(key);
@@ -239,7 +239,7 @@ function _findLorebookRegistryEntry(lorebookName, settings) {
 /**
  * Check if a lorebook is already vectorized
  * @param {string} lorebookName - Name of the lorebook
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {boolean}
  */
 export function isLorebookVectorized(lorebookName, settings) {
@@ -249,7 +249,7 @@ export function isLorebookVectorized(lorebookName, settings) {
 /**
  * Get vectorization status for all lorebooks
  * @param {string[]} lorebookNames - Array of lorebook names
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {Map<string, boolean>} Map of lorebook name -> is vectorized
  */
 export function getLorebooksVectorizationStatus(lorebookNames, settings) {
@@ -265,7 +265,7 @@ export function getLorebooksVectorizationStatus(lorebookNames, settings) {
 /**
  * Get statistics for vectorized lorebook
  * @param {string} lorebookName - Name of the lorebook
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {Promise<object|null>} Stats object or null if not vectorized
  */
 export async function getLorebookVectorStats(lorebookName, settings) {
@@ -300,7 +300,7 @@ export async function getLorebookVectorStats(lorebookName, settings) {
  *
  * @param {string} lorebookName - Name of the current lorebook
  * @param {object[]} entries - World info entries
- * @param {object} settings - VectHare settings
+ * @param {object} settings - VectFox settings
  * @returns {object[]} Enhanced entries with vector status
  */
 export function enhanceWorldInfoEntriesUI(lorebookName, entries, settings) {
@@ -328,11 +328,11 @@ export function enhanceWorldInfoEntriesUI(lorebookName, entries, settings) {
 
 /**
  * Initialize world info integration hooks
- * This should be called when VectHare loads
+ * This should be called when VectFox loads
  */
 export function initializeWorldInfoIntegration() {
     // Make functions available globally for ST to call
-    window.VectHare_WorldInfo = {
+    window.VectFox_WorldInfo = {
         getSemanticEntries: getSemanticWorldInfoEntries,
         isLorebookVectorized: isLorebookVectorized,
         getVectorizationStatus: getLorebooksVectorizationStatus,
@@ -340,7 +340,7 @@ export function initializeWorldInfoIntegration() {
         enhanceEntriesUI: enhanceWorldInfoEntriesUI
     };
 
-    console.log('VectHare: World Info integration hooks initialized');
+    console.log('VectFox: World Info integration hooks initialized');
 }
 
 /**
@@ -348,7 +348,7 @@ export function initializeWorldInfoIntegration() {
  * Intended to be called on MESSAGE_SENT to ensure lorebook semantic hits
  * are available for the subsequent generation.
  * @param {object[]} chat Current chat messages
- * @param {object} settings VectHare settings
+ * @param {object} settings VectFox settings
  */
 export async function applySemanticEntriesToPrompt(chat, settings) {
     try {
@@ -373,8 +373,8 @@ export async function applySemanticEntriesToPrompt(chat, settings) {
 
         // Inject into ST extension prompt tag so generation will include it
         setExtensionPrompt(EXTENSION_PROMPT_TAG, fullText, settings.position || 0, settings.depth || 2, false);
-        console.log(`VectHare: Injected ${entries.length} semantic WI entries into prompt`);
+        console.log(`VectFox: Injected ${entries.length} semantic WI entries into prompt`);
     } catch (err) {
-        console.warn('VectHare: Failed to apply semantic WI to prompt', err.message || err);
+        console.warn('VectFox: Failed to apply semantic WI to prompt', err.message || err);
     }
 }

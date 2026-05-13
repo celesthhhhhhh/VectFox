@@ -1,12 +1,12 @@
 /**
  * ============================================================================
- * VECTHARE - ADVANCED RAG SYSTEM
+ * VECTFOX - ADVANCED RAG SYSTEM
  * ============================================================================
  * Entry point - lean and clean
  * All logic is in separate modules - see project guidelines
  *
  * @author Coneja Chibi
- * @version 2.2.0-alpha
+ * @version 3.0.0
  * ============================================================================
  */
 
@@ -22,7 +22,7 @@ import {
 import { debounce } from '../../../utils.js';
 import { debounce_timeout } from '../../../constants.js';
 
-// VectHare modules - Core
+// VectFox modules - Core
 import { synchronizeChat, rearrangeChat, vectorizeAll } from './core/chat-vectorization.js';
 import { purgeAllVectorIndexes, purgeVectorIndex } from './core/core-vector-api.js';
 import { getChatCollectionId } from './core/chat-vectorization.js';
@@ -31,7 +31,7 @@ import { migrateOldEnabledKeys } from './core/collection-metadata.js';
 import { clearCollectionRegistry, discoverExistingCollections, cleanupCorruptedCollections } from './core/collection-loader.js';
 import AsyncUtils from './utils/async-utils.js';
 
-// VectHare modules - UI
+// VectFox modules - UI
 import { renderSettings, openDiagnosticsModal, loadWebLlmModels, updateWebLlmStatus, refreshAutoSyncCheckbox } from './ui/ui-manager.js';
 import { progressTracker } from './ui/progress-tracker.js';
 import { initializeVisualizer } from './ui/chunk-visualizer.js';
@@ -39,11 +39,11 @@ import { initializeDatabaseBrowser } from './ui/database-browser.js';
 import { initializeWorldInfoIntegration } from './core/world-info-integration.js';
 import { CJK_TOKENIZER_MODES, setCjkTokenizerMode, ensureJiebaTokenizerLoaded, ensureJiebaTwLoaded } from './core/bm25-scorer.js';
 
-// VectHare modules - Cotton-Tales Integration
-import './core/emotion-classifier.js'; // Exposes window.VectHareEmotionClassifier
+// VectFox modules - Cotton-Tales Integration
+import './core/emotion-classifier.js'; // Exposes window.VectFoxEmotionClassifier
 
 // Constants
-const MODULE_NAME = 'VectHarePlus';
+const MODULE_NAME = 'VectFox';
 
 // Default settings
 const defaultSettings = {
@@ -143,13 +143,13 @@ const defaultSettings = {
     // RAG Prompt Context (Global level)
     // Wraps ALL injected content with context prompts and/or XML tags
     rag_context: '',      // Natural language context shown before all RAG content
-    rag_xml_tag: 'VectHareMemory',      // XML tag to wrap all RAG content (e.g., "retrieved_context")
+    rag_xml_tag: 'VectFoxMemory',      // XML tag to wrap all RAG content (e.g., "retrieved_context")
 
     // Collection-level metadata (managed by collection-metadata.js)
     collections: {},
 
     // Collection registry (list of known collection IDs)
-    vecthare_collection_registry: [],
+    vectfox_collection_registry: [],
 
     // World Info Integration
     enabled_world_info: false,          // Enable semantic WI activation
@@ -236,7 +236,7 @@ const defaultSettings = {
 
     // ─── Hidden / Power-User ────────────────────────────────────────────
     // SUPERADMIN MODE — no GUI toggle. Set to true by hand-editing settings.json
-    // (the `vecthareplus` block under SillyTavern's extension_settings) to enable.
+    // (the `vectfox` block under SillyTavern's extension_settings) to enable.
     // When true, the Database Browser bypasses ALL persona / handle ID filtering
     // and shows EVERY collection on the server regardless of creatorHandle. Locking
     // a foreign collection then works normally. Intended for dev / debugging /
@@ -260,12 +260,12 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_t
 /**
  * Generation interceptor - searches and injects relevant messages
  */
-async function vecthare_rearrangeChat(chat, _contextSize, _abort, type) {
+async function vectfox_rearrangeChat(chat, _contextSize, _abort, type) {
     await rearrangeChat(chat, settings, type);
 }
 
 // Export to window for ST to call
-window['vecthare_rearrangeChat'] = vecthare_rearrangeChat;
+window['vectfox_rearrangeChat'] = vectfox_rearrangeChat;
 
 /**
  * Action: Vectorize all messages in current chat
@@ -285,7 +285,7 @@ async function onVectorizeAllClick() {
  */
 async function onPurgeClick() {
     const confirmed = confirm(
-        'WARNING: This will delete ALL vector data and reset VectHare settings.\n\n' +
+        'WARNING: This will delete ALL vector data and reset VectFox settings.\n\n' +
         'This cannot be undone. Continue?'
     );
 
@@ -303,10 +303,10 @@ async function onPurgeClick() {
             headers: getRequestHeaders(),
         });
 
-        // 2. Clear extension_settings.vecthareplus
-        for (const key in extension_settings.vecthareplus) {
+        // 2. Clear extension_settings.vectfox
+        for (const key in extension_settings.vectfox) {
             if (key !== 'enabled') {
-                delete extension_settings.vecthareplus[key];
+                delete extension_settings.vectfox[key];
             }
         }
 
@@ -317,7 +317,7 @@ async function onPurgeClick() {
         toastr.success('All vector data purged', 'Purge Complete');
 
     } catch (error) {
-        console.error('VectHare: Purge failed:', error);
+        console.error('VectFox: Purge failed:', error);
         toastr.error('Purge failed: ' + error.message);
     }
 }
@@ -355,7 +355,7 @@ async function onCleanupCorruptedClick() {
             toastr.warning(summary, 'Cleanup Partial');
         }
     } catch (error) {
-        console.error('VectHare: Cleanup failed:', error);
+        console.error('VectFox: Cleanup failed:', error);
         toastr.error('Cleanup failed: ' + error.message);
     }
 }
@@ -368,14 +368,124 @@ function onRunDiagnosticsClick() {
 }
 
 /**
- * Initialize VectHare extension
+ * Action: Migrate all vecthare_* collections to vf_* naming format
+ */
+async function onMigrateCollectionsClick() {
+    const { findCollectionsToMigrate, migrateAllCollections } = await import('./core/collection-migrator.js');
+    
+    const collectionsToMigrate = findCollectionsToMigrate();
+    
+    if (collectionsToMigrate.length === 0) {
+        toastr.info('No legacy collections found to migrate', 'VectFox Migration');
+        return;
+    }
+    
+    const confirmed = confirm(
+        `Found ${collectionsToMigrate.length} legacy collection(s) to migrate from vecthare_* to vf_* format.\n\n` +
+        'This will:\n' +
+        '• Copy all vectors to new collections with vf_* names\n' +
+        '• Update registry and metadata\n' +
+        '• Keep old collections as backup (you can delete manually later)\n\n' +
+        'Continue?'
+    );
+    
+    if (!confirmed) {
+        toastr.info('Migration cancelled');
+        return;
+    }
+    
+    // Show progress tracker
+    progressTracker.show('Migrating Collections', collectionsToMigrate.length, 'collections');
+    
+    try {
+        const result = await migrateAllCollections(
+            settings,
+            (current, total, message) => {
+                progressTracker.update(current, total, message);
+            },
+            false // Don't delete old collections (keep as backup)
+        );
+        
+        progressTracker.hide();
+        
+        if (result.failed.length === 0) {
+            toastr.success(
+                `Successfully migrated ${result.totalMigrated} collections (${result.itemCount} total vectors)`,
+                'Migration Complete'
+            );
+        } else {
+            toastr.warning(
+                `Migrated ${result.totalMigrated}/${collectionsToMigrate.length} collections. ${result.failed.length} failed.<br><br>` +
+                `Failed: ${result.failed.join(', ')}`,
+                'Migration Partial'
+            );
+        }
+        
+        // Refresh database browser if it's open
+        if ($('#VectFox_database_browser_modal').length > 0) {
+            toastr.info('Reload the Database Browser to see migrated collections', 'VectFox');
+        }
+        
+    } catch (error) {
+        progressTracker.hide();
+        console.error('VectFox: Migration failed:', error);
+        toastr.error('Migration failed: ' + error.message, 'VectFox Migration');
+    }
+}
+
+/**
+ * One-shot migration: VectHarePlus → VectFox
+ * Runs once per install to move settings and update defaults.
+ */
+function migrateVectHarePlusToVectFox() {
+    // Check if migration already ran
+    if (extension_settings.vectfox?.vectfox_migration_v1_done) return;
+
+    // 1) Move settings root (legacy read path)
+    if (extension_settings.vecthareplus && !extension_settings.vectfox) {
+        extension_settings.vectfox = extension_settings.vecthareplus;
+    }
+
+    // Ensure vectfox exists (new install path)
+    if (!extension_settings.vectfox) {
+        extension_settings.vectfox = {};
+    }
+
+    const s = extension_settings.vectfox;
+
+    // 2) Rename inner registry key
+    if (s.vecthare_collection_registry && !s.vectfox_collection_registry) {
+        s.vectfox_collection_registry = s.vecthare_collection_registry;
+        delete s.vecthare_collection_registry;
+    }
+
+    // 3) Update default RAG XML tag IFF user is still on the old default
+    if (s.rag_xml_tag === 'VectHareMemory') {
+        s.rag_xml_tag = 'VectFoxMemory';
+    }
+
+    // 4) Drop legacy duplicate keys
+    delete extension_settings.vecthareplus;
+    delete extension_settings.vecthare;  // historical alias
+
+    // 5) Mark migration complete
+    s.vectfox_migration_v1_done = true;
+
+    console.log('VectFox: Migration from VectHarePlus completed');
+}
+
+/**
+ * Initialize VectFox extension
  */
 jQuery(async () => {
-    console.log('VectHare: Initializing...');
+    console.log('VectFox: Initializing...');
+
+    // Run one-shot migration from VectHarePlus to VectFox
+    migrateVectHarePlusToVectFox();
 
     // Prevent ST from persisting a stale "vecthare" key derived from the folder name.
     // ST auto-creates extension_settings[folderName] on every load, which would write a
-    // duplicate "vecthare" entry to settings.json alongside our canonical "vecthareplus" key.
+    // duplicate "vecthare" entry to settings.json alongside our canonical "vectfox" key.
     // Making the property non-enumerable hides it from JSON.stringify so it never saves.
     if (extension_settings.vecthare !== undefined) {
         delete extension_settings.vecthare;
@@ -388,32 +498,32 @@ jQuery(async () => {
     });
 
     // Load saved settings
-    if (!extension_settings.vecthareplus) {
-        extension_settings.vecthareplus = defaultSettings;
+    if (!extension_settings.vectfox) {
+        extension_settings.vectfox = defaultSettings;
     }
 
     // Merge saved settings with defaults
     settings = {
         ...defaultSettings,
-        ...extension_settings.vecthareplus,
+        ...extension_settings.vectfox,
         temporal_decay: {
             ...defaultSettings.temporal_decay,
-            ...extension_settings.vecthareplus.temporal_decay
+            ...extension_settings.vectfox.temporal_decay
         },
         collections: {
             ...defaultSettings.collections,
-            ...extension_settings.vecthareplus.collections
+            ...extension_settings.vectfox.collections
         }
     };
 
     // Migrate old scattered enabled keys to new collections structure
     const migrationResult = migrateOldEnabledKeys();
     if (migrationResult.migrated > 0) {
-        console.log(`VectHare: Migrated ${migrationResult.migrated} old collection enabled keys`);
+        console.log(`VectFox: Migrated ${migrationResult.migrated} old collection enabled keys`);
     }
 
     // Migrate legacy EventBase LLM overrides → unified Core summarize settings
-    const _ebs = extension_settings.vecthareplus;
+    const _ebs = extension_settings.vectfox;
     if (!_ebs.summarize_model && _ebs.eventbase_model) _ebs.summarize_model = _ebs.eventbase_model;
     if (!_ebs.summarize_provider && _ebs.eventbase_provider) _ebs.summarize_provider = _ebs.eventbase_provider;
     if (!_ebs.summarize_openrouter_api_key && _ebs.eventbase_openrouter_api_key) {
@@ -424,8 +534,8 @@ jQuery(async () => {
 
     // Migrate empty rag_xml_tag to default value
     if (!settings.rag_xml_tag) {
-        settings.rag_xml_tag = 'VectHareMemory';
-        extension_settings.vecthareplus.rag_xml_tag = 'VectHareMemory';
+        settings.rag_xml_tag = 'VectFoxMemory';
+        extension_settings.vectfox.rag_xml_tag = 'VectFoxMemory';
     }
 
     // Initialize CJK tokenizer mode before any extraction happens.
@@ -433,18 +543,18 @@ jQuery(async () => {
     if (settings.cjk_tokenizer_mode === CJK_TOKENIZER_MODES.jieba) {
         ensureJiebaTokenizerLoaded().then((ok) => {
             if (ok) {
-                console.log('VectHare CJK: Jieba tokenizer initialized');
+                console.log('VectFox CJK: Jieba tokenizer initialized');
             } else {
-                console.warn('VectHare CJK: Jieba tokenizer unavailable, using Intl.Segmenter fallback');
+                console.warn('VectFox CJK: Jieba tokenizer unavailable, using Intl.Segmenter fallback');
             }
         });
     }
     if (settings.cjk_tokenizer_mode === CJK_TOKENIZER_MODES.jieba_tw) {
         ensureJiebaTwLoaded().then((ok) => {
             if (ok) {
-                console.log('VectHare CJK: Jieba TW tokenizer initialized');
+                console.log('VectFox CJK: Jieba TW tokenizer initialized');
             } else {
-                console.warn('VectHare CJK: Jieba TW tokenizer unavailable, using Intl.Segmenter fallback');
+                console.warn('VectFox CJK: Jieba TW tokenizer unavailable, using Intl.Segmenter fallback');
             }
         });
     }
@@ -454,7 +564,8 @@ jQuery(async () => {
         onVectorizeAll: onVectorizeAllClick,
         onPurge: onPurgeClick,
         onCleanupCorrupted: onCleanupCorruptedClick,
-        onRunDiagnostics: onRunDiagnosticsClick
+        onRunDiagnostics: onRunDiagnosticsClick,
+        onMigrateCollections: onMigrateCollectionsClick
     });
 
     // Initialize auto-sync checkbox state for current chat (if any)
@@ -481,18 +592,18 @@ jQuery(async () => {
                     maxDelay: 10000,
                     backoffFactor: 2,
                     onRetry: (attempt, error) => {
-                        console.warn(`VectHare: Collection discovery attempt ${attempt} failed: ${error.message}. Retrying...`);
+                        console.warn(`VectFox: Collection discovery attempt ${attempt} failed: ${error.message}. Retrying...`);
                     }
                 }
             );
             if (collections.length > 0) {
-                console.log(`VectHare: Discovered ${collections.length} existing collections`);
+                console.log(`VectFox: Discovered ${collections.length} existing collections`);
             }
         } catch (err) {
-            console.error('VectHare: Collection discovery failed after retries:', err.message);
+            console.error('VectFox: Collection discovery failed after retries:', err.message);
             toastr.warning(
                 'Could not discover existing collections. Open Database Browser to refresh manually.',
-                'VectHare: Collection Discovery Failed',
+                'VectFox: Collection Discovery Failed',
                 { timeOut: 10000 }
             );
         }
@@ -522,7 +633,7 @@ jQuery(async () => {
             const collectionId = getChatCollectionId(chatId);
             if (collectionId) {
                 await purgeVectorIndex(collectionId, settings);
-                console.log(`VectHare: Purged vectors for deleted chat: ${chatId}`);
+                console.log(`VectFox: Purged vectors for deleted chat: ${chatId}`);
             }
         }
     });
@@ -531,7 +642,7 @@ jQuery(async () => {
             const collectionId = getChatCollectionId(chatId);
             if (collectionId) {
                 await purgeVectorIndex(collectionId, settings);
-                console.log(`VectHare: Purged vectors for deleted group chat: ${chatId}`);
+                console.log(`VectFox: Purged vectors for deleted group chat: ${chatId}`);
             }
         }
     });
@@ -540,7 +651,7 @@ jQuery(async () => {
     // When WebLLM extension is loaded, refresh the model list
     eventSource.on(event_types.EXTENSION_SETTINGS_LOADED, async (manifest) => {
         if (settings.source === 'webllm' && manifest?.display_name === 'WebLLM') {
-            console.log('VectHare: WebLLM extension loaded, refreshing models...');
+            console.log('VectFox: WebLLM extension loaded, refreshing models...');
             updateWebLlmStatus();
             await loadWebLlmModels(settings);
         }
@@ -548,11 +659,11 @@ jQuery(async () => {
 
     // When chat changes, refresh UI state to match settings
     eventSource.on(event_types.CHAT_CHANGED, () => {
-        console.log('VectHare: Chat changed, refreshing UI state');
+        console.log('VectFox: Chat changed, refreshing UI state');
         refreshAutoSyncCheckbox(settings);
     });
 
-    console.log('VectHare: ✅ Initialized successfully');
+    console.log('VectFox: ✅ Initialized successfully');
 });
 
 /**
@@ -561,6 +672,6 @@ jQuery(async () => {
  * instead of serving stale cached versions.
  */
 export async function onUpdate() {
-    console.log('VectHare: Update detected — reloading page to clear module cache');
+    console.log('VectFox: Update detected — reloading page to clear module cache');
     location.reload();
 }

@@ -1,7 +1,7 @@
 /**
  * VectHare Collection Metadata Manager
  *
- * Manages collection-level metadata in extension_settings.vecthareplus.collections
+ * Manages collection-level metadata in extension_settings.vectfox.collections
  * This is the "settings layer" - user preferences for collections.
  *
  * Separation of concerns:
@@ -101,7 +101,7 @@ const defaultCollectionMeta = {
  */
 export function getDefaultDecayForType(collectionType) {
     // Get global defaults from settings
-    const globalSettings = extension_settings.vecthareplus || {};
+    const globalSettings = extension_settings.vectfox || {};
     const globalEnabled = globalSettings.default_decay_enabled ?? false;
     const globalType = globalSettings.default_decay_type || 'decay';
 
@@ -182,11 +182,11 @@ function ensureCollectionsObject() {
         console.error('VectHare: extension_settings is null/undefined - cannot access collections');
         return false;
     }
-    if (!extension_settings.vecthareplus) {
-        extension_settings.vecthareplus = {};
+    if (!extension_settings.vectfox) {
+        extension_settings.vectfox = {};
     }
-    if (!extension_settings.vecthareplus.collections) {
-        extension_settings.vecthareplus.collections = {};
+    if (!extension_settings.vectfox.collections) {
+        extension_settings.vectfox.collections = {};
     }
     return true;
 }
@@ -202,13 +202,13 @@ export function getCollectionMeta(collectionId) {
         return { ...defaultCollectionMeta };
     }
 
-    let stored = extension_settings.vecthareplus.collections[collectionId];
+    let stored = extension_settings.vectfox.collections[collectionId];
 
     // Fallback: Try bare collectionId for entries written before backend: prefix was added
     if (!stored && collectionId) {
         const parsed = parseRegistryKey(collectionId);
         if (parsed.backend) {
-            stored = extension_settings.vecthareplus.collections[parsed.collectionId];
+            stored = extension_settings.vectfox.collections[parsed.collectionId];
         }
     }
 
@@ -236,9 +236,9 @@ export function setCollectionMeta(collectionId, data) {
 
     ensureCollectionsObject();
 
-    const existing = extension_settings.vecthareplus.collections[collectionId] || {};
+    const existing = extension_settings.vectfox.collections[collectionId] || {};
 
-    extension_settings.vecthareplus.collections[collectionId] = {
+    extension_settings.vectfox.collections[collectionId] = {
         ...defaultCollectionMeta,
         ...existing,
         ...data,
@@ -255,8 +255,8 @@ export function setCollectionMeta(collectionId, data) {
 export function deleteCollectionMeta(collectionId) {
     ensureCollectionsObject();
 
-    if (extension_settings.vecthareplus.collections[collectionId]) {
-        delete extension_settings.vecthareplus.collections[collectionId];
+    if (extension_settings.vectfox.collections[collectionId]) {
+        delete extension_settings.vectfox.collections[collectionId];
         saveSettingsDebounced();
         console.log(`VectHare: Deleted metadata for collection ${collectionId}`);
     }
@@ -268,7 +268,7 @@ export function deleteCollectionMeta(collectionId) {
  */
 export function getAllCollectionMeta() {
     ensureCollectionsObject();
-    return extension_settings.vecthareplus.collections;
+    return extension_settings.vectfox.collections;
 }
 
 // ============================================================================
@@ -339,12 +339,12 @@ export function isCollectionAutoSyncEnabled(collectionId) {
  * @returns {object|null} Chunk metadata or null if not found
  */
 export function getChunkMetadata(hash) {
-    if (!extension_settings.vecthareplus) {
+    if (!extension_settings.vectfox) {
         return null;
     }
 
     const key = `vecthare_chunk_meta_${hash}`;
-    return extension_settings.vecthareplus[key] || null;
+    return extension_settings.vectfox[key] || null;
 }
 
 /**
@@ -353,12 +353,12 @@ export function getChunkMetadata(hash) {
  * @param {object} metadata Chunk metadata
  */
 export function saveChunkMetadata(hash, metadata) {
-    if (!extension_settings.vecthareplus) {
-        extension_settings.vecthareplus = {};
+    if (!extension_settings.vectfox) {
+        extension_settings.vectfox = {};
     }
 
     const key = `vecthare_chunk_meta_${hash}`;
-    extension_settings.vecthareplus[key] = {
+    extension_settings.vectfox[key] = {
         ...metadata,
         updatedAt: Date.now(),
     };
@@ -371,13 +371,13 @@ export function saveChunkMetadata(hash, metadata) {
  * @param {string} hash Chunk hash
  */
 export function deleteChunkMetadata(hash) {
-    if (!extension_settings.vecthareplus) {
+    if (!extension_settings.vectfox) {
         return;
     }
 
     const key = `vecthare_chunk_meta_${hash}`;
-    if (extension_settings.vecthareplus[key]) {
-        delete extension_settings.vecthareplus[key];
+    if (extension_settings.vectfox[key]) {
+        delete extension_settings.vectfox[key];
         saveSettingsDebounced();
     }
 }
@@ -387,17 +387,17 @@ export function deleteChunkMetadata(hash) {
  * @returns {object} Map of hash -> metadata
  */
 export function getAllChunkMetadata() {
-    if (!extension_settings.vecthareplus) {
+    if (!extension_settings.vectfox) {
         return {};
     }
 
     const result = {};
     const prefix = 'vecthare_chunk_meta_';
 
-    for (const key in extension_settings.vecthareplus) {
+    for (const key in extension_settings.vectfox) {
         if (key.startsWith(prefix)) {
             const hash = key.replace(prefix, '');
-            result[hash] = extension_settings.vecthareplus[key];
+            result[hash] = extension_settings.vectfox[key];
         }
     }
 
@@ -414,7 +414,7 @@ export function getAllChunkMetadata() {
  * New format: collections[collectionId].enabled = true/false
  */
 export function migrateOldEnabledKeys() {
-    if (!extension_settings.vecthareplus) {
+    if (!extension_settings.vectfox) {
         return { migrated: 0 };
     }
 
@@ -423,14 +423,14 @@ export function migrateOldEnabledKeys() {
     let migrated = 0;
     const keysToDelete = [];
 
-    for (const key in extension_settings.vecthareplus) {
+    for (const key in extension_settings.vectfox) {
         if (key.startsWith('vecthare_collection_enabled_')) {
             const collectionId = key.replace('vecthare_collection_enabled_', '');
-            const enabled = extension_settings.vecthareplus[key];
+            const enabled = extension_settings.vectfox[key];
 
             // Only migrate if we don't already have metadata for this collection
-            if (!extension_settings.vecthareplus.collections[collectionId]) {
-                extension_settings.vecthareplus.collections[collectionId] = {
+            if (!extension_settings.vectfox.collections[collectionId]) {
+                extension_settings.vectfox.collections[collectionId] = {
                     ...defaultCollectionMeta,
                     enabled: enabled !== false,
                 };
@@ -444,7 +444,7 @@ export function migrateOldEnabledKeys() {
 
     // Delete old keys
     for (const key of keysToDelete) {
-        delete extension_settings.vecthareplus[key];
+        delete extension_settings.vectfox[key];
     }
 
     if (migrated > 0) {
@@ -466,14 +466,14 @@ export function cleanupOrphanedMeta(actualCollectionIds) {
     const actualSet = new Set(actualCollectionIds);
     const orphaned = [];
 
-    for (const collectionId in extension_settings.vecthareplus.collections) {
+    for (const collectionId in extension_settings.vectfox.collections) {
         if (!actualSet.has(collectionId)) {
             orphaned.push(collectionId);
         }
     }
 
     for (const collectionId of orphaned) {
-        delete extension_settings.vecthareplus.collections[collectionId];
+        delete extension_settings.vectfox.collections[collectionId];
         console.log(`VectHare: Removed orphaned metadata for ${collectionId}`);
     }
 
@@ -713,7 +713,7 @@ export function ensureCollectionMeta(collectionId, initialData = {}) {
 
     ensureCollectionsObject();
 
-    if (!extension_settings.vecthareplus.collections[collectionId]) {
+    if (!extension_settings.vectfox.collections[collectionId]) {
         // Determine collection type for temporal decay defaults
         // Check initialData.type, or infer from scope, or parse from collectionId
         let collectionType = initialData.type || initialData.scope || 'unknown';
@@ -723,7 +723,7 @@ export function ensureCollectionMeta(collectionId, initialData = {}) {
             collectionType = 'lorebook';
         }
 
-        extension_settings.vecthareplus.collections[collectionId] = {
+        extension_settings.vectfox.collections[collectionId] = {
             ...defaultCollectionMeta,
             temporalDecay: getDefaultDecayForType(collectionType),
             createdAt: Date.now(),
@@ -746,7 +746,7 @@ export function recordCollectionUsage(collectionId) {
 
     ensureCollectionsObject();
 
-    const existing = extension_settings.vecthareplus.collections[collectionId];
+    const existing = extension_settings.vectfox.collections[collectionId];
     if (existing) {
         existing.lastUsed = Date.now();
         existing.queryCount = (existing.queryCount || 0) + 1;
@@ -881,7 +881,7 @@ export async function shouldCollectionActivate(collectionId, context) {
     const meta = getCollectionMeta(collectionId);
     const currentChatId = context?.currentChatId;
     const currentChatCollectionId = context?.currentChatCollectionId;
-    const debug = !!extension_settings.vecthareplus?.eventbase_debug_logging;
+    const debug = !!extension_settings.vectfox?.eventbase_debug_logging;
 
     // Priority 1: Pause button — global disable, blocks everything
     if (meta.enabled === false) {
@@ -949,7 +949,7 @@ export async function filterActiveCollections(collectionIds, context) {
 
     const activeIds = results.filter(r => r.active).map(r => r.id);
 
-    if (extension_settings.vecthareplus?.eventbase_debug_logging) {
+    if (extension_settings.vectfox?.eventbase_debug_logging) {
         console.log(`[VectHare Activation Filter] Summary: ${collectionIds.length} collections → ${activeIds.length} active`);
         if (activeIds.length > 0) {
             console.log(`[VectHare Activation Filter] Active collections:`, activeIds);
@@ -1168,14 +1168,14 @@ export function isChunkTemporallyBlind(hash) {
  * @returns {string[]} Array of chunk hashes that are temporally blind
  */
 export function getTemporallyBlindChunks() {
-    if (!extension_settings.vecthareplus) {
+    if (!extension_settings.vectfox) {
         return [];
     }
 
     const blindChunks = [];
-    for (const key in extension_settings.vecthareplus) {
+    for (const key in extension_settings.vectfox) {
         if (key.startsWith('vecthare_chunk_meta_')) {
-            const meta = extension_settings.vecthareplus[key];
+            const meta = extension_settings.vectfox[key];
             if (meta?.temporallyBlind === true) {
                 const hash = key.replace('vecthare_chunk_meta_', '');
                 blindChunks.push(hash);

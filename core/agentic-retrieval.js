@@ -56,7 +56,7 @@ export async function retrieveEventsWithAgent(params) {
     }
     if (settings.vector_backend !== 'qdrant') {
         if (agenticDebug) {
-            console.log('[VectHarePlus-Agentic] mode=SKIPPED reason=requires_qdrant_backend');
+            console.log('[VectFox-Agentic] mode=SKIPPED reason=requires_qdrant_backend');
         }
         return preSearch;
     }
@@ -66,21 +66,21 @@ export async function retrieveEventsWithAgent(params) {
     const llmCfg = _resolveAgenticLLMConfig(settings);
     if (!llmCfg.ok) {
         if (agenticDebug) {
-            console.warn(`[VectHarePlus-Agentic] mode=SKIPPED reason=${llmCfg.reason}`);
+            console.warn(`[VectFox-Agentic] mode=SKIPPED reason=${llmCfg.reason}`);
         }
         return preSearch;
     }
 
     if (agenticDebug) {
         const topScore = preSearch.events?.[0]?._finalScore ?? preSearch.events?.[0]?.score ?? 0;
-        console.log(`[VectHarePlus-Agentic] mode=ON  trigger=user_message_len=${(keywordQuery || '').length}`);
-        console.log(`[VectHarePlus-Agentic] Pre-search returned ${preSearch.events?.length || 0} candidates (top score=${typeof topScore === 'number' ? topScore.toFixed(3) : '—'})`);
+        console.log(`[VectFox-Agentic] mode=ON  trigger=user_message_len=${(keywordQuery || '').length}`);
+        console.log(`[VectFox-Agentic] Pre-search returned ${preSearch.events?.length || 0} candidates (top score=${typeof topScore === 'number' ? topScore.toFixed(3) : '—'})`);
     }
 
     const recentTurns = _getRecentChatForPlanner(settings);
     if (agenticDebug) {
-        console.log(`[VectHarePlus-Agentic] Past chat turns sent to planner: ${recentTurns.length}`);
-        console.log('[VectHarePlus-Agentic] Narrative context preview (one ~50-word snippet per turn):');
+        console.log(`[VectFox-Agentic] Past chat turns sent to planner: ${recentTurns.length}`);
+        console.log('[VectFox-Agentic] Narrative context preview (one ~50-word snippet per turn):');
         recentTurns.forEach((turn, idx) => {
             const label = `[-${recentTurns.length - idx}]`;
             const snippet = _firstNWords(turn.text || '', 50);
@@ -103,7 +103,7 @@ export async function retrieveEventsWithAgent(params) {
         // what the planner sees per turn; the static system prompt lives in
         // core/agentic-prompt.js for inspection.
         const approxTokens = Math.round((AGENTIC_PLANNER_SYSTEM_PROMPT.length + userMessage.length) / 4);
-        console.log(`[VectHarePlus-Agentic] LLM prompt size: system+user approx ${approxTokens} tokens (${AGENTIC_PLANNER_SYSTEM_PROMPT.length}+${userMessage.length} chars)`);
+        console.log(`[VectFox-Agentic] LLM prompt size: system+user approx ${approxTokens} tokens (${AGENTIC_PLANNER_SYSTEM_PROMPT.length}+${userMessage.length} chars)`);
     }
 
     const timeoutMs = settings.agentic_retrieval_timeout_ms || 30000;
@@ -126,9 +126,9 @@ export async function retrieveEventsWithAgent(params) {
             err?.name === 'AbortError' ||
             /aborted|timeout|timed out/i.test(err?.message || '');
         if (isTimeout) {
-            console.warn(`[VectHarePlus-Agentic] Planner LLM call TIMED OUT after ${tLlmMs}ms (configured limit: ${timeoutMs}ms). Falling back to pre-search only. Bump "Planner LLM Timeout" in the AgentMode tab if your model needs longer.`);
+            console.warn(`[VectFox-Agentic] Planner LLM call TIMED OUT after ${tLlmMs}ms (configured limit: ${timeoutMs}ms). Falling back to pre-search only. Bump "Planner LLM Timeout" in the AgentMode tab if your model needs longer.`);
         } else {
-            console.warn(`[VectHarePlus-Agentic] Planner LLM call failed after ${tLlmMs}ms, using pre-search only: ${err?.message || err}`);
+            console.warn(`[VectFox-Agentic] Planner LLM call failed after ${tLlmMs}ms, using pre-search only: ${err?.message || err}`);
         }
         return preSearch;
     }
@@ -143,11 +143,11 @@ export async function retrieveEventsWithAgent(params) {
             const tokPerSec = usage.completion_tokens != null && tLlmMs > 0
                 ? (usage.completion_tokens / (tLlmMs / 1000)).toFixed(1)
                 : '—';
-            console.log(`[VectHarePlus-Agentic] LLM call complete: ${tLlmMs}ms — prompt=${usage.prompt_tokens} tok, completion=${usage.completion_tokens ?? '?'} tok, total=${usage.total_tokens ?? '?'} tok (${tokPerSec} tok/s output)`);
+            console.log(`[VectFox-Agentic] LLM call complete: ${tLlmMs}ms — prompt=${usage.prompt_tokens} tok, completion=${usage.completion_tokens ?? '?'} tok, total=${usage.total_tokens ?? '?'} tok (${tokPerSec} tok/s output)`);
         } else {
-            console.log(`[VectHarePlus-Agentic] LLM call complete: ${tLlmMs}ms (provider did not return usage data)`);
+            console.log(`[VectFox-Agentic] LLM call complete: ${tLlmMs}ms (provider did not return usage data)`);
         }
-        console.log('[VectHarePlus-Agentic] Planner output:');
+        console.log('[VectFox-Agentic] Planner output:');
         console.log(JSON.stringify(plan, null, 2));
     }
 
@@ -156,7 +156,7 @@ export async function retrieveEventsWithAgent(params) {
     const validatedQueries = _validateAndTrimQueries(plan?.queries, maxQueries);
     if (validatedQueries.length === 0) {
         if (agenticDebug) {
-            console.log('[VectHarePlus-Agentic] Planner returned 0 valid queries — falling back to pre-search only');
+            console.log('[VectFox-Agentic] Planner returned 0 valid queries — falling back to pre-search only');
         }
         return preSearch;
     }
@@ -165,7 +165,7 @@ export async function retrieveEventsWithAgent(params) {
     // Phase 1 note: planner-emitted filters are ignored (see file header).
     if (!liveCollectionIds?.length) {
         if (agenticDebug) {
-            console.log('[VectHarePlus-Agentic] No live collections to query — falling back to pre-search only');
+            console.log('[VectFox-Agentic] No live collections to query — falling back to pre-search only');
         }
         return preSearch;
     }
@@ -188,7 +188,7 @@ export async function retrieveEventsWithAgent(params) {
                         return { queryText, hits };
                     })
                     .catch(err => {
-                        console.warn(`[VectHarePlus-Agentic] Query failed (${colId}, "${queryText}"): ${err?.message || err}`);
+                        console.warn(`[VectFox-Agentic] Query failed (${colId}, "${queryText}"): ${err?.message || err}`);
                         return { queryText, hits: [] };
                     })
             );
@@ -200,16 +200,16 @@ export async function retrieveEventsWithAgent(params) {
     const agenticHits = fanoutResults.flatMap(r => r.hits);
 
     if (agenticDebug) {
-        console.log(`[VectHarePlus-Agentic] Qdrant fanout: ${validatedQueries.length} queries × ${liveCollectionIds.length} collection(s) = ${fanoutPromises.length} parallel calls`);
-        console.log(`[VectHarePlus-Agentic] Qdrant fanout complete: ${tFanoutMs}ms`);
-        console.log('[VectHarePlus-Agentic] Per-query hits:');
+        console.log(`[VectFox-Agentic] Qdrant fanout: ${validatedQueries.length} queries × ${liveCollectionIds.length} collection(s) = ${fanoutPromises.length} parallel calls`);
+        console.log(`[VectFox-Agentic] Qdrant fanout complete: ${tFanoutMs}ms`);
+        console.log('[VectFox-Agentic] Per-query hits:');
         fanoutResults.forEach((r, i) => {
             const topScore = r.hits[0]?.score ?? r.hits[0]?.vectorScore ?? 0;
             console.log(`  Q${i + 1} "${r.queryText.slice(0, 60)}" → ${r.hits.length} hits (top score=${typeof topScore === 'number' ? topScore.toFixed(3) : '—'})`);
         });
         const preSearchIds = new Set((preSearch.events || []).map(e => e.event_id ?? e._hash));
         const newHits = agenticHits.filter(h => !preSearchIds.has(h.event_id ?? h._hash));
-        console.log(`[VectHarePlus-Agentic] Agentic-only hits (not already in pre-search): ${newHits.length}`);
+        console.log(`[VectFox-Agentic] Agentic-only hits (not already in pre-search): ${newHits.length}`);
     }
 
     // STAGE 5 — re-feed merged candidates through retrieveEvents for canonical rerank.
@@ -231,8 +231,8 @@ export async function retrieveEventsWithAgent(params) {
 
     const tTotalMs = Math.round(((typeof performance !== 'undefined' ? performance.now() : Date.now()) - tAgentStart));
     if (agenticDebug) {
-        console.log(`[VectHarePlus-Agentic] Final merged candidates: ${(preSearch.events || []).length} pre-search + ${agenticHits.length} agentic = ${mergedAdditional.length} total → ${final.events?.length || 0} after rerank/dedup/trim`);
-        console.log(`[VectHarePlus-Agentic] Total wall-clock for agent overhead: ${tTotalMs}ms (LLM=${tLlmMs}ms, fanout=${tFanoutMs}ms)`);
+        console.log(`[VectFox-Agentic] Final merged candidates: ${(preSearch.events || []).length} pre-search + ${agenticHits.length} agentic = ${mergedAdditional.length} total → ${final.events?.length || 0} after rerank/dedup/trim`);
+        console.log(`[VectFox-Agentic] Total wall-clock for agent overhead: ${tTotalMs}ms (LLM=${tLlmMs}ms, fanout=${tFanoutMs}ms)`);
     }
 
     // Annotate debug so callers can detect agentic mode in diagnostics.

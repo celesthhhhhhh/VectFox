@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE CONTENT VECTORIZATION
+ * VectFox CONTENT VECTORIZATION
  * ============================================================================
  * Unified vectorization handler for all content types.
  * Uses the same pipeline infrastructure, just with type-appropriate settings.
@@ -90,7 +90,7 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
         const chunkLengths = chunks.map(c => (typeof c === 'string' ? c : c.text || '').length);
         const maxChunkLen = Math.max(...chunkLengths);
         const avgChunkLen = Math.round(chunkLengths.reduce((a, b) => a + b, 0) / chunkLengths.length);
-        console.log(`VectHare: Chunked "${sourceName}" into ${chunks.length} chunks (avg: ${avgChunkLen} chars, max: ${maxChunkLen} chars)`);
+        console.log(`VectFox: Chunked "${sourceName}" into ${chunks.length} chunks (avg: ${avgChunkLen} chars, max: ${maxChunkLen} chars)`);
 
         progressTracker.updateChunks(chunks.length);
 
@@ -99,9 +99,9 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
         const collectionId = generateCollectionId(contentType, source, settings);
         
         // Get full extension settings for keyword extraction (includes custom_stopwords)
-        const vecthareSettings = extension_settings.vecthareplus;
+        const VectFoxSettings = extension_settings.VectFoxplus;
         
-        const enrichedChunks = enrichChunks(chunks, contentType, source, settings, preparedContent, vecthareSettings);
+        const enrichedChunks = enrichChunks(chunks, contentType, source, settings, preparedContent, VectFoxSettings);
         const hashedChunks = enrichedChunks.map(chunk => ({
             ...chunk,
             hash: getStringHash(chunk.text),
@@ -112,20 +112,20 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
         if (continueMode) {
             try {
                 progressTracker.updateProgress(3, 'Checking existing chunks...');
-                const savedHashes = await getSavedHashes(collectionId, vecthareSettings);
+                const savedHashes = await getSavedHashes(collectionId, VectFoxSettings);
                 const savedSet = new Set(savedHashes);
                 const before = hashedChunks.length;
                 finalChunks = hashedChunks.filter(c => !savedSet.has(c.hash));
                 const skipped = before - finalChunks.length;
-                console.log(`VectHare: Continue mode — ${skipped} chunks already in DB, ${finalChunks.length} remaining`);
+                console.log(`VectFox: Continue mode — ${skipped} chunks already in DB, ${finalChunks.length} remaining`);
                 progressTracker.updateChunks(finalChunks.length);
                 if (finalChunks.length === 0) {
                     progressTracker.complete(true, 'Already up to date — no new chunks to insert');
                     return { success: true, chunkCount: 0, collectionId };
                 }
-                toastr.info(`Continuing: ${skipped} chunks skipped, ${finalChunks.length} to insert`, 'VectHare');
+                toastr.info(`Continuing: ${skipped} chunks skipped, ${finalChunks.length} to insert`, 'VectFox');
             } catch (e) {
-                console.warn('VectHare: Could not fetch saved hashes for dedup, inserting all:', e.message);
+                console.warn('VectFox: Could not fetch saved hashes for dedup, inserting all:', e.message);
                 finalChunks = hashedChunks;
             }
         } else {
@@ -142,17 +142,17 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
         /* ----- BEGIN: summarize-before-store pipeline (DISABLED, kept for future use) -----
         if (contentType === 'chat') {
             progressTracker.updateProgress(3, `Summarizing and inserting ${finalChunks.length} chunks...`);
-            console.log(`[VectHare Summarizer] Pipelining ${finalChunks.length} chat chunks via ${vecthareSettings.summarize_provider}...`);
+            console.log(`[VectFox Summarizer] Pipelining ${finalChunks.length} chat chunks via ${VectFoxSettings.summarize_provider}...`);
 
             // Pre-init backend once before pipeline starts
             try {
-                await getBackend(vecthareSettings);
+                await getBackend(VectFoxSettings);
             } catch (e) {
-                console.warn('VectHare: Backend init failed before pipeline insert, will still attempt:', e.message);
+                console.warn('VectFox: Backend init failed before pipeline insert, will still attempt:', e.message);
             }
 
             let pipelined = 0;
-            const keywordLevel = vecthareSettings?.keywordLevel || 'balanced';
+            const keywordLevel = VectFoxSettings?.keywordLevel || 'balanced';
 
             {
                 for (const chunk of finalChunks) {
@@ -160,10 +160,10 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
 
                     let summaryText;
                     try {
-                        summaryText = await summarizeText(chunk.text, vecthareSettings);
+                        summaryText = await summarizeText(chunk.text, VectFoxSettings);
                     } catch (err) {
                         if (isSummarizationFatalError(err)) {
-                            const providerLabel = (vecthareSettings?.summarize_provider || 'summarizer').toUpperCase();
+                            const providerLabel = (VectFoxSettings?.summarize_provider || 'summarizer').toUpperCase();
                             const msg = `Summarization is enabled but misconfigured: ${err.message}`;
                             try { toastr.error(msg, `${providerLabel} configuration error`); } catch (_) {}
                             throw new Error(msg);
@@ -173,18 +173,18 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
                     const summaryKeywords = keywordLevel !== 'off'
                         ? extractBM25Keywords(summaryText, {
                             level: keywordLevel,
-                            baseWeight: vecthareSettings?.keywordBaseWeight || 1.5,
-                            settings: vecthareSettings,
+                            baseWeight: VectFoxSettings?.keywordBaseWeight || 1.5,
+                            settings: VectFoxSettings,
                         })
                         : [];
                     const summarizedChunk = { ...chunk, text: summaryText, keywords: summaryKeywords };
 
                     try {
                         throwIfAborted();
-                        await insertVectorItems(collectionId, [summarizedChunk], vecthareSettings, null, abortSignal);
+                        await insertVectorItems(collectionId, [summarizedChunk], VectFoxSettings, null, abortSignal);
                     } catch (insertErr) {
                         if (insertErr?.name === 'AbortError') throw insertErr;
-                        console.error('VectHare: Pipeline insert failed for chunk, skipping:', insertErr.message);
+                        console.error('VectFox: Pipeline insert failed for chunk, skipping:', insertErr.message);
                         progressTracker.addError(`Chunk ${pipelined + 1}: ${insertErr.message}`);
                     }
 
@@ -194,7 +194,7 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
                 }
             }
 
-            console.log(`[VectHare Summarizer] Pipeline complete: ${pipelined} chunks processed`);
+            console.log(`[VectFox Summarizer] Pipeline complete: ${pipelined} chunks processed`);
 
         }
         ----- END: summarize-before-store pipeline ----- */
@@ -204,24 +204,24 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
             progressTracker.updateProgress(4, 'Processing chunks...');
 
             try {
-                await getBackend(vecthareSettings);
+                await getBackend(VectFoxSettings);
             } catch (e) {
-                console.warn('VectHare: Backend initialization failed before insert, will still attempt insert:', e.message);
+                console.warn('VectFox: Backend initialization failed before insert, will still attempt insert:', e.message);
                 try { progressTracker.addError(`Backend init failed: ${e.message}`); } catch (_) {}
-                try { toastr.error('Backend initialization failed: ' + e.message, 'VectHare'); } catch (_) {}
+                try { toastr.error('Backend initialization failed: ' + e.message, 'VectFox'); } catch (_) {}
             }
 
             try {
-                await insertVectorItems(collectionId, finalChunks, vecthareSettings, (embedded, total) => {
+                await insertVectorItems(collectionId, finalChunks, VectFoxSettings, (embedded, total) => {
                     throwIfAborted();
                     console.log(`[Content Vectorization] Processing progress callback: ${embedded}/${total}`);
                     progressTracker.updateEmbeddingProgress(embedded, total);
                     progressTracker.updateCurrentItem(`Processing: ${embedded}/${total} chunks (${total - embedded} remaining)`);
                 }, abortSignal);
             } catch (error) {
-                console.error('VectHare: insertVectorItems failed', error);
+                console.error('VectFox: insertVectorItems failed', error);
                 try { progressTracker.addError(error.message || String(error)); } catch (_) {}
-                try { toastr.error('Failed to write embeddings: ' + (error.message || String(error)), 'VectHare'); } catch (_) {}
+                try { toastr.error('Failed to write embeddings: ' + (error.message || String(error)), 'VectFox'); } catch (_) {}
                 throw error;
             }
         }
@@ -246,13 +246,13 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
 
         // Register collection in the registry so it's discoverable
         registerCollection(collectionId);
-        console.log(`VectHare: Registered collection ${collectionId}`);
+        console.log(`VectFox: Registered collection ${collectionId}`);
 
         // Make newly vectorized collections active for the current chat by default.
         const currentChatId = getCurrentChatId();
         if (currentChatId) {
             setCollectionLock(collectionId, currentChatId);
-            console.log(`VectHare: Locked collection ${collectionId} to current chat ${currentChatId}`);
+            console.log(`VectFox: Locked collection ${collectionId} to current chat ${currentChatId}`);
         }
 
         throwIfAborted();
@@ -406,7 +406,7 @@ async function loadLorebookContent(lorebookName, context) {
 
         const entries = Object.values(data.entries).filter(e => e.content);
 
-        console.log(`VectHare: Loaded lorebook "${lorebookName}" with ${entries.length} entries`);
+        console.log(`VectFox: Loaded lorebook "${lorebookName}" with ${entries.length} entries`);
 
         return {
             content: entries,
@@ -415,7 +415,7 @@ async function loadLorebookContent(lorebookName, context) {
         };
 
     } catch (e) {
-        console.error('VectHare: Failed to load lorebook:', e);
+        console.error('VectFox: Failed to load lorebook:', e);
         throw new Error(`Failed to load lorebook "${lorebookName}": ${e.message}`);
     }
 }
@@ -574,7 +574,7 @@ function prepareChatContent(rawContent, settings, startFromMessage = 1) {
     // Apply start-from slice (1-based: startFromMessage=1 means all, =2000 means skip first 1999)
     if (startFromMessage > 1) {
         const sliceIdx = Math.min(startFromMessage - 1, validMessages.length);
-        console.log(`VectHare: Start-from message ${startFromMessage} — skipping first ${sliceIdx} messages, ${validMessages.length - sliceIdx} remaining`);
+        console.log(`VectFox: Start-from message ${startFromMessage} — skipping first ${sliceIdx} messages, ${validMessages.length - sliceIdx} remaining`);
         validMessages = validMessages.slice(sliceIdx);
     }
 
@@ -746,10 +746,10 @@ function generateCollectionId(contentType, source, settings) {
         // Chat history is hard-routed through the EventBase pipeline; non-chat
         // content types (lorebook/character/document/url/wiki/youtube) are the only
         // valid inputs to this function. If contentType === 'chat' reaches here, it's
-        // a bug — fail loudly rather than silently produce a vecthare_chat_* ID.
+        // a bug — fail loudly rather than silently produce a VectFox_chat_* ID.
         case 'chat':
             throw new Error(
-                'VectHare: generateCollectionId(contentType="chat") is disabled. ' +
+                'VectFox: generateCollectionId(contentType="chat") is disabled. ' +
                 'Chat history must go through eventbase-workflow.js, not the chunk content pipeline.'
             );
         /* DEAD-CHUNK-CHAT — original 'chat' branch:
@@ -760,7 +760,7 @@ function generateCollectionId(contentType, source, settings) {
                 return chatCollectionId;
             }
             // Fall through to legacy generation if UUID not available
-            console.warn('VectHare: Chat UUID not available, using legacy ID generation');
+            console.warn('VectFox: Chat UUID not available, using legacy ID generation');
             break;
         */
 
@@ -812,7 +812,7 @@ function generateCollectionId(contentType, source, settings) {
         scopePrefix = `chat_${context.chatId}_`;
     }
 
-    return `vecthare_${contentType}_${scopePrefix}${sanitizedName}_${timestamp}`;
+    return `VectFox_${contentType}_${scopePrefix}${sanitizedName}_${timestamp}`;
 }
 
 /**
@@ -822,9 +822,9 @@ function generateCollectionId(contentType, source, settings) {
  * @param {object} source - Source info
  * @param {object} settings - Vectorization settings including keyword options
  * @param {object} preparedContent - Prepared content data
- * @param {object} vecthareSettings - Full VectHare extension settings (includes custom_stopwords)
+ * @param {object} VectFoxSettings - Full VectFox extension settings (includes custom_stopwords)
  */
-function enrichChunks(chunks, contentType, source, settings, preparedContent, vecthareSettings) {
+function enrichChunks(chunks, contentType, source, settings, preparedContent, VectFoxSettings) {
     // Get keyword extraction settings
     const keywordLevel = settings.keywordLevel || 'balanced';
     const keywordBaseWeight = settings.keywordBaseWeight || 1.5;
@@ -842,7 +842,7 @@ function enrichChunks(chunks, contentType, source, settings, preparedContent, ve
             entryUid = entry.uid;
 
             // Get explicit trigger keys (these are manually set, so use base weight)
-            const triggerKeys = extractLorebookKeywords(entry, vecthareSettings);
+            const triggerKeys = extractLorebookKeywords(entry, VectFoxSettings);
             keywords = triggerKeys.map(k => ({ text: k, weight: keywordBaseWeight }));
 
             // Also get auto-extracted keywords with frequency-based weights
@@ -850,7 +850,7 @@ function enrichChunks(chunks, contentType, source, settings, preparedContent, ve
                 const autoKeywords = extractTextKeywords(entry.content || chunkText, {
                     level: keywordLevel,
                     baseWeight: keywordBaseWeight,
-                    settings: vecthareSettings,
+                    settings: VectFoxSettings,
                 });
                 keywords = keywords.concat(autoKeywords);
             }
@@ -860,7 +860,7 @@ function enrichChunks(chunks, contentType, source, settings, preparedContent, ve
                 keywords = extractBM25Keywords(chunkText, {
                     level: keywordLevel,
                     baseWeight: keywordBaseWeight,
-                    settings: vecthareSettings,
+                    settings: VectFoxSettings,
                 });
             }
         } else {
@@ -869,7 +869,7 @@ function enrichChunks(chunks, contentType, source, settings, preparedContent, ve
                 keywords = extractTextKeywords(chunkText, {
                     level: keywordLevel,
                     baseWeight: keywordBaseWeight,
-                    settings: vecthareSettings,
+                    settings: VectFoxSettings,
                 });
             }
         }
@@ -921,7 +921,7 @@ function enrichChunks(chunks, contentType, source, settings, preparedContent, ve
  * Deletes a content collection
  */
 export async function deleteContentCollection(collectionId) {
-    const vecthareSettings = extension_settings.vecthareplus;
-    await purgeVectorIndex(collectionId, vecthareSettings);
-    console.log(`VectHare: Deleted collection: ${collectionId}`);
+    const VectFoxSettings = extension_settings.VectFoxplus;
+    await purgeVectorIndex(collectionId, VectFoxSettings);
+    console.log(`VectFox: Deleted collection: ${collectionId}`);
 }

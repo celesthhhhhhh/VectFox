@@ -14,6 +14,8 @@
  */
 
 import { queryCollection } from './core-vector-api.js';
+import { getBackendForCollection, getBackend } from '../backends/backend-manager.js';
+import { parseRegistryKey } from './collection-ids.js';
 
 // ---------------------------------------------------------------------------
 // Default re-rank weights (tuned for long-form SillyTavern RP)
@@ -81,6 +83,182 @@ function _normalizeWeights(w) {
     };
 }
 
+/**
+ * Resolve the anchor boost amount from settings (clamped to [0, 0.5]).
+ * Shared by the main scoring loop and compare-mode JS scoring.
+ */
+function _resolveAnchorBoostAmount(settings) {
+    return typeof settings.eventbase_anchor_boost === 'number'
+        ? Math.max(0, Math.min(0.5, settings.eventbase_anchor_boost))
+        : 0.20;
+}
+
+/**
+ * Compute anchor boost for a single event metadata object — same semantic as the
+ * inline check at the bottom of `retrieveEvents`. Kept in a helper so the
+ * compare-mode JS pipeline can use it without duplicating the substring logic.
+ */
+function _anchorBoostFor(meta, anchorText, anchorAmount) {
+    if (!(anchorAmount > 0) || !anchorText) return 0;
+    return (meta.keywords || []).some(k => k.length >= 2 && anchorText.includes(k.toLowerCase()))
+        ? anchorAmount : 0;
+}
+
+/**
+ * Compute the legacy JS final score for an event — same formula as the inline
+ * loop at line 211+ of `retrieveEvents`. Used by compare mode for the parallel
+ * JS path's scoring. Returns _finalScore on the meta object (not mutated).
+ */
+function _jsFinalScore(meta, weights, chatLength, anchorText, anchorAmount) {
+    const cosineScore = typeof meta.vectorScore === 'number'
+        ? meta.vectorScore
+        : (typeof meta.score === 'number' ? meta.score : 0);
+    const importanceNorm = (meta.importance ?? 5) / 10;
+    const persistBonus = meta.should_persist === true ? 1 : 0;
+    const recencyBonus = _recencyBonus(meta, chatLength);
+    const anchorBoost = _anchorBoostFor(meta, anchorText, anchorAmount);
+    return weights.cosine * cosineScore
+         + weights.importance * importanceNorm
+         + weights.persist * persistBonus
+         + weights.recency * recencyBonus
+         + anchorBoost;
+}
+
+/**
+ * Run a single live (collection, queryText) lookup. Branches between the native
+ * rerank path and the existing queryCollection path. In compare mode, fires the
+ * JS path in parallel for observability — its results never escape this helper.
+ *
+ * @returns {Promise<Array<object>>} candidate metadata array (each tagged with _hash)
+ */
+async function _runOneLiveQuery({
+    colId, queryText, topK, ebSettings, settings,
+    useNativeRerank, rerankParams, compareMode, comparisonLog,
+    chatLength, anchorText, anchorBoostAmount, rerankWeights,
+}) {
+    // Decide if native rerank is feasible for this specific collection. Even
+    // when the global flag is on, an archive collection routed through Vectra
+    // would fall back to the JS path. Duck-typed on the method presence so we
+    // don't depend on a `.type` property the base interface doesn't define.
+    if (useNativeRerank) {
+        try {
+            const parsed = parseRegistryKey(colId);
+            const backend = parsed.backend
+                ? await getBackendForCollection(parsed.backend, settings)
+                : await getBackend(settings);
+            if (backend && typeof backend.hybridQueryWithRerank === 'function') {
+                const tStart = performance.now();
+                const { hashes, metadata } = await backend.hybridQueryWithRerank(
+                    colId, queryText, topK, ebSettings, rerankParams
+                );
+                const nativeMs = (performance.now() - tStart).toFixed(1);
+                const nativeResults = (hashes || []).map((h, i) => ({
+                    ...(metadata[i] || {}),
+                    _hash: h,
+                    _rerankApplied: !!metadata[i]?.rerankApplied,
+                }));
+
+                // Compare mode: run the JS path in parallel for logging only.
+                if (compareMode) {
+                    const tJsStart = performance.now();
+                    try {
+                        const jsRes = await queryCollection(colId, queryText, topK, ebSettings);
+                        const jsMs = (performance.now() - tJsStart).toFixed(1);
+                        const jsCandidates = (jsRes.hashes || []).map((h, i) => {
+                            const m = jsRes.metadata?.[i] || {};
+                            return { ...m, _hash: h, _jsFinal: _jsFinalScore(m, rerankWeights, chatLength, anchorText, anchorBoostAmount) };
+                        });
+                        // Filter by min-importance to mirror the server-side filter.
+                        const jsFiltered = jsCandidates.filter(m => (m.importance ?? 0) >= rerankParams.minImportance);
+                        jsFiltered.sort((a, b) => b._jsFinal - a._jsFinal);
+                        _logRerankComparison(colId, queryText, nativeResults, jsFiltered, nativeMs, jsMs, settings, comparisonLog);
+                    } catch (cmpErr) {
+                        console.warn(`[EventBase compare] JS path failed for ${colId}:`, cmpErr.message);
+                    }
+                }
+
+                return nativeResults;
+            }
+            // backendType !== qdrant or no method → fall through to legacy path
+        } catch (err) {
+            console.warn(`[EventBase] Native rerank backend resolution failed for ${colId} (falling back):`, err.message);
+        }
+    }
+
+    // Legacy path: queryCollection (vector-only or hybrid, depending on settings).
+    const { hashes, metadata } = await queryCollection(colId, queryText, topK, ebSettings);
+    if (!hashes?.length) return [];
+    return metadata.map((m, i) => ({ ...m, _hash: hashes[i] }));
+}
+
+/**
+ * Compare-mode logger. Reports per (collection, queryText):
+ *   - top-K overlap (by event_id, fallback hash)
+ *   - symmetric difference with ranks in each list
+ *   - Spearman rank correlation on the union
+ *   - timing for both paths
+ * Verbose mode (eventbase_compare_rerank_verbose) additionally logs per-event
+ * score breakdowns for events present in both lists.
+ * Comparisons are also appended to the supplied `comparisonLog` array (if any)
+ * so they can be returned in the debug object for offline analysis.
+ */
+function _logRerankComparison(colId, queryText, native, js, nativeMs, jsMs, settings, comparisonLog) {
+    const keyOf = e => e.event_id ?? e._hash ?? null;
+    const nativeTop = native.slice(0, 20).map(keyOf).filter(Boolean);
+    const jsTop = js.slice(0, 20).map(keyOf).filter(Boolean);
+    const nativeSet = new Set(nativeTop);
+    const jsSet = new Set(jsTop);
+    const overlap = nativeTop.filter(k => jsSet.has(k));
+    const onlyNative = nativeTop.filter(k => !jsSet.has(k));
+    const onlyJs = jsTop.filter(k => !nativeSet.has(k));
+
+    // Spearman ρ on the union (events absent from one side get rank past end).
+    const union = [...new Set([...nativeTop, ...jsTop])];
+    const nativeRank = new Map(nativeTop.map((k, i) => [k, i + 1]));
+    const jsRank = new Map(jsTop.map((k, i) => [k, i + 1]));
+    const N = union.length;
+    let rho = 0;
+    if (N >= 2) {
+        let dSumSq = 0;
+        for (const k of union) {
+            const r1 = nativeRank.get(k) ?? (nativeTop.length + 1);
+            const r2 = jsRank.get(k) ?? (jsTop.length + 1);
+            dSumSq += (r1 - r2) ** 2;
+        }
+        rho = 1 - (6 * dSumSq) / (N * (N * N - 1));
+    }
+
+    const previewQuery = String(queryText || '').replace(/\s+/g, ' ').slice(0, 80);
+    console.log(`[EventBase compare] col=${colId} q="${previewQuery}" — overlap@${Math.min(nativeTop.length, jsTop.length)}=${overlap.length}, spearmanRho=${rho.toFixed(3)}, native=${nativeMs}ms, js=${jsMs}ms`);
+    if (onlyNative.length || onlyJs.length) {
+        console.log(`[EventBase compare]   onlyNative=[${onlyNative.slice(0, 5).join(', ')}${onlyNative.length > 5 ? `, +${onlyNative.length - 5}` : ''}], onlyJs=[${onlyJs.slice(0, 5).join(', ')}${onlyJs.length > 5 ? `, +${onlyJs.length - 5}` : ''}]`);
+    }
+
+    if (settings.eventbase_compare_rerank_verbose) {
+        const nativeByKey = new Map(native.map(e => [keyOf(e), e]));
+        const jsByKey = new Map(js.map(e => [keyOf(e), e]));
+        for (const k of overlap.slice(0, 5)) {
+            const n = nativeByKey.get(k);
+            const j = jsByKey.get(k);
+            console.log(`[EventBase compare verbose]   key=${k} nativeScore=${n?.score?.toFixed(4)} jsFinal=${j?._jsFinal?.toFixed(4)} (imp=${n?.importance}, persist=${n?.should_persist}, swe=${n?.source_window_end})`);
+        }
+    }
+
+    if (comparisonLog) {
+        comparisonLog.push({
+            collectionId: colId,
+            queryText: previewQuery,
+            overlapCount: overlap.length,
+            overlapDenominator: Math.min(nativeTop.length, jsTop.length),
+            spearmanRho: rho,
+            onlyNativeCount: onlyNative.length,
+            onlyJsCount: onlyJs.length,
+            nativeMs: parseFloat(nativeMs),
+            jsMs: parseFloat(jsMs),
+        });
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Main retrieval function
 // ---------------------------------------------------------------------------
@@ -118,10 +296,44 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     // client-side hybrid mode. Default is 'bm25'; override via eventbase_keyword_scoring_method.
     const ebSettings = { ...settings, keyword_scoring_method: settings.eventbase_keyword_scoring_method || 'bm25' };
 
+    // Native rerank: push importance filter + dedup-depth filter + weighted-sum
+    // scoring into Qdrant via a formula query, in the same /query call as the
+    // existing dense+sparse RRF hybrid. Gated on Qdrant backend + native hybrid
+    // preference + opt-in flag (default off). When on, the per-collection call
+    // returns events with their formula score already in `score`, and the rest
+    // of this pipeline (anchor boost, pairwise dedup, final trim) runs on top.
+    // See plans/qdrant-native-eventbase-rerank-formula.md.
+    const useNativeRerank = (
+        settings.vector_backend === 'qdrant'
+        && settings.hybrid_native_prefer !== false
+        && settings.eventbase_native_rerank === true
+    );
+    const compareMode = useNativeRerank && settings.eventbase_compare_rerank === true && debugLog;
+
+    // Build re-rank params once — values are constant across the per-(collection,
+    // queryText) calls in this retrieve invocation.
+    const rerankWeights = _normalizeWeights({
+        cosine: settings.eventbase_rerank_w_cosine ?? DEFAULT_WEIGHTS.cosine,
+        importance: settings.eventbase_rerank_w_importance ?? DEFAULT_WEIGHTS.importance,
+        persist: settings.eventbase_rerank_w_persist ?? DEFAULT_WEIGHTS.persist,
+        recency: settings.eventbase_rerank_w_recency ?? DEFAULT_WEIGHTS.recency,
+    });
+    const halfLife = !chatLength || chatLength === 0 ? 40 : Math.max(40, chatLength * 0.20);
+    const dedupDepthForFilter = settings.deduplication_depth ?? 0;
+    const visibleThresholdForFilter = dedupDepthForFilter > 0 ? chatLength - dedupDepthForFilter : -1;
+    const rerankParams = {
+        weights: rerankWeights,
+        chatLength: chatLength || 0,
+        halfLife,
+        minImportance,
+        visibleThreshold: visibleThresholdForFilter,
+        applyContextDedupFilter: !skipContextDedup,
+    };
+
     if (debugLog) {
         const method = ebSettings.keyword_scoring_method;
         const nativePrefer = settings.hybrid_native_prefer !== false;
-        console.log(`[EventBase] Retrieval start — topK overfetch=${topK}, minImportance=${minImportance}, method=${method}, nativePrefer=${nativePrefer}, liveCollections=${liveCollectionIds?.length || 0}`);
+        console.log(`[EventBase] Retrieval start — topK overfetch=${topK}, minImportance=${minImportance}, method=${method}, nativePrefer=${nativePrefer}, liveCollections=${liveCollectionIds?.length || 0}, nativeRerank=${useNativeRerank}${compareMode ? ' (compare ON)' : ''}`);
     }
 
     // 1. Dual vector query against each locked live EventBase collection.
@@ -134,6 +346,13 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     const dualQuery = keywordQuery && keywordQuery !== searchText;
     const queryTexts = dualQuery ? [keywordQuery, searchText] : [searchText];
 
+    // Per-(collection, queryText) live query. When useNativeRerank is on AND the
+    // collection resolves to a Qdrant backend, dispatch to hybridQueryWithRerank
+    // and tag results with _rerankApplied. Otherwise fall back to the existing
+    // queryCollection path. In compare mode, the JS path also runs in parallel
+    // for observability — its results are logged but not returned.
+    const comparisonLog = compareMode ? [] : null;
+
     if (skipLiveQuery || !liveCollectionIds?.length) {
         if (debugLog) console.log('[EventBase] Live query skipped (no locked collection or paused)');
     } else {
@@ -141,15 +360,24 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         for (const colId of liveCollectionIds) {
             for (const queryText of queryTexts) {
                 promises.push(
-                    queryCollection(colId, queryText, topK, ebSettings)
-                        .then(({ hashes, metadata }) => {
-                            if (!hashes?.length) return [];
-                            return metadata.map((meta, i) => ({ ...meta, _hash: hashes[i] }));
-                        })
-                        .catch(err => {
-                            console.error(`[EventBase] Live query failed (${colId}):`, err);
-                            return [];
-                        })
+                    _runOneLiveQuery({
+                        colId,
+                        queryText,
+                        topK,
+                        ebSettings,
+                        settings,
+                        useNativeRerank,
+                        rerankParams,
+                        compareMode,
+                        comparisonLog,
+                        chatLength,
+                        anchorText: (keywordQuery || '').toLowerCase(),
+                        anchorBoostAmount: _resolveAnchorBoostAmount(settings),
+                        rerankWeights,
+                    }).catch(err => {
+                        console.error(`[EventBase] Live query failed (${colId}):`, err);
+                        return [];
+                    })
                 );
             }
         }
@@ -182,8 +410,12 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
         console.log(`[EventBase] Merged ${additionalCandidates.length} archive event(s) into ${rawCandidates.length} live candidates`);
     }
 
-    // 3. Filter by minimum importance
+    // 3. Filter by minimum importance — server already filtered _rerankApplied
+    // candidates via the outer range filter in the formula query, so they pass
+    // through unconditionally. Non-rerank candidates (archive events or fallback
+    // path results) still go through the JS filter.
     const importanceFiltered = allCandidates.filter(m => {
+        if (m._rerankApplied) return true;
         const imp = m.importance ?? m.metadata?.importance ?? 0;
         return imp >= minImportance;
     });
@@ -208,32 +440,35 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     // which handles CJK multi-char terms (e.g. 贖身) and Latin names alike.
     const anchorText = (keywordQuery || '').toLowerCase();
 
+    // Anchor boost is computed for ALL candidates (both rerank-applied and not)
+    // because anchor matching is intentionally substring-based — a semantic the
+    // server-side formula path cannot replicate (multi-token LLM-extracted
+    // keywords like "贖身的儀式" need verbatim substring presence in the user's
+    // message, not tokenized any-of). Configurable via `eventbase_anchor_boost`.
+    const anchorBoostAmount = _resolveAnchorBoostAmount(settings);
+
     const scored = importanceFiltered.map(meta => {
-        // When hybrid is active, metadata carries vectorScore (raw cosine) separately from
-        // the fusion score stored in .score. Prefer vectorScore so the re-ranker's cosine
-        // weight retains its correct semantic meaning regardless of fusion method.
+        const anchorBoost = _anchorBoostFor(meta, anchorText, anchorBoostAmount);
+
+        if (meta._rerankApplied) {
+            // Server-side formula already computed the weighted sum (cosine ×
+            // RRF×scale + importance + persist + recency_decay). Just add the
+            // client-side anchor boost on top — same additive shape as the JS
+            // path's final line.
+            const finalScore = (typeof meta.score === 'number' ? meta.score : 0) + anchorBoost;
+            return { ...meta, _finalScore: finalScore };
+        }
+
+        // Legacy JS scoring (Standard backend, archive events, fallback path).
+        // When hybrid is active, metadata carries vectorScore (raw cosine) separately
+        // from the fusion score stored in .score. Prefer vectorScore so the re-ranker's
+        // cosine weight retains its correct semantic meaning regardless of fusion method.
         const cosineScore = typeof meta.vectorScore === 'number'
             ? meta.vectorScore
             : (typeof meta.score === 'number' ? meta.score : 0);
         const importanceNorm = (meta.importance ?? 5) / 10;
         const persistBonus = meta.should_persist === true ? 1 : 0;
         const recencyBonus = _recencyBonus(meta, chatLength);
-
-        // Anchor boost: rescues historically-distant events that the user explicitly
-        // asked about via keyword substring match. If any of the event's stored
-        // keywords (>= 2 chars to skip noise) appears verbatim in the user's last
-        // message, the event gets a flat additive boost that pushes it past several
-        // unmatched events even if their semantic scores are slightly higher.
-        //
-        // Configurable via `eventbase_anchor_boost` (Core tab slider, 0.00-0.50,
-        // default 0.20). Setting to 0 disables the boost (useful when measuring
-        // agentic-mode-only contribution to recall).
-        const anchorBoostAmount = typeof settings.eventbase_anchor_boost === 'number'
-            ? Math.max(0, Math.min(0.5, settings.eventbase_anchor_boost))
-            : 0.20;
-        const anchorBoost = anchorBoostAmount > 0 && anchorText && (meta.keywords || []).some(
-            k => k.length >= 2 && anchorText.includes(k.toLowerCase())
-        ) ? anchorBoostAmount : 0;
 
         const finalScore =
             weights.cosine * cosineScore +
@@ -348,6 +583,10 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     const contextDedupedEvents = (skipContextDedup || dedupDepth <= 0)
         ? dedupedEvents
         : dedupedEvents.filter(e => {
+            // _rerankApplied events were already filtered server-side by the
+            // outer range filter in the formula query (when applyContextDedupFilter
+            // was true). Don't re-filter them or we'd double-apply.
+            if (e._rerankApplied) return true;
             const windowEnd = e.source_window_end ?? -1;
             const inRecentContext = windowEnd >= visibleThreshold;
             if (inRecentContext && debugLog) {
@@ -378,6 +617,8 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
             keywordScoringMethod: ebSettings.keyword_scoring_method,
             nativeHybridPrefer: settings.hybrid_native_prefer !== false,
             fusionMethod: settings.hybrid_fusion_method || 'rrf',
+            nativeRerank: useNativeRerank,
+            rerankComparison: comparisonLog || undefined,
             rawCount: rawCandidates.length,
             archiveCandidates: additionalCandidates?.length || 0,
             afterImportanceFilter: importanceFiltered.length,

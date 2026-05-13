@@ -870,4 +870,132 @@ export class QdrantBackend extends VectorBackend {
 
         return this.queryCollection(collectionId, searchText, topK, settings);
     }
+
+    /**
+     * Hybrid query + server-side EventBase re-rank in one call.
+     *
+     * Posts to `/api/plugins/similharity/chunks/hybrid-query-rerank`, which wraps
+     * the dense + sparse + RRF hybrid in an outer Qdrant `formula` query that
+     * computes the EventBase weighted score (cosine × $score + importance + persist
+     * + recency decay) server-side, plus min-importance + dedup-depth filters.
+     *
+     * Returns the same envelope shape as `hybridQuery()` but `score` is the
+     * post-formula re-ranked score. Anchor boost, pairwise dedup, and cross-
+     * collection merge still run client-side in eventbase-retrieval.js.
+     *
+     * Falls back to `hybridQuery()` on any error (plugin returns 400 when Qdrant
+     * version is < 1.13). Caller can also pre-check by issuing a hybrid query and
+     * observing the response, but the route's own version check is authoritative.
+     *
+     * @param {string} collectionId
+     * @param {string} searchText
+     * @param {number} topK - Outer formula limit (typically finalTopK × 2 for dedup overfetch)
+     * @param {object} settings - VectHare settings
+     * @param {object} rerankParams - { weights, chatLength, halfLife, minImportance, visibleThreshold, applyContextDedupFilter, rrfScoreScale? }
+     * @param {object} hybridOptions - { prefetchLimit }
+     * @returns {Promise<{hashes:number[], metadata:object[]}>}
+     */
+    async hybridQueryWithRerank(collectionId, searchText, topK, settings, rerankParams, hybridOptions = {}) {
+        const strippedCollectionId = this._stripRegistryPrefix(collectionId);
+        const actualCollectionId = getActualCollectionId(strippedCollectionId, settings);
+
+        // Same sparse-query encoding path as hybridQuery() — including the
+        // tokenizer-mode lock. If sparse setup fails, fall back to vector-only
+        // (matches the legacy behavior).
+        let sparseQueryVector;
+        try {
+            const { detectTokenizerMismatch, showTokenizerMismatchModal } = await import('../core/tokenizer-lock.js');
+            const mismatch = await detectTokenizerMismatch(settings, actualCollectionId);
+            if (mismatch) {
+                const choice = await showTokenizerMismatchModal(mismatch, actualCollectionId);
+                if (choice === 'revert') {
+                    settings.cjk_tokenizer_mode = mismatch.saved;
+                    try {
+                        const { setCjkTokenizerMode } = await import('../core/bm25-scorer.js');
+                        setCjkTokenizerMode(mismatch.saved);
+                    } catch { /* tolerate */ }
+                } else if (choice === 'settings' || choice === 'cancel') {
+                    return { hashes: [], metadata: [] };
+                }
+            }
+            const { encodeSparseQuery } = await import('../core/sparse-vector-encoder.js');
+            sparseQueryVector = encodeSparseQuery(searchText);
+        } catch (error) {
+            console.warn('[Qdrant] sparse query setup failed (rerank path):', error?.message);
+            return this.queryCollection(collectionId, searchText, topK, settings);
+        }
+
+        const body = {
+            backend: BACKEND_TYPE,
+            collectionId: actualCollectionId,
+            searchText,
+            topK,
+            threshold: 0.0,
+            source: settings.source || 'transformers',
+            model: getModelFromSettings(settings),
+            hybrid: true,
+            hybridOptions: {
+                eventbaseDebug: !!settings.eventbase_debug_qdrant_backend,
+                prefetchLimit: hybridOptions.prefetchLimit || topK * 4,
+            },
+            sparseQueryVector,
+            rerankParams,
+        };
+
+        if (settings.qdrant_multitenancy) {
+            body.filter = {
+                must: [
+                    { key: 'content_type', match: { value: strippedCollectionId } }
+                ]
+            };
+        }
+
+        if (settings.eventbase_debug_logging) {
+            const preview = String(searchText || '').replace(/\s+/g, ' ').slice(0, 280);
+            console.log(`[EventBase] Hybrid+rerank request: collection=${body.collectionId}, topK=${topK}, sparse=${sparseQueryVector.indices.length} tokens, preview="${preview}"`);
+        }
+
+        const tNetStart = performance.now();
+
+        try {
+            const response = await fetch('/api/plugins/similharity/chunks/hybrid-query-rerank', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify(body),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const totalMs = (performance.now() - tNetStart).toFixed(1);
+                console.log(`[Qdrant timing] hybrid+rerank total=${totalMs}ms, results=${data.results?.length || 0}`);
+
+                return {
+                    hashes: data.results.map(r => r.hash),
+                    metadata: data.results.map(r => ({
+                        hash: r.hash,
+                        text: r.text,
+                        score: r.score,                  // = formula score
+                        formulaScore: r.formulaScore,
+                        fusionMethod: r.fusionMethod || 'rrf',
+                        hybridSearch: true,
+                        nativeSparse: true,
+                        rerankApplied: true,
+                        ...r.metadata,
+                    }))
+                };
+            }
+
+            const errorBody = await response.text().catch(() => '(no body)');
+            const failMs = (performance.now() - tNetStart).toFixed(1);
+            console.warn(`[Qdrant timing] hybrid+rerank FAILED after ${failMs}ms (HTTP ${response.status}), falling back to hybridQuery. Server said: ${errorBody.slice(0, 500)}`);
+        } catch (error) {
+            const failMs = (performance.now() - tNetStart).toFixed(1);
+            console.warn(`[Qdrant timing] hybrid+rerank FAILED after ${failMs}ms (exception):`, error.message);
+        }
+
+        // Fallback: regular hybridQuery (no server-side rerank). The caller
+        // (eventbase-retrieval) will then need to apply JS re-rank itself; the
+        // result lacks `rerankApplied: true` so the caller can detect and branch.
+        return this.hybridQuery(collectionId, searchText, topK, settings, hybridOptions);
+    }
 }

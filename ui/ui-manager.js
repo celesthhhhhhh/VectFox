@@ -501,6 +501,26 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <small class="vecthare_hint">EventBase only. Flat additive bonus when an event's stored keyword appears verbatim in your last message. Rescues historically-distant events the user explicitly asks about. 0 = disabled. Range 0.00-0.50, default 0.20.</small>
 
                                 <div style="margin-top: 12px;">
+                                    <label class="checkbox_label" for="vecthare_eventbase_native_rerank">
+                                        <input id="vecthare_eventbase_native_rerank" type="checkbox" />
+                                        <span>Push EventBase re-rank to Qdrant (experimental)</span>
+                                    </label>
+                                    <small class="vecthare_hint">A3 (Qdrant) only. Computes importance/persist/recency weighted scoring inside Qdrant via a formula query, in the same /query call as the dense+sparse hybrid. Anchor boost and pairwise dedup still run locally. Requires Qdrant 1.13+; falls back gracefully when unavailable. Re-tune the cosine weight if recall changes — see plans/qdrant-native-eventbase-rerank-formula.md.</small>
+
+                                    <label class="checkbox_label" for="vecthare_eventbase_compare_rerank" style="margin-top: 6px; display: flex;">
+                                        <input id="vecthare_eventbase_compare_rerank" type="checkbox" />
+                                        <span>Compare native vs JS re-rank (debug)</span>
+                                    </label>
+                                    <small class="vecthare_hint">Requires native re-rank ON and Debug Logging ON. Runs the JS pipeline in parallel for each (collection, queryText) and logs top-K overlap + Spearman ρ + timings. Doubles per-collection cost — debug only.</small>
+
+                                    <label class="checkbox_label" for="vecthare_eventbase_compare_rerank_verbose" style="margin-top: 6px; display: flex;">
+                                        <input id="vecthare_eventbase_compare_rerank_verbose" type="checkbox" />
+                                        <span>Verbose compare logs (per-event breakdown)</span>
+                                    </label>
+                                    <small class="vecthare_hint">Adds per-event score-component breakdowns for events present in both top-K lists. Verbose — enable only when investigating a specific divergence.</small>
+                                </div>
+
+                                <div style="margin-top: 12px;">
                                     <label class="checkbox_label" for="vecthare_retrieval_popup_on_start">
                                         <input id="vecthare_retrieval_popup_on_start" type="checkbox" />
                                         <span>Popup: show when backend retrieval starts</span>
@@ -3333,6 +3353,33 @@ function bindSettingsEvents(settings, callbacks) {
             // Merged control: one checkbox drives both EventBase and vectorizing logs.
             settings.debug_vectorizing_log = enabled;
             settings.eventbase_debug_logging = enabled;
+            Object.assign(extension_settings.vecthareplus, settings);
+            saveSettingsDebounced();
+        });
+
+    // EventBase native rerank toggle (A3 / Qdrant only).
+    $('#vecthare_eventbase_native_rerank')
+        .prop('checked', !!settings.eventbase_native_rerank)
+        .on('change', function() {
+            settings.eventbase_native_rerank = $(this).prop('checked');
+            Object.assign(extension_settings.vecthareplus, settings);
+            saveSettingsDebounced();
+        });
+
+    // Compare-mode toggle (debug-only observability for native rerank).
+    $('#vecthare_eventbase_compare_rerank')
+        .prop('checked', !!settings.eventbase_compare_rerank)
+        .on('change', function() {
+            settings.eventbase_compare_rerank = $(this).prop('checked');
+            Object.assign(extension_settings.vecthareplus, settings);
+            saveSettingsDebounced();
+        });
+
+    // Compare-mode verbose toggle.
+    $('#vecthare_eventbase_compare_rerank_verbose')
+        .prop('checked', !!settings.eventbase_compare_rerank_verbose)
+        .on('change', function() {
+            settings.eventbase_compare_rerank_verbose = $(this).prop('checked');
             Object.assign(extension_settings.vecthareplus, settings);
             saveSettingsDebounced();
         });

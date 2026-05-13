@@ -201,6 +201,22 @@ const defaultSettings = {
     // (windows 0-9 apart) while keeping genuinely distinct scenes 10+ msgs away.
     eventbase_dedup_window_gap: 10,
 
+    // Native rerank: push importance filter + dedup-depth filter + weighted-sum
+    // scoring into Qdrant via a formula query, in the same /query call as the
+    // dense+sparse RRF hybrid. A3 (Qdrant) only — Standard backend ignores this.
+    // Default off until eval window passes. Requires Qdrant 1.13+; falls back
+    // gracefully to the JS re-rank pipeline when the route returns an error.
+    // See plans/qdrant-native-eventbase-rerank-formula.md.
+    eventbase_native_rerank: false,
+    // Compare mode: when native rerank is on, also run the JS pipeline in
+    // parallel and log per-(collection,queryText) rank correlation + overlap.
+    // Doubles per-collection cost when on — debug only. Requires
+    // eventbase_debug_logging to surface logs.
+    eventbase_compare_rerank: false,
+    // Verbose compare-mode logging: also print per-event score breakdowns for
+    // events present in both top-K lists.
+    eventbase_compare_rerank_verbose: false,
+
     // ─── AgentMode (Agentic Retrieval) ──────────────────────────────────
     // Optional LLM planner step that consumes pre-search candidates plus
     // recent chat context and emits 1-4 follow-up queries which fan out in

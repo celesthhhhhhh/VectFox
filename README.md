@@ -193,7 +193,7 @@ The browser only handles anchor boost (phrase matching), pairwise dedup, and the
 
 **Example:** Searching "I cast Fireball at the dragon." Qdrant searches dense (spell/attack meanings) and sparse (literal "Fireball" + "dragon") at the same time, fuses via RRF, ranks by importance/recency formula, filters low-importance events — and returns the final ready-to-inject list in one call.
 
-**Tradeoff:** Best accuracy, fastest at scale. Requires a Qdrant instance (free, open-source, ~1 GB RAM idle).
+**Tradeoff:** Best accuracy, fastest at scale. Requires a Qdrant instance (free, open-source).
 
 | What runs where | A1 — Standard + BM25 | A2 — Standard + Hybrid | A3 — Qdrant Native |
 |---|---|---|---|

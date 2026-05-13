@@ -570,17 +570,27 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
             if (!withinWindow) continue;
 
             // Score-based escape hatch: high-similarity candidates survive dedup.
-            const candSim = _candidateSimScore(candidate);
-            if (candSim >= DUPLICATE_SCORE_OVERRIDE) {
-                if (debugLog) {
-                    console.log(`[EventBase] Dedup: "${candidate.event_type}" ESCAPED dedup via score override (sim=${candSim.toFixed(3)} >= ${DUPLICATE_SCORE_OVERRIDE}, windows ${haveTiming ? Math.abs(aEnd - cEnd) + ' msgs' : '?'} apart)`);
+            // IMPORTANT: only apply on the JS path, where `score` is raw cosine /
+            // RRF similarity (typically 0.2-0.6, threshold 0.75 is a real signal).
+            // For `_rerankApplied` (Qdrant native formula path), `score` is the
+            // server-side weighted sum (cosine·RRF + importance + persist + recency)
+            // which routinely lands at 0.8-1.5+ for important persistent events —
+            // applying the same 0.75 threshold would ALWAYS escape dedup and let
+            // ingestion duplicates fill every slot (see Qdrant duplicate-fill bug).
+            if (!candidate._rerankApplied) {
+                const candSim = _candidateSimScore(candidate);
+                if (candSim >= DUPLICATE_SCORE_OVERRIDE) {
+                    if (debugLog) {
+                        console.log(`[EventBase] Dedup: "${candidate.event_type}" ESCAPED dedup via score override (sim=${candSim.toFixed(3)} >= ${DUPLICATE_SCORE_OVERRIDE}, windows ${haveTiming ? Math.abs(aEnd - cEnd) + ' msgs' : '?'} apart)`);
+                    }
+                    continue;  // not a duplicate after all — let it through
                 }
-                continue;  // not a duplicate after all — let it through
             }
 
             isDuplicate = true;
             if (debugLog) {
-                console.log(`[EventBase] Dedup: "${candidate.event_type}" suppressed (sim=${candSim.toFixed(3)}, ${haveTiming ? `windows ${Math.abs(aEnd - cEnd)} msgs apart` : 'no timing info'})`);
+                const simForLog = _candidateSimScore(candidate);
+                console.log(`[EventBase] Dedup: "${candidate.event_type}" suppressed (sim=${simForLog.toFixed(3)}${candidate._rerankApplied ? ' [formula]' : ''}, ${haveTiming ? `windows ${Math.abs(aEnd - cEnd)} msgs apart` : 'no timing info'})`);
             }
             break;
         }

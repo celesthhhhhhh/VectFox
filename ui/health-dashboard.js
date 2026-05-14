@@ -319,7 +319,7 @@ export function getHealthModalHtml() {
 /**
  * Run a health probe and refresh the indicator dot.
  */
-async function refreshIndicator() {
+export async function refreshIndicator() {
     const indicator = document.getElementById('VectFox_health_indicator');
     if (!indicator) return;
     const currentBackend = getCurrentBackend();
@@ -354,11 +354,8 @@ export function initializeHealthDashboard() {
         if (isOpening) refreshIndicator();
     });
 
-    // Probe immediately on init (panel is being rendered / re-rendered)
+    // Probe immediately on init (Action tab is the default tab on load)
     refreshIndicator();
-
-    // Update health indicator periodically with an active probe
-    setInterval(refreshIndicator, 30000);
 }
 
 /**

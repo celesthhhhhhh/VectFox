@@ -21,7 +21,7 @@ import { openSearchDebugModal, openQueryTestModal, getLastSearchDebug } from './
 import { openTextCleaningManager } from './text-cleaning-manager.js';
 import { progressTracker } from './progress-tracker.js';
 import { resetBackendHealth } from '../backends/backend-manager.js';
-import { getHealthIndicatorHtml, getHealthModalHtml, initializeHealthDashboard } from './health-dashboard.js';
+import { getHealthIndicatorHtml, getHealthModalHtml, initializeHealthDashboard, refreshIndicator as refreshHealthIndicator } from './health-dashboard.js';
 import { doesChatHaveVectors, getCollectionRegistry } from '../core/collection-loader.js';
 import { parseRegistryKey } from '../core/collection-ids.js';
 import { getModelField } from '../core/providers.js';
@@ -1523,7 +1523,9 @@ function initializeCollapsibleCards() {
             // Show only the matching tab panel
             $('[data-vectfox-tab]', '#VectFox_settings').removeClass('vectfox-tab-active');
             $(`[data-vectfox-tab="${tab}"]`, '#VectFox_settings').addClass('vectfox-tab-active');
+            if (tab === 'action') refreshHealthIndicator();
             if (tab === 'worldinfo') refreshWIStatus();
+            if (tab === 'autosync') refreshAutoSyncCheckbox(settings);
         });
     }
 

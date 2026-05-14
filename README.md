@@ -6,7 +6,6 @@
 
 **Languages:** **English** | [繁體中文](README_ZH.md) | [日本語](README_JP.md) | [한국어](README_KR.md)
 
-
 ![](assets/20260514_163417_vectfox.jpg)
 
 ---
@@ -27,6 +26,8 @@ Ordinary SillyTavern memory extensions completely buckle under this load, especi
 Most memory extensions are designed for chats with 100 messages or fewer, and they work perfectly well at that scale. But as the chat grows past that, they're forced to summarize older messages more and more aggressively. You end up with full detail on recent history and a heavily compressed blur for everything older — and there's no real way around it, because you simply can't fit 100+ messages worth of raw context into the prompt or auto-created lorebook entries. Old memory *has* to be compressed, which means detail is lost.
 
 Cars with square wheels will never solve the problem, no matter how much you fine-tune them. I need the right tool for the job. What I actually need is a dedicated vector database backend to properly store all these memories.
+
+***I decided to build an architecturally correct memory system for SillyTavern that is close to production grade. Let's make memory hardcore!***
 
 To tackle this, VectFox uses a dedicated vector database that stores **every single meaningful event** from the chat. Whether it's the first message or the 2,000th, every meaningful event stays in the database and is always available for SillyTavern to search.  I want a production grade memory vector system for SillyTavern which is scalable to 10k+ messages and round trip time within seconds.
 

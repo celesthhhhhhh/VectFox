@@ -2907,15 +2907,16 @@ function bindSettingsEvents(settings, callbacks) {
                 if (!entries || entries.length === 0) {
                     try {
                         console.log('VectFox: No semantic entries — dumping registry and per-collection query info...');
-                        const registry = window.extension_settings?.VectFox?.VectFox_collection_registry || settings.VectFox_collection_registry || [];
+                        const registry = getCollectionRegistry();
                         console.log('VectFox: Collection registry:', registry);
 
                         const coreApi = await import('../core/core-vector-api.js');
                         const metaMod = await import('../core/collection-metadata.js');
 
-                        for (const collKey of registry) {
+                        for (const registryKey of registry) {
                             try {
-                                if (!collKey.includes('lorebook')) continue; // focus on lorebooks
+                                const collKey = parseRegistryKey(registryKey).collectionId;
+                                if (!collKey.startsWith('vf_lorebook_')) continue; // focus on lorebooks
                                 const meta = metaMod.getCollectionMeta(collKey);
                                 console.log(`VectFox: Collection meta for ${collKey}:`, meta);
 
@@ -2976,7 +2977,7 @@ function bindSettingsEvents(settings, callbacks) {
 
     $('#VectFox_wi_dump_registry').on('click', function() {
         try {
-            const registry = window.extension_settings?.VectFox?.VectFox_collection_registry || settings.VectFox_collection_registry || [];
+            const registry = getCollectionRegistry();
             console.log('VectFox: Collection registry dump:', registry);
             toastr.info(`Collection registry dumped to console (${registry.length} items)`);
         } catch (e) {

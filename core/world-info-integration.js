@@ -12,6 +12,7 @@
 
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { queryCollection } from './core-vector-api.js';
+import { getCollectionRegistry } from './collection-loader.js';
 import { getCollectionMeta, isCollectionEnabled, shouldCollectionActivate } from './collection-metadata.js';
 import { parseRegistryKey } from './collection-ids.js';
 // Lorebook collection ID lookup uses registry scan (see _findLorebookRegistryEntry below);
@@ -136,11 +137,12 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
  */
 async function getEnabledLorebookCollections(settings, searchContext) {
     const collections = [];
-    const collectionRegistry = settings.VectFox_collection_registry || [];
+    const collectionRegistry = getCollectionRegistry();
 
-    for (const collectionId of collectionRegistry) {
+    for (const registryKey of collectionRegistry) {
+        const collectionId = parseRegistryKey(registryKey).collectionId;
         // Check if this is a lorebook collection
-        if (!collectionId.includes('lorebook')) {
+        if (!collectionId.startsWith('vf_lorebook_')) {
             continue;
         }
 
@@ -224,7 +226,7 @@ function _findLorebookRegistryEntry(lorebookName, settings) {
     const lorebookPrefix = 'vf_lorebook_';
     const nameNeedle = `_${sanitizedName}_`;
 
-    const registry = settings.VectFox_collection_registry || [];
+    const registry = getCollectionRegistry();
     for (const key of registry) {
         // Registry keys can be "backend:collectionId" or bare "collectionId".
         const id = String(key).includes(':') ? String(key).split(':').slice(1).join(':') : String(key);

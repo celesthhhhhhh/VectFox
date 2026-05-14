@@ -17,7 +17,7 @@ import { getWebLlmProvider as getSharedWebLlmProvider } from '../providers/webll
 import { openVisualizer } from './chunk-visualizer.js';
 import { openDatabaseBrowser } from './database-browser.js';
 import { openContentVectorizer } from './content-vectorizer.js';
-import { openSearchDebugModal, getLastSearchDebug } from './search-debug.js';
+import { openSearchDebugModal, openQueryTestModal, getLastSearchDebug } from './search-debug.js';
 import { openTextCleaningManager } from './text-cleaning-manager.js';
 import { progressTracker } from './progress-tracker.js';
 import { resetBackendHealth } from '../backends/backend-manager.js';
@@ -3795,7 +3795,7 @@ function bindSettingsEvents(settings, callbacks) {
         openDatabaseBrowser();
     });
     $('#VectFox_view_results').on('click', () => {
-        openSearchDebugModal();
+        openQueryTestModal();
     });
     $('#VectFox_text_cleaning').on('click', () => {
         openTextCleaningManager();

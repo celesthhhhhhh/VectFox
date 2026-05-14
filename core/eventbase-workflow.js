@@ -378,7 +378,7 @@ function _gatherLockedEventBaseCollections(currentChatId, debugLog) {
  * @param {string}  [params.chatUUID]  - Override chat UUID
  * @returns {Promise<void>}
  */
-export async function runEventBaseRetrieval({ chat, searchText, settings, chatUUID }) {
+export async function runEventBaseRetrieval({ chat, searchText, settings, chatUUID, dryRun = false, testMessage = null }) {
     const debugLog = settings.eventbase_debug_logging;
     const uuid = chatUUID || getChatUUID();
     const currentChatId = getCurrentChatId();
@@ -400,6 +400,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
 
     if (!queryEventbase && archiveCollections.length === 0) {
         if (debugLog) console.log('[EventBase] No live collection and no archive collections — skipping Phase A');
+        if (dryRun) return { injectionText: null, eventCount: 0 };
         setExtensionPrompt(EVENTBASE_PROMPT_TAG, '', settings.position, settings.depth, false);
         return;
     }
@@ -408,15 +409,17 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
         console.log(`[EventBase] Phase A: live=${queryEventbase}, archiveCollections=${archiveCollections.length}, searchText length=${searchText?.length}`);
     }
 
-    if (settings.retrieval_popup_on_start) {
+    if (settings.retrieval_popup_on_start && !dryRun) {
         toastr.info('Retrieving context from EventBase...', 'VectFox Retrieval');
     }
 
     // Extract the user's most recent message for focused keyword extraction.
+    // In dryRun / testMessage mode the caller supplies the message directly.
     const lastUserMessage = [...(chat || [])]
         .reverse()
         .find(m => !m.is_system && m.is_user);
-    const keywordQuery = lastUserMessage?.mes?.trim() || null;
+    const keywordQuery = testMessage || lastUserMessage?.mes?.trim() || null;
+    const effectiveSearchText = testMessage || searchText;
 
     if (debugLog && keywordQuery) {
         console.log(`[EventBase] Keyword query (user last message, ${keywordQuery.length} chars):`, keywordQuery.slice(0, 120));
@@ -429,7 +432,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     const ebSettings = { ...settings, keyword_scoring_method: settings.eventbase_keyword_scoring_method || 'bm25' };
     const archiveEventPromises = archiveCollections.map(async ({ collectionId: archColId }) => {
         try {
-            const { hashes, metadata } = await queryCollection(archColId, searchText, topK, ebSettings);
+            const { hashes, metadata } = await queryCollection(archColId, effectiveSearchText, topK, ebSettings);
             if (!hashes?.length) return [];
             return metadata.map((meta, i) => ({ ...meta, _hash: hashes[i] }));
         } catch (err) {
@@ -457,7 +460,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     // making it a safe drop-in replacement.
     const retrieveFn = settings.agentic_retrieval_enabled ? retrieveEventsWithAgent : retrieveEvents;
     const { events, debug } = await retrieveFn({
-        searchText,
+        searchText: effectiveSearchText,
         keywordQuery,
         chatLength: getContext().chat?.length || chat?.length || 0,
         settings,
@@ -473,6 +476,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
 
     if (!events?.length) {
         if (debugLog) console.log('[EventBase] No events to inject');
+        if (dryRun) return { injectionText: null, eventCount: 0 };
         if (settings.retrieval_popup_on_result) {
             const rawCount = debug?.rawCount ?? 0;
             const msg = rawCount > 0
@@ -489,6 +493,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     const injectedCount = injectionResult.includedCount;
     if (!injectionText) {
         if (debugLog) console.log('[EventBase] Injection text empty after formatting');
+        if (dryRun) return { injectionText: null, eventCount: 0 };
         setExtensionPrompt(EVENTBASE_PROMPT_TAG, '', settings.position, settings.depth, false);
         return;
     }
@@ -503,6 +508,11 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     const xmlTag = settings.rag_xml_tag || '';
     if (xmlTag) {
         injectionText = `<${xmlTag}>\n${injectionText}\n</${xmlTag}>`;
+    }
+
+    // Dry-run: return text without touching the extension prompt slot
+    if (dryRun) {
+        return { injectionText, eventCount: injectedCount };
     }
 
     // Clear any previous EventBase injection

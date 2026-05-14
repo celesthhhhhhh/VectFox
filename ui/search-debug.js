@@ -1663,3 +1663,122 @@ function bindEvents() {
         $(this).find('i').toggleClass('fa-chevron-down fa-chevron-up');
     });
 }
+
+// ============================================================================
+// EVENTBASE QUERY TESTER
+// ============================================================================
+
+/**
+ * Opens the EventBase Query Tester modal.
+ * The user types a test message, clicks Run, and sees the exact
+ * <VectFoxMemory> block that would be injected for that message —
+ * using all current settings (agentic mode, filters, locked collections).
+ */
+export function openQueryTestModal() {
+    $('#VectFox_query_tester_modal').remove();
+
+    const html = `
+        <div id="VectFox_query_tester_modal" class="vectfox-modal" style="display:none;">
+            <div class="vectfox-modal-overlay"></div>
+            <div class="vectfox-modal-content" style="max-width:660px; max-height:88vh; display:flex; flex-direction:column;">
+                <div class="vectfox-modal-header">
+                    <h3><i class="fa-solid fa-flask"></i> EventBase Query Tester</h3>
+                    <button class="vectfox-modal-close" id="VectFox_qtester_close">✕</button>
+                </div>
+                <div class="vectfox-modal-body" style="padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex:1 1 auto;">
+                    <small style="color:var(--SmartThemeQuoteColor,#999);">
+                        Type a test message to preview which EventBase memories would be retrieved.
+                        Uses all current settings — agentic mode, planner filters, locked collections.
+                        The real prompt injection is <b>not</b> affected.
+                    </small>
+                    <textarea id="VectFox_qtester_input"
+                        class="text_pole"
+                        placeholder="e.g. 你還記得為甚麼幫你贖身嗎?"
+                        rows="3"
+                        style="resize:vertical; width:100%; box-sizing:border-box;"></textarea>
+                    <button id="VectFox_qtester_run" class="menu_button" style="align-self:flex-start;">
+                        <i class="fa-solid fa-play"></i>&nbsp;Run Retrieval
+                    </button>
+                    <div id="VectFox_qtester_status" style="display:none; color:var(--SmartThemeQuoteColor,#999); font-size:0.85em;">
+                        <i class="fa-solid fa-spinner fa-spin"></i>&nbsp;Running retrieval…
+                    </div>
+                    <div id="VectFox_qtester_result" style="display:none; flex-direction:column; gap:6px;">
+                        <small id="VectFox_qtester_meta" style="color:var(--SmartThemeQuoteColor,#999);"></small>
+                        <textarea id="VectFox_qtester_output"
+                            readonly
+                            rows="20"
+                            style="width:100%; box-sizing:border-box; font-family:monospace; font-size:0.78em; resize:vertical; white-space:pre;"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    $('body').append(html);
+
+    // Prevent SillyTavern from closing drawers on mousedown inside modal
+    $('#VectFox_query_tester_modal').on('mousedown touchstart', e => e.stopPropagation());
+
+    // Close on ✕ button or backdrop click
+    $('#VectFox_qtester_close').on('click', _closeQueryTester);
+    $('#VectFox_query_tester_modal').on('click', function (e) {
+        if (e.target === this) _closeQueryTester();
+    });
+
+    // Run button
+    $('#VectFox_qtester_run').on('click', async function () {
+        const testMessage = $('#VectFox_qtester_input').val().trim();
+        if (!testMessage) {
+            toastr.warning('Enter a test message first.', 'VectFox');
+            return;
+        }
+
+        $('#VectFox_qtester_run').prop('disabled', true);
+        $('#VectFox_qtester_status').show();
+        $('#VectFox_qtester_result').hide().css('display', 'none');
+
+        try {
+            const [{ extension_settings, getContext }, { runEventBaseRetrieval }] = await Promise.all([
+                import('../../../../extensions.js'),
+                import('../core/eventbase-workflow.js'),
+            ]);
+
+            const settings = extension_settings.vectfox;
+            const { chat } = getContext();
+
+            const result = await runEventBaseRetrieval({
+                chat,
+                searchText: testMessage,
+                settings,
+                dryRun: true,
+                testMessage,
+            });
+
+            $('#VectFox_qtester_status').hide();
+
+            if (result?.injectionText) {
+                $('#VectFox_qtester_meta').text(`${result.eventCount ?? '?'} event(s) retrieved`);
+                $('#VectFox_qtester_output').val(result.injectionText);
+            } else {
+                $('#VectFox_qtester_meta').text('No events retrieved');
+                $('#VectFox_qtester_output').val(
+                    '(no events matched — verify a collection is locked to this chat)'
+                );
+            }
+            $('#VectFox_qtester_result').css('display', 'flex').show();
+        } catch (err) {
+            $('#VectFox_qtester_status').hide();
+            console.error('[VectFox Query Tester]', err);
+            toastr.error(`Retrieval failed: ${err.message}`, 'VectFox');
+        } finally {
+            $('#VectFox_qtester_run').prop('disabled', false);
+        }
+    });
+
+    $('#VectFox_query_tester_modal').fadeIn(200);
+    setTimeout(() => $('#VectFox_qtester_input').focus(), 250);
+}
+
+function _closeQueryTester() {
+    $('#VectFox_query_tester_modal').fadeOut(200, function () { $(this).remove(); });
+}

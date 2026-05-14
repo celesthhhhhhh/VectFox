@@ -1,66 +1,28 @@
-[similharity] chunks/hybrid-query-rerank error: ReferenceError: _getVllmEmbedding is not defined
-    at getEmbeddingForSource (file:///home/node/app/plugins/similharity/index.js:1744:13)
-    at file:///home/node/app/plugins/similharity/index.js:1423:32
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/node/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/node/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at /home/node/app/node_modules/express/lib/router/index.js:284:15
-    at router.process_params (/home/node/app/node_modules/express/lib/router/index.js:346:12)
-    at next (/home/node/app/node_modules/express/lib/router/index.js:280:10)
-    at router.handle (/home/node/app/node_modules/express/lib/router/index.js:175:3)
-[similharity] chunks/hybrid-query error: ReferenceError: _getVllmEmbedding is not defined
-    at getEmbeddingForSource (file:///home/node/app/plugins/similharity/index.js:1744:13)
-    at file:///home/node/app/plugins/similharity/index.js:1328:32
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/node/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/node/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at /home/node/app/node_modules/express/lib/router/index.js:284:15
-    at router.process_params (/home/node/app/node_modules/express/lib/router/index.js:346:12)
-    at next (/home/node/app/node_modules/express/lib/router/index.js:280:10)
-    at router.handle (/home/node/app/node_modules/express/lib/router/index.js:175:3)
-[similharity] chunks/query error: ReferenceError: _getVllmEmbedding is not defined
-    at getEmbeddingForSource (file:///home/node/app/plugins/similharity/index.js:1744:13)
-    at file:///home/node/app/plugins/similharity/index.js:1268:32
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/node/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/node/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at /home/node/app/node_modules/express/lib/router/index.js:284:15
-    at router.process_params (/home/node/app/node_modules/express/lib/router/index.js:346:12)
-    at next (/home/node/app/node_modules/express/lib/router/index.js:280:10)
-    at router.handle (/home/node/app/node_modules/express/lib/router/index.js:175:3)
-[similharity] chunks/hybrid-query error: ReferenceError: _getVllmEmbedding is not defined
-    at getEmbeddingForSource (file:///home/node/app/plugins/similharity/index.js:1744:13)
-    at file:///home/node/app/plugins/similharity/index.js:1328:32
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/node/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/node/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at /home/node/app/node_modules/express/lib/router/index.js:284:15
-    at router.process_params (/home/node/app/node_modules/express/lib/router/index.js:346:12)
-    at next (/home/node/app/node_modules/express/lib/router/index.js:280:10)
-    at router.handle (/home/node/app/node_modules/express/lib/router/index.js:175:3)
-[similharity] chunks/query error: ReferenceError: _getVllmEmbedding is not defined
-    at getEmbeddingForSource (file:///home/node/app/plugins/similharity/index.js:1744:13)
-    at file:///home/node/app/plugins/similharity/index.js:1268:32
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/node/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/node/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at /home/node/app/node_modules/express/lib/router/index.js:284:15
-    at router.process_params (/home/node/app/node_modules/express/lib/router/index.js:346:12)
-    at next (/home/node/app/node_modules/express/lib/router/index.js:280:10)
-    at router.handle (/home/node/app/node_modules/express/lib/router/index.js:175:3)
-[similharity] chunks/query error: ReferenceError: _getVllmEmbedding is not defined
-    at getEmbeddingForSource (file:///home/node/app/plugins/similharity/index.js:1744:13)
-    at file:///home/node/app/plugins/similharity/index.js:1268:32
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/home/node/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/home/node/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/home/node/app/node_modules/express/lib/router/layer.js:95:5)
-    at /home/node/app/node_modules/express/lib/router/index.js:284:15
-    at router.process_params (/home/node/app/node_modules/express/lib/router/index.js:346:12)
-    at next (/home/node/app/node_modules/express/lib/router/index.js:280:10)
-    at router.handle (/home/node/app/node_modules/express/lib/router/index.js:175:3)
+SillyTavern 1.18.0
+
+Auto-updating server plugins... Set enableServerPluginsAutoUpdate: false in config.yaml to disable this feature.
+Plugin similharity updated to commit cdabc7ca51b468f0811dc4441997ba54c2da41f8
+Initializing plugin from /home/node/app/plugins/similharity/index.js
+[similharity] Initializing v3.3.0...
+[similharity] Plugin initialized successfully
+1 server plugin(s) are currently loaded. Make sure you know exactly what they do, and only install plugins from trusted sources!
+
+Compiling frontend libraries...
+webpack 5.105.4 compiled successfully in 486 ms
+
+Launching in a browser: default...
+SillyTavern is listening on IPv4: 0.0.0.0:7598
+
+To limit connections to internal localhost only ([::1] or 127.0.0.1), change the setting in config.yaml to "listen: false".
+Check the "access.log" file in the data directory to inspect incoming connections: data/access.log
+
+=================================================
+
+Go to: http://127.0.0.1:7598/ to open SillyTavern
+
+=================================================
+
+Request from untrusted host: st.sduteam.com
+If you trust this host, you can add it to hostWhitelist.hosts in config.yaml
+To protect against host spoofing, consider setting hostWhitelist.enabled to true
+

@@ -37,7 +37,7 @@ await in runEventBaseRetrieval
 await in (anonymous)
 dispatch @ jquery-3.5.1.min.js:2
 v.handle @ jquery-3.5.1.min.js:2
-qdrant.js:990 [Qdrant timing] hybrid+rerank FAILED after 51.4ms (HTTP 500), falling back to hybridQuery. Server said: {"error":"_getVllmEmbedding is not defined"}
+qdrant.js:990 [Qdrant timing] hybrid+rerank FAILED after 43.2ms (HTTP 500), falling back to hybridQuery. Server said: {"error":"_getVllmEmbedding is not defined"}
 hybridQueryWithRerank @ qdrant.js:990
 await in hybridQueryWithRerank
 _runOneLiveQuery @ eventbase-retrieval.js:165
@@ -65,7 +65,7 @@ await in runEventBaseRetrieval
 await in (anonymous)
 dispatch @ jquery-3.5.1.min.js:2
 v.handle @ jquery-3.5.1.min.js:2
-qdrant.js:861 [Qdrant timing] FAILED after 45.7ms (HTTP 500), falling back to vector-only. Server said: {"error":"_getVllmEmbedding is not defined"}
+qdrant.js:861 [Qdrant timing] FAILED after 40.4ms (HTTP 500), falling back to vector-only. Server said: {"error":"_getVllmEmbedding is not defined"}
 hybridQuery @ qdrant.js:861
 await in hybridQuery
 hybridQueryWithRerank @ qdrant.js:999
@@ -125,7 +125,7 @@ await in runEventBaseRetrieval
 await in (anonymous)
 dispatch @ jquery-3.5.1.min.js:2
 v.handle @ jquery-3.5.1.min.js:2
-qdrant.js:861 [Qdrant timing] FAILED after 42.5ms (HTTP 500), falling back to vector-only. Server said: {"error":"_getVllmEmbedding is not defined"}
+qdrant.js:861 [Qdrant timing] FAILED after 49.9ms (HTTP 500), falling back to vector-only. Server said: {"error":"_getVllmEmbedding is not defined"}
 hybridQuery @ qdrant.js:861
 await in hybridQuery
 hybridSearch @ hybrid-search.js:95
@@ -217,7 +217,7 @@ await in runEventBaseRetrieval
 await in (anonymous)
 dispatch @ jquery-3.5.1.min.js:2
 v.handle @ jquery-3.5.1.min.js:2
-core-vector-api.js:849 [VectFox] Hybrid search (RRF) response: 0 result(s) in 132ms, scores=[]
+core-vector-api.js:849 [VectFox] Hybrid search (RRF) response: 0 result(s) in 147ms, scores=[]
 eventbase-retrieval.js:423 [EventBase] Live query: 1 collection(s) × 1 query/queries → 0 unique events
 eventbase-retrieval.js:447 [EventBase] After importance filter (>=1): 0 candidates
 eventbase-retrieval.js:644 [EventBase] Final events after dedup + trim: 0

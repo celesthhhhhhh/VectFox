@@ -28,8 +28,8 @@
 
 ### 它解決了哪些問題
 
-- 🧠 **原本的 VectFox 不會思考什麼值得記住。** VectFox 在上面加了一層由 LLM 驅動的 **EventBase** 萃取：AI 自己判斷哪些片段是「有意義的事件」，並為每個事件標上相關的人物、物品、地點與概念。
-- 🤖 **原本的 VectFox 不會推理你問了什麼**——它只做表面的文字相似度比對。VectFox 加入可選的 **Agent Mode**，用一個小型 LLM 規劃多角度搜尋，把你原本查詢字面上找不到的記憶也撈出來。
+- 🧠 **原本的 VectHare 不會思考什麼值得記住。** VectFox 在上面加了一層由 LLM 驅動的 **EventBase** 萃取：AI 自己判斷哪些片段是「有意義的事件」，並為每個事件標上相關的人物、物品、地點與概念。
+- 🤖 **原本的 VectHare 不會推理你問了什麼**——它只做表面的文字相似度比對。VectFox 加入可選的 **Agent Mode**，用一個小型 LLM 規劃多角度搜尋，把你原本查詢字面上找不到的記憶也撈出來。
 - 😩 在記憶儲存前，移除 [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) 使用的所有功能性標籤。
 - 🧠 在 [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) 的角色記憶之上，加入以故事為基礎的記憶。
 - 💸 漫長對話會讓你的 token 預算被無關的歷史內容塞爆。

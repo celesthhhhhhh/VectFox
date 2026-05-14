@@ -27,8 +27,8 @@ Cars with square wheels will never solve the problem, no matter how much you fin
 To tackle this, VectFox uses a dedicated vector database that stores **every single meaningful event** from the chat. Whether it's the first message or the 2,000th, every meaningful event stays in the database and is always available for SillyTavern to search.  I want a production grade memory vector system for SillyTavern which is scalable to 10k+ messages and round trip time within seconds.
 
 ### The Problem It Solves
-- 🧠 **The original VectFox doesn't think about what's worth remembering.** VectFox adds an LLM-driven **EventBase** extraction layer on top: the AI decides which moments are meaningful events and tags each event with the characters, items, locations, and concepts involved.
-- 🤖 **The original VectFox doesn't reason about your query** — it only matches surface-level text similarity. VectFox adds optional **Agent Mode** that uses a small LLM to plan multi-angle searches, surfacing memories your raw query wouldn't have found on its own.
+- 🧠 **The original VectHare doesn't think about what's worth remembering.** VectFox adds an LLM-driven **EventBase** extraction layer on top: the AI decides which moments are meaningful events and tags each event with the characters, items, locations, and concepts involved.
+- 🤖 **The original VectHare doesn't reason about your query** — it only matches surface-level text similarity. VectFox adds optional **Agent Mode** that uses a small LLM to plan multi-angle searches, surfacing memories your raw query wouldn't have found on its own.
 - 😩 Strip out all functional tags used by [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) before memory storage.
 - 🧠 Adding story-based memory on top of character-based memory in [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker).
 - 💸 Long conversations choke your token budget with irrelevant history.

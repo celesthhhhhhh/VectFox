@@ -9,3 +9,7 @@ To install new packages on this machine, use `winget`:
 winget install <package-id> --source winget
 ```
 Example: `winget install jqlang.jq --source winget`
+
+# Fallback or migration
+
+ALWAYS ask user when you try to do fallback or migration logic, because these logic will become very difficult to troubleshoot in the future.  Always ask user before proceed.

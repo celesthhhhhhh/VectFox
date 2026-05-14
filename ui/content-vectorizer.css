@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE CONTENT VECTORIZER STYLES
+ * VECTFOX CONTENT VECTORIZER STYLES
  * ============================================================================
  */
 
@@ -380,7 +380,7 @@
 }
 
 /* Paste Textarea */
-#vecthare_cv_paste_text {
+#VECTFOX_cv_paste_text {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid var(--SmartThemeBorderColor);
@@ -392,7 +392,7 @@
     line-height: 1.5;
 }
 
-#vecthare_cv_paste_text:focus {
+#VECTFOX_cv_paste_text:focus {
     outline: none;
     border-color: var(--vectfox-primary);
 }
@@ -1444,3 +1444,4 @@
         flex: none;
     }
 }
+

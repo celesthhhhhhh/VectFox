@@ -36,7 +36,7 @@ import { CJK_TOKENIZER_MODES, setCjkTokenizerMode, ensureJiebaTokenizerLoaded, e
  * @param {Function} callbacks.onPurge - Called when "Purge" is clicked
  * @param {Function} callbacks.onCleanupCorrupted - Called when "Cleanup Corrupted" is clicked
  * @param {Function} callbacks.onRunDiagnostics - Called when "Run Diagnostics" is clicked
- * @param {Function} callbacks.onMigrateCollections - Called when "Migrate Collections" is clicked
+ * @param {Function} callbacks.onUpgradeVectFoxV2 - Called when "Upgrade to VectFox v2" is clicked
  */
 export function renderSettings(containerId, settings, callbacks) {
     console.log('VectFox UI: Rendering settings...');
@@ -936,10 +936,12 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <i class="fa-solid fa-folder-open"></i>
                                     <span>Database Browser</span>
                                 </button>
-                                <button id="VectFox_migrate_collections" class="vectfox-action-btn vectfox-btn-secondary" title="Migrate all vecthare_* collections to new vf_* naming format">
-                                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
-                                    <span>Migrate Collections</span>
+                                <!-- DELETE-IN-FOLLOWUP: VectFox v2 upgrade button -->
+                                <button id="VectFox_upgrade_v2" class="vectfox-action-btn vectfox-btn-secondary" title="Upgrade Qdrant collections to VectFox v2 format">
+                                    <i class="fa-solid fa-arrow-up"></i>
+                                    <span>Upgrade to VectFox v2</span>
                                 </button>
+                                <!-- END DELETE-IN-FOLLOWUP -->
                                 <button id="VectFox_run_diagnostics" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-stethoscope"></i>
                                     <span>Diagnostics</span>
@@ -3781,7 +3783,13 @@ function bindSettingsEvents(settings, callbacks) {
     $('#VectFox_database_browser').on('click', () => {
         openDatabaseBrowser();
     });
-    $('#VectFox_migrate_collections').on('click', callbacks.onMigrateCollections);
+    // ──── DELETE-IN-FOLLOWUP: VectFox v2 upgrade wiring ────
+    $('#VectFox_upgrade_v2').on('click', callbacks.onUpgradeVectFoxV2);
+    // Hide upgrade button if already completed
+    if (settings.vectfox_v2_upgrade_done) {
+        $('#VectFox_upgrade_v2').hide();
+    }
+    // ──── END DELETE-IN-FOLLOWUP ────
     $('#VectFox_view_results').on('click', () => {
         openSearchDebugModal();
     });

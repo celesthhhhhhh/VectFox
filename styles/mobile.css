@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * VECTHARE MOBILE STYLES
+ * VECTFOX MOBILE STYLES
  * ============================================================================
  * Full-screen mobile modal handling following CarrotKernel's approach
  * Using aggressive !important overrides with 100vw/100vh
@@ -51,7 +51,7 @@
     .vectfox-modal-content.vectfox-database-browser-content,
     .vectfox-database-browser-content.popup,
     .vectfox-modal-content.vectfox-database-browser-content.popup,
-    #vecthare_database_browser_modal .vectfox-database-browser-content {
+    #vectfox_database_browser_modal .vectfox-database-browser-content {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
@@ -99,7 +99,7 @@
     /* CHUNK VISUALIZER - NUCLEAR FULL SCREEN */
     .vectfox-visualizer-container,
     div.vectfox-visualizer-container,
-    #vecthare_visualizer_modal .vectfox-visualizer-container {
+    #vectfox_visualizer_modal .vectfox-visualizer-container {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
@@ -221,7 +221,7 @@
     /* Close buttons - LARGE touch targets */
     .vectfox-modal-close,
     .vectfox-visualizer-close,
-    #vecthare_visualizer_close {
+    #vectfox_visualizer_close {
         width: 48px !important;
         height: 48px !important;
         min-width: 48px !important;
@@ -553,7 +553,7 @@
     .vectfox-btn-primary,
     .vectfox-btn-secondary,
     .vectfox-btn-danger,
-    button[class*="vecthare"] {
+    button[class*="vectfox"] {
         min-height: 44px !important;
         touch-action: manipulation !important;
     }
@@ -692,3 +692,4 @@
         border-bottom: none !important;
     }
 }
+

@@ -26,27 +26,15 @@ export const INTERNAL_COLLECTION_IDS = Object.freeze([
     '__vectfox_health_check__',
 ]);
 
-/** All known collection prefixes for backwards compatibility.
- * NOTE: `vecthare_*` storage prefixes are kept verbatim for on-disk compatibility
- * with existing user data. Readers support both old and new formats.
- * See plans/vectfox-rename-plan.md §1.5.
- */
+/** All known collection prefixes for new collections. */
 export const COLLECTION_PREFIXES = {
-    // New VectFox formats (used for new collections)
+    // VectFox formats
     VECTFOX_CHAT: 'vf_chat_',
     VECTFOX_LOREBOOK: 'vf_lorebook_',
     VECTFOX_CHARACTER: 'vf_character_',
     VECTFOX_DOCUMENT: 'vf_document_',
     VECTFOX_ARCHIVE_EVENT: 'vf_archiveevent_',
     VECTFOX_EVENTBASE: 'vf_eventbase_',
-
-    // Legacy VectHare formats (kept for backward read compatibility)
-    VECTHARE_CHAT: 'vecthare_chat_',
-    VECTHARE_LOREBOOK: 'vecthare_lorebook_',
-    VECTHARE_CHARACTER: 'vecthare_character_',
-    VECTHARE_DOCUMENT: 'vecthare_document_',
-    VECTHARE_ARCHIVE_EVENT: 'vecthare_archiveevent_',
-    VECTHARE_EVENTBASE: 'vecthare_eventbase_',
 };
 
 /** Collection types */
@@ -127,12 +115,12 @@ export function getChatUUID() {
 // DEAD-CHUNK-CHAT — disabled for good
 // ============================================================================
 // Chat history is hard-routed through the EventBase pipeline (see dev_helper.md §1).
-// The legacy chunk-based chat format `vecthare_chat_{handle}_{char}_{uuid}` is no
+// The legacy chunk-based chat format `vf_chat_{handle}_{char}_{uuid}` is no
 // longer produced or queried anywhere. These builders return null so any leftover
 // callers degrade gracefully (no fake IDs leaking into the registry / Qdrant).
 //
 // Search tag: DEAD-CHUNK-CHAT — used at every callsite that previously built or
-// consumed `vecthare_chat_*` IDs. Remove entirely once the codebase is fully audited.
+// consumed `vf_chat_*` IDs. Remove entirely once the codebase is fully audited.
 // ============================================================================
 
 /**
@@ -164,7 +152,7 @@ export function buildChatCollectionId(chatUUID) {
         .replace(/^_|_$/g, '')
         .substring(0, 30) || 'chat';
 
-    return `${COLLECTION_PREFIXES.VECTHARE_CHAT}${sanitizedHandle}_${sanitizedChar}_${uuid}`;
+    return `vf_chat_${sanitizedHandle}_${sanitizedChar}_${uuid}`;
     */
 }
 
@@ -179,7 +167,7 @@ export function buildLegacyChatCollectionId(chatId) {
     if (!id) {
         return null;
     }
-    return `${COLLECTION_PREFIXES.VECTHARE_CHAT}${id}`;
+    return `vf_chat_${id}`;
     */
 }
 
@@ -438,66 +426,6 @@ export function parseCollectionId(collectionId) {
         };
     }
 
-    // Legacy VECTFOX chat format: vecthare_chat_*
-    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_CHAT)) {
-        return {
-            type: COLLECTION_TYPES.CHAT,
-            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTHARE_CHAT, ''),
-            scope: COLLECTION_SCOPES.CHAT,
-            format: 'vecthare',
-        };
-    }
-
-    // Legacy VECTFOX lorebook format: vecthare_lorebook_*
-    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_LOREBOOK)) {
-        return {
-            type: COLLECTION_TYPES.LOREBOOK,
-            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTHARE_LOREBOOK, ''),
-            scope: COLLECTION_SCOPES.GLOBAL,
-            format: 'vecthare',
-        };
-    }
-
-    // Legacy VECTFOX character format: vecthare_character_*
-    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_CHARACTER)) {
-        return {
-            type: COLLECTION_TYPES.CHARACTER,
-            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTHARE_CHARACTER, ''),
-            scope: COLLECTION_SCOPES.CHARACTER,
-            format: 'vecthare',
-        };
-    }
-
-    // Legacy VECTFOX document format: vecthare_document_*
-    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_DOCUMENT)) {
-        return {
-            type: COLLECTION_TYPES.DOCUMENT,
-            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTHARE_DOCUMENT, ''),
-            scope: COLLECTION_SCOPES.GLOBAL,
-            format: 'vecthare',
-        };
-    }
-
-    // Legacy VECTFOX eventbase format: vecthare_eventbase_*
-    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE)) {
-        return {
-            type: COLLECTION_TYPES.CHAT,
-            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTHARE_EVENTBASE, ''),
-            scope: COLLECTION_SCOPES.CHAT,
-            format: 'vecthare',
-        };
-    }
-
-    // Legacy VectHare archive event format: vecthare_archiveevent_*
-    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT)) {
-        return {
-            type: COLLECTION_TYPES.ARCHIVE_EVENT,
-            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT, ''),
-            scope: COLLECTION_SCOPES.GLOBAL,
-            format: 'vecthare',
-        };
-    }
-
     // Default: unknown
     return {
         type: COLLECTION_TYPES.UNKNOWN,
@@ -522,25 +450,10 @@ export function parseCollectionId(collectionId) {
 export function buildChatSearchPatterns(chatId, chatUUID) {
     const patterns = [];
     const uuid = chatUUID || getChatUUID();
-    const id = chatId || getCurrentChatId();
 
     // Primary: UUID (the unique identifier)
     if (uuid) {
         patterns.push(uuid.toLowerCase());
-    }
-
-    // Legacy: full chatId
-    if (id) {
-        patterns.push(`${COLLECTION_PREFIXES.VECTHARE_CHAT}${id}`.toLowerCase());
-
-        // Extract character name (before " - " in filename)
-        const charNameMatch = id.match(/^([^-]+)/);
-        if (charNameMatch) {
-            const charName = charNameMatch[1].trim().toLowerCase();
-            if (charName) {
-                patterns.push(`${COLLECTION_PREFIXES.VECTHARE_CHAT}${charName}`.toLowerCase());
-            }
-        }
     }
 
     return patterns;

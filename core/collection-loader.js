@@ -61,7 +61,7 @@ export function getCollectionFilterReason(collectionId) {
     if (!collectionId || typeof collectionId !== 'string') return null;
 
     // (1) Internal VECTFOX system collections (health checks, test indexes).
-    if (collectionId.startsWith('__vecthare_')) {
+    if (collectionId.startsWith('__vectfox_')) {
         return 'internal-system';
     }
 
@@ -229,8 +229,7 @@ export async function deleteCollection(collectionId, settings, registryKey = nul
 
     // Step 4: Clear EventBase window fingerprint cache if this is an EventBase collection.
     // The UUID is always the last underscore-separated segment of the collection ID.
-    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE) ||
-        collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE)) {
+    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE)) {
         try {
             const { clearWindowCacheForChat } = await import('./eventbase-store.js');
             const chatUUID = collectionId.split('_').pop();
@@ -295,9 +294,9 @@ export function cleanupCollectionRegistry() {
 export function cleanupTestCollections() {
     const registry = getCollectionRegistry();
     const testPatterns = [
-        'vecthare_visualizer_test_',
-        '__vecthare_test_',
-        'vecthare_test_',
+        'vectfox_visualizer_test_',
+        '__vectfox_test_',
+        'vectfox_test_',
     ];
 
     const cleaned = registry.filter(id => {
@@ -731,7 +730,7 @@ async function discoverViaFallback(settings) {
 
     // 2. Probe for current chat's collection (both formats)
     if (context.chatId) {
-        // New format: vecthare_chat_{charName}_{uuid}
+        // vf_chat_{charName}_{uuid}
         const newFormatId = getChatCollectionId();
         if (newFormatId && !probed.has(newFormatId)) {
             probed.add(newFormatId);
@@ -743,7 +742,7 @@ async function discoverViaFallback(settings) {
             }
         }
 
-        // Legacy format: vecthare_chat_{chatId}
+        // Legacy format (DEAD): vf_chat_{chatId}
         const legacyFormatId = getLegacyChatCollectionId(context.chatId);
         if (legacyFormatId && !probed.has(legacyFormatId)) {
             probed.add(legacyFormatId);
@@ -763,7 +762,7 @@ async function discoverViaFallback(settings) {
         const sanitizedName = char.name.normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '_').substring(0, 30);
 
         // VECTFOX character collection format
-        const charCollectionId = `${COLLECTION_PREFIXES.VECTHARE_CHARACTER}${sanitizedName}`;
+        const charCollectionId = `${COLLECTION_PREFIXES.VECTFOX_CHARACTER}${sanitizedName}`;
         if (!probed.has(charCollectionId)) {
             probed.add(charCollectionId);
             const result = await probeCollection(charCollectionId, settings);
@@ -778,9 +777,9 @@ async function discoverViaFallback(settings) {
     // 4. Probe for common content type patterns that might exist
     const contentPatterns = [
         // Lorebook patterns
-        `${COLLECTION_PREFIXES.VECTHARE_LOREBOOK}`,
+        `${COLLECTION_PREFIXES.VECTFOX_LOREBOOK}`,
         // Document patterns
-        `${COLLECTION_PREFIXES.VECTHARE_DOCUMENT}`,
+        `${COLLECTION_PREFIXES.VECTFOX_DOCUMENT}`,
     ];
 
     // Note: Without filesystem access, we can't discover collections with unknown IDs
@@ -1070,7 +1069,7 @@ export { setCollectionEnabled, isCollectionEnabled } from './collection-metadata
 /**
  * Returns true if the collection has 0 chunks according to the plugin discovery cache.
  * Used by retrieval to skip empty collections without querying them.
- * @param {string} registryKey - e.g. "vectra:vecthare_lorebook_story1_..."
+ * @param {string} registryKey - e.g. "vectra:vf_lorebook_story1_..."
  * @returns {boolean}
  */
 export function isCollectionEmpty(registryKey) {

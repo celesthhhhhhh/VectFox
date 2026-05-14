@@ -1,5 +1,5 @@
 /* ==========================================================================
-   VectHare Progress Modal - "Glass Ring" Radical Redesign
+   VectFox Progress Modal - "Glass Ring" Radical Redesign
    ========================================================================== */
 
 /* --- Overlay & Modal Base --- */
@@ -489,4 +489,5 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
 

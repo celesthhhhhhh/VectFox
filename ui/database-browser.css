@@ -1,5 +1,5 @@
 /* ============================================================================
- * VECTHARE DATABASE BROWSER STYLES
+ * VECTFOX DATABASE BROWSER STYLES
  * ============================================================================
  * Collection browser, tabs, filters, collection cards
  *
@@ -874,7 +874,7 @@
     font-weight: 500;
 }
 
-#vecthare_bulk_count {
+#VECTFOX_bulk_count {
     font-size: 0.9em;
     color: color-mix(in srgb, var(--SmartThemeBodyColor) 60%, transparent);
 }
@@ -1339,3 +1339,4 @@
     align-items: flex-start;
     gap: 12px;
 }
+

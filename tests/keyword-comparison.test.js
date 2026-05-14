@@ -1,14 +1,14 @@
 /**
  * VECTFOX vs OpenVault Keyword Extraction Comparison Test
  *
- * Compares keyword quality produced by VectHare's (per-chunk vectorization-time)
+ * Compares keyword quality produced by VectFox's (per-chunk vectorization-time)
  * extraction against OpenVault's (query-time BM25 token generation) approach.
  *
  * Key differences tested:
- *   - CJK segmentation: Intl.Segmenter (VectHare) vs \p{L} regex (OpenVault)
- *   - Stopword filtering: Chinese stopwords (VectHare) vs none (OpenVault)
- *   - Named entity handling: Capital boost + compound detection (VectHare) vs entity-graph (OpenVault)
- *   - Bracket terms: Dedicated extraction (VectHare) vs not supported (OpenVault)
+ *   - CJK segmentation: Intl.Segmenter (VectFox) vs \p{L} regex (OpenVault)
+ *   - Stopword filtering: Chinese stopwords (VectFox) vs none (OpenVault)
+ *   - Named entity handling: Capital boost + compound detection (VectFox) vs entity-graph (OpenVault)
+ *   - Bracket terms: Dedicated extraction (VectFox) vs not supported (OpenVault)
  *
  * IMPORTANT: This test does NOT classify keywords as "useful" vs "useless" —
  * that would require running the actual embedding model to measure whether
@@ -153,7 +153,7 @@ function openvaultStemWord(word) {
     const isLatin = /^[a-z0-9_]+$/.test(word);
 
     if (isLatin) {
-        // Use VectHare's Porter stemmer as proxy for Snowball English stemmer
+        // Use VectFox's Porter stemmer as proxy for Snowball English stemmer
         return porterStemmer(word);
     }
 
@@ -163,7 +163,7 @@ function openvaultStemWord(word) {
 
 // ============================================================================
 // KNOWN CHINESE STOPWORDS — these are language-level stopwords, not story-specific
-// VectHare's bm25-scorer.js defines these as language constants.
+// VectFox's bm25-scorer.js defines these as language constants.
 // We test whether each system filters them.
 // ============================================================================
 
@@ -329,39 +329,39 @@ describe('VECTFOX vs OpenVault Keyword Comparison', () => {
     // -----------------------------------------------------------------------
 
     describe('4. Entity Name Preservation', () => {
-        let vectHareBM25Keywords;
-        let vectHareTextKeywords;
+        let VectFoxBM25Keywords;
+        let VectFoxTextKeywords;
         let openvaultTokens;
 
         beforeAll(() => {
-            vectHareBM25Keywords = extractBM25Keywords(TEST_STORY, { level: 'aggressive', maxKeywords: 30 });
-            vectHareTextKeywords = extractTextKeywords(TEST_STORY, { level: 'aggressive', maxKeywords: 30 });
+            VectFoxBM25Keywords = extractBM25Keywords(TEST_STORY, { level: 'aggressive', maxKeywords: 30 });
+            VectFoxTextKeywords = extractTextKeywords(TEST_STORY, { level: 'aggressive', maxKeywords: 30 });
             openvaultTokens = openvaultTokenize(TEST_STORY);
         });
 
         it('VECTFOX BM25: capital boost (1.3x) helps proper nouns rank higher', () => {
             console.log('\n[VECTFOX BM25] All keywords:');
-            vectHareBM25Keywords.forEach(k =>
+            VectFoxBM25Keywords.forEach(k =>
                 console.log(`  ${k.text.padEnd(20)} weight=${k.weight.toFixed(3)}`)
             );
 
-            const capitalizedKeywords = vectHareBM25Keywords.filter(k => /^[A-Z]/.test(k.text));
+            const capitalizedKeywords = VectFoxBM25Keywords.filter(k => /^[A-Z]/.test(k.text));
             console.log('\n[VECTFOX BM25] Capitalized (proper noun boost applied):', capitalizedKeywords.map(k => `${k.text}(${k.weight.toFixed(2)}x)`));
 
             // Capital boost means capitalized words should appear
             // If Francisca, Blake, Jakob, Aarav appear, capital boost is working
             const foundNames = [...STORY_NAMES].filter(name =>
-                vectHareBM25Keywords.some(k => k.text.toLowerCase() === name)
+                VectFoxBM25Keywords.some(k => k.text.toLowerCase() === name)
             );
             console.log(`[VECTFOX BM25] Story names found: ${foundNames.length}/${STORY_NAMES.size} — [${foundNames.join(', ')}]`);
         });
 
         it('VECTFOX Text: proper noun detection should capture capitalized names', () => {
-            const capitalizedKeywords = vectHareTextKeywords.filter(k => /^[A-Z]/.test(k.text));
+            const capitalizedKeywords = VectFoxTextKeywords.filter(k => /^[A-Z]/.test(k.text));
             console.log('\n[VECTFOX Text] Capitalized keywords:', capitalizedKeywords.map(k => `${k.text}(${k.weight.toFixed(2)}x)`));
 
             const foundNames = [...STORY_NAMES].filter(name =>
-                vectHareTextKeywords.some(k => k.text.toLowerCase() === name)
+                VectFoxTextKeywords.some(k => k.text.toLowerCase() === name)
             );
             console.log(`[VECTFOX Text] Story names found: ${foundNames.length}/${STORY_NAMES.size} — [${foundNames.join(', ')}]`);
         });
@@ -446,8 +446,8 @@ describe('VECTFOX vs OpenVault Keyword Comparison', () => {
             // VECTFOX correctly segments both
             const vhShort = extractCJKTokens(shortCjk);
             const vhLong = extractCJKTokens(longCjk);
-            console.log('[VectHare] 3-char name segmented:', vhShort);
-            console.log('[VectHare] 8-char sentence segmented:', vhLong);
+            console.log('[VectFox] 3-char name segmented:', vhShort);
+            console.log('[VectFox] 8-char sentence segmented:', vhLong);
         });
     });
 
@@ -460,12 +460,12 @@ describe('VECTFOX vs OpenVault Keyword Comparison', () => {
             const bracketText = '她使用了【治癒術】和【淨化之光】來驅散黑暗。';
 
             const keywords = extractBM25Keywords(bracketText, { level: 'aggressive', maxKeywords: 10 });
-            console.log('\n[VectHare] BM25 keywords with bracket terms:', keywords.map(k => `${k.text}(${k.weight.toFixed(2)})`));
+            console.log('\n[VectFox] BM25 keywords with bracket terms:', keywords.map(k => `${k.text}(${k.weight.toFixed(2)})`));
 
             // Bracket terms are injected with synthetic high TF-IDF scores
             const hasHealing = keywords.some(k => k.text === '治癒術');
             const hasPurification = keywords.some(k => k.text === '淨化之光');
-            console.log(`[VectHare] 治癒術 found: ${hasHealing}, 淨化之光 found: ${hasPurification}`);
+            console.log(`[VectFox] 治癒術 found: ${hasHealing}, 淨化之光 found: ${hasPurification}`);
             expect(hasHealing || hasPurification).toBe(true);
         });
 
@@ -477,8 +477,8 @@ describe('VECTFOX vs OpenVault Keyword Comparison', () => {
             const bracketKw = keywords.find(k => k.text === '火球術');
             const normalKw = keywords.find(k => k.text === '攻擊');
 
-            console.log('\n[VectHare] Bracket term weight:', bracketKw?.weight);
-            console.log('[VectHare] Non-bracket term weight:', normalKw?.weight);
+            console.log('\n[VectFox] Bracket term weight:', bracketKw?.weight);
+            console.log('[VectFox] Non-bracket term weight:', normalKw?.weight);
 
             // Bracket terms should have higher weight due to synthetic score injection
             if (bracketKw && normalKw) {
@@ -516,7 +516,7 @@ describe('VECTFOX vs OpenVault Keyword Comparison', () => {
             const textChinese = textKeywords.filter(k => /[\u4E00-\u9FFF]/.test(k.text));
             const ovChinese = ovTokens.filter(t => /[\u4E00-\u9FFF]/.test(t));
 
-            // Count unique CJK segments from VectHare
+            // Count unique CJK segments from VectFox
             const vhCjkSegments = bm25Chinese.length;
 
             // Count CJK blobs from OpenVault (tokens > 5 chars)
@@ -531,14 +531,14 @@ describe('VECTFOX vs OpenVault Keyword Comparison', () => {
                 .filter(t => KNOWN_ZH_STOPWORDS.has(t)).length;
 
             metrics = {
-                vectHareBM25: {
+                VectFoxBM25: {
                     totalKeywords: bm25Keywords.length,
                     chineseKeywords: bm25Chinese.length,
                     chineseKeywordList: bm25Chinese.map(k => k.text),
                     stopwordsPassed: bm25StopwordsPassed,
                     keywordTexts: bm25Keywords.map(k => k.text),
                 },
-                vectHareText: {
+                VectFoxText: {
                     totalKeywords: textKeywords.length,
                     chineseKeywords: textChinese.length,
                     chineseKeywordList: textChinese.map(k => k.text),
@@ -566,27 +566,27 @@ describe('VECTFOX vs OpenVault Keyword Comparison', () => {
             console.log('┌──────────────────────────────────┬──────────┬──────────────┬──────────┐');
             console.log('│ Metric                           │ VH BM25  │ VH Text      │ OpenVault│');
             console.log('├──────────────────────────────────┼──────────┼──────────────┼──────────┤');
-            console.log(`│ Total Keywords/Tokens            │ ${String(metrics.vectHareBM25.totalKeywords).padEnd(8)}│ ${String(metrics.vectHareText.totalKeywords).padEnd(12)}│ ${String(metrics.openVault.totalTokens).padEnd(8)}│`);
-            console.log(`│ Chinese Keywords/Tokens          │ ${String(metrics.vectHareBM25.chineseKeywords).padEnd(8)}│ ${String(metrics.vectHareText.chineseKeywords).padEnd(12)}│ ${String(metrics.openVault.chineseTokens).padEnd(8)}│`);
-            console.log(`│ CJK Stopwords Passed             │ ${String(metrics.vectHareBM25.stopwordsPassed).padEnd(8)}│ ${String(metrics.vectHareText.stopwordsPassed).padEnd(12)}│ ${String(metrics.openVault.stopwordsSurvived).padEnd(8)}│`);
+            console.log(`│ Total Keywords/Tokens            │ ${String(metrics.VectFoxBM25.totalKeywords).padEnd(8)}│ ${String(metrics.VectFoxText.totalKeywords).padEnd(12)}│ ${String(metrics.openVault.totalTokens).padEnd(8)}│`);
+            console.log(`│ Chinese Keywords/Tokens          │ ${String(metrics.VectFoxBM25.chineseKeywords).padEnd(8)}│ ${String(metrics.VectFoxText.chineseKeywords).padEnd(12)}│ ${String(metrics.openVault.chineseTokens).padEnd(8)}│`);
+            console.log(`│ CJK Stopwords Passed             │ ${String(metrics.VectFoxBM25.stopwordsPassed).padEnd(8)}│ ${String(metrics.VectFoxText.stopwordsPassed).padEnd(12)}│ ${String(metrics.openVault.stopwordsSurvived).padEnd(8)}│`);
             console.log(`│ CJK Blobs (>5 chars)             │ ${'N/A'.padEnd(8)}│ ${'N/A'.padEnd(12)}│ ${String(metrics.openVault.cjkBlobs).padEnd(8)}│`);
             console.log('└──────────────────────────────────┴──────────┴──────────────┴──────────┘');
             console.log('');
 
             console.log('--- VECTFOX BM25 Keywords ---');
-            console.log(`  All: [${metrics.vectHareBM25.keywordTexts.join(', ')}]`);
-            console.log(`  Chinese: [${metrics.vectHareBM25.chineseKeywordList.join(', ')}]`);
+            console.log(`  All: [${metrics.VectFoxBM25.keywordTexts.join(', ')}]`);
+            console.log(`  Chinese: [${metrics.VectFoxBM25.chineseKeywordList.join(', ')}]`);
 
             console.log('\n--- VECTFOX Text Keywords ---');
-            console.log(`  Chinese: [${metrics.vectHareText.chineseKeywordList.join(', ')}]`);
+            console.log(`  Chinese: [${metrics.VectFoxText.chineseKeywordList.join(', ')}]`);
 
             console.log('\n--- OpenVault Tokens ---');
             console.log(`  Chinese: [${metrics.openVault.chineseTokenList.join(', ')}]`);
             console.log(`  CJK Blobs (>5 chars): [${metrics.openVault.cjkBlobList.join(', ')}]`);
 
             // Verify basic metrics are meaningful
-            expect(metrics.vectHareBM25.totalKeywords).toBeGreaterThan(0);
-            expect(metrics.vectHareText.totalKeywords).toBeGreaterThan(0);
+            expect(metrics.VectFoxBM25.totalKeywords).toBeGreaterThan(0);
+            expect(metrics.VectFoxText.totalKeywords).toBeGreaterThan(0);
             expect(metrics.openVault.totalTokens).toBeGreaterThan(0);
         });
     });

@@ -1,5 +1,5 @@
 /* ============================================================================
- * VECTHARE BUTTON STYLES
+ * VECTFOX BUTTON STYLES
  * ============================================================================
  * Action buttons, primary/secondary/danger variants
  *
@@ -160,4 +160,5 @@
 .vectfox-btn-danger-outline i {
     color: var(--vectfox-danger);
 }
+
 

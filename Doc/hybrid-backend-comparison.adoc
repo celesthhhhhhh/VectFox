@@ -91,7 +91,7 @@ A3 is now true native dense+sparse hybrid.
 
 1. `queryCollection()` → `hybridSearch()` → `backend.hybridQuery()`
    ([backends/qdrant.js:753](../backends/qdrant.js#L753))
-2. VectHare encodes the query as a sparse vector via
+2. vectfox encodes the query as a sparse vector via
    `encodeSparseQuery(searchText)` in [core/sparse-vector-encoder.js](../core/sparse-vector-encoder.js),
    reusing the CJK-aware `tokenize()` from [core/bm25-scorer.js](../core/bm25-scorer.js).
    A tokenizer-mode sentinel check runs first (see Tokenizer Lock below).
@@ -136,15 +136,15 @@ A3 is now true native dense+sparse hybrid.
   statistic, not a candidate-subset approximation.
 * **Server-side dense embedding** — the plugin generates the query embedding;
   no client-side embedding cost (unless the source is webllm/koboldcpp).
-* **Client-side sparse encoding** — VectHare tokenizes the query text in the
+* **Client-side sparse encoding** — vectfox tokenizes the query text in the
   browser so the CJK tokenizer mode matches what was used at ingest.
 
 === Tokenizer Lock
 
 The sparse vectors stored in Qdrant bake in the CJK tokenizer mode that was
 active at upsert. A mode change between upsert and query silently breaks BM25
-matching, so on each query VectHare reads the collection's sentinel point
-(`type: "_vecthare_meta"`) via `detectTokenizerMismatch()` and prompts the
+matching, so on each query vectfox reads the collection's sentinel point
+(`type: "_vectfox_meta"`) via `detectTokenizerMismatch()` and prompts the
 user to revert the setting or rebuild the collection if the modes differ
 ([backends/qdrant.js:771-792](../backends/qdrant.js#L771-L792)).
 
@@ -158,7 +158,7 @@ but the `/chunks/hybrid-query` route currently hardcodes
 `fusion: 'rrf'`
 ([similharity/index.js:1298](../../similharity/index.js#L1298)).
 
-The VectHare side reads `settings.hybrid_fusion_method` for logging and
+The vectfox side reads `settings.hybrid_fusion_method` for logging and
 client-side fusion ([core/hybrid-search.js:80](../core/hybrid-search.js#L80)),
 but on the A3 path the value is **not propagated to the plugin route** — only
 `fusionMethod` is sent inside `hybridOptions`, and the route ignores it in
@@ -166,7 +166,7 @@ favor of the hardcoded `'rrf'`. To enable DBSF end-to-end:
 
 1. Forward `options.fusion` (or `hybridOptions.fusionMethod`) in the route
    instead of hardcoding `'rrf'`.
-2. Expose the choice in the VectHare GUI / settings so users can pick.
+2. Expose the choice in the vectfox GUI / settings so users can pick.
 
 === Reranking Pipelines
 
@@ -308,7 +308,7 @@ pages + plugin-JS scoring/fusion in the pre-native implementation).
 
 A2 keeps the display-score post-processing pass (dual-signal bonus, single-
 signal penalty). A3 trusts Qdrant's native RRF output and does no further
-re-scoring on the plugin or VectHare side.
+re-scoring on the plugin or vectfox side.
 
 === 5. Storage Requirements
 
@@ -358,7 +358,7 @@ The Similharity route calls `hybridQueryNativeWithRerank()`
       ]
     }
   },
-  "filter": { "must_not": [{ "key": "type", "match": { "value": "_vecthare_meta" } }] },
+  "filter": { "must_not": [{ "key": "type", "match": { "value": "_vectfox_meta" } }] },
   "limit": topK
 }
 ----
@@ -424,7 +424,7 @@ hybrid call and do not affect how the dense+sparse fusion is computed.
 == Known Gaps / Not Yet Wired
 
 * **DBSF fusion** — `hybridQueryNative` accepts `fusion: 'dbsf'`, but the
-  `/chunks/hybrid-query` route hardcodes `'rrf'` and the VectHare-side
+  `/chunks/hybrid-query` route hardcodes `'rrf'` and the vectfox-side
   `hybrid_fusion_method` setting is not propagated to the plugin on the A3
   path. Enabling DBSF requires forwarding the setting through the route and
   exposing it in the GUI.
@@ -448,3 +448,4 @@ hybrid call and do not affect how the dense+sparse fusion is computed.
    don't support sparse vectors, so client-side hybrid is the only option.
 
 4. **Lower storage requirements** — No sparse vectors means less disk usage.
+

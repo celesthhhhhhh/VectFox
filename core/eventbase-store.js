@@ -79,13 +79,9 @@ export async function insertEvents(events, settings, abortSignal = null, collect
             // qdrant.js spreads item.metadata first then explicitly overwrites these
             // fields from the top-level item. Without them defined here, they are
             // undefined → JSON.stringify drops them → Similharity server applies its
-            // own defaults (importance=100). EventBase does not use the legacy chunk
-            // fields (chunkGroup, conditions, parentHash) so they stay null.
+            // own defaults (importance=100).
             importance: event.importance,
             keywords: event.keywords || [],
-            customWeights: [],
-            disabledKeywords: [],
-            chunkGroup: null,
             conditions: null,
             isSummaryChunk: false,
             parentHash: null,

@@ -1,5 +1,5 @@
 /* ============================================================================
- * VECTHARE BASE STYLES
+ * VECTFOX BASE STYLES
  * ============================================================================
  * CSS variables, icons, main container
  *
@@ -66,6 +66,7 @@ h4 .vectfox-icon {
  * MAIN CONTAINER
  * ============================================================================ */
 
-#vecthare_settings {
+#vectfox_settings {
     line-height: 1.6;
 }
+

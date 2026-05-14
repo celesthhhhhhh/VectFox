@@ -15,7 +15,7 @@
 // =============================================================================
 
 /** Extension prompt tag for SillyTavern's prompt system */
-export const EXTENSION_PROMPT_TAG = '3_vecthare';
+export const EXTENSION_PROMPT_TAG = '3_vectfox';
 
 /** Extension name for logging and UI */
 export const EXTENSION_NAME = 'VectFox';

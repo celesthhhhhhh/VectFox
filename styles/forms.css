@@ -1,5 +1,5 @@
 /* ============================================================================
- * VECTHARE FORM STYLES
+ * VECTFOX FORM STYLES
  * ============================================================================
  * Form elements, inputs, selects, range sliders, provider settings
  *
@@ -11,7 +11,7 @@
  * FORM ELEMENTS WITH POLISH
  * ============================================================================ */
 
-#vecthare_settings label:not(.checkbox_label) {
+#vectfox_settings label:not(.checkbox_label) {
     display: block;
     margin-top: 18px;
     margin-bottom: 8px;
@@ -20,33 +20,33 @@
     font-size: 0.95em;
 }
 
-#vecthare_settings label:not(.checkbox_label):first-child {
+#vectfox_settings label:not(.checkbox_label):first-child {
     margin-top: 0;
 }
 
-#vecthare_settings .text_pole,
-#vecthare_settings input[type="number"],
-#vecthare_settings select {
+#vectfox_settings .text_pole,
+#vectfox_settings input[type="number"],
+#vectfox_settings select {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: 8px;
 }
 
-#vecthare_settings .text_pole:hover,
-#vecthare_settings input[type="number"]:hover,
-#vecthare_settings select:hover {
+#vectfox_settings .text_pole:hover,
+#vectfox_settings input[type="number"]:hover,
+#vectfox_settings select:hover {
     border-color: color-mix(in srgb, var(--vectfox-primary) 50%, var(--SmartThemeBorderColor));
 }
 
-#vecthare_settings .text_pole:focus,
-#vecthare_settings input[type="number"]:focus,
-#vecthare_settings select:focus {
+#vectfox_settings .text_pole:focus,
+#vectfox_settings input[type="number"]:focus,
+#vectfox_settings select:focus {
     border-color: var(--vectfox-primary);
     box-shadow:
         0 0 0 3px color-mix(in srgb, var(--vectfox-primary) 15%, transparent),
         0 2px 8px color-mix(in srgb, var(--vectfox-primary) 10%, transparent);
 }
 
-#vecthare_settings .checkbox_label {
+#vectfox_settings .checkbox_label {
     margin: 14px 0;
     padding: 14px 16px;
     background: linear-gradient(135deg,
@@ -63,7 +63,7 @@
     overflow: hidden;
 }
 
-#vecthare_settings .checkbox_label::before {
+#vectfox_settings .checkbox_label::before {
     content: '';
     position: absolute;
     top: 0;
@@ -75,7 +75,7 @@
     transition: transform 0.2s ease;
 }
 
-#vecthare_settings .checkbox_label:hover {
+#vectfox_settings .checkbox_label:hover {
     background: linear-gradient(135deg,
         color-mix(in srgb, var(--SmartThemeBlurTintColor) 80%, transparent) 0%,
         color-mix(in srgb, var(--SmartThemeBlurTintColor) 60%, transparent) 100%);
@@ -83,11 +83,11 @@
     transform: translateX(2px);
 }
 
-#vecthare_settings .checkbox_label:hover::before {
+#vectfox_settings .checkbox_label:hover::before {
     transform: scaleY(1);
 }
 
-#vecthare_settings input[type="checkbox"]:checked + span {
+#vectfox_settings input[type="checkbox"]:checked + span {
     color: var(--vectfox-primary-bright);
     font-weight: 600;
 }
@@ -96,12 +96,12 @@
  * PROVIDER SETTINGS WITH DEPTH
  * ============================================================================ */
 
-#vecthare_provider_settings {
+#vectfox_provider_settings {
     margin-top: 0;
     padding-top: 4px;
 }
 
-.vecthare_provider_setting {
+.vectfox_provider_setting {
     margin-top: 16px;
     padding: 16px 18px;
     background: linear-gradient(135deg,
@@ -118,7 +118,7 @@
 
 /* Decorative glow removed for compatibility */
 
-.vecthare_provider_setting:hover {
+.vectfox_provider_setting:hover {
     background: linear-gradient(135deg,
         color-mix(in srgb, var(--vectfox-primary) 12%, var(--SmartThemeBlurTintColor)) 0%,
         color-mix(in srgb, var(--vectfox-primary) 6%, var(--SmartThemeBlurTintColor)) 100%);
@@ -127,7 +127,7 @@
     box-shadow: 0 4px 12px color-mix(in srgb, var(--vectfox-primary) 15%, transparent);
 }
 
-.vecthare_hint {
+.vectfox_hint {
     display: block;
     margin-top: 8px;
     padding: 8px 12px;
@@ -376,7 +376,7 @@
     border-radius: 6px;
 }
 
-.vecthare_info {
+.vectfox_info {
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -392,10 +392,11 @@
     box-shadow: 0 2px 6px color-mix(in srgb, var(--vectfox-primary) 10%, transparent);
 }
 
-.vecthare_info i {
+.vectfox_info i {
     color: var(--vectfox-primary-bright);
     font-size: 1.2em;
     margin-top: 2px;
     flex-shrink: 0;
 }
+
 

@@ -158,7 +158,7 @@ export async function openDatabaseBrowser() {
   browserState.pluginAvailable = await checkPluginAvailable();
 
   // Create modal if it doesn't exist
-  if ($("#vecthare_database_browser_modal").length === 0) {
+  if ($("#vectfox_database_browser_modal").length === 0) {
     createBrowserModal();
   }
 
@@ -169,7 +169,7 @@ export async function openDatabaseBrowser() {
   await refreshCollections();
 
   // Show modal
-  $("#vecthare_database_browser_modal").fadeIn(200);
+  $("#vectfox_database_browser_modal").fadeIn(200);
   console.log("VECTFOX Database Browser: Opened");
 }
 
@@ -177,7 +177,7 @@ export async function openDatabaseBrowser() {
  * Updates the plugin warning banner visibility
  */
 function updatePluginWarningBanner() {
-  const banner = $("#vecthare_plugin_warning_banner");
+  const banner = $("#vectfox_plugin_warning_banner");
   if (browserState.pluginAvailable) {
     banner.hide();
   } else {
@@ -189,7 +189,7 @@ function updatePluginWarningBanner() {
  * Closes the database browser modal
  */
 export function closeDatabaseBrowser() {
-  $("#vecthare_database_browser_modal").fadeOut(200);
+  $("#vectfox_database_browser_modal").fadeOut(200);
   browserState.isOpen = false;
   // Reset event bound flags for clean rebind on next open
   resetEventFlags();
@@ -210,22 +210,22 @@ function resetEventFlags() {
  */
 function createBrowserModal() {
   const modalHtml = `
-        <div id="vecthare_database_browser_modal" class="vectfox-modal">
+        <div id="vectfox_database_browser_modal" class="vectfox-modal">
             <div class="vectfox-modal-content vectfox-database-browser-content">
                 <!-- Header -->
                 <div class="vectfox-modal-header">
                     <h3>🗃️ VECTFOX Database Browser</h3>
-                    <button class="vectfox-btn-icon" id="vecthare_browser_close">✕</button>
+                    <button class="vectfox-btn-icon" id="vectfox_browser_close">✕</button>
                 </div>
 
                 <!-- Plugin Warning Banner (hidden by default, shown when plugin unavailable) -->
-                <div id="vecthare_plugin_warning_banner" class="vectfox-warning-banner" style="display: none;">
+                <div id="vectfox_plugin_warning_banner" class="vectfox-warning-banner" style="display: none;">
                     <i class="fa-solid fa-triangle-exclamation" style="color: var(--SmartThemeQuoteColor);"></i>
                     <div class="vectfox-warning-text">
                         <strong>Limited Discovery Mode</strong>
                         <span>Similharity plugin not detected. Only registered collections and current chat can be discovered.
                         Collections created outside VECTFOX won't appear here.
-                        <a href="https://github.com/Coneja-Chibi/VectHare/tree/Similharity-Plugin" target="_blank">Install the plugin</a> for full filesystem scanning.</span>
+                        <a href="https://github.com/Coneja-Chibi/VectFox/tree/Similharity-Plugin" target="_blank">Install the plugin</a> for full filesystem scanning.</span>
                     </div>
                 </div>
 
@@ -245,7 +245,7 @@ function createBrowserModal() {
                 <!-- Tab Content -->
                 <div class="vectfox-browser-content">
                     <!-- Collections Tab -->
-                    <div id="vecthare_tab_collections" class="vectfox-tab-content active">
+                    <div id="vectfox_tab_collections" class="vectfox-tab-content active">
                         <!-- Scope Filters (V1-style) -->
                         <div class="vectfox-scope-filters">
                             <button class="vectfox-scope-filter active" data-scope="all" title="Show all collections">All</button>
@@ -259,27 +259,27 @@ function createBrowserModal() {
                         <!-- Type Filters -->
                         <div class="vectfox-type-filters">
                             <label>
-                                <input type="radio" name="vecthare_type_filter" value="all" checked>
+                                <input type="radio" name="vectfox_type_filter" value="all" checked>
                                 All Types
                             </label>
                             <label>
-                                <input type="radio" name="vecthare_type_filter" value="chat">
+                                <input type="radio" name="vectfox_type_filter" value="chat">
                                 ${icons.messageSquare(14)} Chats
                             </label>
                             <label>
-                                <input type="radio" name="vecthare_type_filter" value="lorebook">
+                                <input type="radio" name="vectfox_type_filter" value="lorebook">
                                 ${icons.bookOpen(14)} Lorebooks
                             </label>
                             <label>
-                                <input type="radio" name="vecthare_type_filter" value="character">
+                                <input type="radio" name="vectfox_type_filter" value="character">
                                 ${icons.user(14)} Characters
                             </label>
                             <label>
-                                <input type="radio" name="vecthare_type_filter" value="document">
+                                <input type="radio" name="vectfox_type_filter" value="document">
                                 ${icons.fileText(14)} Documents
                             </label>
                             <label>
-                                <input type="radio" name="vecthare_type_filter" value="web">
+                                <input type="radio" name="vectfox_type_filter" value="web">
                                 ${icons.globe(14)} Web
                             </label>
                         </div>
@@ -287,44 +287,44 @@ function createBrowserModal() {
                         <!-- Search Box -->
                         <div class="vectfox-search-box">
                             <input type="text"
-                                   id="vecthare_collection_search"
+                                   id="vectfox_collection_search"
                                    placeholder="Search collections..."
                                    autocomplete="off">
                         </div>
 
                         <!-- Collections List -->
-                        <div id="vecthare_collections_list" class="vectfox-collections-list">
+                        <div id="vectfox_collections_list" class="vectfox-collections-list">
                             <div class="vectfox-loading">Loading collections...</div>
                         </div>
 
                         <!-- Stats Footer -->
                         <div class="vectfox-browser-stats">
-                            <span id="vecthare_browser_stats_text">No collections</span>
+                            <span id="vectfox_browser_stats_text">No collections</span>
                             <div class="vectfox-browser-actions">
-                                <button id="vecthare_import_collection" class="vectfox-btn-sm" title="Import collection from file">
+                                <button id="vectfox_import_collection" class="vectfox-btn-sm" title="Import collection from file">
                                     📥 Import
                                 </button>
-                                <button id="vecthare_reset_registry" class="vectfox-reset-btn" title="Clear registry and rescan from disk">
+                                <button id="vectfox_reset_registry" class="vectfox-reset-btn" title="Clear registry and rescan from disk">
                                     <i class="fa-solid fa-arrows-rotate"></i> Resync
                                 </button>
                             </div>
                         </div>
                         <!-- Hidden file inputs for import -->
-                        <input type="file" id="vecthare_import_file" accept=".json,.vecthare.json,.png,image/png" style="display: none;">
-                        <input type="file" id="vecthare_png_image_picker" accept="image/*" style="display: none;">
+                        <input type="file" id="vectfox_import_file" accept=".json,.vectfox.json,.png,image/png" style="display: none;">
+                        <input type="file" id="vectfox_png_image_picker" accept="image/*" style="display: none;">
                     </div>
 
                     <!-- Search Tab -->
-                    <div id="vecthare_tab_search" class="vectfox-tab-content">
+                    <div id="vectfox_tab_search" class="vectfox-tab-content">
                         <div class="vectfox-search-panel">
                             <!-- Search Input -->
                             <div class="vectfox-search-input-row">
                                 <input type="text"
-                                       id="vecthare_semantic_search"
+                                       id="vectfox_semantic_search"
                                        class="vectfox-search-input"
                                        placeholder="Search across all collections..."
                                        autocomplete="off">
-                                <button id="vecthare_search_btn" class="vectfox-btn vectfox-btn-primary">
+                                <button id="vectfox_search_btn" class="vectfox-btn vectfox-btn-primary">
                                     ${icons.search(16)} Search
                                 </button>
                             </div>
@@ -333,15 +333,15 @@ function createBrowserModal() {
                             <div class="vectfox-search-options">
                                 <div class="vectfox-search-option">
                                     <label>Results per collection:</label>
-                                    <input type="number" id="vecthare_search_topk" value="5" min="1" max="50">
+                                    <input type="number" id="vectfox_search_topk" value="5" min="1" max="50">
                                 </div>
                                 <div class="vectfox-search-option">
                                     <label>Min score:</label>
-                                    <input type="number" id="vecthare_search_threshold" value="0.3" min="0" max="1" step="0.05">
+                                    <input type="number" id="vectfox_search_threshold" value="0.3" min="0" max="1" step="0.05">
                                 </div>
                                 <div class="vectfox-search-option">
                                     <label>
-                                        <input type="checkbox" id="vecthare_search_enabled_only" checked>
+                                        <input type="checkbox" id="vectfox_search_enabled_only" checked>
                                         Enabled collections only
                                     </label>
                                 </div>
@@ -351,27 +351,27 @@ function createBrowserModal() {
                             <div class="vectfox-keyword-filter-section">
                                 <div class="vectfox-keyword-filter-header">
                                     ${icons.filter(16)} <span>Keyword Filter</span>
-                                    <button id="vecthare_scan_keywords" class="vectfox-btn-sm" title="Scan all collections for keywords">
+                                    <button id="vectfox_scan_keywords" class="vectfox-btn-sm" title="Scan all collections for keywords">
                                         <i class="fa-solid fa-sync"></i> Scan
                                     </button>
                                 </div>
                                 <div class="vectfox-keyword-filter-input-row">
                                     <input type="text"
-                                           id="vecthare_keyword_filter"
+                                           id="vectfox_keyword_filter"
                                            class="vectfox-keyword-filter-input"
                                            placeholder="Filter by keywords (comma-separated)..."
                                            autocomplete="off">
-                                    <button id="vecthare_clear_keyword_filter" class="vectfox-btn-sm" title="Clear filter">
+                                    <button id="vectfox_clear_keyword_filter" class="vectfox-btn-sm" title="Clear filter">
                                         ${icons.x(14)}
                                     </button>
                                 </div>
-                                <div id="vecthare_keyword_tags" class="vectfox-keyword-tags">
+                                <div id="vectfox_keyword_tags" class="vectfox-keyword-tags">
                                     <span class="vectfox-keyword-hint">Click "Scan" to discover keywords in your collections</span>
                                 </div>
                             </div>
 
                             <!-- Search Results -->
-                            <div id="vecthare_search_results" class="vectfox-search-results">
+                            <div id="vectfox_search_results" class="vectfox-search-results">
                                 <div class="vectfox-search-empty">
                                     ${icons.search(48)}
                                     <p>Enter a query to search across all collections</p>
@@ -381,19 +381,19 @@ function createBrowserModal() {
                     </div>
 
                     <!-- Bulk Operations Tab -->
-                    <div id="vecthare_tab_bulk" class="vectfox-tab-content">
+                    <div id="vectfox_tab_bulk" class="vectfox-tab-content">
                         <div class="vectfox-bulk-panel">
                             <!-- Selection Info -->
                             <div class="vectfox-bulk-header">
                                 <div class="vectfox-bulk-select-all">
                                     <label>
-                                        <input type="checkbox" id="vecthare_bulk_select_all">
+                                        <input type="checkbox" id="vectfox_bulk_select_all">
                                         Select All Visible
                                     </label>
-                                    <span id="vecthare_bulk_count">0 selected</span>
+                                    <span id="vectfox_bulk_count">0 selected</span>
                                 </div>
                                 <div class="vectfox-bulk-filter">
-                                    <select id="vecthare_bulk_filter">
+                                    <select id="vectfox_bulk_filter">
                                         <option value="all">All Collections</option>
                                         <option value="enabled">Enabled Only</option>
                                         <option value="disabled">Disabled Only</option>
@@ -403,22 +403,22 @@ function createBrowserModal() {
 
                             <!-- Bulk Actions -->
                             <div class="vectfox-bulk-actions">
-                                <button id="vecthare_bulk_enable" class="vectfox-btn vectfox-btn-sm" disabled>
+                                <button id="vectfox_bulk_enable" class="vectfox-btn vectfox-btn-sm" disabled>
                                     ${icons.toggleRight(16)} Enable Selected
                                 </button>
-                                <button id="vecthare_bulk_disable" class="vectfox-btn vectfox-btn-sm" disabled>
+                                <button id="vectfox_bulk_disable" class="vectfox-btn vectfox-btn-sm" disabled>
                                     ${icons.toggleLeft(16)} Disable Selected
                                 </button>
-                                <button id="vecthare_bulk_export" class="vectfox-btn vectfox-btn-sm" disabled>
+                                <button id="vectfox_bulk_export" class="vectfox-btn vectfox-btn-sm" disabled>
                                     ${icons.download(16)} Export Selected
                                 </button>
-                                <button id="vecthare_bulk_delete" class="vectfox-btn vectfox-btn-sm vectfox-btn-danger" disabled>
+                                <button id="vectfox_bulk_delete" class="vectfox-btn vectfox-btn-sm vectfox-btn-danger" disabled>
                                     ${icons.trash(16)} Delete Selected
                                 </button>
                             </div>
 
                             <!-- Collection List with Checkboxes -->
-                            <div id="vecthare_bulk_list" class="vectfox-bulk-list">
+                            <div id="vectfox_bulk_list" class="vectfox-bulk-list">
                                 <div class="vectfox-loading">Loading collections...</div>
                             </div>
                         </div>
@@ -439,7 +439,7 @@ function createBrowserModal() {
  */
 function bindBrowserEvents() {
   // Close button
-  $("#vecthare_browser_close").on("click", function (e) {
+  $("#vectfox_browser_close").on("click", function (e) {
     e.stopPropagation();
     e.preventDefault();
     closeDatabaseBrowser();
@@ -447,12 +447,12 @@ function bindBrowserEvents() {
 
   // Stop propagation on mousedown (ST listens on mousedown to close drawers)
   // This prevents the drawer from closing when clicking inside the modal
-  $("#vecthare_database_browser_modal").on("mousedown touchstart", function (e) {
+  $("#vectfox_database_browser_modal").on("mousedown touchstart", function (e) {
     e.stopPropagation();
   });
 
   // Close when clicking directly on the modal background (overlay)
-  $("#vecthare_database_browser_modal").on("click", function (e) {
+  $("#vectfox_database_browser_modal").on("click", function (e) {
     if (e.target === this) {
       e.preventDefault();
       closeDatabaseBrowser();
@@ -460,7 +460,7 @@ function bindBrowserEvents() {
   });
 
   // Tab switching
-  $("#vecthare_database_browser_modal .vectfox-tab-btn").on("click", function (e) {
+  $("#vectfox_database_browser_modal .vectfox-tab-btn").on("click", function (e) {
     e.stopPropagation();
     e.preventDefault();
     const tab = $(this).data("tab");
@@ -468,31 +468,31 @@ function bindBrowserEvents() {
   });
 
   // Scope filters
-  $("#vecthare_database_browser_modal .vectfox-scope-filter").on("click", function (e) {
+  $("#vectfox_database_browser_modal .vectfox-scope-filter").on("click", function (e) {
     e.stopPropagation();
     e.preventDefault();
-    $("#vecthare_database_browser_modal .vectfox-scope-filter").removeClass("active");
+    $("#vectfox_database_browser_modal .vectfox-scope-filter").removeClass("active");
     $(this).addClass("active");
     browserState.filters.scope = $(this).data("scope");
     renderCollections();
   });
 
   // Type filters
-  $('#vecthare_database_browser_modal input[name="vecthare_type_filter"]').on("change", function (e) {
+  $('#vectfox_database_browser_modal input[name="vectfox_type_filter"]').on("change", function (e) {
     e.stopPropagation();
     browserState.filters.collectionType = $(this).val();
     renderCollections();
   });
 
   // Search input
-  $("#vecthare_collection_search").on("input", function (e) {
+  $("#vectfox_collection_search").on("input", function (e) {
     e.stopPropagation();
     browserState.filters.searchQuery = $(this).val().toLowerCase();
     renderCollections();
   });
 
   // Resync button - clears registry and rescans from disk
-  $("#vecthare_reset_registry").on("click", async function (e) {
+  $("#vectfox_reset_registry").on("click", async function (e) {
     e.stopPropagation();
     e.preventDefault();
 
@@ -519,7 +519,7 @@ function bindBrowserEvents() {
   });
 
   // Keyboard shortcuts
-  $(document).on("keydown.vecthare_browser", function (e) {
+  $(document).on("keydown.vectfox_browser", function (e) {
     if (!browserState.isOpen) return;
 
     if (e.key === "Escape") {
@@ -528,13 +528,13 @@ function bindBrowserEvents() {
   });
 
   // Import button
-  $("#vecthare_import_collection").on("click", function (e) {
+  $("#vectfox_import_collection").on("click", function (e) {
     e.stopPropagation();
-    $("#vecthare_import_file").click();
+    $("#vectfox_import_file").click();
   });
 
   // Import file handler (supports JSON and PNG)
-  $("#vecthare_import_file").on("change", async function (e) {
+  $("#vectfox_import_file").on("change", async function (e) {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -637,11 +637,11 @@ function bindBrowserEvents() {
  * @param {string} tabName Tab identifier
  */
 function switchTab(tabName) {
-  $("#vecthare_database_browser_modal .vectfox-tab-btn").removeClass("active");
-  $(`#vecthare_database_browser_modal .vectfox-tab-btn[data-tab="${tabName}"]`).addClass("active");
+  $("#vectfox_database_browser_modal .vectfox-tab-btn").removeClass("active");
+  $(`#vectfox_database_browser_modal .vectfox-tab-btn[data-tab="${tabName}"]`).addClass("active");
 
-  $("#vecthare_database_browser_modal .vectfox-tab-content").removeClass("active");
-  $(`#vecthare_tab_${tabName}`).addClass("active");
+  $("#vectfox_database_browser_modal .vectfox-tab-content").removeClass("active");
+  $(`#vectfox_tab_${tabName}`).addClass("active");
 
   // Initialize tab-specific content
   if (tabName === "bulk") {
@@ -674,8 +674,8 @@ function _sanitizeHandleForFilter(name) {
  * Extract the persona handle embedded in a VECTFOX collection ID name.
  *
  * Naming convention (collection-ids.js):
- *   vecthare_<type>_<backend>_<handle>_<charname>_<uuid>   (new)
- *   vecthare_<type>_<handle>_<charname>_<uuid>             (legacy, no backend)
+ *   vectfox_<type>_<backend>_<handle>_<charname>_<uuid>   (new)
+ *   vectfox_<type>_<handle>_<charname>_<uuid>             (legacy, no backend)
  *
  * Returns lowercased handle string, or null if the ID isn't persona-scoped
  * or can't be parsed.
@@ -698,16 +698,16 @@ function _extractHandleFromCollectionId(collectionId) {
 
 /**
  * Collection prefixes whose collections carry a persona-owned `creatorHandle`.
- * All VECTFOX content types follow the unified `vecthare_<type>_<backend>_<handle>_...`
+ * All VECTFOX content types follow the unified `vectfox_<type>_<backend>_<handle>_...`
  * naming protocol and are persona-scoped.
  */
 const _PERSONA_SCOPED_PREFIXES = [
-  COLLECTION_PREFIXES.VECTHARE_CHAT,
-  COLLECTION_PREFIXES.VECTHARE_EVENTBASE,
-  COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT,
-  COLLECTION_PREFIXES.VECTHARE_LOREBOOK,
-  COLLECTION_PREFIXES.VECTHARE_CHARACTER,
-  COLLECTION_PREFIXES.VECTHARE_DOCUMENT,
+  COLLECTION_PREFIXES.VECTFOX_CHAT,
+  COLLECTION_PREFIXES.VECTFOX_EVENTBASE,
+  COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT,
+  COLLECTION_PREFIXES.VECTFOX_LOREBOOK,
+  COLLECTION_PREFIXES.VECTFOX_CHARACTER,
+  COLLECTION_PREFIXES.VECTFOX_DOCUMENT,
 ];
 
 /**
@@ -790,7 +790,7 @@ async function refreshCollections() {
     renderCollections();
   } catch (error) {
     console.error("VectFox: Failed to load collections", error);
-    $("#vecthare_collections_list").html(`
+    $("#vectfox_collections_list").html(`
             <div class="vectfox-error">
                 Failed to load collections. Check console for details.
             </div>
@@ -802,7 +802,7 @@ async function refreshCollections() {
  * Renders collections list based on current filters
  */
 function renderCollections() {
-  const container = $("#vecthare_collections_list");
+  const container = $("#vectfox_collections_list");
 
     // Apply filters
     let filtered = browserState.collections.filter(c => {
@@ -1124,7 +1124,7 @@ async function performPngExport(imageFile) {
     const pngWithData = await embedDataInPNG(exportData, pngData);
 
     // Download
-    const filename = `${pending.collection.name || pending.collectionId}.vecthare`;
+    const filename = `${pending.collection.name || pending.collectionId}.vectfox`;
     downloadPNG(pngWithData, filename);
 
     // Show compression stats
@@ -1476,7 +1476,7 @@ function bindCollectionCardEvents() {
       );
 
       if (useCustomImage) {
-        $("#vecthare_png_image_picker").click();
+        $("#vectfox_png_image_picker").click();
       } else {
         // Export with default image
         await performPngExport(null);
@@ -1484,7 +1484,7 @@ function bindCollectionCardEvents() {
     });
 
   // PNG image picker handler
-  $("#vecthare_png_image_picker")
+  $("#vectfox_png_image_picker")
     .off("change")
     .on("change", async function (e) {
       const file = e.target.files[0];
@@ -1549,7 +1549,7 @@ function updateStats(collectionCount, chunkCount) {
       ? "No collections"
       : `${collectionCount} collection${collectionCount === 1 ? "" : "s"}, ${chunkCount} total chunks`;
 
-  $("#vecthare_browser_stats_text").text(statsText);
+  $("#vectfox_browser_stats_text").text(statsText);
 }
 
 // ============================================================================
@@ -1563,22 +1563,22 @@ function updateStats(collectionCount, chunkCount) {
  */
 function openRenameDialog(collectionId, currentName) {
   // Create modal if needed
-  if ($("#vecthare_rename_modal").length === 0) {
+  if ($("#vectfox_rename_modal").length === 0) {
     const modalHtml = `
-            <div id="vecthare_rename_modal" class="vectfox-modal">
+            <div id="vectfox_rename_modal" class="vectfox-modal">
                 <div class="vectfox-modal-content vectfox-rename-dialog popup">
                     <div class="vectfox-modal-header">
                         <h3>✏️ Rename Collection</h3>
-                        <button class="vectfox-btn-icon" id="vecthare_rename_close">✕</button>
+                        <button class="vectfox-btn-icon" id="vectfox_rename_close">✕</button>
                     </div>
                     <div class="vectfox-rename-body">
-                        <label for="vecthare_rename_input">New name:</label>
-                        <input type="text" id="vecthare_rename_input" placeholder="Enter new name..." autocomplete="off">
+                        <label for="vectfox_rename_input">New name:</label>
+                        <input type="text" id="vectfox_rename_input" placeholder="Enter new name..." autocomplete="off">
                         <small class="vectfox-rename-hint">Leave empty to reset to auto-generated name</small>
                     </div>
                     <div class="vectfox-modal-footer">
-                        <button class="vectfox-btn" id="vecthare_rename_cancel">Cancel</button>
-                        <button class="vectfox-btn vectfox-btn-primary" id="vecthare_rename_save">Save</button>
+                        <button class="vectfox-btn" id="vectfox_rename_cancel">Cancel</button>
+                        <button class="vectfox-btn vectfox-btn-primary" id="vectfox_rename_save">Save</button>
                     </div>
                 </div>
             </div>
@@ -1586,22 +1586,22 @@ function openRenameDialog(collectionId, currentName) {
     $("body").append(modalHtml);
 
     // Bind events
-    $("#vecthare_rename_close, #vecthare_rename_cancel").on(
+    $("#vectfox_rename_close, #vectfox_rename_cancel").on(
       "click",
       closeRenameDialog,
     );
     // Stop mousedown propagation (ST closes drawers on mousedown/touchstart)
-    $("#vecthare_rename_modal").on("mousedown touchstart", function (e) {
+    $("#vectfox_rename_modal").on("mousedown touchstart", function (e) {
       e.stopPropagation();
     });
     // Close on background click
-    $("#vecthare_rename_modal").on("click", function (e) {
+    $("#vectfox_rename_modal").on("click", function (e) {
       if (e.target === this) closeRenameDialog();
     });
-    $("#vecthare_rename_input").on("keydown", function (e) {
+    $("#vectfox_rename_input").on("keydown", function (e) {
       if (e.key === "Enter") {
         e.preventDefault();
-        $("#vecthare_rename_save").click();
+        $("#vectfox_rename_save").click();
       } else if (e.key === "Escape") {
         closeRenameDialog();
       }
@@ -1609,17 +1609,17 @@ function openRenameDialog(collectionId, currentName) {
   }
 
   // Store collection ID for save handler
-  $("#vecthare_rename_modal").data("collection-id", collectionId);
+  $("#vectfox_rename_modal").data("collection-id", collectionId);
 
   // Set current name
-  $("#vecthare_rename_input").val(currentName);
+  $("#vectfox_rename_input").val(currentName);
 
   // Bind save handler (rebind each time to get fresh collectionId)
-  $("#vecthare_rename_save")
+  $("#vectfox_rename_save")
     .off("click")
     .on("click", function () {
-      const newName = $("#vecthare_rename_input").val().trim();
-      const id = $("#vecthare_rename_modal").data("collection-id");
+      const newName = $("#vectfox_rename_input").val().trim();
+      const id = $("#vectfox_rename_modal").data("collection-id");
 
       // Save the new name (or null to reset)
       setCollectionMeta(id, { displayName: newName || null });
@@ -1641,8 +1641,8 @@ function openRenameDialog(collectionId, currentName) {
     });
 
   // Show modal and focus input
-  $("#vecthare_rename_modal").fadeIn(200, function () {
-    $("#vecthare_rename_input").focus().select();
+  $("#vectfox_rename_modal").fadeIn(200, function () {
+    $("#vectfox_rename_input").focus().select();
   });
 }
 
@@ -1650,7 +1650,7 @@ function openRenameDialog(collectionId, currentName) {
  * Closes the rename dialog
  */
 function closeRenameDialog() {
-  $("#vecthare_rename_modal").fadeOut(200);
+  $("#vectfox_rename_modal").fadeOut(200);
 }
 
 // ============================================================================
@@ -1663,20 +1663,20 @@ function closeRenameDialog() {
  */
 function openModelSwitcher(collection) {
   // Create modal if it doesn't exist
-  if ($("#vecthare_model_switcher_modal").length === 0) {
+  if ($("#vectfox_model_switcher_modal").length === 0) {
     const modalHtml = `
-            <div id="vecthare_model_switcher_modal" class="vectfox-modal">
+            <div id="vectfox_model_switcher_modal" class="vectfox-modal">
                 <div class="vectfox-modal-content vectfox-model-switcher-content popup">
                     <div class="vectfox-modal-header">
                         <h3><i class="fa-solid fa-code-branch"></i> Switch Embedding Model</h3>
-                        <button class="vectfox-btn-icon" id="vecthare_model_switcher_close">✕</button>
+                        <button class="vectfox-btn-icon" id="vectfox_model_switcher_close">✕</button>
                     </div>
                     <div class="vectfox-modal-body">
                         <p class="vectfox-model-switcher-desc">
                             Select which embedding model to use for this collection.
                             Each model may have different vectors from different embedding providers.
                         </p>
-                        <div id="vecthare_model_list" class="vectfox-model-list"></div>
+                        <div id="vectfox_model_list" class="vectfox-model-list"></div>
                     </div>
                 </div>
             </div>
@@ -1684,19 +1684,19 @@ function openModelSwitcher(collection) {
     $("body").append(modalHtml);
 
     // Bind close
-    $("#vecthare_model_switcher_close").on("click", closeModelSwitcher);
+    $("#vectfox_model_switcher_close").on("click", closeModelSwitcher);
     // Stop mousedown propagation (ST closes drawers on mousedown/touchstart)
-    $("#vecthare_model_switcher_modal").on("mousedown touchstart", function (e) {
+    $("#vectfox_model_switcher_modal").on("mousedown touchstart", function (e) {
       e.stopPropagation();
     });
     // Close on background click
-    $("#vecthare_model_switcher_modal").on("click", function (e) {
+    $("#vectfox_model_switcher_modal").on("click", function (e) {
       if (e.target === this) closeModelSwitcher();
     });
   }
 
   // Store collection reference
-  $("#vecthare_model_switcher_modal").data("collection", collection);
+  $("#vectfox_model_switcher_modal").data("collection", collection);
 
   // Build model list
   const modelListHtml = collection.models
@@ -1725,7 +1725,7 @@ function openModelSwitcher(collection) {
     })
     .join("");
 
-  $("#vecthare_model_list").html(modelListHtml);
+  $("#vectfox_model_list").html(modelListHtml);
 
   // Bind selection
   $(".vectfox-model-select-btn")
@@ -1735,7 +1735,7 @@ function openModelSwitcher(collection) {
       const modelPath = $(this)
         .closest(".vectfox-model-item")
         .data("model-path");
-      const coll = $("#vecthare_model_switcher_modal").data("collection");
+      const coll = $("#vectfox_model_switcher_modal").data("collection");
 
       // Update collection
       coll.model = modelPath;
@@ -1758,14 +1758,14 @@ function openModelSwitcher(collection) {
     });
 
   // Show
-  $("#vecthare_model_switcher_modal").fadeIn(200);
+  $("#vectfox_model_switcher_modal").fadeIn(200);
 }
 
 /**
  * Closes the model switcher modal
  */
 function closeModelSwitcher() {
-  $("#vecthare_model_switcher_modal").fadeOut(200);
+  $("#vectfox_model_switcher_modal").fadeOut(200);
 }
 
 // ============================================================================
@@ -1903,21 +1903,21 @@ function openActivationEditor(collectionId, collectionName) {
   };
 
   // Create modal if needed
-  if ($("#vecthare_activation_editor_modal").length === 0) {
+  if ($("#vectfox_activation_editor_modal").length === 0) {
     createActivationEditorModal();
   }
 
   // Populate with current settings
   renderActivationEditor();
 
-  $("#vecthare_activation_editor_modal").fadeIn(200);
+  $("#vectfox_activation_editor_modal").fadeIn(200);
 }
 
 /**
  * Closes the activation editor
  */
 function closeActivationEditor() {
-  $("#vecthare_activation_editor_modal").fadeOut(200);
+  $("#vectfox_activation_editor_modal").fadeOut(200);
   activationEditorState.collectionId = null;
 }
 
@@ -1928,28 +1928,28 @@ function closeActivationEditor() {
  */
 function createActivationEditorModal() {
   const modalHtml = `
-        <div id="vecthare_activation_editor_modal" class="vectfox-modal">
+        <div id="vectfox_activation_editor_modal" class="vectfox-modal">
             <div class="vectfox-activation-editor">
                 <div class="vectfox-modal-header">
                                     <h3>⚙️ Collection Settings</h3>
                                     <div style="display:flex; gap:8px; align-items:center;">
-                                        <button id="vecthare_activation_lock_collection" class="vectfox-btn-sm" title="Lock this collection to the current chat">🔒 Lock to Chat</button>
-                                        <button class="vectfox-btn-icon" id="vecthare_activation_close">✕</button>
+                                        <button id="vectfox_activation_lock_collection" class="vectfox-btn-sm" title="Lock this collection to the current chat">🔒 Lock to Chat</button>
+                                        <button class="vectfox-btn-icon" id="vectfox_activation_close">✕</button>
                                     </div>
                                 </div>
 
                 <div class="vectfox-activation-body">
                     <div class="vectfox-activation-collection-name">
-                        Collection: <strong id="vecthare_activation_collection_name"></strong>
+                        Collection: <strong id="vectfox_activation_collection_name"></strong>
                     </div>
 
                     <!-- Always Active Toggle -->
                     <div class="vectfox-activation-section vectfox-always-active">
                         <label class="vectfox-checkbox-label">
-                            <input type="checkbox" id="vecthare_always_active">
-                        <strong id="vecthare_always_active_label">Active for current chat</strong>
+                            <input type="checkbox" id="vectfox_always_active">
+                        <strong id="vectfox_always_active_label">Active for current chat</strong>
                         </label>
-                      <small id="vecthare_always_active_hint">When enabled, this collection is active for the current chat</small>
+                      <small id="vectfox_always_active_hint">When enabled, this collection is active for the current chat</small>
                     </div>
 
                     <!-- ========================================== -->
@@ -1963,7 +1963,7 @@ function createActivationEditorModal() {
 
                         <div class="vectfox-triggers-input">
                             <label>Trigger keywords:</label>
-                            <textarea id="vecthare_triggers_input"
+                            <textarea id="vectfox_triggers_input"
                                       placeholder="Enter keywords, one per line or comma-separated.&#10;Supports regex: /pattern/i"
                                       rows="4"></textarea>
                         </div>
@@ -1971,19 +1971,19 @@ function createActivationEditorModal() {
                         <div class="vectfox-triggers-options">
                             <div class="vectfox-option-row">
                                 <label>Match mode:</label>
-                                <select id="vecthare_trigger_match_mode">
+                                <select id="vectfox_trigger_match_mode">
                                     <option value="any">ANY trigger matches (OR)</option>
                                     <option value="all">ALL triggers must match (AND)</option>
                                 </select>
                             </div>
                             <div class="vectfox-option-row">
                                 <label>Scan depth:</label>
-                                <input type="number" id="vecthare_trigger_scan_depth" min="1" max="20" value="5">
+                                <input type="number" id="vectfox_trigger_scan_depth" min="1" max="20" value="5">
                                 <small>recent messages</small>
                             </div>
                             <div class="vectfox-option-row">
                                 <label class="vectfox-checkbox-label">
-                                    <input type="checkbox" id="vecthare_trigger_case_sensitive">
+                                    <input type="checkbox" id="vectfox_trigger_case_sensitive">
                                     Case sensitive
                                 </label>
                             </div>
@@ -2002,7 +2002,7 @@ function createActivationEditorModal() {
                         <!-- Enable toggle -->
                         <div class="vectfox-conditions-toggle">
                             <label class="vectfox-checkbox-label">
-                                <input type="checkbox" id="vecthare_conditions_enabled">
+                                <input type="checkbox" id="vectfox_conditions_enabled">
                                 Enable advanced conditions
                             </label>
                         </div>
@@ -2010,7 +2010,7 @@ function createActivationEditorModal() {
                         <!-- Logic selector -->
                         <div class="vectfox-conditions-logic">
                             <label>Condition logic:</label>
-                            <select id="vecthare_conditions_logic">
+                            <select id="vectfox_conditions_logic">
                                 <option value="AND">ALL conditions must match (AND)</option>
                                 <option value="OR">ANY condition can match (OR)</option>
                             </select>
@@ -2020,9 +2020,9 @@ function createActivationEditorModal() {
                         <div class="vectfox-conditions-rules">
                             <div class="vectfox-conditions-rules-header">
                                 <span>Conditions</span>
-                                <button class="vectfox-btn-sm" id="vecthare_add_condition">+ Add</button>
+                                <button class="vectfox-btn-sm" id="vectfox_add_condition">+ Add</button>
                             </div>
-                            <div id="vecthare_conditions_list"></div>
+                            <div id="vectfox_conditions_list"></div>
                         </div>
                     </div>
 
@@ -2038,15 +2038,15 @@ function createActivationEditorModal() {
                         <div class="vectfox-decay-settings">
                             <div class="vectfox-option-row">
                                 <label class="vectfox-checkbox-label">
-                                    <input type="checkbox" id="vecthare_decay_enabled">
+                                    <input type="checkbox" id="vectfox_decay_enabled">
                                     <strong>Enable temporal weighting</strong>
                                 </label>
                             </div>
 
-                            <div class="vectfox-decay-advanced" id="vecthare_decay_advanced">
+                            <div class="vectfox-decay-advanced" id="vectfox_decay_advanced">
                                 <div class="vectfox-type-toggle">
                                     <label class="vectfox-type-option" data-type="decay">
-                                        <input type="radio" name="vecthare_decay_type" value="decay" checked>
+                                        <input type="radio" name="vectfox_decay_type" value="decay" checked>
                                         <div class="vectfox-type-card">
                                             <div class="vectfox-type-header">
                                                 <span class="vectfox-type-icon">📉</span>
@@ -2056,7 +2056,7 @@ function createActivationEditorModal() {
                                         </div>
                                     </label>
                                     <label class="vectfox-type-option" data-type="nostalgia">
-                                        <input type="radio" name="vecthare_decay_type" value="nostalgia">
+                                        <input type="radio" name="vectfox_decay_type" value="nostalgia">
                                         <div class="vectfox-type-card">
                                             <div class="vectfox-type-header">
                                                 <span class="vectfox-type-icon">📈</span>
@@ -2070,7 +2070,7 @@ function createActivationEditorModal() {
                                 <div class="vectfox-curve-label">Curve</div>
                                 <div class="vectfox-type-toggle vectfox-curve-toggle">
                                     <label class="vectfox-type-option" data-mode="exponential">
-                                        <input type="radio" name="vecthare_decay_mode" value="exponential" checked>
+                                        <input type="radio" name="vectfox_decay_mode" value="exponential" checked>
                                         <div class="vectfox-type-card">
                                             <div class="vectfox-type-header">
                                                 <span class="vectfox-type-icon">📐</span>
@@ -2080,7 +2080,7 @@ function createActivationEditorModal() {
                                         </div>
                                     </label>
                                     <label class="vectfox-type-option" data-mode="linear">
-                                        <input type="radio" name="vecthare_decay_mode" value="linear">
+                                        <input type="radio" name="vectfox_decay_mode" value="linear">
                                         <div class="vectfox-type-card">
                                             <div class="vectfox-type-header">
                                                 <span class="vectfox-type-icon">📏</span>
@@ -2093,25 +2093,25 @@ function createActivationEditorModal() {
 
                                 <div class="vectfox-option-row vectfox-decay-exponential">
                                     <label>Half-life:</label>
-                                    <input type="number" id="vecthare_decay_halflife" min="1" max="500" value="50">
-                                    <small id="vecthare_halflife_hint">messages until 50% effect</small>
+                                    <input type="number" id="vectfox_decay_halflife" min="1" max="500" value="50">
+                                    <small id="vectfox_halflife_hint">messages until 50% effect</small>
                                 </div>
 
                                 <div class="vectfox-option-row vectfox-decay-linear" style="display: none;">
                                     <label>Rate:</label>
-                                    <input type="number" id="vecthare_decay_rate" min="0.001" max="0.5" step="0.001" value="0.01">
+                                    <input type="number" id="vectfox_decay_rate" min="0.001" max="0.5" step="0.001" value="0.01">
                                     <small>per message (0.01 = 1%)</small>
                                 </div>
 
                                 <div class="vectfox-option-row vectfox-decay-floor">
-                                    <label id="vecthare_limit_label">Min relevance:</label>
-                                    <input type="number" id="vecthare_decay_min" min="0" max="2" step="0.05" value="0.3">
-                                    <small id="vecthare_limit_hint">floor for decay (0-1)</small>
+                                    <label id="vectfox_limit_label">Min relevance:</label>
+                                    <input type="number" id="vectfox_decay_min" min="0" max="2" step="0.05" value="0.3">
+                                    <small id="vectfox_limit_hint">floor for decay (0-1)</small>
                                 </div>
 
                                 <div class="vectfox-option-row vectfox-nostalgia-ceiling" style="display: none;">
                                     <label>Max boost:</label>
-                                    <input type="number" id="vecthare_decay_max_boost" min="1" max="3" step="0.1" value="1.2">
+                                    <input type="number" id="vectfox_decay_max_boost" min="1" max="3" step="0.1" value="1.2">
                                     <small>ceiling for nostalgia (1.2 = 20% max boost)</small>
                                 </div>
 
@@ -2131,7 +2131,7 @@ function createActivationEditorModal() {
                         <div class="vectfox-context-settings">
                             <div class="vectfox-option-row">
                                 <label>Context prompt:</label>
-                                <textarea id="vecthare_collection_context"
+                                <textarea id="vectfox_collection_context"
                                           placeholder="e.g., Things {{char}} remembers about {{user}}:"
                                           rows="2"></textarea>
                                 <small>Shown before this collection's chunks. Supports {{user}} and {{char}}.</small>
@@ -2139,13 +2139,13 @@ function createActivationEditorModal() {
 
                             <div class="vectfox-option-row">
                                 <label>XML tag (optional):</label>
-                                <input type="text" id="vecthare_collection_xml_tag" placeholder="e.g., memories">
+                                <input type="text" id="vectfox_collection_xml_tag" placeholder="e.g., memories">
                                 <small>Wraps this collection's chunks in &lt;tag&gt;...&lt;/tag&gt;</small>
                             </div>
 
                             <div class="vectfox-option-row vectfox-injection-row">
                                 <label>Injection position:</label>
-                                <select id="vecthare_collection_position">
+                                <select id="vectfox_collection_position">
                                     <option value="">Use global default</option>
                                     <option value="2">Before Main Prompt</option>
                                     <option value="0">After Main Prompt</option>
@@ -2154,9 +2154,9 @@ function createActivationEditorModal() {
                                 <small>Where this collection's chunks appear in the prompt</small>
                             </div>
 
-                            <div class="vectfox-option-row vectfox-depth-row" id="vecthare_collection_depth_row" style="display: none;">
-                                <label>Injection depth: <span id="vecthare_collection_depth_value">2</span></label>
-                                <input type="range" id="vecthare_collection_depth" min="0" max="50" step="1" value="2">
+                            <div class="vectfox-option-row vectfox-depth-row" id="vectfox_collection_depth_row" style="display: none;">
+                                <label>Injection depth: <span id="vectfox_collection_depth_value">2</span></label>
+                                <input type="range" id="vectfox_collection_depth" min="0" max="50" step="1" value="2">
                                 <small>Messages from end of chat to insert at</small>
                             </div>
                         </div>
@@ -2176,8 +2176,8 @@ function createActivationEditorModal() {
                 </div>
 
                 <div class="vectfox-modal-footer">
-                    <button class="vectfox-btn" id="vecthare_activation_cancel">Cancel</button>
-                    <button class="vectfox-btn vectfox-btn-primary" id="vecthare_activation_save">Save</button>
+                    <button class="vectfox-btn" id="vectfox_activation_cancel">Cancel</button>
+                    <button class="vectfox-btn vectfox-btn-primary" id="vectfox_activation_save">Save</button>
                 </div>
             </div>
         </div>
@@ -2193,11 +2193,11 @@ function createActivationEditorModal() {
  */
 function updateTemporalWeightingHints(isNostalgia) {
   if (isNostalgia) {
-    $("#vecthare_decay_type_hint").text("Older messages score higher");
-    $("#vecthare_halflife_hint").text("messages until 50% of max boost");
+    $("#vectfox_decay_type_hint").text("Older messages score higher");
+    $("#vectfox_halflife_hint").text("messages until 50% of max boost");
   } else {
-    $("#vecthare_decay_type_hint").text("Newer messages score higher");
-    $("#vecthare_halflife_hint").text("messages until 50% relevance");
+    $("#vectfox_decay_type_hint").text("Newer messages score higher");
+    $("#vectfox_halflife_hint").text("messages until 50% relevance");
   }
 }
 
@@ -2205,7 +2205,7 @@ function updateTemporalWeightingHints(isNostalgia) {
  * Binds event handlers for activation editor
  */
 function bindActivationEditorEvents() {
-  $("#vecthare_activation_close, #vecthare_activation_cancel").on(
+  $("#vectfox_activation_close, #vectfox_activation_cancel").on(
     "click",
     function (e) {
       e.preventDefault();
@@ -2214,42 +2214,42 @@ function bindActivationEditorEvents() {
     },
   );
 
-  $("#vecthare_activation_save").on("click", function (e) {
+  $("#vectfox_activation_save").on("click", function (e) {
     e.preventDefault();
     e.stopPropagation();
     saveActivation();
   });
 
-  $("#vecthare_add_condition").on("click", function (e) {
+  $("#vectfox_add_condition").on("click", function (e) {
     e.preventDefault();
     e.stopPropagation();
     addConditionRule();
   });
 
   // Stop mousedown propagation (ST closes drawers on mousedown/touchstart)
-  $("#vecthare_activation_editor_modal").on("mousedown touchstart", function (e) {
+  $("#vectfox_activation_editor_modal").on("mousedown touchstart", function (e) {
     e.stopPropagation();
   });
 
   // Close on background click
-  $("#vecthare_activation_editor_modal").on("click", function (e) {
+  $("#vectfox_activation_editor_modal").on("click", function (e) {
     if (e.target === this) closeActivationEditor();
   });
 
   // Active-for-current-chat toggle (status only, does not disable other settings)
-  $("#vecthare_always_active").on("change", function (e) {
+  $("#vectfox_always_active").on("change", function (e) {
     e.stopPropagation();
   });
 
   // Decay enabled toggle shows/hides advanced settings
-  $("#vecthare_decay_enabled").on("change", function (e) {
+  $("#vectfox_decay_enabled").on("change", function (e) {
     e.stopPropagation();
     const enabled = $(this).prop("checked");
-    $("#vecthare_decay_advanced").toggle(enabled);
+    $("#vectfox_decay_advanced").toggle(enabled);
   });
 
   // Decay mode toggle shows/hides exponential vs linear settings
-  $('input[name="vecthare_decay_mode"]').on("change", function (e) {
+  $('input[name="vectfox_decay_mode"]').on("change", function (e) {
     e.stopPropagation();
     const mode = $(this).val();
     $(".vectfox-decay-exponential").toggle(mode === "exponential");
@@ -2260,7 +2260,7 @@ function bindActivationEditorEvents() {
   });
 
   // Decay type toggle shows/hides decay-specific vs nostalgia-specific fields
-  $('input[name="vecthare_decay_type"]').on("change", function (e) {
+  $('input[name="vectfox_decay_type"]').on("change", function (e) {
     e.stopPropagation();
     const isNostalgia = $(this).val() === "nostalgia";
     $(".vectfox-decay-floor").toggle(!isNostalgia);
@@ -2272,7 +2272,7 @@ function bindActivationEditorEvents() {
   });
 
   // Activation editor: Lock-to-chat button - opens dialog to manage multiple locks
-  $("#vecthare_activation_lock_collection").off("click").on("click", async function (e) {
+  $("#vectfox_activation_lock_collection").off("click").on("click", async function (e) {
     e.stopPropagation();
     const collId = activationEditorState.collectionId;
 
@@ -2295,17 +2295,17 @@ function bindActivationEditorEvents() {
   });
 
   // Injection position toggle shows/hides depth row
-  $("#vecthare_collection_position").on("change", function (e) {
+  $("#vectfox_collection_position").on("change", function (e) {
     e.stopPropagation();
     const position = $(this).val();
     // Show depth row only if "In-Chat @ Depth" (value 1) is selected
-    $("#vecthare_collection_depth_row").toggle(position === "1");
+    $("#vectfox_collection_depth_row").toggle(position === "1");
   });
 
   // Injection depth slider updates label
-  $("#vecthare_collection_depth").on("input", function (e) {
+  $("#vectfox_collection_depth").on("input", function (e) {
     e.stopPropagation();
-    $("#vecthare_collection_depth_value").text($(this).val());
+    $("#vectfox_collection_depth_value").text($(this).val());
   });
 }
 
@@ -2315,49 +2315,49 @@ function bindActivationEditorEvents() {
 function renderActivationEditor() {
   const state = activationEditorState;
 
-  $("#vecthare_activation_collection_name").text(state.collectionName);
-  $("#vecthare_always_active").prop("checked", state.alwaysActive);
-  $("#vecthare_always_active").prop("disabled", false);
-  $("#vecthare_always_active_label").text("Active for current chat");
-  $("#vecthare_always_active_hint").text("When enabled, this collection is active for the current chat");
+  $("#vectfox_activation_collection_name").text(state.collectionName);
+  $("#vectfox_always_active").prop("checked", state.alwaysActive);
+  $("#vectfox_always_active").prop("disabled", false);
+  $("#vectfox_always_active_label").text("Active for current chat");
+  $("#vectfox_always_active_hint").text("When enabled, this collection is active for the current chat");
 
   // Triggers
   const triggersText = state.triggers.join("\n");
-  $("#vecthare_triggers_input").val(triggersText);
-  $("#vecthare_trigger_match_mode").val(state.triggerMatchMode);
-  $("#vecthare_trigger_scan_depth").val(state.triggerScanDepth);
-  $("#vecthare_trigger_case_sensitive").prop(
+  $("#vectfox_triggers_input").val(triggersText);
+  $("#vectfox_trigger_match_mode").val(state.triggerMatchMode);
+  $("#vectfox_trigger_scan_depth").val(state.triggerScanDepth);
+  $("#vectfox_trigger_case_sensitive").prop(
     "checked",
     state.triggerCaseSensitive,
   );
 
   // Conditions
-  $("#vecthare_conditions_enabled").prop("checked", state.conditions.enabled);
-  $("#vecthare_conditions_logic").val(state.conditions.logic || "AND");
+  $("#vectfox_conditions_enabled").prop("checked", state.conditions.enabled);
+  $("#vectfox_conditions_logic").val(state.conditions.logic || "AND");
 
   // Temporal Weighting (decay or nostalgia)
   const decay = state.temporalDecay;
-  $("#vecthare_decay_enabled").prop("checked", decay.enabled);
+  $("#vectfox_decay_enabled").prop("checked", decay.enabled);
   const decayType = decay.type || "decay";
-  $(`input[name="vecthare_decay_type"][value="${decayType}"]`).prop(
+  $(`input[name="vectfox_decay_type"][value="${decayType}"]`).prop(
     "checked",
     true,
   );
   $(".vectfox-type-option").removeClass("selected");
   $(`.vectfox-type-option[data-type="${decayType}"]`).addClass("selected");
   const decayMode = decay.mode || "exponential";
-  $(`input[name="vecthare_decay_mode"][value="${decayMode}"]`).prop(
+  $(`input[name="vectfox_decay_mode"][value="${decayMode}"]`).prop(
     "checked",
     true,
   );
   $(`.vectfox-type-option[data-mode="${decayMode}"]`).addClass("selected");
-  $("#vecthare_decay_halflife").val(decay.halfLife);
-  $("#vecthare_decay_rate").val(decay.linearRate);
-  $("#vecthare_decay_min").val(decay.minRelevance);
-  $("#vecthare_decay_max_boost").val(decay.maxBoost || 1.2);
+  $("#vectfox_decay_halflife").val(decay.halfLife);
+  $("#vectfox_decay_rate").val(decay.linearRate);
+  $("#vectfox_decay_min").val(decay.minRelevance);
+  $("#vectfox_decay_max_boost").val(decay.maxBoost || 1.2);
 
   // Show/hide advanced decay settings based on enabled
-  $("#vecthare_decay_advanced").toggle(decay.enabled);
+  $("#vectfox_decay_advanced").toggle(decay.enabled);
 
   // Show correct decay mode fields
   $(".vectfox-decay-exponential").toggle(decay.mode === "exponential");
@@ -2370,16 +2370,16 @@ function renderActivationEditor() {
   updateTemporalWeightingHints(isNostalgia);
 
   // Prompt Context
-  $("#vecthare_collection_context").val(state.context || "");
-  $("#vecthare_collection_xml_tag").val(state.xmlTag || "");
+  $("#vectfox_collection_context").val(state.context || "");
+  $("#vectfox_collection_xml_tag").val(state.xmlTag || "");
 
   // Injection position/depth
   const posValue = state.position !== null ? String(state.position) : "";
-  $("#vecthare_collection_position").val(posValue);
-  $("#vecthare_collection_depth").val(state.depth ?? 2);
-  $("#vecthare_collection_depth_value").text(state.depth ?? 2);
+  $("#vectfox_collection_position").val(posValue);
+  $("#vectfox_collection_depth").val(state.depth ?? 2);
+  $("#vectfox_collection_depth_value").text(state.depth ?? 2);
   // Show depth row only if position is "In-Chat @ Depth" (value 1)
-  $("#vecthare_collection_depth_row").toggle(state.position === 1);
+  $("#vectfox_collection_depth_row").toggle(state.position === 1);
 
   // Keep trigger/condition sections enabled regardless of chat activation toggle.
   $(".vectfox-triggers-section, .vectfox-conditions-section").removeClass("vectfox-disabled");
@@ -2396,7 +2396,7 @@ function renderActivationEditor() {
 function refreshActivationLockButton() {
   try {
     const collId = activationEditorState.collectionId;
-    const $btn = $("#vecthare_activation_lock_collection");
+    const $btn = $("#vectfox_activation_lock_collection");
     const chatId = getCurrentChatId();
     const context = getContext();
     const charId = context?.characterId || null;
@@ -2421,7 +2421,7 @@ function refreshActivationLockButton() {
     const shouldBeActive = Boolean(isLockedToCurrentChat || isLockedToCurrentChar);
     if (activationEditorState.collectionId) {
       activationEditorState.alwaysActive = shouldBeActive;
-      $("#vecthare_always_active").prop("checked", shouldBeActive);
+      $("#vectfox_always_active").prop("checked", shouldBeActive);
     }
 
     if (totalLocks === 0) {
@@ -2453,7 +2453,7 @@ function saveActivation() {
   const state = activationEditorState;
 
   // Parse triggers from textarea
-  const triggersRaw = $("#vecthare_triggers_input").val();
+  const triggersRaw = $("#vectfox_triggers_input").val();
   const triggers = triggersRaw
     .split(/[\n,]/)
     .map((t) => t.trim())
@@ -2461,31 +2461,31 @@ function saveActivation() {
 
   // Build temporal weighting settings (decay or nostalgia)
   const temporalDecay = {
-    enabled: $("#vecthare_decay_enabled").prop("checked"),
-    type: $('input[name="vecthare_decay_type"]:checked').val() || "decay",
-    mode: $('input[name="vecthare_decay_mode"]:checked').val() || "exponential",
-    halfLife: parseInt($("#vecthare_decay_halflife").val()) || 50,
-    linearRate: parseFloat($("#vecthare_decay_rate").val()) || 0.01,
-    minRelevance: parseFloat($("#vecthare_decay_min").val()) || 0.3,
-    maxBoost: parseFloat($("#vecthare_decay_max_boost").val()) || 1.2,
+    enabled: $("#vectfox_decay_enabled").prop("checked"),
+    type: $('input[name="vectfox_decay_type"]:checked').val() || "decay",
+    mode: $('input[name="vectfox_decay_mode"]:checked').val() || "exponential",
+    halfLife: parseInt($("#vectfox_decay_halflife").val()) || 50,
+    linearRate: parseFloat($("#vectfox_decay_rate").val()) || 0.01,
+    minRelevance: parseFloat($("#vectfox_decay_min").val()) || 0.3,
+    maxBoost: parseFloat($("#vectfox_decay_max_boost").val()) || 1.2,
   };
 
   // Get prompt context values (sanitize xml tag)
-  const contextPrompt = $("#vecthare_collection_context").val() || "";
-  const xmlTagRaw = $("#vecthare_collection_xml_tag").val() || "";
+  const contextPrompt = $("#vectfox_collection_context").val() || "";
+  const xmlTagRaw = $("#vectfox_collection_xml_tag").val() || "";
   const xmlTag = xmlTagRaw.replace(/[^a-zA-Z0-9_-]/g, "");
 
   // Get injection position/depth (empty string = use global default = null)
-  const positionRaw = $("#vecthare_collection_position").val();
+  const positionRaw = $("#vectfox_collection_position").val();
   const position = positionRaw === "" ? null : parseInt(positionRaw);
   const depth =
     position === 1
-      ? parseInt($("#vecthare_collection_depth").val()) || 2
+      ? parseInt($("#vectfox_collection_depth").val()) || 2
       : null;
 
-  const isChecked = $("#vecthare_always_active").prop("checked");
+  const isChecked = $("#vectfox_always_active").prop("checked");
   const currentChatId = getCurrentChatId();
-  console.log(`[VectHare] saveActivation: alwaysActive checkbox=${isChecked}, chatId=${currentChatId || 'none'}, collection=${state.collectionId}`);
+  console.log(`[VectFox] saveActivation: alwaysActive checkbox=${isChecked}, chatId=${currentChatId || 'none'}, collection=${state.collectionId}`);
   if (currentChatId) {
     if (isChecked) {
       setCollectionLock(state.collectionId, currentChatId);
@@ -2502,9 +2502,9 @@ function saveActivation() {
   setCollectionMeta(state.collectionId, {
     alwaysActive: alwaysActiveValue,
     triggers: triggers,
-    triggerMatchMode: $("#vecthare_trigger_match_mode").val(),
-    triggerScanDepth: parseInt($("#vecthare_trigger_scan_depth").val()) || 5,
-    triggerCaseSensitive: $("#vecthare_trigger_case_sensitive").prop("checked"),
+    triggerMatchMode: $("#vectfox_trigger_match_mode").val(),
+    triggerScanDepth: parseInt($("#vectfox_trigger_scan_depth").val()) || 5,
+    triggerCaseSensitive: $("#vectfox_trigger_case_sensitive").prop("checked"),
     temporalDecay: temporalDecay,
     context: contextPrompt,
     xmlTag: xmlTag,
@@ -2514,8 +2514,8 @@ function saveActivation() {
 
   // Save conditions
   const conditions = {
-    enabled: $("#vecthare_conditions_enabled").prop("checked"),
-    logic: $("#vecthare_conditions_logic").val(),
+    enabled: $("#vectfox_conditions_enabled").prop("checked"),
+    logic: $("#vectfox_conditions_logic").val(),
     rules: state.conditions.rules || [],
   };
   setCollectionConditions(state.collectionId, conditions);
@@ -2530,7 +2530,7 @@ function saveActivation() {
  */
 function renderConditionRules() {
   const rules = activationEditorState.conditions.rules || [];
-  const container = $("#vecthare_conditions_list");
+  const container = $("#vectfox_conditions_list");
 
   if (rules.length === 0) {
     container.html(
@@ -3032,10 +3032,10 @@ function bindSearchEvents() {
   searchEventsBound = true;
 
   // Search button click
-  $("#vecthare_search_btn").off("click").on("click", performSearch);
+  $("#vectfox_search_btn").off("click").on("click", performSearch);
 
   // Enter key in search input
-  $("#vecthare_semantic_search")
+  $("#vectfox_semantic_search")
     .off("keydown")
     .on("keydown", function (e) {
       if (e.key === "Enter") {
@@ -3045,23 +3045,23 @@ function bindSearchEvents() {
     });
 
   // Keyword filter events
-  $("#vecthare_scan_keywords").off("click").on("click", scanKeywords);
-  $("#vecthare_clear_keyword_filter").off("click").on("click", clearKeywordFilter);
-  $("#vecthare_keyword_filter").off("input").on("input", updateKeywordFilterFromInput);
+  $("#vectfox_scan_keywords").off("click").on("click", scanKeywords);
+  $("#vectfox_clear_keyword_filter").off("click").on("click", clearKeywordFilter);
+  $("#vectfox_keyword_filter").off("input").on("input", updateKeywordFilterFromInput);
 }
 
 /**
  * Scans all collections for keywords
  */
 async function scanKeywords() {
-  const $btn = $("#vecthare_scan_keywords");
-  const $tags = $("#vecthare_keyword_tags");
+  const $btn = $("#vectfox_scan_keywords");
+  const $tags = $("#vectfox_keyword_tags");
 
   $btn.prop("disabled", true).html('<i class="fa-solid fa-spinner fa-spin"></i> Scanning...');
   $tags.html('<span class="vectfox-keyword-hint">Scanning collections...</span>');
 
   try {
-    const enabledOnly = $("#vecthare_search_enabled_only").is(":checked");
+    const enabledOnly = $("#vectfox_search_enabled_only").is(":checked");
     let collectionsToScan = browserState.collections;
 
     if (enabledOnly) {
@@ -3128,7 +3128,7 @@ async function scanKeywords() {
  * Renders clickable keyword tags
  */
 function renderKeywordTags() {
-  const $tags = $("#vecthare_keyword_tags");
+  const $tags = $("#vectfox_keyword_tags");
   const keywords = browserState.availableKeywords;
 
   if (keywords.length === 0) {
@@ -3176,7 +3176,7 @@ function toggleKeywordFilter(keyword) {
   }
 
   browserState.keywordFilter = currentFilter.join(', ');
-  $("#vecthare_keyword_filter").val(browserState.keywordFilter);
+  $("#vectfox_keyword_filter").val(browserState.keywordFilter);
   renderKeywordTags();
 }
 
@@ -3185,7 +3185,7 @@ function toggleKeywordFilter(keyword) {
  */
 function clearKeywordFilter() {
   browserState.keywordFilter = '';
-  $("#vecthare_keyword_filter").val('');
+  $("#vectfox_keyword_filter").val('');
   renderKeywordTags();
 }
 
@@ -3193,7 +3193,7 @@ function clearKeywordFilter() {
  * Updates keyword filter from input field
  */
 function updateKeywordFilterFromInput() {
-  browserState.keywordFilter = $("#vecthare_keyword_filter").val();
+  browserState.keywordFilter = $("#vectfox_keyword_filter").val();
   renderKeywordTags();
 }
 
@@ -3250,15 +3250,15 @@ function filterResultsByKeywords(results) {
  * Performs semantic search across collections
  */
 async function performSearch() {
-  const query = $("#vecthare_semantic_search").val().trim();
+  const query = $("#vectfox_semantic_search").val().trim();
   if (!query) {
     toastr.warning("Please enter a search query", "VectFox");
     return;
   }
 
-  const topK = parseInt($("#vecthare_search_topk").val()) || 5;
-  const threshold = parseFloat($("#vecthare_search_threshold").val()) || 0.3;
-  const enabledOnly = $("#vecthare_search_enabled_only").is(":checked");
+  const topK = parseInt($("#vectfox_search_topk").val()) || 5;
+  const threshold = parseFloat($("#vectfox_search_threshold").val()) || 0.3;
+  const enabledOnly = $("#vectfox_search_enabled_only").is(":checked");
 
   // Get collection IDs to search
   let collectionIds = browserState.collections.map((c) => c.id);
@@ -3288,7 +3288,7 @@ async function performSearch() {
   }
 
   if (collectionIds.length === 0) {
-    $("#vecthare_search_results").html(`
+    $("#vectfox_search_results").html(`
             <div class="vectfox-search-empty">
                 ${icons.search(48)}
                 <p>No collections available to search</p>
@@ -3299,10 +3299,10 @@ async function performSearch() {
 
   // Show loading state
   browserState.isSearching = true;
-  $("#vecthare_search_btn")
+  $("#vectfox_search_btn")
     .prop("disabled", true)
     .html(`${icons.search(16)} Searching...`);
-  $("#vecthare_search_results").html(`
+  $("#vectfox_search_results").html(`
         <div class="vectfox-search-loading">
             <i class="fa-solid fa-spinner fa-spin"></i> Searching ${collectionIds.length} collections...
         </div>
@@ -3324,14 +3324,14 @@ async function performSearch() {
     renderSearchResults(filteredResults, query, results);
   } catch (error) {
     console.error("VectFox: Search failed", error);
-    $("#vecthare_search_results").html(`
+    $("#vectfox_search_results").html(`
             <div class="vectfox-search-error">
                 ${icons.x(24)} Search failed: ${error.message}
             </div>
         `);
   } finally {
     browserState.isSearching = false;
-    $("#vecthare_search_btn")
+    $("#vectfox_search_btn")
       .prop("disabled", false)
       .html(`${icons.search(16)} Search`);
   }
@@ -3361,7 +3361,7 @@ function renderSearchResults(results, query, originalResults = null) {
       ? `<p>No results match keyword filter: "${escapeHtml(browserState.keywordFilter)}"</p><small>${originalTotal} result(s) found before filtering</small>`
       : `<p>No results found for "${escapeHtml(query)}"</p><small>Try adjusting the score threshold or search in more collections</small>`;
 
-    $("#vecthare_search_results").html(`
+    $("#vectfox_search_results").html(`
             <div class="vectfox-search-empty">
                 ${icons.search(48)}
                 ${filterMsg}
@@ -3456,7 +3456,7 @@ function renderSearchResults(results, query, originalResults = null) {
     html += `</div></div>`;
   }
 
-  $("#vecthare_search_results").html(html);
+  $("#vectfox_search_results").html(html);
   // sloppy, temporary fix to replicate OG chunk link functionality (1091)
   $(".vectfox-action-visualize")
     .off("click")
@@ -3566,7 +3566,7 @@ function renderBulkList() {
   }
 
   if (collections.length === 0) {
-    $("#vecthare_bulk_list").html(`
+    $("#vectfox_bulk_list").html(`
             <div class="vectfox-bulk-empty">
                 ${icons.folder(48)}
                 <p>No collections match the current filter</p>
@@ -3596,7 +3596,7 @@ function renderBulkList() {
         `;
   }
 
-  $("#vecthare_bulk_list").html(html);
+  $("#vectfox_bulk_list").html(html);
   updateBulkCount();
 }
 
@@ -3608,7 +3608,7 @@ function bindBulkEvents() {
   bulkEventsBound = true;
 
   // Filter change
-  $("#vecthare_bulk_filter")
+  $("#vectfox_bulk_filter")
     .off("change")
     .on("change", function () {
       browserState.bulkFilter = $(this).val();
@@ -3617,7 +3617,7 @@ function bindBulkEvents() {
     });
 
   // Select all checkbox
-  $("#vecthare_bulk_select_all")
+  $("#vectfox_bulk_select_all")
     .off("change")
     .on("change", function () {
       const isChecked = $(this).is(":checked");
@@ -3641,7 +3641,7 @@ function bindBulkEvents() {
     });
 
   // Individual checkbox clicks (delegated)
-  $("#vecthare_bulk_list")
+  $("#vectfox_bulk_list")
     .off("change", 'input[type="checkbox"]')
     .on("change", 'input[type="checkbox"]', function () {
       const key = $(this).data("key");
@@ -3657,7 +3657,7 @@ function bindBulkEvents() {
     });
 
   // Bulk enable
-  $("#vecthare_bulk_enable")
+  $("#vectfox_bulk_enable")
     .off("click")
     .on("click", async function () {
       if (browserState.bulkSelected.size === 0) return;
@@ -3679,7 +3679,7 @@ function bindBulkEvents() {
     });
 
   // Bulk disable
-  $("#vecthare_bulk_disable")
+  $("#vectfox_bulk_disable")
     .off("click")
     .on("click", async function () {
       if (browserState.bulkSelected.size === 0) return;
@@ -3701,7 +3701,7 @@ function bindBulkEvents() {
     });
 
   // Bulk export
-  $("#vecthare_bulk_export")
+  $("#vectfox_bulk_export")
     .off("click")
     .on("click", async function () {
       if (browserState.bulkSelected.size === 0) return;
@@ -3745,7 +3745,7 @@ function bindBulkEvents() {
     });
 
   // Bulk delete - uses unified deleteCollection()
-  $("#vecthare_bulk_delete")
+  $("#vectfox_bulk_delete")
     .off("click")
     .on("click", async function () {
       if (browserState.bulkSelected.size === 0) return;
@@ -3819,12 +3819,12 @@ function bindBulkEvents() {
  */
 function updateBulkCount() {
   const count = browserState.bulkSelected.size;
-  $("#vecthare_bulk_count").text(`${count} selected`);
+  $("#vectfox_bulk_count").text(`${count} selected`);
 
   // Enable/disable buttons based on selection
   const hasSelection = count > 0;
   $(
-    "#vecthare_bulk_enable, #vecthare_bulk_disable, #vecthare_bulk_export, #vecthare_bulk_delete",
+    "#vectfox_bulk_enable, #vectfox_bulk_disable, #vectfox_bulk_export, #vectfox_bulk_delete",
   ).prop("disabled", !hasSelection);
 }
 
@@ -3897,7 +3897,7 @@ function openCollectionLockDialog(collectionId) {
         : 'No character currently active';
 
     const dialogHtml = `
-        <div id="vecthare_lock_dialog" class="vectfox-modal" style="display: flex;">
+        <div id="vectfox_lock_dialog" class="vectfox-modal" style="display: flex;">
             <div class="vectfox-modal-content vectfox-lock-dialog">
                 <div class="vectfox-modal-header">
                     <h3><i class="fa-solid fa-lock"></i> Manage Collection Locks</h3>
@@ -3913,7 +3913,7 @@ function openCollectionLockDialog(collectionId) {
                             ${locksHtml}
                         </div>
                         <p class="${chatHintClass}">${chatHintText}</p>
-                        <button id="vecthare_lock_add_current" class="vectfox-btn-sm vectfox-btn-primary" ${!currentChatId || locks.includes(currentChatId) ? 'disabled' : ''}>
+                        <button id="vectfox_lock_add_current" class="vectfox-btn-sm vectfox-btn-primary" ${!currentChatId || locks.includes(currentChatId) ? 'disabled' : ''}>
                             <i class="fa-solid fa-plus"></i> Lock to Current Chat
                         </button>
                     </div>
@@ -3927,7 +3927,7 @@ function openCollectionLockDialog(collectionId) {
                             ${charLocksHtml}
                         </div>
                         <p class="${charHintClass}">${charHintText}</p>
-                        <button id="vecthare_lock_add_character" class="vectfox-btn-sm vectfox-btn-primary" ${!currentCharacterId || characterLocks.includes(currentCharacterId) ? 'disabled' : ''}>
+                        <button id="vectfox_lock_add_character" class="vectfox-btn-sm vectfox-btn-primary" ${!currentCharacterId || characterLocks.includes(currentCharacterId) ? 'disabled' : ''}>
                             <i class="fa-solid fa-plus"></i> Lock to Current Character
                         </button>
                     </div>
@@ -3945,7 +3945,7 @@ function openCollectionLockDialog(collectionId) {
     $('body').append($dialog);
 
     // Handle add lock button (chat)
-    $('#vecthare_lock_add_current').on('click', function() {
+    $('#vectfox_lock_add_current').on('click', function() {
         const chatId = getCurrentChatId();
         if (!chatId) {
             toastr.warning('Open a chat first');
@@ -3953,7 +3953,7 @@ function openCollectionLockDialog(collectionId) {
         }
 
         setCollectionLock(collectionId, chatId);
-        toastr.success('Collection locked to current chat', 'VectHare');
+        toastr.success('Collection locked to current chat', 'VectFox');
 
         // Re-open dialog with updated state
         $dialog.remove();
@@ -3962,7 +3962,7 @@ function openCollectionLockDialog(collectionId) {
     });
 
     // Handle add lock button (character)
-    $('#vecthare_lock_add_character').on('click', function() {
+    $('#vectfox_lock_add_character').on('click', function() {
         const context = getContext();
         const charId = context?.characterId;
         if (!charId) {
@@ -3971,7 +3971,7 @@ function openCollectionLockDialog(collectionId) {
         }
 
         setCollectionCharacterLock(collectionId, charId);
-        toastr.success('Collection locked to current character', 'VectHare');
+        toastr.success('Collection locked to current character', 'VectFox');
 
         // Re-open dialog with updated state
         $dialog.remove();
@@ -3985,7 +3985,7 @@ function openCollectionLockDialog(collectionId) {
         const chatId = $(this).data('chat-id');
 
         removeCollectionLock(collectionId, chatId);
-        toastr.info('Removed lock from chat', 'VectHare');
+        toastr.info('Removed lock from chat', 'VectFox');
 
         // Re-open dialog with updated state
         $dialog.remove();
@@ -3999,7 +3999,7 @@ function openCollectionLockDialog(collectionId) {
         const charId = $(this).data('character-id');
 
         removeCollectionCharacterLock(collectionId, charId);
-        toastr.info('Removed lock from character', 'VectHare');
+        toastr.info('Removed lock from character', 'VectFox');
 
         // Re-open dialog with updated state
         $dialog.remove();
@@ -4032,3 +4032,5 @@ function openCollectionLockDialog(collectionId) {
         }
     });
 }
+
+

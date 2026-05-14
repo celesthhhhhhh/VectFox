@@ -1,5 +1,5 @@
 /* ============================================================================
- * VECTHARE DIAGNOSTICS STYLES
+ * VECTFOX DIAGNOSTICS STYLES
  * ============================================================================
  * Diagnostics modal, test categories, results display
  *
@@ -499,4 +499,5 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--vectfox-danger) 40%, transparent);
 }
+
 

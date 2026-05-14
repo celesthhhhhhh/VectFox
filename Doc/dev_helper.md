@@ -8,29 +8,29 @@ EventBase is the **exclusive** retrieval path for chat content. The legacy `even
 
 | Pipeline | Content scope | Owned collections | Code entry point |
 |---|---|---|---|
-| **EventBase pipeline** | Chat history only (live chat + archive `.jsonl`) | `vecthare_eventbase_*`, `vecthare_archiveevent_*` | `eventbase-workflow.js` → `eventbase-retrieval.js` |
-| **Standard (Chunk) pipeline** | Non-chat content only — Lorebook / World Info, Character Cards, URLs / web pages, custom documents, wiki pages, YouTube transcripts | `vecthare_lorebook_*`, `vecthare_document_*`, user collections | `chat-vectorization.js` → `queryAndMergeCollections` |
+| **EventBase pipeline** | Chat history only (live chat + archive `.jsonl`) | `vectfox_eventbase_*`, `vectfox_archiveevent_*` | `eventbase-workflow.js` → `eventbase-retrieval.js` |
+| **Standard (Chunk) pipeline** | Non-chat content only — Lorebook / World Info, Character Cards, URLs / web pages, custom documents, wiki pages, YouTube transcripts | `vectfox_lorebook_*`, `vectfox_document_*`, user collections | `chat-vectorization.js` → `queryAndMergeCollections` |
 
 The two paths never see each other's content. There is no overlap in collection prefixes or content types.
 
 ### Key isolation rule (`core/chat-vectorization.js` → `gatherCollectionsToQuery`)
 
-- `vecthare_eventbase_*` → **always** skipped by the standard pipeline (EventBase pipeline owns them exclusively)
-- `vecthare_archiveevent_*` → **always** skipped by the standard pipeline (EventBase pipeline owns them exclusively)
-- `vecthare_chat_*` → **always** skipped by the standard pipeline (legacy chunk-based chat collections; no longer created since the EventBase toggle was removed, but pre-existing ones are excluded unconditionally)
+- `vectfox_eventbase_*` → **always** skipped by the standard pipeline (EventBase pipeline owns them exclusively)
+- `vectfox_archiveevent_*` → **always** skipped by the standard pipeline (EventBase pipeline owns them exclusively)
+- `vectfox_chat_*` → **always** skipped by the standard pipeline (legacy chunk-based chat collections; no longer created since the EventBase toggle was removed, but pre-existing ones are excluded unconditionally)
 
 ### Archive Chat History — Two content paths
 
 | Path | Content Type in UI | Collection prefix | Storage format | Retrieval |
 |---|---|---|---|---|
-| **A — EventBase** | `Chat → Upload` tab | `vecthare_archiveevent_*` | Event-shaped (same schema as live EventBase) | Phase A (EventBase re-ranker) |
-| **B — Chunk** | `Document` content type | `vecthare_document_*` | Chunk-shaped | Phase B (standard pipeline) |
+| **A — EventBase** | `Chat → Upload` tab | `vectfox_archiveevent_*` | Event-shaped (same schema as live EventBase) | Phase A (EventBase re-ranker) |
+| **B — Chunk** | `Document` content type | `vectfox_document_*` | Chunk-shaped | Phase B (standard pipeline) |
 
 Archive event collections are **not** auto-locked to any chat after ingestion. Users must manually check "Active for current chat" on the collection card to activate retrieval for a given chat.
 
 ### Why this matters
 
-Before the toggle removal, `vecthare_eventbase_*` collections could be included in the standard pipeline when EventBase was OFF, causing them to be queried twice per generation: once by the EventBase pipeline (structured event retrieval with dedup-depth) and once by the standard pipeline (raw chunk retrieval). The standard pipeline query was always redundant and could inject duplicate content. With the toggle gone, this class of bug is structurally impossible.
+Before the toggle removal, `vectfox_eventbase_*` collections could be included in the standard pipeline when EventBase was OFF, causing them to be queried twice per generation: once by the EventBase pipeline (structured event retrieval with dedup-depth) and once by the standard pipeline (raw chunk retrieval). The standard pipeline query was always redundant and could inject duplicate content. With the toggle gone, this class of bug is structurally impossible.
 
 ---
 
@@ -99,7 +99,7 @@ There are **two independent toggles** for collection activity. They store data i
 
 ### A) Card Pause/Resume Button (`enabled` flag)
 - **UI:** Play/pause icon button on each collection card in the Database Browser
-- **Writes:** `setCollectionEnabled(registryKey, false)` → stores `{ enabled: false }` under `extension_settings.vecthareplus.collections[registryKey]`
+- **Writes:** `setCollectionEnabled(registryKey, false)` → stores `{ enabled: false }` under `extension_settings.vectfoxplus.collections[registryKey]`
 - **Key format:** `collection.registryKey || collection.id` — for EventBase collections registered via `eventbase-store.js`, this is the **plain collection ID** (no `backend:source:` prefix) because `registerCollection(collectionId)` is called with the raw ID
 - **Read:** `isCollectionEnabled(collectionId)` in `core/collection-metadata.js` line 318
 - **Default:** `true` (enabled) when no metadata exists
@@ -137,7 +137,7 @@ Behaviour matrix:
 
 ### Key files
 - `core/collection-metadata.js` — `shouldCollectionActivate`, `isCollectionEnabled`, `setCollectionEnabled`, `isCollectionLockedToChat`, `setCollectionLock`, `removeCollectionLock`, `getCollectionLocks`
-- `ui/database-browser.js` line ~1055 — card toggle handler (`vecthare-action-toggle`)
+- `ui/database-browser.js` line ~1055 — card toggle handler (`vectfox-action-toggle`)
 - `ui/database-browser.js` function `saveActivation` — "Active for current chat" save handler
 - `ui/database-browser.js` function `openActivationEditor` — reads lock state to populate checkbox
 
@@ -151,7 +151,7 @@ Behaviour matrix:
 - Slow — requires embedding a dummy query + ANN search on every window
 
 ### Current approach (O(1), no DB query)
-Window fingerprints are stored in `extension_settings.vecthareplus.eventbase_extracted_windows[chatUUID]` as a flat string array. Using `extension_settings` (not `chat_metadata`) ensures they survive page reloads — `saveSettingsDebounced()` is called after each window so the cache is immediately persisted.
+Window fingerprints are stored in `extension_settings.vectfoxplus.eventbase_extracted_windows[chatUUID]` as a flat string array. Using `extension_settings` (not `chat_metadata`) ensures they survive page reloads — `saveSettingsDebounced()` is called after each window so the cache is immediately persisted.
 
 - **Fingerprint format:** sorted source hashes joined by comma, e.g. `"123,456,789"`
 - **On extraction:** `markWindowExtracted(sourceHashes, uuid)` appends the fingerprint (called in `eventbase-workflow.js` after successful insert)
@@ -203,7 +203,7 @@ Why this speeds up:
 - Before: one request embedding N items sequentially, total about N x T.
 - After (API providers): N requests fired concurrently inside one batch, total about T (subject to upstream limits).
 
-Related client-side behavior (VectHare):
+Related client-side behavior (vectfox):
 - In `core/core-vector-api.js`, local GPU sources default to small batch behavior unless user explicitly overrides `insert_batch_size`.
 
 ---
@@ -306,7 +306,7 @@ issues a single Qdrant `/points/query` with the four-weight formula baked in:
       ]
     }
   },
-  "filter": { "must_not": [{ "key": "type", "match": { "value": "_vecthare_meta" } }] },
+  "filter": { "must_not": [{ "key": "type", "match": { "value": "_vectfox_meta" } }] },
   "limit": "<topK>"
 }
 ```
@@ -335,11 +335,11 @@ request fails with a Qdrant error, check the server version and set
 | Item | Value |
 |---|---|
 | Origin | `similharity/index.js` lines 54–146 |
-| VectHare copy | `core/query-keyword-extractor.js` |
+| vectfox copy | `core/query-keyword-extractor.js` |
 | Exports | `extractQueryKeywords(text, maxKeywords)`, `isCJKToken(token)`, `RETRIEVAL_KEYWORD_LEVELS`, `DEFAULT_RETRIEVAL_KEYWORD_LEVEL` |
 | Stop-word source | Imports `DEFAULT_STOP_WORD_SET` from `./stop-words.js` (full multi-language list, English + CJK; mirrored from `similharity/stop-words.js`) |
 
-**Keep-in-sync note:** if the extraction algorithm changes in `similharity/index.js` (e.g. anchor budget, bigram fallback, Latin regex), update `core/query-keyword-extractor.js` to match. The console log prefix was changed from `[Qdrant]` to `[VectHare]` — that difference is intentional.
+**Keep-in-sync note:** if the extraction algorithm changes in `similharity/index.js` (e.g. anchor budget, bigram fallback, Latin regex), update `core/query-keyword-extractor.js` to match. The console log prefix was changed from `[Qdrant]` to `[vectfox]` — that difference is intentional.
 
 
 ## Scene support — REMOVED
@@ -547,7 +547,7 @@ Inheritance is centralized in `_resolveAgenticLLMConfig(settings)` — read it o
 
 ### Debug log shape (when `agentic_retrieval_debug_logging` is true)
 
-All lines prefixed `[VectHarePlus-Agentic]` so they're greppable and distinct from `[EventBase]` / `[Qdrant]`.
+All lines prefixed `[vectfoxPlus-Agentic]` so they're greppable and distinct from `[EventBase]` / `[Qdrant]`.
 
 Per retrieval round emits, in order:
 1. `mode=ON trigger=user_message_len=<N>`
@@ -602,3 +602,4 @@ When AgentMode runs successfully, the returned `debug` object gains:
 ```
 
 Use these fields in future benchmark / diagnostic tooling.
+

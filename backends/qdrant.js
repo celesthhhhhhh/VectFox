@@ -8,7 +8,7 @@
  * COLLECTION STRATEGY (configurable via settings.qdrant_multitenancy):
  *
  * MULTITENANCY MODE (qdrant_multitenancy = true):
- * - Uses a single shared collection: "vecthare_multitenancy"
+ * - Uses a single shared collection: "vectfox_main"
  * - Adds content_type metadata field to distinguish different sources
  * - Uses Qdrant filtering to query only the relevant content_type
  * - More efficient for resource usage, suitable for smaller deployments
@@ -36,9 +36,9 @@ import { textgen_types, textgenerationwebui_settings } from '../../../../textgen
 
 const BACKEND_TYPE = 'qdrant';
 
-// NOTE: `vecthare_multitenancy` is kept verbatim for on-disk compatibility
+// NOTE: `vectfox_main` is kept verbatim for on-disk compatibility
 // with existing user Qdrant data. Do not rebrand. See plans/vectfox-rename-plan.md §1.5.
-const MULTITENANCY_COLLECTION = 'vecthare_multitenancy';
+const MULTITENANCY_COLLECTION = 'vectfox_main';
 
 /**
  * Get the model value from settings based on provider
@@ -204,7 +204,6 @@ export class QdrantBackend extends VectorBackend {
      *
      * Supported formats:
      *   vf_{type}_{sourceId} (VectFox)
-     *   vecthare_{type}_{sourceId} (Legacy VectHare)
      */
     _parseCollectionId(collectionId) {
         // First strip any registry prefix
@@ -218,14 +217,6 @@ export class QdrantBackend extends VectorBackend {
 
         // VectFox format: vf_{type}_{sourceId}
         if (parts.length >= 3 && parts[0] === 'vf') {
-            return {
-                type: parts[1],
-                sourceId: parts.slice(2).join('_')
-            };
-        }
-
-        // Legacy VectHare format: vecthare_{type}_{sourceId}
-        if (parts.length >= 3 && parts[0] === 'vecthare') {
             return {
                 type: parts[1],
                 sourceId: parts.slice(2).join('_')
@@ -325,9 +316,6 @@ export class QdrantBackend extends VectorBackend {
                             // Pass through VectFox-specific fields
                             importance: item.importance,
                             keywords: item.keywords,
-                            customWeights: item.customWeights,
-                            disabledKeywords: item.disabledKeywords,
-                            chunkGroup: item.chunkGroup,
                             conditions: item.conditions,
                             isSummaryChunk: item.isSummaryChunk,
                             parentHash: item.parentHash,

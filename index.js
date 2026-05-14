@@ -367,136 +367,68 @@ function onRunDiagnosticsClick() {
     openDiagnosticsModal();
 }
 
+// ──── DELETE-IN-FOLLOWUP: VectFox v2 one-shot upgrade handler ────
 /**
- * Action: Migrate all vecthare_* collections to vf_* naming format
+ * Action: Upgrade to VectFox v2 (one-shot upgrade for on-disk literals)
  */
-async function onMigrateCollectionsClick() {
-    const { findCollectionsToMigrate, migrateAllCollections } = await import('./core/collection-migrator.js');
-    
-    console.log('VectFox: Starting collection migration check...');
-    const collectionsToMigrate = await findCollectionsToMigrate(settings);
-    
-    if (collectionsToMigrate.length === 0) {
-        toastr.info('No legacy collections found to migrate', 'VectFox Migration');
-        return;
-    }
-    
+async function onUpgradeVectFoxV2Click() {
     const confirmed = confirm(
-        `Found ${collectionsToMigrate.length} legacy collection(s) to migrate from vecthare_* to vf_* format.\n\n` +
-        'This will:\n' +
-        '• Copy all vectors to new collections with vf_* names\n' +
-        '• Update registry and metadata\n' +
-        '• Keep old collections as backup (you can delete manually later)\n\n' +
+        'This will upgrade your Qdrant collections to VectFox v2 format.\n\n' +
+        'This will rewrite internal database identifiers to the new VectFox naming scheme.\n\n' +
         'Continue?'
     );
     
     if (!confirmed) {
-        toastr.info('Migration cancelled');
+        toastr.info('Upgrade cancelled');
         return;
     }
     
-    // Show progress tracker
-    progressTracker.show('Migrating Collections', collectionsToMigrate.length, 'collections');
+    progressTracker.show('Upgrading to VectFox v2', 0, 'collections');
     
     try {
-        const result = await migrateAllCollections(
-            settings,
-            (current, total, message) => {
-                progressTracker.updateProgress(current, message);
-            },
-            false // Don't delete old collections (keep as backup)
-        );
+        const response = await fetch('/api/plugins/similharity/chunks/upgrade-vectfox-v2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
         
+        if (!response.ok) {
+            throw new Error(`Upgrade failed: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
         progressTracker.hide();
         
-        if (result.failed.length === 0) {
-            toastr.success(
-                `Successfully migrated ${result.totalMigrated} collections (${result.itemCount} total vectors)`,
-                'Migration Complete'
-            );
+        if (result.success) {
+            settings.vectfox_v2_upgrade_done = true;
+            saveSettingsDebounced();
+            
+            let summary = `Successfully upgraded to VectFox v2!\n\n`;
+            summary += `Sentinel rewrites: ${result.report.sentinelRewrites.filter(r => r.hadLegacy).length} collections\n`;
+            if (result.report.multitenancyRename) {
+                summary += `Multitenancy collection: ${result.report.multitenancyRename.pointCount} points migrated`;
+            }
+            
+            toastr.success(summary, 'Upgrade Complete', { timeOut: 10000 });
+            
+            // Hide the button
+            $('#VectFox_upgrade_v2').hide();
         } else {
-            toastr.warning(
-                `Migrated ${result.totalMigrated}/${collectionsToMigrate.length} collections. ${result.failed.length} failed.<br><br>` +
-                `Failed: ${result.failed.join(', ')}`,
-                'Migration Partial'
-            );
+            const errors = result.report.errors.map(e => `${e.collection || e.phase}: ${e.error}`).join('\n');
+            toastr.error(`Upgrade failed:\n${errors}`, 'VectFox Upgrade', { timeOut: 15000 });
         }
-        
-        // Refresh database browser if it's open
-        if ($('#VectFox_database_browser_modal').length > 0) {
-            toastr.info('Reload the Database Browser to see migrated collections', 'VectFox');
-        }
-        
     } catch (error) {
         progressTracker.hide();
-        console.error('VectFox: Migration failed:', error);
-        toastr.error('Migration failed: ' + error.message, 'VectFox Migration');
+        console.error('VectFox: Upgrade failed:', error);
+        toastr.error('Upgrade failed: ' + error.message, 'VectFox Upgrade');
     }
 }
-
-/**
- * One-shot migration: VectHarePlus → VectFox
- * Runs once per install to move settings and update defaults.
- */
-function migrateVectHarePlusToVectFox() {
-    // Check if migration already ran
-    if (extension_settings.vectfox?.vectfox_migration_v1_done) return;
-
-    // 1) Move settings root (legacy read path)
-    if (extension_settings.vecthareplus && !extension_settings.vectfox) {
-        extension_settings.vectfox = extension_settings.vecthareplus;
-    }
-
-    // Ensure vectfox exists (new install path)
-    if (!extension_settings.vectfox) {
-        extension_settings.vectfox = {};
-    }
-
-    const s = extension_settings.vectfox;
-
-    // 2) Rename inner registry key
-    if (s.vecthare_collection_registry && !s.vectfox_collection_registry) {
-        s.vectfox_collection_registry = s.vecthare_collection_registry;
-        delete s.vecthare_collection_registry;
-    }
-
-    // 3) Update default RAG XML tag IFF user is still on the old default
-    if (s.rag_xml_tag === 'VectHareMemory') {
-        s.rag_xml_tag = 'VectFoxMemory';
-    }
-
-    // 4) Drop legacy duplicate keys
-    delete extension_settings.vecthareplus;
-    delete extension_settings.vecthare;  // historical alias
-
-    // 5) Mark migration complete
-    s.vectfox_migration_v1_done = true;
-
-    console.log('VectFox: Migration from VectHarePlus completed');
-}
+// ──── END DELETE-IN-FOLLOWUP ────
 
 /**
  * Initialize VectFox extension
  */
 jQuery(async () => {
     console.log('VectFox: Initializing...');
-
-    // Run one-shot migration from VectHarePlus to VectFox
-    migrateVectHarePlusToVectFox();
-
-    // Prevent ST from persisting a stale "vecthare" key derived from the folder name.
-    // ST auto-creates extension_settings[folderName] on every load, which would write a
-    // duplicate "vecthare" entry to settings.json alongside our canonical "vectfox" key.
-    // Making the property non-enumerable hides it from JSON.stringify so it never saves.
-    if (extension_settings.VECTFOX !== undefined) {
-        delete extension_settings.vecthare;
-    }
-    Object.defineProperty(extension_settings, 'vecthare', {
-        get: () => undefined,
-        set: () => {},
-        enumerable: false,
-        configurable: true,
-    });
 
     // Load saved settings
     if (!extension_settings.vectfox) {
@@ -566,7 +498,7 @@ jQuery(async () => {
         onPurge: onPurgeClick,
         onCleanupCorrupted: onCleanupCorruptedClick,
         onRunDiagnostics: onRunDiagnosticsClick,
-        onMigrateCollections: onMigrateCollectionsClick
+        onUpgradeVectFoxV2: onUpgradeVectFoxV2Click, // DELETE-IN-FOLLOWUP
     });
 
     // Initialize auto-sync checkbox state for current chat (if any)
@@ -610,6 +542,27 @@ jQuery(async () => {
         }
     })();
 
+    // D5: Cross-repo version check — warn loud if similharity is behind.
+    const SIMILHARITY_EXPECTED_VERSION = '3.2.0';
+    (async () => {
+        try {
+            const resp = await fetch('/api/plugins/similharity/version');
+            if (resp.ok) {
+                const { pluginVersion } = await resp.json();
+                if (pluginVersion !== SIMILHARITY_EXPECTED_VERSION) {
+                    console.warn(`[VectFox] VERSION MISMATCH: expected similharity v${SIMILHARITY_EXPECTED_VERSION}, got v${pluginVersion}. Pull matching versions.`);
+                    toastr.warning(
+                        `similharity version mismatch (expected ${SIMILHARITY_EXPECTED_VERSION}, got ${pluginVersion}) — see console`,
+                        'VectFox',
+                        { timeOut: 10000 }
+                    );
+                }
+            }
+        } catch (_err) {
+            // similharity not installed — separate problem, not our warning to raise
+        }
+    })();
+
     // Register event handlers
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
     eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
@@ -619,8 +572,8 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_RECEIVED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
     // DEAD-CHUNK-CHAT — disabled for good.
-    // These handlers used to purge `vecthare_chat_*` collections on chat deletion.
-    // Chat history now lives in `vecthare_eventbase_*` collections, which use a
+    // These handlers used to purge `vf_chat_*` collections on chat deletion.
+    // Chat history now lives in `vf_eventbase_*` collections, which use a
     // UUID-based ID that survives the chat-file deletion (and the chat UUID isn't
     // recoverable once the chat is gone). EventBase collections need to be cleaned
     // up via the Database Browser, not auto-purged on chat delete.

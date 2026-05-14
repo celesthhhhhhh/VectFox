@@ -1,5 +1,5 @@
 /* ============================================================================
- * VECTHARE BADGE STYLES
+ * VECTFOX BADGE STYLES
  * ============================================================================
  * Badge color system (ROYGBIV), status badges, activation badges
  *
@@ -131,4 +131,5 @@
     border-color: var(--vectfox-warning);
     background: color-mix(in srgb, var(--vectfox-warning) 10%, var(--SmartThemeBlurTintColor));
 }
+
 

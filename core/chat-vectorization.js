@@ -73,7 +73,7 @@ export { getChatUUID };
 // DEAD-CHUNK-CHAT — disabled for good
 // ============================================================================
 // These wrappers used to build legacy chunk-based chat collection IDs
-// (vecthare_chat_*). Chat history now goes exclusively through EventBase,
+// (vf_chat_*). Chat history now goes exclusively through EventBase,
 // so both wrappers return null. The underlying builders also no-op + warn.
 // Callers should be audited and removed (search tag: DEAD-CHUNK-CHAT).
 // ============================================================================
@@ -155,7 +155,7 @@ function prepareItemsForInsertion(items) {
 async function groupMessagesByStrategy(messages, strategy, batchSize = 4, keywordLevel = 'balanced', settings = {}) {
     if (!messages.length) return [];
 
-    console.log(`[VectHare] groupMessagesByStrategy: ${messages.length} messages, strategy=${strategy}, summarize_provider=${settings?.summarize_provider || 'openrouter'}`);
+    console.log(`[VectFox] groupMessagesByStrategy: ${messages.length} messages, strategy=${strategy}, summarize_provider=${settings?.summarize_provider || 'openrouter'}`);
 
     const summarize = (text) => summarizeText(text, settings);
 
@@ -280,7 +280,7 @@ async function applyChunkConditions(chunks, chat, settings) {
         isGroupChat: settings.isGroupChat || false,
         currentCharacter: settings.currentCharacter || null,
         activeLorebookEntries: settings.activeLorebookEntries || [],
-        activationHistory: window.VectHare_ActivationHistory || {}
+        activationHistory: window.VectFox_ActivationHistory || {}
     });
 
     // Filter chunks by their conditions
@@ -303,12 +303,12 @@ async function applyChunkConditions(chunks, chat, settings) {
  * @param {number} messageCount Current message count
  */
 function trackChunkActivation(hash, messageCount) {
-    if (!window.VectHare_ActivationHistory) {
-        window.VectHare_ActivationHistory = {};
+    if (!window.VectFox_ActivationHistory) {
+        window.VectFox_ActivationHistory = {};
     }
 
-    const history = window.VectHare_ActivationHistory[hash] || { count: 0, lastActivation: null };
-    window.VectHare_ActivationHistory[hash] = {
+    const history = window.VectFox_ActivationHistory[hash] || { count: 0, lastActivation: null };
+    window.VectFox_ActivationHistory[hash] = {
         count: history.count + 1,
         lastActivation: messageCount
     };
@@ -399,7 +399,7 @@ export async function synchronizeChat(settings, batchSize = 5) {
     // Check per-collection autoSync setting instead of global enabled_chats
     const { isCollectionAutoSyncEnabled } = await import('./collection-metadata.js');
     if (!isCollectionAutoSyncEnabled(collectionId)) {
-        console.log(`[VectHare] synchronizeChat: collection "${collectionId}" has auto-sync disabled — skipping`);
+        console.log(`[VectFox] synchronizeChat: collection "${collectionId}" has auto-sync disabled — skipping`);
         return { remaining: -1, messagesProcessed: 0, chunksCreated: 0 };
     }
 
@@ -611,24 +611,22 @@ function gatherCollectionsToQuery(settings) {
 
     // Get all other registered collections that are enabled.
     // Workflow isolation:
-    //   vecthare_eventbase_*     → always excluded (EventBase pipeline owns them)
-    //   vecthare_archiveevent_*  → always excluded (EventBase pipeline owns them)
-    //   vecthare_chat_*          → excluded when EventBase is ON
+    //   vf_eventbase_*     → always excluded (EventBase pipeline owns them)
+    //   vf_archiveevent_*  → always excluded (EventBase pipeline owns them)
+    //   vf_chat_*          → excluded when EventBase is ON
     for (const registryKey of registry) {
         // Use proper registry key parser to extract collection ID
         const parsedKey = parseRegistryKey(registryKey);
         const collectionId = parsedKey.collectionId;
 
         // EventBase and archive event collections are always owned by the EventBase pipeline
-        if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_EVENTBASE) ||
-            collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_ARCHIVE_EVENT) ||
-            collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE) ||
+        if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE) ||
             collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT)) {
             continue;
         }
 
-        // EventBase owns all vecthare_chat_* collections — always skip them here.
-        if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_CHAT)) {
+        // EventBase owns all vf_chat_* collections — always skip them here.
+        if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_CHAT)) {
             continue;
         }
 
@@ -637,10 +635,10 @@ function gatherCollectionsToQuery(settings) {
             continue;
         }
 
-        // Skip vecthare_chat_* collections for other chats — they are chat-specific
+        // Skip vf_chat_* collections for other chats — they are chat-specific
         // and only the current chat's collection is eligible (added in the first block).
         // When EventBase is ON this is already covered by the filter above.
-        if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTHARE_CHAT)) {
+        if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_CHAT)) {
             continue;
         }
 
@@ -735,7 +733,7 @@ async function queryAndMergeCollections(activeCollections, queryText, settings, 
 
                     // Debug: Log when text is not found
                     if (textSource === 'not_found') {
-                        console.warn(`[VectHare] ⚠️ Chunk text not found! hash=${hash}, meta.text=${meta.text ? 'exists' : 'missing'}, chatMessage=${chatMessage ? 'found' : 'not found'}`);
+                        console.warn(`[VectFox] ⚠️ Chunk text not found! hash=${hash}, meta.text=${meta.text ? 'exists' : 'missing'}, chatMessage=${chatMessage ? 'found' : 'not found'}`);
                     }
                 }
 
@@ -1899,7 +1897,7 @@ export async function rearrangeChat(chat, settings, type) {
                             similarity: e.score || 1.0,
                             text: e.content || (Array.isArray(e.key) ? e.key.join(' ') : e.key || ''),
                             index: 0,
-                            collectionId: e.collectionId || `vecthare_wi:${e.lorebookName || 'lorebook'}`,
+                            collectionId: e.collectionId || `vf_wi:${e.lorebookName || 'lorebook'}`,
                             decayApplied: false
                         };
                     });
@@ -1960,7 +1958,7 @@ export async function rearrangeChat(chat, settings, type) {
         debugData.stats.afterGroups = chunks.length;
 
         // Store for legacy visualizer
-        window.VectHare_LastSearch = {
+        window.VectFox_LastSearch = {
             chunks: chunks,
             query: queryText,
             timestamp: Date.now(),
@@ -1985,7 +1983,7 @@ export async function rearrangeChat(chat, settings, type) {
         if (chunksToInject.length === 0) {
             console.log('ℹ️ VectFox: All retrieved chunks already in context, nothing to inject');
             console.log(`   ${skippedDuplicates.length} chunks were skipped (already in current chat)`);
-            console.info('[VectHare] Injection blocked: All retrieved chunks are already present in the current chat context. Adjust temporal decay or query depth if you want older messages.');
+            console.info('[VectFox] Injection blocked: All retrieved chunks are already present in the current chat context. Adjust temporal decay or query depth if you want older messages.');
             debugData.stages.injected = [];
             debugData.stats.actuallyInjected = 0;
             debugData.stats.skippedDuplicates = skippedDuplicates.length;
@@ -2033,7 +2031,7 @@ export async function rearrangeChat(chat, settings, type) {
         console.log(`VectFox: ✅ Injected ${chunksToInject.length} chunks (${skippedDuplicates.length} skipped - already in context)`);
 
     } catch (error) {
-        toastr.error(`Generation interceptor aborted: ${error.message}`, 'VectHare');
+        toastr.error(`Generation interceptor aborted: ${error.message}`, 'VectFox');
         console.error('VectFox: Failed to rearrange chat', error);
     }
 }
@@ -2121,13 +2119,13 @@ export async function vectorizeAll(settings, batchSize, abortSignal = null) {
         }
 
         progressTracker.complete(true, `Vectorized ${processedCount} messages (${totalChunks} chunks)`);
-        toastr.success('Chat vectorized successfully', 'VectHare');
+        toastr.success('Chat vectorized successfully', 'VectFox');
         console.log(`VectFox: ✅ Vectorization complete after ${iteration} iterations`);
     } catch (error) {
         console.error('VectFox: Failed to vectorize all', error);
         progressTracker.addError(error.message);
         progressTracker.complete(false, 'Vectorization failed');
-        toastr.error(`Vectorization failed: ${error.message}`, 'VectHare');
+        toastr.error(`Vectorization failed: ${error.message}`, 'VectFox');
     }
 }
 
@@ -2148,9 +2146,9 @@ export async function purgeChatIndex(settings) {
     }
 
     if (await purgeVectorIndex(collectionId, settings)) {
-        toastr.success('Vector index purged', 'VectHare');
+        toastr.success('Vector index purged', 'VectFox');
         console.log('VectFox: Index purged successfully');
     } else {
-        toastr.error('Failed to purge vector index', 'VectHare');
+        toastr.error('Failed to purge vector index', 'VectFox');
     }
 }

@@ -1,5 +1,5 @@
 /* ============================================================================
- * VECTHARE MODAL STYLES
+ * VECTFOX MODAL STYLES
  * ============================================================================
  * Modal system, collapsibles, model switcher, collection settings
  *
@@ -18,7 +18,7 @@
  * modals are appended to <body> (outside the drawer), clicks inside them
  * would normally close the ST drawer.
  *
- * The fix: All VectHare modals must call e.stopPropagation() on 'mousedown'
+ * The fix: All VectFox modals must call e.stopPropagation() on 'mousedown'
  * and 'touchstart' events to prevent ST's drawer-closing logic from firing.
  *
  * Example (in JS when binding modal events):
@@ -452,7 +452,7 @@
         min-height: 52px;
     }
 
-    #vecthare_settings .checkbox_label {
+    #vectfox_settings .checkbox_label {
         min-height: 48px;
     }
 }
@@ -1203,7 +1203,7 @@
     font-weight: 600;
 }
 
-#vecthare_conditions_list {
+#vectfox_conditions_list {
     max-height: 250px;
     overflow-y: auto;
 }
@@ -2211,3 +2211,4 @@
         font-size: 1.1em;
     }
 }
+

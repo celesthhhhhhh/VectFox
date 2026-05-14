@@ -118,7 +118,7 @@ export class QdrantBackend
   if(!collectionId || typeof collectionId !== 'string')
   if(!collectionId || typeof collectionId !== 'string')
   if(idParts.length >= 3 && idParts[0] === 'vh')
-  if(legacyParts.length >= 3 && legacyParts[0] === 'vecthare')
+  if(legacyParts.length >= 3 && legacyParts[0] === 'vectfox')
 function getModelFromSettings(settings)
 function getPluginProviderParams(settings)
 function getActualCollectionId(collectionId, settings) → string
@@ -129,7 +129,7 @@ function getActualCollectionId(collectionId, settings) → string
 ### core\emotion-classifier.js
 ```
 export function isCottonTalesInstalled() → boolean
-export function isCottonTalesUsingVectHare() → boolean
+export function isCottonTalesUsingvectfox() → boolean
 export function clearClassifierCache()
 export async function classifyEmotion(text, options = {}) → Promise<{label: string, s
 export async function testClassifierModel(model) → Promise<{isEmotionClassif
@@ -443,7 +443,7 @@ function prepareDocumentContent(rawContent, settings)
 function prepareWikiContent(rawContent, settings)
 function prepareYouTubeContent(rawContent, settings)
 function generateCollectionId(contentType, source, settings)
-function enrichChunks(chunks, contentType, source, settings, preparedContent, vecthareSettings)
+function enrichChunks(chunks, contentType, source, settings, preparedContent, vectfoxSettings)
 ```
 
 ### core\content-types.js
@@ -581,14 +581,14 @@ function getModelFromSettings(settings)
 
 ### ui\text-cleaning-manager.css
 ```
-.vecthare-text-cleaning-content
-.vecthare-tcm-body
-.vecthare-tcm-intro
-.vecthare-tcm-section
-.vecthare-tcm-section-header
-.vecthare-tcm-section-header
-.vecthare-tcm-hint
-.vecthare-tcm-actions
+.vectfox-text-cleaning-content
+.vectfox-tcm-body
+.vectfox-tcm-intro
+.vectfox-tcm-section
+.vectfox-tcm-section-header
+.vectfox-tcm-section-header
+.vectfox-tcm-hint
+.vectfox-tcm-actions
 ```
 
 ### ui\health-dashboard.js
@@ -611,14 +611,14 @@ function stopAutoRefresh()
 
 ### ui\chunk-visualizer.css
 ```
-.vecthare-visualizer-modal
-.vecthare-visualizer-container
-.vecthare-visualizer-header
-.vecthare-visualizer-title
-.vecthare-visualizer-title-icon
-.vecthare-visualizer-header-actions
-.vecthare-visualizer-save
-.vecthare-visualizer-save
+.vectfox-visualizer-modal
+.vectfox-visualizer-container
+.vectfox-visualizer-header
+.vectfox-visualizer-title
+.vectfox-visualizer-title-icon
+.vectfox-visualizer-header-actions
+.vectfox-visualizer-save
+.vectfox-visualizer-save
 ```
 
 ### ui\chunk-visualizer.js
@@ -796,3 +796,4 @@ class PriorityQueue
   size() → number
   clear()
 ```
+

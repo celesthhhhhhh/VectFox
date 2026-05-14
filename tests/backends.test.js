@@ -540,12 +540,6 @@ describe('QdrantBackend', () => {
             expect(result.sourceId).toBe('abc123');
         });
 
-        it('should parse legacy VectHare format (vecthare_type_id)', () => {
-            const result = backend._parseCollectionId('vecthare_chat_abc123');
-            expect(result.type).toBe('chat');
-            expect(result.sourceId).toBe('abc123');
-        });
-
         it('should handle registry key prefix', () => {
             const result = backend._parseCollectionId('qdrant:transformers:vf_chat_abc123');
             expect(result.type).toBe('chat');
@@ -561,7 +555,7 @@ describe('QdrantBackend', () => {
             await backend.getSavedHashes('vf_chat_abc123', settings);
 
             const callBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-            expect(callBody.collectionId).toBe('vecthare_multitenancy');
+            expect(callBody.collectionId).toBe('vectfox_main');
             expect(callBody.filter).toBeDefined();
             expect(callBody.filter.must[0].key).toBe('content_type');
         });

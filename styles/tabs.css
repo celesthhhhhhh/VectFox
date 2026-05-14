@@ -1,5 +1,5 @@
 /* ============================================================================
- * VECTHARE - SETTINGS TAB NAVIGATION
+ * VECTFOX - SETTINGS TAB NAVIGATION
  * ============================================================================ */
 
 /* Two-row tab nav */
@@ -49,3 +49,4 @@
 [data-vectfox-tab].vectfox-tab-active {
     display: block;
 }
+

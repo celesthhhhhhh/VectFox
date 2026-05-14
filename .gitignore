@@ -9,6 +9,8 @@ VECTOR_LIST.md
 node_modules/
 docs/
 .claude/
+.github/
+CLAUDE.md
 package-lock.json
 npm-debug.log*
 yarn-debug.log**

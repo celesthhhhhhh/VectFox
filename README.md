@@ -27,7 +27,7 @@ Most memory extensions are designed for chats with 100 messages or fewer, and th
 
 Cars with square wheels will never solve the problem, no matter how much you fine-tune them. I need the right tool for the job. What I actually need is a dedicated vector database backend to properly store all these memories.
 
-***I decided to build an architecturally correct memory system for SillyTavern that is close to production grade. Let's make memory hardcore!***
+***I decided to build an architecturally correct memory system for SillyTavern that is close to a production-like design. Let's make memory hardcore!***
 
 To tackle this, VectFox uses a dedicated vector database that stores **every single meaningful event** from the chat. Whether it's the first message or the 2,000th, every meaningful event stays in the database and is always available for SillyTavern to search.  I want a production grade memory vector system for SillyTavern which is scalable to 10k+ messages and round trip time within seconds.
 
@@ -73,10 +73,22 @@ If Tav had a long shopping trip with Astarion across 100 sentences of conversati
 
 ```
 {
-  description: "Tav and Astarion shopped for armor in Baldur's Gate.
-                Astarion mocked the prices. Tav bought a leather chestpiece for 80gp.",
-  importance: 0.6,
-  source_window: [msg 142 → 154]
+event_type:    item_acquired
+importance:    6
+text:          Tav and Astarion shopped for armor in Baldur's Gate. Astarion mocked the prices.
+               Tav bought a leather chestpiece for 80gp.
+DateTime:      1492-08-15T14:00:00
+cause:         Tav needed better armor before the Gauntlet of Shar expedition
+result:        Tav now wears the leather chestpiece; 80gp spent from party funds
+characters:    [Tav, Astarion]
+locations:     [Baldur's Gate, Sorcerous Sundries district]
+factions:      []
+items:         [leather chestpiece, 80gp]
+concepts:      [armor shopping, party economy]
+keywords:      [armor, leather, chestpiece, gold, shopping]
+open_threads:  [Gauntlet of Shar preparation]
+should_persist: false
+
 }
 ```
 
@@ -492,4 +504,4 @@ GPLv3 License — see LICENSE.
 
 ---
 
-*"Lets make your memory hardcore!."* 🦊✨
+*"Let's make memory hardcore!"* 🦊✨

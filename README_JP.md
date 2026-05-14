@@ -26,7 +26,7 @@
 
 四角い車輪の車は、どれだけ調整しても快適には走りません。必要なのは、この用途に合った正しい道具です。私が本当に必要としていたのは、すべての記憶をきちんと保存できる、専用のベクトルデータベースバックエンドでした。
 
-***私は SillyTavern のために、アーキテクチャ的に正しく、本番環境に近い品質のメモリシステムを構築することにしました。メモリをハードコアにしよう！***
+***私は SillyTavern のために、アーキテクチャ的に正しく、プロダクションに近い設計のメモリシステムを構築することにしました。メモリをハードコアにしよう！***
 
 そこで VectFox は、専用のベクトルデータベースを使って、チャット内の**意味のあるすべてのイベント**を保存します。最初のメッセージでも、2,000 番目のメッセージでも、意味のあるイベントはすべてデータベースに残り、SillyTavern がいつでも検索できる状態になります。私が作りたかったのは、10k+ メッセージまでスケールでき、検索の往復が数秒以内に終わる、SillyTavern 向けの本番品質のメモリベクトルシステムです。
 
@@ -72,10 +72,21 @@ VectFox は、互いに連携する 2 つの中心的な考え方で作られて
 
 ```
 {
-  description: "Tav and Astarion shopped for armor in Baldur's Gate.
-                Astarion mocked the prices. Tav bought a leather chestpiece for 80gp.",
-  importance: 0.6,
-  source_window: [msg 142 → 154]
+event_type:    item_acquired
+importance:    6
+text:          タヴとアスタリオンはバルダーズ・ゲートで鎧の買い物をした。アスタリオンは値段をからかった。
+               タヴは革製の胸当てを80gpで購入した。
+DateTime:      1492-08-15T14:00:00
+cause:         タヴはシャーの試練の遠征前に、より良い鎧が必要だった
+result:        タヴは今、革製の胸当てを装備している。パーティーの資金から80gpが使われた
+characters:    [タヴ, アスタリオン]
+locations:     [バルダーズ・ゲート, ソーサラス・サンドリース地区]
+factions:      []
+items:         [革製の胸当て, 80gp]
+concepts:      [鎧の買い物, パーティーの経済]
+keywords:      [鎧, 革, 胸当て, ゴールド, 買い物]
+open_threads:  [シャーの試練の準備]
+
 }
 ```
 
@@ -232,19 +243,18 @@ LLM がチャットを構造化イベントとして要約し、重要度/最近
 ```
 event_type:    item_acquired
 importance:    6
-text:          Tav and Astarion shopped for armor in Baldur's Gate. Astarion mocked the prices.
-               Tav bought a leather chestpiece for 80gp.
+text:          タヴとアスタリオンはバルダーズ・ゲートで鎧の買い物をした。アスタリオンは値段をからかった。
+               タヴは革製の胸当てを80gpで購入した。
 DateTime:      1492-08-15T14:00:00
-cause:         Tav needed better armor before the Gauntlet of Shar expedition
-result:        Tav now wears the leather chestpiece; 80gp spent from party funds
-characters:    [Tav, Astarion]
-locations:     [Baldur's Gate, Sorcerous Sundries district]
+cause:         タヴはシャーの試練の遠征前に、より良い鎧が必要だった
+result:        タヴは今、革製の胸当てを装備している。パーティーの資金から80gpが使われた
+characters:    [タヴ, アスタリオン]
+locations:     [バルダーズ・ゲート, ソーサラス・サンドリース地区]
 factions:      []
-items:         [leather chestpiece, 80gp]
-concepts:      [armor shopping, party economy]
-keywords:      [armor, leather, chestpiece, gold, shopping]
-open_threads:  [Gauntlet of Shar preparation]
-should_persist: false
+items:         [革製の胸当て, 80gp]
+concepts:      [鎧の買い物, パーティーの経済]
+keywords:      [鎧, 革, 胸当て, ゴールド, 買い物]
+open_threads:  [シャーの試練の準備]
 ```
 
 2 つの信号（意味 + キーワード）は、この豊富なフィールドセット全体に対して動作します。そのため、「armor for the dungeon」のようなクエリは concepts/open_threads 経由でヒットし、「Astarion 80gp」は characters/items/keywords 経由でヒットします。この構造は Qdrant ベクトルデータベースに自然に合う形式なので、他のどんなメモリ拡張よりも高いヒット率を実現できます。
@@ -462,4 +472,4 @@ GPLv3 ライセンス — LICENSE を参照してください。
 
 ---
 
-*"Lets make your memory hardcore!."* 🦊✨
+*"Let's make memory hardcore!"* 🦊✨

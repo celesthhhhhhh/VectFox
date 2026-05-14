@@ -442,7 +442,7 @@ Scene support was removed (it was a chunk-based-chat-era feature, and chat now r
 
 **"No embeddings available"** — Click the Vectorize Content icon, Enable Vectors extension in main ST settings, select an embedding provider, add API key if needed, run Diagnostics.
 
-**Events/chunks not retrieved** — Click Database Browser icon, click on the collection of the chat, confirm the collection is "Active for current chat".
+**Events/chunks not retrieved** — Make sure you are already in the chat, not in the lobby of Sillytavern, Click Database Browser icon, click on the collection of the chat, confirm the collection is "Active for current chat".
 
 **"What would the AI actually recall for this message?"** — Use the **Debug Query** button in the Actions tab for "what-if" testing. Type any text and run it against the live database to see exactly which events would be retrieved and their scores, without sending a real chat message. Useful for tuning thresholds and verifying that important events are indexed correctly.
 

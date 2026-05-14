@@ -800,9 +800,8 @@ async function refreshCollections() {
 
 /**
  * Renders collections list based on current filters
- * @internal Exported so content-vectorizer can refresh UI after vectorization completes.
  */
-export function renderCollections() {
+function renderCollections() {
   const container = $("#vectfox_collections_list");
 
     // Apply filters

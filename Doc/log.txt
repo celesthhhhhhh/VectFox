@@ -1,275 +1,453 @@
-[VectFox] LLM config check (start-vectorization): {provider: 'openrouter', model: 'openai/gpt-4o-mini', hasOpenRouterKey: true, hasVllmUrl: false}
-content-vectorizer.js:2712 [EventBase] _runEventBaseBackfill: starting...
-content-vectorizer.js:2750 [EventBase] Context chat length: 25
-content-vectorizer.js:2777 [EventBase] Filtered messages: 25
-content-vectorizer.js:2778 [EventBase] Starting ingestion with settings: {eventbase_window_size: 2, eventbase_window_overlap: 0, eventbase_debug_logging: true, legacy_progress_strategy: 'per_message', legacy_total_chunks: 25}
-eventbase-workflow.js:123 [EventBase] Ingestion: 25 messages → 12 windows (size=2, overlap=0)
-eventbase-extractor.js:444 [EventBase] Extracting events — window=0, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=1, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=2, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=3, provider=openrouter, messages=2
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=0): [{"event_type":"dialogue_significant","importance":5,"summary":"Fuka Shikuzaki nervously approaches Rabbit in the library, attempting to initiate a conversation with a hesitant smile and greeting. This moment marks a significant step in her effort to connect with her classmate.","cause":"Fuka's desire to interact with Rabbit and overcome her nervousness.","result":"Fuka takes a step towards building a relationship with Rabbit, indicating her willingness to engage socially.","characters":["Fuka S
-eventbase-extractor.js:112 [EventBase] Parser window=0: raw length=690, preview: [{"event_type":"dialogue_significant","importance":5,"summary":"Fuka Shikuzaki nervously approaches Rabbit in the library, attempting to initiate a co
-eventbase-extractor.js:222 [EventBase] Parser window=0: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="library"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=0 firstType=undefined keys/val=undefined', '[7] len=7 firstType=string keys/val="對話"', '[8] len=0 firstType=undefined keys/val=undefined', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=0: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 0: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=0): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 0: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=1): [{"event_type":"dialogue_significant","importance":5,"summary":"Fuka Shikuzaki nervously engages in conversation with Rabbit, offering him a homemade butter cookie as a gesture of friendship. This moment highlights her anxiety and desire for connection, as well as her concern for his well-being.","cause":"Fuka is attempting to initiate a human conversation despite her nervousness.","result":"Fuka's offer of the cookie signifies her attempt to build a bond with Rabbit, showcasing her vulnerabilit
-eventbase-extractor.js:112 [EventBase] Parser window=1: raw length=913, preview: [{"event_type":"dialogue_significant","importance":5,"summary":"Fuka Shikuzaki nervously engages in conversation with Rabbit, offering him a homemade 
-eventbase-extractor.js:222 [EventBase] Parser window=1: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Library"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=1 firstType=string keys/val="butter cookie"', '[6] len=3 firstType=string keys/val="friendship"', '[7] len=8 firstType=string keys/val="Fuka Shikuzaki"', `[8] len=1 firstType=string keys/val="What happened to Fuka's right eye?"`, '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=1: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 1: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=1): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 1: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=3): [{"event_type":"relationship_change","importance":6,"summary":"Fuka and Rabbit navigate the school hallway together, showcasing their growing bond as Fuka relies on Rabbit for support during her anxious moments. Fuka's blush indicates her feelings towards Rabbit, suggesting a deeper connection. They successfully reach the classroom together, marking a small victory for Fuka in overcoming her anxiety.","cause":"Fuka's anxiety about navigating the hallway and her reliance on Rabbit's presence.","r
-eventbase-extractor.js:112 [EventBase] Parser window=3: raw length=920, preview: [{"event_type":"relationship_change","importance":6,"summary":"Fuka and Rabbit navigate the school hallway together, showcasing their growing bond as 
-eventbase-extractor.js:222 [EventBase] Parser window=3: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Classroom"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="焦慮"', '[7] len=8 firstType=string keys/val="Fuka"', `[8] len=2 firstType=string keys/val="Fuka's feelings towards Rabbit"`, '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=3: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 3: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=3): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 3: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=2): [{"event_type":"revelation","importance":7,"summary":"Fuka Shikuzaki reveals her anxiety about her medical eyepatch, indicating that it is not just a simple injury but something that poses a potential danger to others. Her frantic behavior suggests a deeper issue related to her condition.","cause":"Fuka's concern about the cookie and her eye prompts a moment of vulnerability.","result":"Fuka's fear hints at a significant secret or danger associated with her eyepatch, raising questions about her 
-eventbase-extractor.js:112 [EventBase] Parser window=2: raw length=842, preview: [{"event_type":"revelation","importance":7,"summary":"Fuka Shikuzaki reveals her anxiety about her medical eyepatch, indicating that it is not just a 
-eventbase-extractor.js:222 [EventBase] Parser window=2: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=1 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Library"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="醫療眼罩"', '[7] len=8 firstType=string keys/val="Fuka Shikuzaki"', '[8] len=2 firstType=string keys/val="Fuka的眼罩下隱藏著什麼？"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=2: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 2: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=2): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 2: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-collection-loader.js:119 VectFox: Registered collection: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-loader.js:142 VectFox: Stamped creatorHandle="rabbit" on vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-loader.js:119 VectFox: Registered collection: qdrant:vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-eventbase-extractor.js:444 [EventBase] Extracting events — window=4, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=5, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=6, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=7, provider=openrouter, messages=2
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=6): []
-eventbase-extractor.js:112 [EventBase] Parser window=6: raw length=2, preview: []
-eventbase-extractor.js:222 [EventBase] Parser window=6: 2 candidate array(s) found: (2) ['[0] len=0 firstType=undefined keys/val=undefined', '[1] len=0 firstType=undefined keys/val=undefined']
-eventbase-extractor.js:261 [EventBase] Parser window=6: chose candidate[0] len=0
-eventbase-extractor.js:476 [EventBase] Window 6: parsed 0 event candidate(s)
-eventbase-extractor.js:481 [EventBase] Window 6: LLM returned no events (valid skip)
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=4): [{"event_type":"relationship_change","importance":6,"summary":"Rabbit offers to share his English textbook with Fuka, showing support and understanding in her moment of panic over forgetting her own book.","cause":"Fuka's anxiety about forgetting her textbook and the potential consequences in class.","result":"This act of kindness strengthens the bond between Rabbit and Fuka, indicating a growing friendship.","characters":["Fuka Shikuzaki","Rabbit","Mr. Sato"],"locations":["School.Classroom"],"f
-eventbase-extractor.js:112 [EventBase] Parser window=4: raw length=675, preview: [{"event_type":"relationship_change","importance":6,"summary":"Rabbit offers to share his English textbook with Fuka, showing support and understandin
-eventbase-extractor.js:222 [EventBase] Parser window=4: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=3 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Classroom"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="友誼"', '[7] len=9 firstType=string keys/val="Rabbit"', '[8] len=0 firstType=undefined keys/val=undefined', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=4: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 4: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=4): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 4: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=5): [{"event_type":"relationship_change","importance":8,"summary":"Rabbit takes the blame for Fuka's actions in class, which profoundly impacts her feelings towards him, making her feel guilty for 'infecting' him with her bad luck. This moment creates a significant shift in their relationship as Fuka realizes Rabbit's willingness to support her despite the risks involved.","cause":"Rabbit's decision to take the blame for Fuka's situation in front of Mr. Sato.","result":"Fuka feels a deep emotional c
-eventbase-extractor.js:112 [EventBase] Parser window=5: raw length=967, preview: [{"event_type":"relationship_change","importance":8,"summary":"Rabbit takes the blame for Fuka's actions in class, which profoundly impacts her feelin
-eventbase-extractor.js:222 [EventBase] Parser window=5: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=3 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Classroom"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="責任"', '[7] len=8 firstType=string keys/val="責任"', `[8] len=2 firstType=string keys/val="Rabbit's true feelings about Fuka"`, '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=5: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 5: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=5): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 5: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-core-vector-api.js:111 VectFox: Rate limit reached. Waiting 52s...
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=7): [{"event_type":"relationship_change","importance":6,"summary":"Fuka offers her bento to Rabbit, inviting him to share lunch, which signifies a shift in their relationship as she attempts to connect despite her shyness.","cause":"Fuka's hunger and desire to bond with Rabbit lead her to extend the invitation.","result":"This moment creates an opportunity for deeper interaction between Fuka and Rabbit, hinting at a growing friendship.","characters":["Fuka Shikuzaki","Rabbit"],"locations":["School.C
-eventbase-extractor.js:112 [EventBase] Parser window=7: raw length=1542, preview: [{"event_type":"relationship_change","importance":6,"summary":"Fuka offers her bento to Rabbit, inviting him to share lunch, which signifies a shift i
-eventbase-extractor.js:222 [EventBase] Parser window=7: 17 candidate array(s) found: (17) ['[0] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Classroom"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=1 firstType=string keys/val="bento box"', '[6] len=3 firstType=string keys/val="友情"', '[7] len=8 firstType=string keys/val="Fuka"', `[8] len=2 firstType=string keys/val="Fuka's feelings towards Rabbit"`, '[9] len=2 firstType=string keys/val="Rabbit"', '[10] len=1 firstType=string keys/val="School.Classroom"', '[11] len=0 firstType=undefined keys/val=undefined', '[12] len=0 firstType=undefined keys/val=undefined', '[13] len=3 firstType=string keys/val="關心"', '[14] len=8 firstType=string keys/val="Rabbit"', '[15] len=2 firstType=string keys/val="Will they go to the cafe?"', '[16] len=2 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=7: chose candidate[0] len=2
-eventbase-extractor.js:476 [EventBase] Window 7: parsed 2 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=7): 2 items, types: [object, object]
-eventbase-extractor.js:544 [EventBase] Window 7: extracted 2 valid events
-eventbase-store.js:97 [EventBase] Inserting 2 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 2 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-core-vector-api.js:111 VectFox: Rate limit reached. Waiting 50s...
-qdrant.js:290 VectFox Qdrant: Inserting 2 vectors in 1 batch(es) of up to 100 items
-core-vector-api.js:111 VectFox: Rate limit reached. Waiting 0s...
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (2 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 2 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-eventbase-extractor.js:444 [EventBase] Extracting events — window=8, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=9, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=10, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=11, provider=openrouter, messages=2
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=10): [{"event_type":"revelation","importance":8,"summary":"Fuka reveals to Rabbit that she believes he is a predestined supernatural entity sent to stabilize her chaotic life, as she has experienced an unusually good day since meeting him. This belief stems from her encounter with an advisor named Kumada-han, who mentioned a 'Fortune Shield' that matches Rabbit's description.","cause":"Fuka's awe and gratitude towards Rabbit's presence and the positive change in her day.","result":"Fuka's perception 
-eventbase-extractor.js:112 [EventBase] Parser window=10: raw length=953, preview: [{"event_type":"revelation","importance":8,"summary":"Fuka reveals to Rabbit that she believes he is a predestined supernatural entity sent to stabili
-eventbase-extractor.js:222 [EventBase] Parser window=10: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Lawn"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=2 firstType=string keys/val="bandages"', '[6] len=6 firstType=string keys/val="命運之盾"', '[7] len=8 firstType=string keys/val="Fuka"', `[8] len=1 firstType=string keys/val="Rabbit's true nature and role in Fuka's`, '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=10: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 10: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=10): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 10: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-backend-manager.js:274 VectFox: Health cache stale for qdrant, re-verifying...
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=9): [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka reveals her struggles with her identity and the concept of 'Chunibyo', expressing her feelings of being misunderstood and burdened by a past debt. She seeks reassurance from Rabbit about her uniqueness and fears. Rabbit responds with humor, sharing his own experience and curiosity about Fuka's advisor.","cause":"Fuka's contemplation of her situation and Rabbit's presence prompts her to open up.","result":"Fuka begins to relax a
-eventbase-extractor.js:112 [EventBase] Parser window=9: raw length=887, preview: [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka reveals her struggles with her identity and the concept of 'Chunibyo', expressing
-eventbase-extractor.js:222 [EventBase] Parser window=9: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Lawn"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="Chunibyo"', '[7] len=10 firstType=string keys/val="Fuka"', '[8] len=1 firstType=string keys/val="Fuka的顧問是誰？"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=9: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 9: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=9): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 9: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-backend-manager.js:274 VectFox: Health cache stale for qdrant, re-verifying...
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=11): [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka Shikuzaki expresses her misunderstanding about the nature of a supposed power, revealing her insecurities and the pressure she feels from her advisor's words. She reflects on her tendency to misinterpret signs and apologizes for making Rabbit uncomfortable with her beliefs about curses.","cause":"Fuka's internal conflict and anxiety about her beliefs and how they are perceived by others.","result":"Fuka's emotional state is exp
-eventbase-extractor.js:112 [EventBase] Parser window=11: raw length=936, preview: [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka Shikuzaki expresses her misunderstanding about the nature of a supposed power, re
-eventbase-extractor.js:222 [EventBase] Parser window=11: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Lawn"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=4 firstType=string keys/val="誤解"', '[7] len=9 firstType=string keys/val="Fuka Shikuzaki"', `[8] len=1 firstType=string keys/val="Fuka's beliefs about curses and their i`, '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=11: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 11: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=11): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 11: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-2core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=8): [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka expresses her anxiety about going to the lawn filled with students, fearing bad luck and potential accidents. She decides to bring her bento cloth and asks Rabbit to stay close for protection. This conversation reveals her fragile state and her reliance on Rabbit for comfort.","cause":"Fuka's fear of the crowded lawn and her desire to protect herself from potential mishaps.","result":"Fuka's decision to go to the lawn signifies
-eventbase-extractor.js:112 [EventBase] Parser window=8: raw length=1634, preview: [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka expresses her anxiety about going to the lawn filled with students, fearing bad l
-eventbase-extractor.js:222 [EventBase] Parser window=8: 17 candidate array(s) found: (17) ['[0] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Lawn"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="焦慮"', '[7] len=9 firstType=string keys/val="Fuka"', `[8] len=2 firstType=string keys/val="Fuka's relationship with Rabbit"`, '[9] len=2 firstType=string keys/val="Rabbit"', '[10] len=0 firstType=undefined keys/val=undefined', '[11] len=0 firstType=undefined keys/val=undefined', '[12] len=0 firstType=undefined keys/val=undefined', '[13] len=3 firstType=string keys/val="接受"', '[14] len=7 firstType=string keys/val="Rabbit"', `[15] len=1 firstType=string keys/val="How will Fuka respond to Rabbit's accep`, '[16] len=2 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=8: chose candidate[0] len=2
-eventbase-extractor.js:476 [EventBase] Window 8: parsed 2 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=8): 2 items, types: [object, object]
-eventbase-extractor.js:544 [EventBase] Window 8: extracted 2 valid events
-eventbase-store.js:97 [EventBase] Inserting 2 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 2 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-4eventbase-workflow.js:240 [EventBase] Batch window error: Vectorization stopped by user
-runEventBaseIngestion @ eventbase-workflow.js:240
-await in runEventBaseIngestion
-_runEventBaseBackfill @ content-vectorizer.js:2788
-await in _runEventBaseBackfill
-startVectorization @ content-vectorizer.js:2876
-dispatch @ jquery-3.5.1.min.js:2
-v.handle @ jquery-3.5.1.min.js:2
-eventbase-workflow.js:278 [EventBase] Ingestion complete: extracted=8, processed=8, skipped=0
-content-vectorizer.js:2802 [EventBase] Ingestion result: {eventsExtracted: 8, windowsProcessed: 8, windowsSkipped: 0}
-content-vectorizer.js:2629 [VectFox] LLM config check (vectorize-content): {provider: 'openrouter', model: 'openai/gpt-4o-mini', hasOpenRouterKey: true, hasVllmUrl: false}
-content-vectorizer.js:2712 [EventBase] _runEventBaseBackfill: starting...
-content-vectorizer.js:2750 [EventBase] Context chat length: 25
-content-vectorizer.js:2777 [EventBase] Filtered messages: 25
-content-vectorizer.js:2778 [EventBase] Starting ingestion with settings: {eventbase_window_size: 2, eventbase_window_overlap: 0, eventbase_debug_logging: true, legacy_progress_strategy: 'per_message', legacy_total_chunks: 25}
-eventbase-workflow.js:123 [EventBase] Ingestion: 25 messages → 12 windows (size=2, overlap=0)
-eventbase-workflow.js:172 [EventBase] Window 0 already extracted — skip
-eventbase-workflow.js:172 [EventBase] Window 1 already extracted — skip
-eventbase-workflow.js:172 [EventBase] Window 2 already extracted — skip
-eventbase-workflow.js:172 [EventBase] Window 3 already extracted — skip
-eventbase-workflow.js:172 [EventBase] Window 4 already extracted — skip
-eventbase-workflow.js:172 [EventBase] Window 5 already extracted — skip
-eventbase-workflow.js:172 [EventBase] Window 6 already extracted — skip
-eventbase-workflow.js:172 [EventBase] Window 7 already extracted — skip
-eventbase-extractor.js:444 [EventBase] Extracting events — window=8, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=9, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=10, provider=openrouter, messages=2
-eventbase-extractor.js:444 [EventBase] Extracting events — window=11, provider=openrouter, messages=2
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=9): [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka reveals her struggles with her identity and the concept of 'Chunibyo,' expressing her feelings of being misunderstood and her connection to a past life. She questions Rabbit about his own experiences and powers, seeking validation and understanding.","cause":"Fuka's curiosity about her own condition and her desire for acceptance lead her to open up to Rabbit.","result":"Fuka begins to relax and engage more openly with Rabbit, i
-eventbase-extractor.js:112 [EventBase] Parser window=9: raw length=881, preview: [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka reveals her struggles with her identity and the concept of 'Chunibyo,' expressing
-eventbase-extractor.js:222 [EventBase] Parser window=9: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Lawn"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="Chunibyo"', '[7] len=8 firstType=string keys/val="Fuka"', `[8] len=1 firstType=string keys/val="Fuka's past life and the advisor's iden`, '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=9: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 9: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=9): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 9: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=11): [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka Shikuzaki expresses her misunderstanding about a supposed power, revealing her insecurities and the pressure she feels from her advisor's words. She reflects on her past mistakes in interpreting signs and apologizes for making Rabbit uncomfortable with her beliefs about curses.","cause":"Fuka's conversation with Rabbit about her advisor's comments and her own misconceptions.","result":"Fuka's emotional state is revealed, showca
-eventbase-extractor.js:112 [EventBase] Parser window=11: raw length=956, preview: [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka Shikuzaki expresses her misunderstanding about a supposed power, revealing her in
-eventbase-extractor.js:222 [EventBase] Parser window=11: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Lawn"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=4 firstType=string keys/val="誤解"', '[7] len=10 firstType=string keys/val="Fuka Shikuzaki"', `[8] len=2 firstType=string keys/val="Fuka's beliefs about curses"`, '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=11: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 11: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=11): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 11: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=10): [{"event_type":"revelation","importance":8,"summary":"Fuka reveals to Rabbit that she believes he is a predestined supernatural entity sent to stabilize her chaotic life, as she has experienced an unusually good day since meeting him. This belief stems from her encounter with an advisor who mentioned a 'Fortune Shield' resembling Rabbit.","cause":"Fuka's awe and gratitude towards Rabbit's presence and the positive change in her day.","result":"Fuka's perception of Rabbit shifts dramatically, see
-eventbase-extractor.js:112 [EventBase] Parser window=10: raw length=940, preview: [{"event_type":"revelation","importance":8,"summary":"Fuka reveals to Rabbit that she believes he is a predestined supernatural entity sent to stabili
-eventbase-extractor.js:222 [EventBase] Parser window=10: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Lawn"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=2 firstType=string keys/val="bandages"', '[6] len=6 firstType=string keys/val="命運之盾"', '[7] len=10 firstType=string keys/val="Fuka"', `[8] len=1 firstType=string keys/val="Rabbit's true nature and potential impa`, '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=10: chose candidate[0] len=1
-eventbase-extractor.js:476 [EventBase] Window 10: parsed 1 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=10): 1 items, types: [object]
-eventbase-extractor.js:544 [EventBase] Window 10: extracted 1 valid events
-eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=8): [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka expresses her anxiety about going to the crowded lawn, revealing her fear of bad luck and potential accidents. Rabbit reassures her by sharing his own experience with similar feelings, fostering a deeper understanding between them.","cause":"Fuka's hesitation about the crowded environment and her superstitions about bad luck.","result":"Their conversation helps to build trust and understanding, allowing Fuka to feel more comfor
-eventbase-extractor.js:112 [EventBase] Parser window=8: raw length=1376, preview: [{"event_type":"dialogue_significant","importance":6,"summary":"Fuka expresses her anxiety about going to the crowded lawn, revealing her fear of bad 
-eventbase-extractor.js:222 [EventBase] Parser window=8: 17 candidate array(s) found: (17) ['[0] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[3] len=1 firstType=string keys/val="School.Lawn"', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=4 firstType=string keys/val="焦慮"', '[7] len=8 firstType=string keys/val="焦慮"', '[8] len=0 firstType=undefined keys/val=undefined', '[9] len=2 firstType=string keys/val="Fuka Shikuzaki"', '[10] len=1 firstType=string keys/val="School.Lawn"', '[11] len=0 firstType=undefined keys/val=undefined', '[12] len=1 firstType=string keys/val="母親的特製玉子燒"', '[13] len=3 firstType=string keys/val="友誼"', '[14] len=6 firstType=string keys/val="友誼"', '[15] len=0 firstType=undefined keys/val=undefined', '[16] len=2 firstType=object keys/val=event_type,importance,summary,cause,result']
-eventbase-extractor.js:261 [EventBase] Parser window=8: chose candidate[0] len=2
-eventbase-extractor.js:476 [EventBase] Window 8: parsed 2 event candidate(s)
-eventbase-extractor.js:486 [EventBase] Parsed array (window=8): 2 items, types: [object, object]
-eventbase-extractor.js:544 [EventBase] Window 8: extracted 2 valid events
-eventbase-store.js:97 [EventBase] Inserting 2 event(s) into collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-core-vector-api.js:673 VectFox: Processing 2 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
-core-vector-api.js:111 VectFox: Rate limit reached. Waiting 39s...
-qdrant.js:290 VectFox Qdrant: Inserting 2 vectors in 1 batch(es) of up to 100 items
-qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (2 vectors)
-qdrant.js:382 VectFox Qdrant: Inserted 2 vectors into vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 (separate mode, content_type: vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831)
-collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831 locks updated: ['Fuka Shikuzaki - 2026-04-14@14h21m19s870ms']
-eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831" to current chat "Fuka Shikuzaki - 2026-04-14@14h21m19s870ms"
-eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831"
-eventbase-workflow.js:278 [EventBase] Ingestion complete: extracted=5, processed=4, skipped=8
-content-vectorizer.js:2802 [EventBase] Ingestion result: {eventsExtracted: 5, windowsProcessed: 4, windowsSkipped: 8}
+Generate entered
+vm-browserify.ts:18 An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+initIframe @ vm-browserify.ts:18
+constructor @ vm-browserify.ts:10
+handleGenerateBefore @ handler.ts:57
+await in handleGenerateBefore
+EventEmitter.emit @ eventemitter.js:146
+await in EventEmitter.emit
+Generate @ script.js:4262
+await in Generate
+triggerRefresh @ PromptViewer.vue:268
+(anonymous) @ PromptViewer.vue:250
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+(anonymous) @ runtime-core.esm-bundler.js:8140
+(anonymous) @ runtime-core.esm-bundler.js:8102
+(anonymous) @ runtime-core.esm-bundler.js:6023
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5919
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:1000
+(anonymous) @ runtime-core.esm-bundler.js:1026
+process @ runtime-core.esm-bundler.js:1060
+(anonymous) @ runtime-core.esm-bundler.js:5500
+(anonymous) @ runtime-core.esm-bundler.js:6137
+run @ reactivity.esm-bundler.js:260
+(anonymous) @ runtime-core.esm-bundler.js:6265
+(anonymous) @ runtime-core.esm-bundler.js:6037
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5861
+(anonymous) @ runtime-core.esm-bundler.js:5937
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:6217
+run @ reactivity.esm-bundler.js:260
+runIfDirty @ reactivity.esm-bundler.js:298
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+flushJobs @ runtime-core.esm-bundler.js:408
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+(anonymous) @ runtime-core.esm-bundler.js:6259
+trigger @ reactivity.esm-bundler.js:288
+endBatch @ reactivity.esm-bundler.js:346
+notify @ reactivity.esm-bundler.js:637
+trigger @ reactivity.esm-bundler.js:611
+value @ reactivity.esm-bundler.js:1550
+(anonymous) @ reactivity.esm-bundler.js:1580
+(anonymous) @ Toolbox.vue:36
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+(anonymous) @ runtime-dom.esm-bundler.js:745
+index.js:19 [QR2] calling {args: Array(3), functionToCall: ƒ}
+chat-vectorization.js:1671 🐰 VectFox: rearrangeChat called (type: normal, chat length: 2116)
+eventbase-workflow.js:362 [EventBase] Live collection skipped (not locked to chat): vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
+eventbase-workflow.js:395 [EventBase] Live retrieval: uuid=67d28099-167f-4c07-a7cb-1b62e44f43d0, lockedLiveCollections=1, ids=["vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0"]
+eventbase-workflow.js:408 [EventBase] Phase A: live=true, archiveCollections=0, searchText length=2993
+eventbase-workflow.js:422 [EventBase] Keyword query (user last message, 28 chars): 我對Mayla  説 "你還記得為我怎樣幫你贖身的嗎?"
+eventbase-retrieval.js:359 [EventBase] Retrieval start — topK overfetch=20, minImportance=1, method=bm25, nativePrefer=true, liveCollections=1, nativeRerank=true
+2backend-manager.js:274 VectFox: Health cache stale for qdrant, re-verifying...
+backend-manager.js:284 VectFox: Backend qdrant health re-check failed, invalidating cache
+initializeBackend @ backend-manager.js:284
+await in initializeBackend
+getBackend @ backend-manager.js:370
+_runOneLiveQuery @ eventbase-retrieval.js:148
+retrieveEvents @ eventbase-retrieval.js:386
+retrieveEventsWithAgent @ agentic-retrieval.js:50
+runEventBaseRetrieval @ eventbase-workflow.js:459
+await in runEventBaseRetrieval
+rearrangeChat @ chat-vectorization.js:1709
+await in rearrangeChat
+vectfox_rearrangeChat @ index.js:265
+runGenerationInterceptors @ extensions.js:2028
+await in runGenerationInterceptors
+Generate @ script.js:4505
+await in Generate
+triggerRefresh @ PromptViewer.vue:268
+(anonymous) @ PromptViewer.vue:250
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+(anonymous) @ runtime-core.esm-bundler.js:8140
+(anonymous) @ runtime-core.esm-bundler.js:8102
+(anonymous) @ runtime-core.esm-bundler.js:6023
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5919
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:1000
+(anonymous) @ runtime-core.esm-bundler.js:1026
+process @ runtime-core.esm-bundler.js:1060
+(anonymous) @ runtime-core.esm-bundler.js:5500
+(anonymous) @ runtime-core.esm-bundler.js:6137
+run @ reactivity.esm-bundler.js:260
+(anonymous) @ runtime-core.esm-bundler.js:6265
+(anonymous) @ runtime-core.esm-bundler.js:6037
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5861
+(anonymous) @ runtime-core.esm-bundler.js:5937
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:6217
+run @ reactivity.esm-bundler.js:260
+runIfDirty @ reactivity.esm-bundler.js:298
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+flushJobs @ runtime-core.esm-bundler.js:408
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+(anonymous) @ runtime-core.esm-bundler.js:6259
+trigger @ reactivity.esm-bundler.js:288
+endBatch @ reactivity.esm-bundler.js:346
+notify @ reactivity.esm-bundler.js:637
+trigger @ reactivity.esm-bundler.js:611
+value @ reactivity.esm-bundler.js:1550
+(anonymous) @ reactivity.esm-bundler.js:1580
+(anonymous) @ Toolbox.vue:36
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+(anonymous) @ runtime-dom.esm-bundler.js:745
+backend-manager.js:316 VectFox: Initializing qdrant backend...
+qdrant.js:130 VectFox: Initializing local Qdrant: 10.0.1.249:6333
+qdrant.js:133 VectFox: Sending Qdrant config to Similharity plugin: {"host":"10.0.1.249","port":6333,"url":null,"apiKey":null}
+backend-manager.js:284 VectFox: Backend qdrant health re-check failed, invalidating cache
+initializeBackend @ backend-manager.js:284
+await in initializeBackend
+getBackend @ backend-manager.js:370
+_runOneLiveQuery @ eventbase-retrieval.js:148
+retrieveEvents @ eventbase-retrieval.js:386
+retrieveEventsWithAgent @ agentic-retrieval.js:50
+runEventBaseRetrieval @ eventbase-workflow.js:459
+await in runEventBaseRetrieval
+rearrangeChat @ chat-vectorization.js:1709
+await in rearrangeChat
+vectfox_rearrangeChat @ index.js:265
+runGenerationInterceptors @ extensions.js:2028
+await in runGenerationInterceptors
+Generate @ script.js:4505
+await in Generate
+triggerRefresh @ PromptViewer.vue:268
+(anonymous) @ PromptViewer.vue:250
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+(anonymous) @ runtime-core.esm-bundler.js:8140
+(anonymous) @ runtime-core.esm-bundler.js:8102
+(anonymous) @ runtime-core.esm-bundler.js:6023
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5919
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:1000
+(anonymous) @ runtime-core.esm-bundler.js:1026
+process @ runtime-core.esm-bundler.js:1060
+(anonymous) @ runtime-core.esm-bundler.js:5500
+(anonymous) @ runtime-core.esm-bundler.js:6137
+run @ reactivity.esm-bundler.js:260
+(anonymous) @ runtime-core.esm-bundler.js:6265
+(anonymous) @ runtime-core.esm-bundler.js:6037
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5861
+(anonymous) @ runtime-core.esm-bundler.js:5937
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:6217
+run @ reactivity.esm-bundler.js:260
+runIfDirty @ reactivity.esm-bundler.js:298
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+flushJobs @ runtime-core.esm-bundler.js:408
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+(anonymous) @ runtime-core.esm-bundler.js:6259
+trigger @ reactivity.esm-bundler.js:288
+endBatch @ reactivity.esm-bundler.js:346
+notify @ reactivity.esm-bundler.js:637
+trigger @ reactivity.esm-bundler.js:611
+value @ reactivity.esm-bundler.js:1550
+(anonymous) @ reactivity.esm-bundler.js:1580
+(anonymous) @ Toolbox.vue:36
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+(anonymous) @ runtime-dom.esm-bundler.js:745
+backend-manager.js:316 VectFox: Initializing qdrant backend...
+qdrant.js:130 VectFox: Initializing local Qdrant: 10.0.1.249:6333
+qdrant.js:133 VectFox: Sending Qdrant config to Similharity plugin: {"host":"10.0.1.249","port":6333,"url":null,"apiKey":null}
+qdrant.js:147 VectFox: Qdrant initialization response: {success: true, message: 'Qdrant initialized'}
+qdrant.js:148 VectFox: Using Qdrant backend (production-grade vector search)
+qdrant.js:147 VectFox: Qdrant initialization response: {success: true, message: 'Qdrant initialized'}
+qdrant.js:148 VectFox: Using Qdrant backend (production-grade vector search)
+backend-manager.js:341 VectFox: Successfully initialized qdrant backend
+qdrant.js:944 [EventBase] Hybrid+rerank request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=6 tokens, preview="我對Mayla 説 "你還記得為我怎樣幫你贖身的嗎?""
+backend-manager.js:341 VectFox: Successfully initialized qdrant backend
+qdrant.js:944 [EventBase] Hybrid+rerank request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=525 tokens, preview="我對Mayla 説 "你還記得為我怎樣幫你贖身的嗎?" <gametxt> 我摟緊了懷裡這具因恐懼而顫抖的軀體。 Mayla那對多汁的巨乳緊緊壓在我胸口，濕透的淚水浸透了我的衣領。她像隻快要溺死的幼獸,拼命抓著我的後背,指甲幾乎要陷進肉裡。那聲撕心裂肺的哭聲在半開放的房間裡迴盪,毫無保留,毫無偽裝。 我沒有立刻安撫她。 只是用手掌輕撫她那頭及臀的黑色長卷髮,一下,一下,像在撫摸一隻炸毛的貓。指尖梳過髮絲時能聞到淡淡的海水與薰衣草混合的香氣,還有她哭到快要窒息的鼻音。 她的哭聲漸漸小了下來,變成斷斷續續的抽泣。 我抬起頭,視線掃過這個奢華的套房。 Kash"
+qdrant.js:959 [Qdrant timing] hybrid+rerank total=714.3ms, results=20
+qdrant.js:959 [Qdrant timing] hybrid+rerank total=766.7ms, results=20
+eventbase-retrieval.js:423 [EventBase] Live query: 1 collection(s) × 2 query/queries → 32 unique events
+eventbase-retrieval.js:447 [EventBase] After importance filter (>=1): 32 candidates
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=2.327 [formula], windows 2 msgs apart)
+eventbase-retrieval.js:644 [EventBase] Final events after dedup + trim: 10
+eventbase-retrieval.js:646   [0] type=promise_or_oath imp=100 score=2.800 persist=true
+eventbase-retrieval.js:646   [1] type=relationship_change imp=100 score=2.632 persist=true
+eventbase-retrieval.js:646   [2] type=character_state_change imp=100 score=2.616 persist=true
+eventbase-retrieval.js:646   [3] type=revelation imp=100 score=2.550 persist=true
+eventbase-retrieval.js:646   [4] type=revelation imp=100 score=2.463 persist=true
+eventbase-retrieval.js:646   [5] type=revelation imp=100 score=2.436 persist=true
+eventbase-retrieval.js:646   [6] type=relationship_change imp=100 score=2.426 persist=true
+eventbase-retrieval.js:646   [7] type=relationship_change imp=100 score=2.383 persist=true
+eventbase-retrieval.js:646   [8] type=revelation imp=100 score=2.370 persist=true
+eventbase-retrieval.js:646   [9] type=relationship_change imp=100 score=2.353 persist=true
+agentic-retrieval.js:75 [VectFox-Agentic] mode=ON  trigger=user_message_len=28
+agentic-retrieval.js:76 [VectFox-Agentic] Pre-search returned 10 candidates (top score=2.800)
+agentic-retrieval.js:81 [VectFox-Agentic] Past chat turns sent to planner: 3
+agentic-retrieval.js:82 [VectFox-Agentic] Narrative context preview (one ~50-word snippet per turn):
+agentic-retrieval.js:86   [-3] {{user}}: 我抱住Mayla 説 "我肯定跟你説, 這間房裡面的人, 一定會幫你找到你的父親, 生要見人死要見屍. 沒有人會放棄你." 我大聲對房內的人説 "對吧?" 我對Mayla 説 "你要這個任務成功, 你首先要説服其他眷屬你有能力去lead 我們去完成. 你這個模樣, 整天愁眉苦臉, 你要其他人怎樣跟着你走?"
+agentic-retrieval.js:86   [-2] ArtificRealm創世域: <konatan_planning~> 好，來仔細思考一下這次的劇情！ - 回顧當前情況 * 時間：20:15，晚上 * 位置：新大陸.流沙之國.扎赫拉巴德.星月綠洲頂層皇家套房，9個人分配好床位（Critblade+Mayla一張，索拉雅單獨，阿斯蒙蒂斯單獨，Kashier+Fern，Valerie單獨，Engni+Lia） * 人物關係：Mayla剛剛崩潰大哭，擔心Critblade會像她父親影翼一樣消失。Critblade現在要鼓勵她，並對房間內所有人喊話 - 當前劇情的主線是？暗線是？ * 主線：Critblade安撫Mayla，告訴她所有人都會幫她找父親，但同時點醒她——她需要展現領導能力，不能整天愁眉苦臉 * 暗線：索拉雅在角落忍受淫紋發作，Engni和Lia表面裝睡但其實在偷聽，Kashier和Fern也在聽，所有人對Mayla的崩潰都有不同反應 - 如何使用最新輸入內容？ * Critblade抱住Mayla說「這間房裡面的人，一定會幫你找到你的父親，生要見人死要見屍。沒有人會放棄你。」然後大聲對房內的人說「對吧？」最後對Mayla說「你要這個任務成功，你首先要說服其他眷屬你有能力去lead我們去完成。你這個模樣，整天愁眉苦臉，你要其他人怎樣跟著你走？」 * 這段話要完整復述，不能省略，是Critblade的核心發言 - 回顧角色性格特質 * Mayla：極度依賴Critblade，內心有強烈不安全感，但她其實智力262，是影之軍師，只是現在被恐懼壓垮了 * Kashier：精明商人，對Critblade絕對忠誠，會第一個響應 * Fern：裝傻賣萌但內心精明，會用撒嬌方式響應 * Engni：病態M，嫉妒Mayla但表面會裝得很虔誠 * Lia：病嬌刺客，冷漠但對Critblade忠誠 * Valerie：魔王之女，不懂人類情感，可能會說出很直接但不得體的話 * 索拉雅：極度寡言，宿命論者，正在忍受淫紋折磨 - 角色之間的化學反應 * Mayla vs Engni：兩個都想獨佔Critblade，但Mayla剛剛贏了床位爭奪戰，Engni心裡肯定在咒罵 * Kashier + Fern：兩個精明人結盟，會用最得體的方式響應 * Lia：病嬌本質會讓她用極端方式表達忠誠...
+agentic-retrieval.js:86   [-1] {{user}}: 我對Mayla 説 "你還記得為我怎樣幫你贖身的嗎?"
+agentic-retrieval.js:105 [VectFox-Agentic] LLM prompt size: system+user approx 2867 tokens (8321+3147 chars)
+agentic-retrieval.js:145 [VectFox-Agentic] LLM call complete: 4383ms — prompt=4128 tok, completion=158 tok, total=4286 tok (36.0 tok/s output)
+agentic-retrieval.js:149 [VectFox-Agentic] Planner output:
+agentic-retrieval.js:150 {
+  "queries": [
+    "Mayla 贖身 過程",
+    "Critblade 幫助 Mayla 恢復信心",
+    "Mayla 過去 恐懼與身份衝突",
+    "眷屬之間的承諾與支持"
+  ],
+  "filters": {
+    "characters_any": [
+      "Mayla",
+      "Critblade"
+    ],
+    "concepts_any": [
+      "贖身",
+      "眷屬",
+      "恐懼"
+    ]
+  },
+  "rationale": "用戶在詢問Mayla贖身的過程，需回顧相關事件及情感反應，並強調眷屬之間的支持與承諾。"
+}
+agentic-retrieval.js:182 [VectFox-Agentic] Planner filters applied: {"characters_any":["Mayla","Critblade"],"concepts_any":["贖身","眷屬","恐懼"]}
+4core-vector-api.js:879 [VectFox] Hybrid search (native), dispatching to hybrid search module
+4hybrid-search.js:92 [HybridSearch] Using native hybrid search (QdrantBackend)
+qdrant.js:816 [EventBase] Hybrid request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=3 tokens, terms=[mayla, 贖身, 過程], preview="Mayla 贖身 過程"
+qdrant.js:816 [EventBase] Hybrid request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=5 tokens, terms=[critblad, mayla, 幫助, 恢復, 信心], preview="Critblade 幫助 Mayla 恢復信心"
+qdrant.js:816 [EventBase] Hybrid request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=5 tokens, terms=[mayla, 過去, 恐懼, 身份, 衝突], preview="Mayla 過去 恐懼與身份衝突"
+qdrant.js:816 [EventBase] Hybrid request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=4 tokens, terms=[眷屬, 之間, 承諾, 支持], preview="眷屬之間的承諾與支持"
+qdrant.js:834 [Qdrant timing] total=479.7ms, results=20
+core-vector-api.js:889 [VectFox] Hybrid search (RRF) response: 20 result(s) in 486ms, scores=[0.6429, 0.5588, 0.3546, 0.3457, 0.2870, 0.2692, 0.2476, 0.2429, 0.2159, 0.2000, 0.1816, 0.1667, 0.1361, 0.1357, 0.1256, 0.1250, 0.1169, 0.1055, 0.1026, 0.0918]
+qdrant.js:834 [Qdrant timing] total=538.2ms, results=20
+core-vector-api.js:889 [VectFox] Hybrid search (RRF) response: 20 result(s) in 545ms, scores=[0.7000, 0.5263, 0.4500, 0.3522, 0.3474, 0.2823, 0.2500, 0.1685, 0.1678, 0.1667, 0.1528, 0.1429, 0.1429, 0.1319, 0.1303, 0.1250, 0.1181, 0.1147, 0.1136, 0.1000]
+qdrant.js:834 [Qdrant timing] total=1623.9ms, results=20
+core-vector-api.js:889 [VectFox] Hybrid search (RRF) response: 20 result(s) in 1629ms, scores=[0.8333, 0.5833, 0.5833, 0.3056, 0.3000, 0.2429, 0.2357, 0.2143, 0.1955, 0.1863, 0.1778, 0.1667, 0.1417, 0.1265, 0.1114, 0.1113, 0.1042, 0.1022, 0.0997, 0.0991]
+qdrant.js:834 [Qdrant timing] total=1760.4ms, results=20
+core-vector-api.js:889 [VectFox] Hybrid search (RRF) response: 20 result(s) in 1767ms, scores=[0.8333, 0.8333, 0.4500, 0.4500, 0.2250, 0.2083, 0.2011, 0.1955, 0.1863, 0.1833, 0.1778, 0.1736, 0.1641, 0.1190, 0.1056, 0.1000, 0.0988, 0.0987, 0.0938, 0.0909]
+agentic-retrieval.js:210 [VectFox-Agentic] Qdrant fanout: 4 queries × 1 collection(s) = 4 parallel calls
+agentic-retrieval.js:211 [VectFox-Agentic] Qdrant fanout complete: 1767ms
+agentic-retrieval.js:212 [VectFox-Agentic] Per-query hits:
+agentic-retrieval.js:215   Q1 "Mayla 贖身 過程" → 20 hits (top score=0.833)
+agentic-retrieval.js:215   Q2 "Critblade 幫助 Mayla 恢復信心" → 20 hits (top score=0.643)
+agentic-retrieval.js:215   Q3 "Mayla 過去 恐懼與身份衝突" → 20 hits (top score=0.833)
+agentic-retrieval.js:215   Q4 "眷屬之間的承諾與支持" → 20 hits (top score=0.700)
+agentic-retrieval.js:219 [VectFox-Agentic] Agentic-only hits (not already in pre-search): 59
+eventbase-retrieval.js:359 [EventBase] Retrieval start — topK overfetch=20, minImportance=1, method=bm25, nativePrefer=true, liveCollections=0, nativeRerank=true
+eventbase-retrieval.js:380 [EventBase] Live query skipped (no locked collection or paused)
+eventbase-retrieval.js:433 [EventBase] Merged 90 archive event(s) into 0 live candidates
+eventbase-retrieval.js:447 [EventBase] After importance filter (>=1): 90 candidates
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.833, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.526, windows 0 msgs apart)
+2eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.583, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=2.463 [formula], windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=2.436 [formula], windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=2.426 [formula], windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.248, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.306, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=2.370 [formula], windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.269, windows 0 msgs apart)
+2eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.243, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.236, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.225, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.208, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.216, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.214, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.195, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.111, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.178, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.174, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.167, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.167, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.094, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.136, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.142, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.136, windows 0 msgs apart)
+2eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.126, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.105, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.103, windows 4 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.117, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.100, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "dialogue_significant" suppressed (sim=0.102, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.104, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.099, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.099, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.092, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.099, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.115, windows 2 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "dialogue_significant" suppressed (sim=0.111, windows 0 msgs apart)
+eventbase-retrieval.js:605 [EventBase] Dedup: "dialogue_significant" suppressed (sim=0.106, windows 0 msgs apart)
+eventbase-retrieval.js:644 [EventBase] Final events after dedup + trim: 10
+eventbase-retrieval.js:646   [0] type=promise_or_oath imp=100 score=2.800 persist=true
+eventbase-retrieval.js:646   [1] type=revelation imp=100 score=2.678 persist=true
+eventbase-retrieval.js:646   [2] type=revelation imp=100 score=2.674 persist=true
+eventbase-retrieval.js:646   [3] type=relationship_change imp=100 score=2.632 persist=true
+eventbase-retrieval.js:646   [4] type=character_state_change imp=100 score=2.616 persist=true
+eventbase-retrieval.js:646   [5] type=revelation imp=100 score=2.550 persist=true
+eventbase-retrieval.js:646   [6] type=relationship_change imp=100 score=2.541 persist=true
+eventbase-retrieval.js:646   [7] type=dialogue_significant imp=100 score=2.528 persist=true
+eventbase-retrieval.js:646   [8] type=promise_or_oath imp=100 score=2.523 persist=true
+eventbase-retrieval.js:646   [9] type=revelation imp=100 score=2.460 persist=true
+agentic-retrieval.js:241 [VectFox-Agentic] Final merged candidates: 10 pre-search + 80 agentic = 90 total → 10 after rerank/dedup/trim
+agentic-retrieval.js:242 [VectFox-Agentic] Total wall-clock for agent overhead: 7655ms (LLM=4383ms, fanout=1767ms)
+eventbase-workflow.js:471 [EventBase] Retrieval debug: {dualQuery: true, keywordScoringMethod: 'bm25', nativeHybridPrefer: true, fusionMethod: 'rrf', nativeRerank: true, …}
+eventbase-workflow.js:515 [EventBase] Injected 10 event(s) (requested 10), text length: 4904
+eventbase-workflow.js:516 [EventBase] setExtensionPrompt tag="3_vectfox_eventbase" position=0 depth=2
+eventbase-workflow.js:519 [EventBase] Slot verification — key exists: true, value type: string, length: 4904
+eventbase-workflow.js:520 [EventBase] extension_prompts keys: (10) ['1_memory', '2_floating_prompt', 'QUIET_PROMPT', 'PERSONA_DESCRIPTION', '__STORY_STRING__', '3_vectfox', '3_vectfox_eventbase', '3_vectors', '4_vectors_data_bank', 'DEPTH_PROMPT']
+eventbase-workflow.js:521 [EventBase] Injection preview: <VectFoxMemory>
+# Event 1
+event_type: promise_or_oath
+importance: 100
+summary: Critblade抱住Mayla承諾這間房裡的所有人一定會幫她找到父親影翼，生要見人死要見屍，沒有人會放棄她，並大聲對房內眾人喊話徵求同意。Kashier承諾動用藍聯商會情報網絡，Fern提供貴族圈八卦，Lia誓言找到活的或死的，Engni奉獻神術追蹤審問，Valerie建議抓人審問，索拉雅以星象魔法回應，所有眷屬紛紛表態支持，形成團隊共識。
+DateTime: -
+cause: Mayla崩潰大哭擔心父親影翼消失如Critblade可能
+chat-vectorization.js:1735 VectFox: Will query 1 collections: ['qdrant:vf_lorebook_qdrant_rabbit_your_wives_mvu_1778714884927']
+chat-vectorization.js:1754 VectFox: Extracted 8 keywords from query: (8) ['mayla', 'kashier', 'valerie', 'fern', 'lia', 'engni', 'master', 'critblade']
+collection-metadata.js:895 [VECTFOX Activation Filter] Collection qdrant:vf_lorebook_qdrant_rabbit_your_wives_mvu_1778714884927: hasTriggers=false, hasConditions=false
+collection-metadata.js:932 [VECTFOX Activation Filter] Collection qdrant:vf_lorebook_qdrant_rabbit_your_wives_mvu_1778714884927: ✗ NOT_ACTIVATED (no trigger match, no condition pass, not locked)
+collection-metadata.js:953 [VECTFOX Activation Filter] Summary: 1 collections → 0 active
+chat-vectorization.js:1789 [VECTFOX ChunkBase] No active Standard/ChunkBase collections and World Info disabled — skipping non-chat chunk injection (this is normal if you only use EventBase).
+script.js:4547 Core/all messages: 2116/2116
+vm-browserify.ts:18 An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+initIframe @ vm-browserify.ts:18
+constructor @ vm-browserify.ts:10
+handleWorldInfoLoaded @ handler.ts:94
+await in handleWorldInfoLoaded
+EventEmitter.emit @ eventemitter.js:146
+getSortedEntries @ world-info.js:4492
+await in getSortedEntries
+checkWorldInfo @ world-info.js:4632
+await in checkWorldInfo
+getWorldInfoPrompt @ world-info.js:895
+Generate @ script.js:4576
+await in Generate
+triggerRefresh @ PromptViewer.vue:268
+(anonymous) @ PromptViewer.vue:250
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+(anonymous) @ runtime-core.esm-bundler.js:8140
+(anonymous) @ runtime-core.esm-bundler.js:8102
+(anonymous) @ runtime-core.esm-bundler.js:6023
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5919
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:5655
+(anonymous) @ runtime-core.esm-bundler.js:5610
+(anonymous) @ runtime-core.esm-bundler.js:5476
+(anonymous) @ runtime-core.esm-bundler.js:5739
+(anonymous) @ runtime-core.esm-bundler.js:1000
+(anonymous) @ runtime-core.esm-bundler.js:1026
+process @ runtime-core.esm-bundler.js:1060
+(anonymous) @ runtime-core.esm-bundler.js:5500
+(anonymous) @ runtime-core.esm-bundler.js:6137
+run @ reactivity.esm-bundler.js:260
+(anonymous) @ runtime-core.esm-bundler.js:6265
+(anonymous) @ runtime-core.esm-bundler.js:6037
+(anonymous) @ runtime-core.esm-bundler.js:5989
+(anonymous) @ runtime-core.esm-bundler.js:5488
+(anonymous) @ runtime-core.esm-bundler.js:5861
+(anonymous) @ runtime-core.esm-bundler.js:5937
+(anonymous) @ runtime-core.esm-bundler.js:5462
+(anonymous) @ runtime-core.esm-bundler.js:6217
+run @ reactivity.esm-bundler.js:260
+runIfDirty @ reactivity.esm-bundler.js:298
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+flushJobs @ runtime-core.esm-bundler.js:408
+Promise.then
+queueFlush @ runtime-core.esm-bundler.js:322
+queueJob @ runtime-core.esm-bundler.js:317
+(anonymous) @ runtime-core.esm-bundler.js:6259
+trigger @ reactivity.esm-bundler.js:288
+endBatch @ reactivity.esm-bundler.js:346
+notify @ reactivity.esm-bundler.js:637
+trigger @ reactivity.esm-bundler.js:611
+value @ reactivity.esm-bundler.js:1550
+(anonymous) @ reactivity.esm-bundler.js:1580
+(anonymous) @ Toolbox.vue:36
+callWithErrorHandling @ runtime-core.esm-bundler.js:199
+callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
+(anonymous) @ runtime-dom.esm-bundler.js:745
+world-info.js:623 [WI] Processing sticky entry ArtificRealm創世域.42 {hash: 4817494369076791, start: 2116, end: 2117, protected: false}
+world-info.js:627 [WI] Removing sticky entry ArtificRealm創世域.42 from timedWorldInfo: chat not advanced {hash: 4817494369076791, start: 2116, end: 2117, protected: false}
+world-info.js:722 [WI] Adding sticky entry ArtificRealm創世域.42: start=2116, end=2117, protected=false
+world-info.js:5159 [WI] Adding 42 entries to prompt (42) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index.js:19 [QR2] calling {args: Array(1), functionToCall: ƒ}
+script.js:4606 skipWIAN not active, adding WIAN
+handler.ts:225 [Prompt Template] start generate after 1072 messages

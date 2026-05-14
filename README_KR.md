@@ -1,10 +1,12 @@
-# 🐰 VectFox — SillyTavern을 위한 고급 RAG
+# 🦊 VectFox — SillyTavern을 위한 고급 RAG
 
 > *긴 롤플레잉 스토리를 더 오래, 더 자연스럽게 기억하세요.* VectFox는 LLM 기반 스토리 이벤트 추출, 네이티브 희소 벡터 하이브리드 검색, 그리고 실제 벡터 데이터베이스를 기반으로 한 빠르고 확장성 높은 메모리 시스템을 제공합니다.
 
 ![License](https://img.shields.io/badge/license-GPLv3-blue) ![Status](https://img.shields.io/badge/status-Active-brightgreen)
 
 **Languages:** [English](README.md) | [繁體中文](README_ZH.md) | [日本語](README_JP.md) | **한국어**
+
+![](assets/20260514_163417_vectfox.jpg)
 
 ---
 

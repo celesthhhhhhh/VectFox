@@ -883,7 +883,7 @@ export async function checkBananaBreadConnection(settings) {
 
     try {
         const serverUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : 'http://localhost:8008';
-        const cleanUrl = serverUrl.replace(/\/$/, '');
+        const cleanUrl = serverUrl.replace(/\/$/, '').replace(/\/v1$/, '');
 
         const headers = {
             'Content-Type': 'application/json',

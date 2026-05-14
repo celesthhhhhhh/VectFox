@@ -1693,7 +1693,7 @@ export function openQueryTestModal() {
                     </small>
                     <textarea id="VectFox_qtester_input"
                         class="text_pole"
-                        placeholder="e.g. 你還記得為甚麼幫你贖身嗎?"
+                        placeholder="e.g. Do you remember how I rescued you?"
                         rows="3"
                         style="resize:vertical; width:100%; box-sizing:border-box;"></textarea>
                     <button id="VectFox_qtester_run" class="menu_button" style="align-self:flex-start;">

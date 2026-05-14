@@ -193,7 +193,7 @@ A1과 동일하지만 다음이 추가됩니다:
 
 **예:** "I cast Fireball at the dragon." 검색. Qdrant가 밀집(주문/공격 의미)과 희소(문자 그대로 "Fireball" + "dragon")를 동시에 검색하고, RRF로 융합하고, importance/recency 포뮬라로 순위를 매기고, 낮은 중요도 이벤트를 필터링한 다음—최종 주입 준비된 목록을 한 번의 호출로 반환합니다.
 
-**트레이드오프:** 최고의 정확도, 규모에서 가장 빠름. Qdrant 인스턴스가 필요합니다(무료, 오픈 소스).
+**트레이드오프:** 최고의 정확도, 규모에서 가장 빠름. Qdrant 인스턴스가 필요합니다(무료, 오픈 소스). → [Qdrant 설치 가이드](Doc/Qdrant_install.md)
 
 | 어디서 무엇이 실행되나 | A1 — Standard + BM25 | A2 — Standard + Hybrid | A3 — Qdrant Native |
 |---|---|---|---|

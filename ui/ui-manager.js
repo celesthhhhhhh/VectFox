@@ -2250,7 +2250,7 @@ function bindSettingsEvents(settings, callbacks) {
                 const data = await resp.json();
                 models = (data?.data || []).map(m => ({ id: m.id, label: m.name ? `${m.id} — ${m.name}` : m.id }));
             } else if (provider === 'vllm') {
-                const baseUrl = (settings.summarize_vllm_url || '').replace(/\/$/, '');
+                const baseUrl = (settings.summarize_vllm_url || '').replace(/\/$/, '').replace(/\/v1$/, '');
                 if (!baseUrl) {
                     toastr.error('Set the vLLM Base URL first.', 'vLLM not configured');
                     return;

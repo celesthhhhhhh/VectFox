@@ -194,7 +194,7 @@ VectFox 會結合**兩種訊號**來找出最佳結果：
 
 **範例：** 搜尋「I cast Fireball at the dragon.」時，Qdrant 同時搜尋密集（呪術/攻擊意義）與稀疏（字面上的「Fireball」+「dragon」），透過 RRF 融合，依 importance/recency 公式排名，過濾低重要度事件——最後在一次呼叫中回傳最終的注入就緒列表。
 
-**取捨：** 準確度最好，在大規模資料下速度也最快。需要一個 Qdrant 實例（免費、開源）。
+**取捨：** 準確度最好，在大規模資料下速度也最快。需要一個 Qdrant 實例（免費、開源）。→ [Qdrant 安裝指南](Doc/Qdrant_install.md)
 
 | 哪裡執行什麼 | A1 — 標準後端 + BM25 | A2 — 標準後端 + Hybrid | A3 — Qdrant 原生 |
 |---|---|---|---|

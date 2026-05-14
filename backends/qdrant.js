@@ -36,6 +36,21 @@ import { textgen_types, textgenerationwebui_settings } from '../../../../textgen
 
 const BACKEND_TYPE = 'qdrant';
 
+function _isDimensionMismatch(errorBody) {
+    return typeof errorBody === 'string' && errorBody.includes('Vector dimension error');
+}
+
+function _warnDimensionMismatch(errorBody) {
+    const match = errorBody.match(/expected dim[: ]+(\d+)[^0-9]+(\d+)/i);
+    const detail = match ? `Collection needs ${match[1]}-dim vectors; current provider generates ${match[2]}-dim.` : 'Vector dimension mismatch.';
+    const msg = `${detail} Re-index the collection or switch back to the original embedding provider.`;
+    console.error('[VectFox] Dimension mismatch — aborting fallback chain:', msg);
+    // toastr is global in the ST browser context
+    if (typeof toastr !== 'undefined') {
+        toastr.error(msg, 'Embedding Dimension Mismatch', { timeOut: 10000 });
+    }
+}
+
 // NOTE: `vectfox_main` is kept verbatim for on-disk compatibility
 // with existing user Qdrant data. Do not rebrand. See plans/vectfox-rename-plan.md §1.5.
 const MULTITENANCY_COLLECTION = 'vectfox_main';
@@ -851,6 +866,10 @@ export class QdrantBackend extends VectorBackend {
 
             const errorBody = await response.text().catch(() => '(no body)');
             const failMs = (performance.now() - tNetStart).toFixed(1);
+            if (_isDimensionMismatch(errorBody)) {
+                _warnDimensionMismatch(errorBody);
+                return { hashes: [], metadata: [] };
+            }
             console.warn(`[Qdrant timing] FAILED after ${failMs}ms (HTTP ${response.status}), falling back to vector-only. Server said: ${errorBody.slice(0, 500)}`);
         } catch (error) {
             const failMs = (performance.now() - tNetStart).toFixed(1);
@@ -976,6 +995,10 @@ export class QdrantBackend extends VectorBackend {
 
             const errorBody = await response.text().catch(() => '(no body)');
             const failMs = (performance.now() - tNetStart).toFixed(1);
+            if (_isDimensionMismatch(errorBody)) {
+                _warnDimensionMismatch(errorBody);
+                return { hashes: [], metadata: [] };
+            }
             console.warn(`[Qdrant timing] hybrid+rerank FAILED after ${failMs}ms (HTTP ${response.status}), falling back to hybridQuery. Server said: ${errorBody.slice(0, 500)}`);
         } catch (error) {
             const failMs = (performance.now() - tNetStart).toFixed(1);

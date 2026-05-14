@@ -515,8 +515,9 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         const summaryScript = _detectScript(event.summary);
         if (excerptScript !== 'empty' && excerptScript !== 'mixed' && summaryScript !== 'empty' && summaryScript !== 'mixed') {
             if (excerptScript !== summaryScript) {
-                console.warn(`[EventBase] Window ${windowIndex}, item ${i}: language mismatch (excerpt=${excerptScript}, summary=${summaryScript}) — dropped`);
-                continue;
+                // cjk→latin: LLM summarised in English for a CJK source — valid, keep it
+                // latin→cjk: more suspicious but still keep; just log both cases
+                console.warn(`[EventBase] Window ${windowIndex}, item ${i}: language mismatch (excerpt=${excerptScript}, summary=${summaryScript}) — kept`);
             }
         }
 

@@ -1,453 +1,194 @@
-Generate entered
-vm-browserify.ts:18 An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
-initIframe @ vm-browserify.ts:18
-constructor @ vm-browserify.ts:10
-handleGenerateBefore @ handler.ts:57
-await in handleGenerateBefore
-EventEmitter.emit @ eventemitter.js:146
-await in EventEmitter.emit
-Generate @ script.js:4262
-await in Generate
-triggerRefresh @ PromptViewer.vue:268
-(anonymous) @ PromptViewer.vue:250
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-(anonymous) @ runtime-core.esm-bundler.js:8140
-(anonymous) @ runtime-core.esm-bundler.js:8102
-(anonymous) @ runtime-core.esm-bundler.js:6023
-(anonymous) @ runtime-core.esm-bundler.js:5989
-(anonymous) @ runtime-core.esm-bundler.js:5488
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5919
-(anonymous) @ runtime-core.esm-bundler.js:5462
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:1000
-(anonymous) @ runtime-core.esm-bundler.js:1026
-process @ runtime-core.esm-bundler.js:1060
-(anonymous) @ runtime-core.esm-bundler.js:5500
-(anonymous) @ runtime-core.esm-bundler.js:6137
-run @ reactivity.esm-bundler.js:260
-(anonymous) @ runtime-core.esm-bundler.js:6265
-(anonymous) @ runtime-core.esm-bundler.js:6037
-(anonymous) @ runtime-core.esm-bundler.js:5989
-(anonymous) @ runtime-core.esm-bundler.js:5488
-(anonymous) @ runtime-core.esm-bundler.js:5861
-(anonymous) @ runtime-core.esm-bundler.js:5937
-(anonymous) @ runtime-core.esm-bundler.js:5462
-(anonymous) @ runtime-core.esm-bundler.js:6217
-run @ reactivity.esm-bundler.js:260
-runIfDirty @ reactivity.esm-bundler.js:298
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-flushJobs @ runtime-core.esm-bundler.js:408
-Promise.then
-queueFlush @ runtime-core.esm-bundler.js:322
-queueJob @ runtime-core.esm-bundler.js:317
-(anonymous) @ runtime-core.esm-bundler.js:6259
-trigger @ reactivity.esm-bundler.js:288
-endBatch @ reactivity.esm-bundler.js:346
-notify @ reactivity.esm-bundler.js:637
-trigger @ reactivity.esm-bundler.js:611
-value @ reactivity.esm-bundler.js:1550
-(anonymous) @ reactivity.esm-bundler.js:1580
-(anonymous) @ Toolbox.vue:36
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
-(anonymous) @ runtime-dom.esm-bundler.js:745
-index.js:19 [QR2] calling {args: Array(3), functionToCall: ƒ}
-chat-vectorization.js:1671 🐰 VectFox: rearrangeChat called (type: normal, chat length: 2116)
-eventbase-workflow.js:362 [EventBase] Live collection skipped (not locked to chat): vf_eventbase_qdrant_rabbit_fuka_shikuzaki_d609a3e2-8a7b-4cc6-a559-5c024c8dd831
-eventbase-workflow.js:395 [EventBase] Live retrieval: uuid=67d28099-167f-4c07-a7cb-1b62e44f43d0, lockedLiveCollections=1, ids=["vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0"]
-eventbase-workflow.js:408 [EventBase] Phase A: live=true, archiveCollections=0, searchText length=2993
-eventbase-workflow.js:422 [EventBase] Keyword query (user last message, 28 chars): 我對Mayla  説 "你還記得為我怎樣幫你贖身的嗎?"
-eventbase-retrieval.js:359 [EventBase] Retrieval start — topK overfetch=20, minImportance=1, method=bm25, nativePrefer=true, liveCollections=1, nativeRerank=true
-2backend-manager.js:274 VectFox: Health cache stale for qdrant, re-verifying...
-backend-manager.js:284 VectFox: Backend qdrant health re-check failed, invalidating cache
-initializeBackend @ backend-manager.js:284
-await in initializeBackend
-getBackend @ backend-manager.js:370
-_runOneLiveQuery @ eventbase-retrieval.js:148
-retrieveEvents @ eventbase-retrieval.js:386
-retrieveEventsWithAgent @ agentic-retrieval.js:50
-runEventBaseRetrieval @ eventbase-workflow.js:459
-await in runEventBaseRetrieval
-rearrangeChat @ chat-vectorization.js:1709
-await in rearrangeChat
-vectfox_rearrangeChat @ index.js:265
-runGenerationInterceptors @ extensions.js:2028
-await in runGenerationInterceptors
-Generate @ script.js:4505
-await in Generate
-triggerRefresh @ PromptViewer.vue:268
-(anonymous) @ PromptViewer.vue:250
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-(anonymous) @ runtime-core.esm-bundler.js:8140
-(anonymous) @ runtime-core.esm-bundler.js:8102
-(anonymous) @ runtime-core.esm-bundler.js:6023
-(anonymous) @ runtime-core.esm-bundler.js:5989
-(anonymous) @ runtime-core.esm-bundler.js:5488
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5919
-(anonymous) @ runtime-core.esm-bundler.js:5462
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:1000
-(anonymous) @ runtime-core.esm-bundler.js:1026
-process @ runtime-core.esm-bundler.js:1060
-(anonymous) @ runtime-core.esm-bundler.js:5500
-(anonymous) @ runtime-core.esm-bundler.js:6137
-run @ reactivity.esm-bundler.js:260
-(anonymous) @ runtime-core.esm-bundler.js:6265
-(anonymous) @ runtime-core.esm-bundler.js:6037
-(anonymous) @ runtime-core.esm-bundler.js:5989
-(anonymous) @ runtime-core.esm-bundler.js:5488
-(anonymous) @ runtime-core.esm-bundler.js:5861
-(anonymous) @ runtime-core.esm-bundler.js:5937
-(anonymous) @ runtime-core.esm-bundler.js:5462
-(anonymous) @ runtime-core.esm-bundler.js:6217
-run @ reactivity.esm-bundler.js:260
-runIfDirty @ reactivity.esm-bundler.js:298
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-flushJobs @ runtime-core.esm-bundler.js:408
-Promise.then
-queueFlush @ runtime-core.esm-bundler.js:322
-queueJob @ runtime-core.esm-bundler.js:317
-(anonymous) @ runtime-core.esm-bundler.js:6259
-trigger @ reactivity.esm-bundler.js:288
-endBatch @ reactivity.esm-bundler.js:346
-notify @ reactivity.esm-bundler.js:637
-trigger @ reactivity.esm-bundler.js:611
-value @ reactivity.esm-bundler.js:1550
-(anonymous) @ reactivity.esm-bundler.js:1580
-(anonymous) @ Toolbox.vue:36
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
-(anonymous) @ runtime-dom.esm-bundler.js:745
-backend-manager.js:316 VectFox: Initializing qdrant backend...
-qdrant.js:130 VectFox: Initializing local Qdrant: 10.0.1.249:6333
-qdrant.js:133 VectFox: Sending Qdrant config to Similharity plugin: {"host":"10.0.1.249","port":6333,"url":null,"apiKey":null}
-backend-manager.js:284 VectFox: Backend qdrant health re-check failed, invalidating cache
-initializeBackend @ backend-manager.js:284
-await in initializeBackend
-getBackend @ backend-manager.js:370
-_runOneLiveQuery @ eventbase-retrieval.js:148
-retrieveEvents @ eventbase-retrieval.js:386
-retrieveEventsWithAgent @ agentic-retrieval.js:50
-runEventBaseRetrieval @ eventbase-workflow.js:459
-await in runEventBaseRetrieval
-rearrangeChat @ chat-vectorization.js:1709
-await in rearrangeChat
-vectfox_rearrangeChat @ index.js:265
-runGenerationInterceptors @ extensions.js:2028
-await in runGenerationInterceptors
-Generate @ script.js:4505
-await in Generate
-triggerRefresh @ PromptViewer.vue:268
-(anonymous) @ PromptViewer.vue:250
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-(anonymous) @ runtime-core.esm-bundler.js:8140
-(anonymous) @ runtime-core.esm-bundler.js:8102
-(anonymous) @ runtime-core.esm-bundler.js:6023
-(anonymous) @ runtime-core.esm-bundler.js:5989
-(anonymous) @ runtime-core.esm-bundler.js:5488
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5919
-(anonymous) @ runtime-core.esm-bundler.js:5462
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:1000
-(anonymous) @ runtime-core.esm-bundler.js:1026
-process @ runtime-core.esm-bundler.js:1060
-(anonymous) @ runtime-core.esm-bundler.js:5500
-(anonymous) @ runtime-core.esm-bundler.js:6137
-run @ reactivity.esm-bundler.js:260
-(anonymous) @ runtime-core.esm-bundler.js:6265
-(anonymous) @ runtime-core.esm-bundler.js:6037
-(anonymous) @ runtime-core.esm-bundler.js:5989
-(anonymous) @ runtime-core.esm-bundler.js:5488
-(anonymous) @ runtime-core.esm-bundler.js:5861
-(anonymous) @ runtime-core.esm-bundler.js:5937
-(anonymous) @ runtime-core.esm-bundler.js:5462
-(anonymous) @ runtime-core.esm-bundler.js:6217
-run @ reactivity.esm-bundler.js:260
-runIfDirty @ reactivity.esm-bundler.js:298
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-flushJobs @ runtime-core.esm-bundler.js:408
-Promise.then
-queueFlush @ runtime-core.esm-bundler.js:322
-queueJob @ runtime-core.esm-bundler.js:317
-(anonymous) @ runtime-core.esm-bundler.js:6259
-trigger @ reactivity.esm-bundler.js:288
-endBatch @ reactivity.esm-bundler.js:346
-notify @ reactivity.esm-bundler.js:637
-trigger @ reactivity.esm-bundler.js:611
-value @ reactivity.esm-bundler.js:1550
-(anonymous) @ reactivity.esm-bundler.js:1580
-(anonymous) @ Toolbox.vue:36
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
-(anonymous) @ runtime-dom.esm-bundler.js:745
-backend-manager.js:316 VectFox: Initializing qdrant backend...
-qdrant.js:130 VectFox: Initializing local Qdrant: 10.0.1.249:6333
-qdrant.js:133 VectFox: Sending Qdrant config to Similharity plugin: {"host":"10.0.1.249","port":6333,"url":null,"apiKey":null}
-qdrant.js:147 VectFox: Qdrant initialization response: {success: true, message: 'Qdrant initialized'}
-qdrant.js:148 VectFox: Using Qdrant backend (production-grade vector search)
-qdrant.js:147 VectFox: Qdrant initialization response: {success: true, message: 'Qdrant initialized'}
-qdrant.js:148 VectFox: Using Qdrant backend (production-grade vector search)
-backend-manager.js:341 VectFox: Successfully initialized qdrant backend
-qdrant.js:944 [EventBase] Hybrid+rerank request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=6 tokens, preview="我對Mayla 説 "你還記得為我怎樣幫你贖身的嗎?""
-backend-manager.js:341 VectFox: Successfully initialized qdrant backend
-qdrant.js:944 [EventBase] Hybrid+rerank request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=525 tokens, preview="我對Mayla 説 "你還記得為我怎樣幫你贖身的嗎?" <gametxt> 我摟緊了懷裡這具因恐懼而顫抖的軀體。 Mayla那對多汁的巨乳緊緊壓在我胸口，濕透的淚水浸透了我的衣領。她像隻快要溺死的幼獸,拼命抓著我的後背,指甲幾乎要陷進肉裡。那聲撕心裂肺的哭聲在半開放的房間裡迴盪,毫無保留,毫無偽裝。 我沒有立刻安撫她。 只是用手掌輕撫她那頭及臀的黑色長卷髮,一下,一下,像在撫摸一隻炸毛的貓。指尖梳過髮絲時能聞到淡淡的海水與薰衣草混合的香氣,還有她哭到快要窒息的鼻音。 她的哭聲漸漸小了下來,變成斷斷續續的抽泣。 我抬起頭,視線掃過這個奢華的套房。 Kash"
-qdrant.js:959 [Qdrant timing] hybrid+rerank total=714.3ms, results=20
-qdrant.js:959 [Qdrant timing] hybrid+rerank total=766.7ms, results=20
-eventbase-retrieval.js:423 [EventBase] Live query: 1 collection(s) × 2 query/queries → 32 unique events
-eventbase-retrieval.js:447 [EventBase] After importance filter (>=1): 32 candidates
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=2.327 [formula], windows 2 msgs apart)
-eventbase-retrieval.js:644 [EventBase] Final events after dedup + trim: 10
-eventbase-retrieval.js:646   [0] type=promise_or_oath imp=100 score=2.800 persist=true
-eventbase-retrieval.js:646   [1] type=relationship_change imp=100 score=2.632 persist=true
-eventbase-retrieval.js:646   [2] type=character_state_change imp=100 score=2.616 persist=true
-eventbase-retrieval.js:646   [3] type=revelation imp=100 score=2.550 persist=true
-eventbase-retrieval.js:646   [4] type=revelation imp=100 score=2.463 persist=true
-eventbase-retrieval.js:646   [5] type=revelation imp=100 score=2.436 persist=true
-eventbase-retrieval.js:646   [6] type=relationship_change imp=100 score=2.426 persist=true
-eventbase-retrieval.js:646   [7] type=relationship_change imp=100 score=2.383 persist=true
-eventbase-retrieval.js:646   [8] type=revelation imp=100 score=2.370 persist=true
-eventbase-retrieval.js:646   [9] type=relationship_change imp=100 score=2.353 persist=true
-agentic-retrieval.js:75 [VectFox-Agentic] mode=ON  trigger=user_message_len=28
-agentic-retrieval.js:76 [VectFox-Agentic] Pre-search returned 10 candidates (top score=2.800)
-agentic-retrieval.js:81 [VectFox-Agentic] Past chat turns sent to planner: 3
-agentic-retrieval.js:82 [VectFox-Agentic] Narrative context preview (one ~50-word snippet per turn):
-agentic-retrieval.js:86   [-3] {{user}}: 我抱住Mayla 説 "我肯定跟你説, 這間房裡面的人, 一定會幫你找到你的父親, 生要見人死要見屍. 沒有人會放棄你." 我大聲對房內的人説 "對吧?" 我對Mayla 説 "你要這個任務成功, 你首先要説服其他眷屬你有能力去lead 我們去完成. 你這個模樣, 整天愁眉苦臉, 你要其他人怎樣跟着你走?"
-agentic-retrieval.js:86   [-2] ArtificRealm創世域: <konatan_planning~> 好，來仔細思考一下這次的劇情！ - 回顧當前情況 * 時間：20:15，晚上 * 位置：新大陸.流沙之國.扎赫拉巴德.星月綠洲頂層皇家套房，9個人分配好床位（Critblade+Mayla一張，索拉雅單獨，阿斯蒙蒂斯單獨，Kashier+Fern，Valerie單獨，Engni+Lia） * 人物關係：Mayla剛剛崩潰大哭，擔心Critblade會像她父親影翼一樣消失。Critblade現在要鼓勵她，並對房間內所有人喊話 - 當前劇情的主線是？暗線是？ * 主線：Critblade安撫Mayla，告訴她所有人都會幫她找父親，但同時點醒她——她需要展現領導能力，不能整天愁眉苦臉 * 暗線：索拉雅在角落忍受淫紋發作，Engni和Lia表面裝睡但其實在偷聽，Kashier和Fern也在聽，所有人對Mayla的崩潰都有不同反應 - 如何使用最新輸入內容？ * Critblade抱住Mayla說「這間房裡面的人，一定會幫你找到你的父親，生要見人死要見屍。沒有人會放棄你。」然後大聲對房內的人說「對吧？」最後對Mayla說「你要這個任務成功，你首先要說服其他眷屬你有能力去lead我們去完成。你這個模樣，整天愁眉苦臉，你要其他人怎樣跟著你走？」 * 這段話要完整復述，不能省略，是Critblade的核心發言 - 回顧角色性格特質 * Mayla：極度依賴Critblade，內心有強烈不安全感，但她其實智力262，是影之軍師，只是現在被恐懼壓垮了 * Kashier：精明商人，對Critblade絕對忠誠，會第一個響應 * Fern：裝傻賣萌但內心精明，會用撒嬌方式響應 * Engni：病態M，嫉妒Mayla但表面會裝得很虔誠 * Lia：病嬌刺客，冷漠但對Critblade忠誠 * Valerie：魔王之女，不懂人類情感，可能會說出很直接但不得體的話 * 索拉雅：極度寡言，宿命論者，正在忍受淫紋折磨 - 角色之間的化學反應 * Mayla vs Engni：兩個都想獨佔Critblade，但Mayla剛剛贏了床位爭奪戰，Engni心裡肯定在咒罵 * Kashier + Fern：兩個精明人結盟，會用最得體的方式響應 * Lia：病嬌本質會讓她用極端方式表達忠誠...
-agentic-retrieval.js:86   [-1] {{user}}: 我對Mayla 説 "你還記得為我怎樣幫你贖身的嗎?"
-agentic-retrieval.js:105 [VectFox-Agentic] LLM prompt size: system+user approx 2867 tokens (8321+3147 chars)
-agentic-retrieval.js:145 [VectFox-Agentic] LLM call complete: 4383ms — prompt=4128 tok, completion=158 tok, total=4286 tok (36.0 tok/s output)
-agentic-retrieval.js:149 [VectFox-Agentic] Planner output:
-agentic-retrieval.js:150 {
-  "queries": [
-    "Mayla 贖身 過程",
-    "Critblade 幫助 Mayla 恢復信心",
-    "Mayla 過去 恐懼與身份衝突",
-    "眷屬之間的承諾與支持"
-  ],
-  "filters": {
-    "characters_any": [
-      "Mayla",
-      "Critblade"
-    ],
-    "concepts_any": [
-      "贖身",
-      "眷屬",
-      "恐懼"
-    ]
-  },
-  "rationale": "用戶在詢問Mayla贖身的過程，需回顧相關事件及情感反應，並強調眷屬之間的支持與承諾。"
-}
-agentic-retrieval.js:182 [VectFox-Agentic] Planner filters applied: {"characters_any":["Mayla","Critblade"],"concepts_any":["贖身","眷屬","恐懼"]}
-4core-vector-api.js:879 [VectFox] Hybrid search (native), dispatching to hybrid search module
-4hybrid-search.js:92 [HybridSearch] Using native hybrid search (QdrantBackend)
-qdrant.js:816 [EventBase] Hybrid request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=3 tokens, terms=[mayla, 贖身, 過程], preview="Mayla 贖身 過程"
-qdrant.js:816 [EventBase] Hybrid request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=5 tokens, terms=[critblad, mayla, 幫助, 恢復, 信心], preview="Critblade 幫助 Mayla 恢復信心"
-qdrant.js:816 [EventBase] Hybrid request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=5 tokens, terms=[mayla, 過去, 恐懼, 身份, 衝突], preview="Mayla 過去 恐懼與身份衝突"
-qdrant.js:816 [EventBase] Hybrid request: collection=vf_eventbase_qdrant_critblade_artificrealm創世域_67d28099-167f-4c07-a7cb-1b62e44f43d0, topK=20, sparse=4 tokens, terms=[眷屬, 之間, 承諾, 支持], preview="眷屬之間的承諾與支持"
-qdrant.js:834 [Qdrant timing] total=479.7ms, results=20
-core-vector-api.js:889 [VectFox] Hybrid search (RRF) response: 20 result(s) in 486ms, scores=[0.6429, 0.5588, 0.3546, 0.3457, 0.2870, 0.2692, 0.2476, 0.2429, 0.2159, 0.2000, 0.1816, 0.1667, 0.1361, 0.1357, 0.1256, 0.1250, 0.1169, 0.1055, 0.1026, 0.0918]
-qdrant.js:834 [Qdrant timing] total=538.2ms, results=20
-core-vector-api.js:889 [VectFox] Hybrid search (RRF) response: 20 result(s) in 545ms, scores=[0.7000, 0.5263, 0.4500, 0.3522, 0.3474, 0.2823, 0.2500, 0.1685, 0.1678, 0.1667, 0.1528, 0.1429, 0.1429, 0.1319, 0.1303, 0.1250, 0.1181, 0.1147, 0.1136, 0.1000]
-qdrant.js:834 [Qdrant timing] total=1623.9ms, results=20
-core-vector-api.js:889 [VectFox] Hybrid search (RRF) response: 20 result(s) in 1629ms, scores=[0.8333, 0.5833, 0.5833, 0.3056, 0.3000, 0.2429, 0.2357, 0.2143, 0.1955, 0.1863, 0.1778, 0.1667, 0.1417, 0.1265, 0.1114, 0.1113, 0.1042, 0.1022, 0.0997, 0.0991]
-qdrant.js:834 [Qdrant timing] total=1760.4ms, results=20
-core-vector-api.js:889 [VectFox] Hybrid search (RRF) response: 20 result(s) in 1767ms, scores=[0.8333, 0.8333, 0.4500, 0.4500, 0.2250, 0.2083, 0.2011, 0.1955, 0.1863, 0.1833, 0.1778, 0.1736, 0.1641, 0.1190, 0.1056, 0.1000, 0.0988, 0.0987, 0.0938, 0.0909]
-agentic-retrieval.js:210 [VectFox-Agentic] Qdrant fanout: 4 queries × 1 collection(s) = 4 parallel calls
-agentic-retrieval.js:211 [VectFox-Agentic] Qdrant fanout complete: 1767ms
-agentic-retrieval.js:212 [VectFox-Agentic] Per-query hits:
-agentic-retrieval.js:215   Q1 "Mayla 贖身 過程" → 20 hits (top score=0.833)
-agentic-retrieval.js:215   Q2 "Critblade 幫助 Mayla 恢復信心" → 20 hits (top score=0.643)
-agentic-retrieval.js:215   Q3 "Mayla 過去 恐懼與身份衝突" → 20 hits (top score=0.833)
-agentic-retrieval.js:215   Q4 "眷屬之間的承諾與支持" → 20 hits (top score=0.700)
-agentic-retrieval.js:219 [VectFox-Agentic] Agentic-only hits (not already in pre-search): 59
-eventbase-retrieval.js:359 [EventBase] Retrieval start — topK overfetch=20, minImportance=1, method=bm25, nativePrefer=true, liveCollections=0, nativeRerank=true
-eventbase-retrieval.js:380 [EventBase] Live query skipped (no locked collection or paused)
-eventbase-retrieval.js:433 [EventBase] Merged 90 archive event(s) into 0 live candidates
-eventbase-retrieval.js:447 [EventBase] After importance filter (>=1): 90 candidates
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.833, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.526, windows 0 msgs apart)
-2eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.583, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=2.463 [formula], windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=2.436 [formula], windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=2.426 [formula], windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.248, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.306, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=2.370 [formula], windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.269, windows 0 msgs apart)
-2eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.243, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.236, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.225, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.208, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.216, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.214, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.195, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.111, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.178, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.174, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.167, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.167, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.094, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.136, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.142, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.136, windows 0 msgs apart)
-2eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.126, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.105, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.103, windows 4 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.117, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "character_state_change" suppressed (sim=0.100, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "dialogue_significant" suppressed (sim=0.102, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.104, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.099, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.099, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "promise_or_oath" suppressed (sim=0.092, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "revelation" suppressed (sim=0.099, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "relationship_change" suppressed (sim=0.115, windows 2 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "dialogue_significant" suppressed (sim=0.111, windows 0 msgs apart)
-eventbase-retrieval.js:605 [EventBase] Dedup: "dialogue_significant" suppressed (sim=0.106, windows 0 msgs apart)
-eventbase-retrieval.js:644 [EventBase] Final events after dedup + trim: 10
-eventbase-retrieval.js:646   [0] type=promise_or_oath imp=100 score=2.800 persist=true
-eventbase-retrieval.js:646   [1] type=revelation imp=100 score=2.678 persist=true
-eventbase-retrieval.js:646   [2] type=revelation imp=100 score=2.674 persist=true
-eventbase-retrieval.js:646   [3] type=relationship_change imp=100 score=2.632 persist=true
-eventbase-retrieval.js:646   [4] type=character_state_change imp=100 score=2.616 persist=true
-eventbase-retrieval.js:646   [5] type=revelation imp=100 score=2.550 persist=true
-eventbase-retrieval.js:646   [6] type=relationship_change imp=100 score=2.541 persist=true
-eventbase-retrieval.js:646   [7] type=dialogue_significant imp=100 score=2.528 persist=true
-eventbase-retrieval.js:646   [8] type=promise_or_oath imp=100 score=2.523 persist=true
-eventbase-retrieval.js:646   [9] type=revelation imp=100 score=2.460 persist=true
-agentic-retrieval.js:241 [VectFox-Agentic] Final merged candidates: 10 pre-search + 80 agentic = 90 total → 10 after rerank/dedup/trim
-agentic-retrieval.js:242 [VectFox-Agentic] Total wall-clock for agent overhead: 7655ms (LLM=4383ms, fanout=1767ms)
-eventbase-workflow.js:471 [EventBase] Retrieval debug: {dualQuery: true, keywordScoringMethod: 'bm25', nativeHybridPrefer: true, fusionMethod: 'rrf', nativeRerank: true, …}
-eventbase-workflow.js:515 [EventBase] Injected 10 event(s) (requested 10), text length: 4904
-eventbase-workflow.js:516 [EventBase] setExtensionPrompt tag="3_vectfox_eventbase" position=0 depth=2
-eventbase-workflow.js:519 [EventBase] Slot verification — key exists: true, value type: string, length: 4904
-eventbase-workflow.js:520 [EventBase] extension_prompts keys: (10) ['1_memory', '2_floating_prompt', 'QUIET_PROMPT', 'PERSONA_DESCRIPTION', '__STORY_STRING__', '3_vectfox', '3_vectfox_eventbase', '3_vectors', '4_vectors_data_bank', 'DEPTH_PROMPT']
-eventbase-workflow.js:521 [EventBase] Injection preview: <VectFoxMemory>
-# Event 1
-event_type: promise_or_oath
-importance: 100
-summary: Critblade抱住Mayla承諾這間房裡的所有人一定會幫她找到父親影翼，生要見人死要見屍，沒有人會放棄她，並大聲對房內眾人喊話徵求同意。Kashier承諾動用藍聯商會情報網絡，Fern提供貴族圈八卦，Lia誓言找到活的或死的，Engni奉獻神術追蹤審問，Valerie建議抓人審問，索拉雅以星象魔法回應，所有眷屬紛紛表態支持，形成團隊共識。
-DateTime: -
-cause: Mayla崩潰大哭擔心父親影翼消失如Critblade可能
-chat-vectorization.js:1735 VectFox: Will query 1 collections: ['qdrant:vf_lorebook_qdrant_rabbit_your_wives_mvu_1778714884927']
-chat-vectorization.js:1754 VectFox: Extracted 8 keywords from query: (8) ['mayla', 'kashier', 'valerie', 'fern', 'lia', 'engni', 'master', 'critblade']
-collection-metadata.js:895 [VECTFOX Activation Filter] Collection qdrant:vf_lorebook_qdrant_rabbit_your_wives_mvu_1778714884927: hasTriggers=false, hasConditions=false
-collection-metadata.js:932 [VECTFOX Activation Filter] Collection qdrant:vf_lorebook_qdrant_rabbit_your_wives_mvu_1778714884927: ✗ NOT_ACTIVATED (no trigger match, no condition pass, not locked)
-collection-metadata.js:953 [VECTFOX Activation Filter] Summary: 1 collections → 0 active
-chat-vectorization.js:1789 [VECTFOX ChunkBase] No active Standard/ChunkBase collections and World Info disabled — skipping non-chat chunk injection (this is normal if you only use EventBase).
-script.js:4547 Core/all messages: 2116/2116
-vm-browserify.ts:18 An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
-initIframe @ vm-browserify.ts:18
-constructor @ vm-browserify.ts:10
-handleWorldInfoLoaded @ handler.ts:94
-await in handleWorldInfoLoaded
-EventEmitter.emit @ eventemitter.js:146
-getSortedEntries @ world-info.js:4492
-await in getSortedEntries
-checkWorldInfo @ world-info.js:4632
-await in checkWorldInfo
-getWorldInfoPrompt @ world-info.js:895
-Generate @ script.js:4576
-await in Generate
-triggerRefresh @ PromptViewer.vue:268
-(anonymous) @ PromptViewer.vue:250
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-(anonymous) @ runtime-core.esm-bundler.js:8140
-(anonymous) @ runtime-core.esm-bundler.js:8102
-(anonymous) @ runtime-core.esm-bundler.js:6023
-(anonymous) @ runtime-core.esm-bundler.js:5989
-(anonymous) @ runtime-core.esm-bundler.js:5488
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5919
-(anonymous) @ runtime-core.esm-bundler.js:5462
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:5655
-(anonymous) @ runtime-core.esm-bundler.js:5610
-(anonymous) @ runtime-core.esm-bundler.js:5476
-(anonymous) @ runtime-core.esm-bundler.js:5739
-(anonymous) @ runtime-core.esm-bundler.js:1000
-(anonymous) @ runtime-core.esm-bundler.js:1026
-process @ runtime-core.esm-bundler.js:1060
-(anonymous) @ runtime-core.esm-bundler.js:5500
-(anonymous) @ runtime-core.esm-bundler.js:6137
-run @ reactivity.esm-bundler.js:260
-(anonymous) @ runtime-core.esm-bundler.js:6265
-(anonymous) @ runtime-core.esm-bundler.js:6037
-(anonymous) @ runtime-core.esm-bundler.js:5989
-(anonymous) @ runtime-core.esm-bundler.js:5488
-(anonymous) @ runtime-core.esm-bundler.js:5861
-(anonymous) @ runtime-core.esm-bundler.js:5937
-(anonymous) @ runtime-core.esm-bundler.js:5462
-(anonymous) @ runtime-core.esm-bundler.js:6217
-run @ reactivity.esm-bundler.js:260
-runIfDirty @ reactivity.esm-bundler.js:298
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-flushJobs @ runtime-core.esm-bundler.js:408
-Promise.then
-queueFlush @ runtime-core.esm-bundler.js:322
-queueJob @ runtime-core.esm-bundler.js:317
-(anonymous) @ runtime-core.esm-bundler.js:6259
-trigger @ reactivity.esm-bundler.js:288
-endBatch @ reactivity.esm-bundler.js:346
-notify @ reactivity.esm-bundler.js:637
-trigger @ reactivity.esm-bundler.js:611
-value @ reactivity.esm-bundler.js:1550
-(anonymous) @ reactivity.esm-bundler.js:1580
-(anonymous) @ Toolbox.vue:36
-callWithErrorHandling @ runtime-core.esm-bundler.js:199
-callWithAsyncErrorHandling @ runtime-core.esm-bundler.js:206
-(anonymous) @ runtime-dom.esm-bundler.js:745
-world-info.js:623 [WI] Processing sticky entry ArtificRealm創世域.42 {hash: 4817494369076791, start: 2116, end: 2117, protected: false}
-world-info.js:627 [WI] Removing sticky entry ArtificRealm創世域.42 from timedWorldInfo: chat not advanced {hash: 4817494369076791, start: 2116, end: 2117, protected: false}
-world-info.js:722 [WI] Adding sticky entry ArtificRealm創世域.42: start=2116, end=2117, protected=false
-world-info.js:5159 [WI] Adding 42 entries to prompt (42) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-index.js:19 [QR2] calling {args: Array(1), functionToCall: ƒ}
-script.js:4606 skipWIAN not active, adding WIAN
-handler.ts:225 [Prompt Template] start generate after 1072 messages
+[VectFox] LLM config check (start-vectorization): {provider: 'openrouter', model: 'openai/gpt-4o-mini', hasOpenRouterKey: true, hasVllmUrl: true}
+content-vectorizer.js:2712 [EventBase] _runEventBaseBackfill: starting...
+content-vectorizer.js:2750 [EventBase] Context chat length: 415
+content-vectorizer.js:2759 [EventBase] Start-from message 400 — skipping first 399 messages, 16 remaining
+content-vectorizer.js:2777 [EventBase] Filtered messages: 16
+content-vectorizer.js:2778 [EventBase] Starting ingestion with settings: {eventbase_window_size: 2, eventbase_window_overlap: 0, eventbase_debug_logging: true, legacy_progress_strategy: 'per_message', legacy_total_chunks: 16}
+eventbase-workflow.js:123 [EventBase] Ingestion: 16 messages → 8 windows (size=2, overlap=0)
+eventbase-extractor.js:444 [EventBase] Extracting events — window=0, provider=openrouter, messages=2
+eventbase-extractor.js:444 [EventBase] Extracting events — window=1, provider=openrouter, messages=2
+eventbase-extractor.js:444 [EventBase] Extracting events — window=2, provider=openrouter, messages=2
+eventbase-extractor.js:444 [EventBase] Extracting events — window=3, provider=openrouter, messages=2
+eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=3): [{"event_type":"combat","importance":9,"summary":"Rabbit intervenes to protect Florence from Estra, using his bare hands to grab a blade and sustaining a serious injury in the process. Estra, shocked by Rabbit's determination, accidentally injures him while trying to escape after realizing he is not the weak man she expected.","cause":"Estra attempted to attack Florence with a dagger, prompting Rabbit to act in defense.","result":"Rabbit is gravely injured, leading to a medical emergency as Flor
+eventbase-extractor.js:112 [EventBase] Parser window=3: raw length=991, preview: [{"event_type":"combat","importance":9,"summary":"Rabbit intervenes to protect Florence from Estra, using his bare hands to grab a blade and sustainin
+eventbase-extractor.js:222 [EventBase] Parser window=3: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=4 firstType=string keys/val="Rabbit"', '[3] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Garden_Pav', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="protection"', '[7] len=8 firstType=string keys/val="combat"', '[8] len=2 firstType=string keys/val="Will Rabbit survive his injuries?"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:261 [EventBase] Parser window=3: chose candidate[0] len=1
+eventbase-extractor.js:476 [EventBase] Window 3: parsed 1 event candidate(s)
+eventbase-extractor.js:486 [EventBase] Parsed array (window=3): 1 items, types: [object]
+eventbase-extractor.js:518 [EventBase] Window 3, item 0: language mismatch (excerpt=cjk, summary=latin) — dropped
+extractEvents @ eventbase-extractor.js:518
+await in extractEvents
+(anonymous) @ eventbase-workflow.js:185
+await in (anonymous)
+runEventBaseIngestion @ eventbase-workflow.js:153
+_runEventBaseBackfill @ content-vectorizer.js:2788
+await in _runEventBaseBackfill
+startVectorization @ content-vectorizer.js:2876
+dispatch @ jquery-3.5.1.min.js:2
+v.handle @ jquery-3.5.1.min.js:2
+eventbase-extractor.js:544 [EventBase] Window 3: extracted 0 valid events
+eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=0): [{"event_type":"revelation","importance":9,"summary":"艾斯特拉揭示了Rabbit的母親埃莉諾與夏洛特·克萊莫之間的交易合約，指出Rabbit被當作商品出售，這一真相顛覆了Rabbit對自己身份的認知。","cause":"艾斯特拉從安柏群島的公證處偷取了證據，並在月光下展示給Rabbit。","result":"Rabbit的自我認知受到重大衝擊，面臨選擇是否繼續留在謊言中或跟隨艾斯特拉尋求自由。","characters":["Rabbit","艾斯特拉","埃莉諾","夏洛特·克萊莫"],"locations":["Cassia_County.Claymore_Manor.Garden_Pavilion"],"factions":[],"DateTime":null,"items":[],"concepts":["身份","真相","自由","交易合約"],"keywords":["揭示","交易","合約","身份","商品","自由","謊言","艾斯特拉","Rabbit","夏洛特","埃莉諾"],"open_threa
+eventbase-extractor.js:112 [EventBase] Parser window=0: raw length=571, preview: [{"event_type":"revelation","importance":9,"summary":"艾斯特拉揭示了Rabbit的母親埃莉諾與夏洛特·克萊莫之間的交易合約，指出Rabbit被當作商品出售，這一真相顛覆了Rabbit對自己身份的認知。","cause":"艾斯特拉從安柏群島的公證
+eventbase-extractor.js:222 [EventBase] Parser window=0: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=4 firstType=string keys/val="Rabbit"', '[3] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Garden_Pav', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=4 firstType=string keys/val="身份"', '[7] len=11 firstType=string keys/val="揭示"', '[8] len=2 firstType=string keys/val="Rabbit會選擇跟隨艾斯特拉嗎?"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:261 [EventBase] Parser window=0: chose candidate[0] len=1
+eventbase-extractor.js:476 [EventBase] Window 0: parsed 1 event candidate(s)
+eventbase-extractor.js:486 [EventBase] Parsed array (window=0): 1 items, types: [object]
+eventbase-extractor.js:544 [EventBase] Window 0: extracted 1 valid events
+eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267"
+backend-manager.js:274 VectFox: Health cache stale for qdrant, re-verifying...
+eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=2): [{"event_type":"relationship_change","importance":9,"summary":"佛洛倫斯在月光下向Rabbit表達了她的愛意，試圖挽回他對她的信任，然而艾斯特拉卻以武力威脅佛洛倫斯，揭露她的真實意圖，這使得Rabbit面臨選擇的困境。","cause":"佛洛倫斯因為感到絕望而衝出來，試圖挽回Rabbit的心。","result":"Rabbit的情感狀態受到挑戰，與佛洛倫斯和艾斯特拉的關係變得更加複雜。","characters":["Rabbit","佛洛倫斯","艾斯特拉"],"locations":["Cassia_County.Claymore_Manor.Garden_Pavilion"],"factions":[],"DateTime":null,"items":["杜蘭彎刀"],"concepts":["愛","背叛","信任","威脅"],"keywords":["愛","信任","絕望","威脅","武力","情感","選擇","複雜關係"],"open_threads":["Rabbit會選擇誰？","佛洛倫斯的真實意
+eventbase-extractor.js:112 [EventBase] Parser window=2: raw length=531, preview: [{"event_type":"relationship_change","importance":9,"summary":"佛洛倫斯在月光下向Rabbit表達了她的愛意，試圖挽回他對她的信任，然而艾斯特拉卻以武力威脅佛洛倫斯，揭露她的真實意圖，這使得Rabbit面臨選擇的困境。","cause":
+eventbase-extractor.js:222 [EventBase] Parser window=2: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=3 firstType=string keys/val="Rabbit"', '[3] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Garden_Pav', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=1 firstType=string keys/val="杜蘭彎刀"', '[6] len=4 firstType=string keys/val="愛"', '[7] len=8 firstType=string keys/val="愛"', '[8] len=2 firstType=string keys/val="Rabbit會選擇誰？"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:261 [EventBase] Parser window=2: chose candidate[0] len=1
+eventbase-extractor.js:476 [EventBase] Window 2: parsed 1 event candidate(s)
+eventbase-extractor.js:486 [EventBase] Parsed array (window=2): 1 items, types: [object]
+eventbase-extractor.js:544 [EventBase] Window 2: extracted 1 valid events
+eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267"
+backend-manager.js:274 VectFox: Health cache stale for qdrant, re-verifying...
+core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
+qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
+core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
+qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
+eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=1): [{"event_type":"revelation","importance":8,"summary":"Rabbit acknowledges that he was bought to be a tool for Charlotte to continue her family line, realizing the painful truth behind a letter she wrote to her mother. This revelation deeply affects both Charlotte and Florene, who overhear the conversation, leading to a surge of guilt for Florene and emotional turmoil for Charlotte.","cause":"Rabbit reflects on his status and the implications of the letter he received from Charlotte.","result":"T
+eventbase-extractor.js:112 [EventBase] Parser window=1: raw length=1911, preview: [{"event_type":"revelation","importance":8,"summary":"Rabbit acknowledges that he was bought to be a tool for Charlotte to continue her family line, r
+eventbase-extractor.js:222 [EventBase] Parser window=1: 17 candidate array(s) found: (17) ['[0] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=3 firstType=string keys/val="Rabbit"', '[3] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Garden_Pav', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="血脈延續"', '[7] len=8 firstType=string keys/val="買賣"', '[8] len=2 firstType=string keys/val="Will Rabbit leave with Estra?"', '[9] len=2 firstType=string keys/val="Rabbit"', '[10] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Garden_Pav', '[11] len=0 firstType=undefined keys/val=undefined', '[12] len=0 firstType=undefined keys/val=undefined', '[13] len=3 firstType=string keys/val="逃避"', '[14] len=8 firstType=string keys/val="強大"', '[15] len=2 firstType=string keys/val="What will Rabbit decide?"', '[16] len=2 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:261 [EventBase] Parser window=1: chose candidate[0] len=2
+eventbase-extractor.js:476 [EventBase] Window 1: parsed 2 event candidate(s)
+eventbase-extractor.js:486 [EventBase] Parsed array (window=1): 2 items, types: [object, object]
+eventbase-extractor.js:518 [EventBase] Window 1, item 0: language mismatch (excerpt=cjk, summary=latin) — dropped
+extractEvents @ eventbase-extractor.js:518
+await in extractEvents
+(anonymous) @ eventbase-workflow.js:185
+await in (anonymous)
+runEventBaseIngestion @ eventbase-workflow.js:153
+_runEventBaseBackfill @ content-vectorizer.js:2788
+await in _runEventBaseBackfill
+startVectorization @ content-vectorizer.js:2876
+dispatch @ jquery-3.5.1.min.js:2
+v.handle @ jquery-3.5.1.min.js:2
+eventbase-extractor.js:518 [EventBase] Window 1, item 1: language mismatch (excerpt=cjk, summary=latin) — dropped
+extractEvents @ eventbase-extractor.js:518
+await in extractEvents
+(anonymous) @ eventbase-workflow.js:185
+await in (anonymous)
+runEventBaseIngestion @ eventbase-workflow.js:153
+_runEventBaseBackfill @ content-vectorizer.js:2788
+await in _runEventBaseBackfill
+startVectorization @ content-vectorizer.js:2876
+dispatch @ jquery-3.5.1.min.js:2
+v.handle @ jquery-3.5.1.min.js:2
+eventbase-extractor.js:544 [EventBase] Window 1: extracted 0 valid events
+character.ts:107  POST https://st.sduteam.com/api/plugins/similharity/chunks/insert 500 (Internal Server Error)
+(anonymous) @ character.ts:107
+insertVectorItems @ qdrant.js:297
+await in insertVectorItems
+(anonymous) @ core-vector-api.js:681
+retry @ async-utils.js:52
+processBatch @ core-vector-api.js:679
+execute @ core-vector-api.js:121
+insertVectorItems @ core-vector-api.js:687
+await in insertVectorItems
+insertEvents @ eventbase-store.js:100
+await in insertEvents
+(anonymous) @ eventbase-workflow.js:220
+await in (anonymous)
+runEventBaseIngestion @ eventbase-workflow.js:153
+_runEventBaseBackfill @ content-vectorizer.js:2788
+await in _runEventBaseBackfill
+startVectorization @ content-vectorizer.js:2876
+dispatch @ jquery-3.5.1.min.js:2
+v.handle @ jquery-3.5.1.min.js:2
+qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
+collection-loader.js:119 VectFox: Registered collection: vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267
+collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267
+collection-loader.js:142 VectFox: Stamped creatorHandle="rabbit" on vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267
+qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267 (separate mode, content_type: vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267)
+collection-loader.js:119 VectFox: Registered collection: qdrant:vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267
+collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267
+collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267 locks updated: ['Your Wives - 2026-04-14@23h14m28s282ms']
+eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267" to current chat "Your Wives - 2026-04-14@23h14m28s282ms"
+eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267"
+eventbase-workflow.js:240 [EventBase] Batch window error: [Qdrant] Failed to insert 1 vectors into vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267: 500  - {"error":"Qdrant PUT /collections/vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267 failed: 409 Wrong input: Collection `vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267` already exists!"}
+runEventBaseIngestion @ eventbase-workflow.js:240
+await in runEventBaseIngestion
+_runEventBaseBackfill @ content-vectorizer.js:2788
+await in _runEventBaseBackfill
+startVectorization @ content-vectorizer.js:2876
+dispatch @ jquery-3.5.1.min.js:2
+v.handle @ jquery-3.5.1.min.js:2
+eventbase-extractor.js:444 [EventBase] Extracting events — window=4, provider=openrouter, messages=2
+eventbase-extractor.js:444 [EventBase] Extracting events — window=5, provider=openrouter, messages=2
+eventbase-extractor.js:444 [EventBase] Extracting events — window=6, provider=openrouter, messages=2
+eventbase-extractor.js:444 [EventBase] Extracting events — window=7, provider=openrouter, messages=2
+eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=6): [{"event_type":"character_state_change","importance":9,"summary":"Enzo briefly regains consciousness, causing a wave of panic and hope among the women present. Florence, Charlotte, and Claire react with desperation, highlighting their emotional investment in his well-being.","cause":"Enzo's critical condition and the urgency of the situation.","result":"His temporary awakening raises hopes for his recovery, but also reveals the fragility of his state as he soon slips back into unconsciousness.",
+eventbase-extractor.js:112 [EventBase] Parser window=6: raw length=859, preview: [{"event_type":"character_state_change","importance":9,"summary":"Enzo briefly regains consciousness, causing a wave of panic and hope among the women
+eventbase-extractor.js:222 [EventBase] Parser window=6: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=5 firstType=string keys/val="Enzo"', '[3] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Master_Bed', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="意識恢復"', '[7] len=10 firstType=string keys/val="醒來"', '[8] len=2 firstType=string keys/val="Will Enzo survive?"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:261 [EventBase] Parser window=6: chose candidate[0] len=1
+eventbase-extractor.js:476 [EventBase] Window 6: parsed 1 event candidate(s)
+eventbase-extractor.js:486 [EventBase] Parsed array (window=6): 1 items, types: [object]
+eventbase-extractor.js:518 [EventBase] Window 6, item 0: language mismatch (excerpt=cjk, summary=latin) — dropped
+extractEvents @ eventbase-extractor.js:518
+await in extractEvents
+(anonymous) @ eventbase-workflow.js:185
+await in (anonymous)
+runEventBaseIngestion @ eventbase-workflow.js:153
+await in runEventBaseIngestion
+_runEventBaseBackfill @ content-vectorizer.js:2788
+await in _runEventBaseBackfill
+startVectorization @ content-vectorizer.js:2876
+dispatch @ jquery-3.5.1.min.js:2
+v.handle @ jquery-3.5.1.min.js:2
+eventbase-extractor.js:544 [EventBase] Window 6: extracted 0 valid events
+eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=4): [{"event_type":"relationship_change","importance":8,"summary":"Rabbit, gravely injured and losing consciousness, expresses doubt about his future with the Claymore family, while Charlotte desperately tries to save him, showcasing her deep concern and emotional bond. Florence's cries add to the emotional weight of the moment, indicating the gravity of Rabbit's condition and the impact on their relationships.","cause":"Rabbit is severely injured and feels he may not survive, prompting Charlotte's 
+eventbase-extractor.js:112 [EventBase] Parser window=4: raw length=1141, preview: [{"event_type":"relationship_change","importance":8,"summary":"Rabbit, gravely injured and losing consciousness, expresses doubt about his future with
+eventbase-extractor.js:222 [EventBase] Parser window=4: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=3 firstType=string keys/val="Rabbit"', '[3] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Emergency_', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="injury"', '[7] len=8 firstType=string keys/val="injured"', '[8] len=2 firstType=string keys/val="Will Rabbit survive?"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:261 [EventBase] Parser window=4: chose candidate[0] len=1
+eventbase-extractor.js:476 [EventBase] Window 4: parsed 1 event candidate(s)
+eventbase-extractor.js:486 [EventBase] Parsed array (window=4): 1 items, types: [object]
+eventbase-extractor.js:518 [EventBase] Window 4, item 0: language mismatch (excerpt=cjk, summary=latin) — dropped
+extractEvents @ eventbase-extractor.js:518
+await in extractEvents
+(anonymous) @ eventbase-workflow.js:185
+await in (anonymous)
+runEventBaseIngestion @ eventbase-workflow.js:153
+await in runEventBaseIngestion
+_runEventBaseBackfill @ content-vectorizer.js:2788
+await in _runEventBaseBackfill
+startVectorization @ content-vectorizer.js:2876
+dispatch @ jquery-3.5.1.min.js:2
+v.handle @ jquery-3.5.1.min.js:2
+eventbase-extractor.js:544 [EventBase] Window 4: extracted 0 valid events
+eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=5): [{"event_type":"death","importance":9,"summary":"醫生告知夏洛特和佛洛倫斯，伯爵大人因失血過多需要立刻進行手術，否則可能面臨死亡的危險。夏洛特在此情況下表達了她的絕望，並發誓如果他死了，她也不會活下去。","cause":"伯爵大人受了重傷，失血過多，情況危急。","result":"夏洛特的情感狀態變得極端，表達了對伯爵的依賴和絕望。","characters":["夏洛特","佛洛倫斯","老醫生","克萊兒"],"locations":["Cassia_County.Claymore_Manor.Surgery_Waiting_Room"],"factions":[],"DateTime":null,"items":[],"concepts":["失血","手術","絕望","依賴"],"keywords":["死亡","手術","失血","絕望","依賴","夏洛特","佛洛倫斯","老醫生","克萊兒","情感狀態"],"open_threads":["伯爵會活下來嗎？","夏洛特的誓言會如何影響她的未來？"],"should_
+eventbase-extractor.js:112 [EventBase] Parser window=5: raw length=515, preview: [{"event_type":"death","importance":9,"summary":"醫生告知夏洛特和佛洛倫斯，伯爵大人因失血過多需要立刻進行手術，否則可能面臨死亡的危險。夏洛特在此情況下表達了她的絕望，並發誓如果他死了，她也不會活下去。","cause":"伯爵大人受了重傷，失血過多，
+eventbase-extractor.js:222 [EventBase] Parser window=5: 10 candidate array(s) found: (10) ['[0] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=1 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=4 firstType=string keys/val="夏洛特"', '[3] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Surgery_Wa', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=4 firstType=string keys/val="失血"', '[7] len=10 firstType=string keys/val="死亡"', '[8] len=2 firstType=string keys/val="伯爵會活下來嗎？"', '[9] len=1 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:261 [EventBase] Parser window=5: chose candidate[0] len=1
+eventbase-extractor.js:476 [EventBase] Window 5: parsed 1 event candidate(s)
+eventbase-extractor.js:486 [EventBase] Parsed array (window=5): 1 items, types: [object]
+eventbase-extractor.js:544 [EventBase] Window 5: extracted 1 valid events
+eventbase-store.js:97 [EventBase] Inserting 1 event(s) into collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267"
+core-vector-api.js:673 VectFox: Processing 1 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
+qdrant.js:290 VectFox Qdrant: Inserting 1 vectors in 1 batch(es) of up to 100 items
+qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (1 vectors)
+qdrant.js:382 VectFox Qdrant: Inserted 1 vectors into vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267 (separate mode, content_type: vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267)
+collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267
+collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267 locks updated: ['Your Wives - 2026-04-14@23h14m28s282ms']
+eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267" to current chat "Your Wives - 2026-04-14@23h14m28s282ms"
+eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267"
+eventbase-extractor.js:459 [EventBase] Raw LLM reply (window=7): [{"event_type":"relationship_change","importance":8,"summary":"Charlotte Claymore expresses her deep emotional turmoil and anger at Enzo for being unconscious for three days after a reckless act. Her fierce grip on his hand and tears reveal a shift from anger to vulnerability, indicating a profound concern for his well-being and a deepening bond between them.","cause":"Enzo's reckless action of throwing himself in front of a knife led to his unconsciousness for three days.","result":"Charlotte's
+eventbase-extractor.js:112 [EventBase] Parser window=7: raw length=2227, preview: [{"event_type":"relationship_change","importance":8,"summary":"Charlotte Claymore expresses her deep emotional turmoil and anger at Enzo for being unc
+eventbase-extractor.js:222 [EventBase] Parser window=7: 17 candidate array(s) found: (17) ['[0] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[1] len=2 firstType=object keys/val=event_type,importance,summary,cause,result', '[2] len=2 firstType=string keys/val="Enzo"', '[3] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Master_Bed', '[4] len=0 firstType=undefined keys/val=undefined', '[5] len=0 firstType=undefined keys/val=undefined', '[6] len=3 firstType=string keys/val="emotional turmoil"', '[7] len=12 firstType=string keys/val="Charlotte"', `[8] len=2 firstType=string keys/val="How will Enzo respond to Charlotte's fe`, '[9] len=5 firstType=string keys/val="Enzo"', '[10] len=1 firstType=string keys/val="Cassia_County.Claymore_Manor.Master_Bed', '[11] len=0 firstType=undefined keys/val=undefined', '[12] len=0 firstType=undefined keys/val=undefined', '[13] len=3 firstType=string keys/val="recovery"', '[14] len=11 firstType=string keys/val="awake"', '[15] len=2 firstType=string keys/val="What challenges will Enzo face during h', '[16] len=2 firstType=object keys/val=event_type,importance,summary,cause,result']
+eventbase-extractor.js:261 [EventBase] Parser window=7: chose candidate[0] len=2
+eventbase-extractor.js:476 [EventBase] Window 7: parsed 2 event candidate(s)
+eventbase-extractor.js:486 [EventBase] Parsed array (window=7): 2 items, types: [object, object]
+eventbase-extractor.js:544 [EventBase] Window 7: extracted 2 valid events
+eventbase-store.js:97 [EventBase] Inserting 2 event(s) into collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267"
+core-vector-api.js:673 VectFox: Processing 2 items in 1 batch(es) of up to 50 with rate limit (Max 5 calls / 60s)
+qdrant.js:290 VectFox Qdrant: Inserting 2 vectors in 1 batch(es) of up to 100 items
+qdrant.js:371 VectFox Qdrant: Batch 1/1 completed (2 vectors)
+qdrant.js:382 VectFox Qdrant: Inserted 2 vectors into vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267 (separate mode, content_type: vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267)
+collection-metadata.js:248 VectFox: Updated metadata for collection vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267
+collection-metadata.js:527 VectFox: Collection vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267 locks updated: ['Your Wives - 2026-04-14@23h14m28s282ms']
+eventbase-store.js:117 [EventBase] Locked collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267" to current chat "Your Wives - 2026-04-14@23h14m28s282ms"
+eventbase-store.js:122 [EventBase] Insert complete for collection "vf_eventbase_qdrant_rabbit_your_wives_a5c606bc-589b-471f-b475-955382ea7267"
+eventbase-workflow.js:278 [EventBase] Ingestion complete: extracted=4, processed=7, skipped=0
+content-vectorizer.js:2802 [EventBase] Ingestion result: {eventsExtracted: 4, windowsProcessed: 7, windowsSkipped: 0}

@@ -17,3 +17,5 @@ yarn-error.log*
 Doc/settings.json
 log.txt
 serverlog.txt
+Doc/log.txt
+Doc/serverlog.txt

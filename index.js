@@ -61,7 +61,7 @@ const defaultSettings = {
     ollama_api_key: '',
     vllm_alt_endpoint_url: '',
     vllm_use_alt_endpoint: false,
-    rate_limit_calls: 5,
+    rate_limit_calls: 60,
     rate_limit_interval: 60, // seconds
 
     // VEC-6: Batch insert optimization

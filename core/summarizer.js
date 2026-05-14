@@ -16,6 +16,7 @@
  */
 
 import { SECRET_KEYS, secret_state } from '../../../../secrets.js';
+import { getDefaultSummarizePrompt } from './prompts-i18n.js';
 
 /**
  * Fatal summarization error that should abort vectorization instead of silently
@@ -102,20 +103,8 @@ export function getSummarizationConfigFingerprint(settings = {}) {
     return `other|${provider}`;
 }
 
-/** Default summarization prompt template */
-export const DEFAULT_SUMMARIZE_PROMPT =
-`You are a story memory archivist. Compress the following roleplay excerpt into a dense 2-10 sentence summary optimized for semantic search and retrieval.
-
-Requirements:
-- If a Date or Date + Time is in the main text, always include that in your summary.
-- Preserve ALL proper nouns exactly as written: character names, location names, item names, organization names, and titles
-- Capture: who is present, where the scene takes place, what actions occurred, any significant items or abilities referenced, and the emotional/relationship dynamics
-- Write in the same language as the input — do not translate
-- Be factual and information-dense — no filler phrases, no meta-commentary, no interpretation
-- Output only the summary with no preamble or explanation
-
-Story excerpt:
-{{text}}`;
+/** @deprecated Use getDefaultSummarizePrompt(mode) from prompts-i18n.js instead. */
+export const DEFAULT_SUMMARIZE_PROMPT = getDefaultSummarizePrompt('intl');
 
 /** Default output token budget for a single summary (Latin/other scripts). */
 const DEFAULT_MAX_TOKENS = 768;
@@ -145,7 +134,7 @@ export async function summarizeText(text, settings) {
             'missing_model'
         );
     }
-    const promptTemplate = settings?.summarize_prompt || DEFAULT_SUMMARIZE_PROMPT;
+    const promptTemplate = settings?.summarize_prompt || getDefaultSummarizePrompt(settings?.cjk_tokenizer_mode);
     const prompt = promptTemplate.replace('{{text}}', text);
 
     try {

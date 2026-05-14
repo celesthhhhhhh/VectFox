@@ -494,6 +494,8 @@ I agree. This extension might be overkill for a typical SillyTavern chat. Who th
 
 **Slow performance** — Switch to Qdrant + A3 (single round-trip, server-side fusion). Reduce EventBase Top K. Use API embedding providers (parallel) instead of local GPU (sequential).
 
+**Vectorization is slow on large chat histories** — VectFox applies API rate limiting by default (60 calls per 60 seconds) to protect free-tier backends. To speed up vectorization: **Settings → Core Tab → Embedding → API Rate Limiting → set "Max Calls" to 0 to disable**. For production Qdrant, you can increase it to 100+ calls/min depending on your server capacity.
+
 ---
 
 ## 🙏 Credits

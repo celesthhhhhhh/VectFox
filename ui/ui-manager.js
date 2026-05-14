@@ -522,6 +522,8 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <option value="jieba">Simplified Chinese (Jieba WASM)</option>
                                     <option value="jieba_tw">Traditional Chinese (Jieba WASM)</option>
                                     <option value="tiny_segmenter">Japanese (TinySegmenter)</option>
+                                    <option value="korean">Korean (Intl.Segmenter)</option>
+                                    <option value="others">Others (Intl.Segmenter)</option>
                                 </select>
                                 <small class="VectFox_hint">Default mode uses Intl.Segmenter — supports Korean, Chinese, and any Latin-script language (English, French, etc.) with no extra downloads. Jieba WASM loads only when selected. Traditional Chinese also downloads a TW dictionary (~2–5 MB, one-time). TinySegmenter is used for kana-containing Japanese text.</small>
                             </div>

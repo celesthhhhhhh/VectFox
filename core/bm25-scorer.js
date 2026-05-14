@@ -35,6 +35,8 @@ const CJK_TOKENIZER_MODES = Object.freeze({
     jieba: 'jieba',
     jieba_tw: 'jieba_tw',
     tiny_segmenter: 'tiny_segmenter',
+    korean: 'korean',
+    others: 'others',
 });
 
 const DEFAULT_CJK_TOKENIZER_MODE = CJK_TOKENIZER_MODES.intl;

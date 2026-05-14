@@ -22,7 +22,8 @@
 import { getContext } from '../../../../extensions.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { queryCollection } from './core-vector-api.js';
-import { AGENTIC_PLANNER_SYSTEM_PROMPT, buildPlannerUserMessage } from './agentic-prompt.js';
+import { buildPlannerUserMessage } from './agentic-prompt.js';
+import { getAgenticPlannerPrompt } from './prompts-i18n.js';
 
 // ============================================================================
 // Public API
@@ -101,8 +102,9 @@ export async function retrieveEventsWithAgent(params) {
         // the log readable. The narrative-context preview above already shows
         // what the planner sees per turn; the static system prompt lives in
         // core/agentic-prompt.js for inspection.
-        const approxTokens = Math.round((AGENTIC_PLANNER_SYSTEM_PROMPT.length + userMessage.length) / 4);
-        console.log(`[VectFox-Agentic] LLM prompt size: system+user approx ${approxTokens} tokens (${AGENTIC_PLANNER_SYSTEM_PROMPT.length}+${userMessage.length} chars)`);
+        const systemPromptText = getAgenticPlannerPrompt(settings?.cjk_tokenizer_mode);
+        const approxTokens = Math.round((systemPromptText.length + userMessage.length) / 4);
+        console.log(`[VectFox-Agentic] LLM prompt size: system+user approx ${approxTokens} tokens (${systemPromptText.length}+${userMessage.length} chars)`);
     }
 
     const timeoutMs = settings.agentic_retrieval_timeout_ms || 30000;
@@ -110,7 +112,7 @@ export async function retrieveEventsWithAgent(params) {
     const tLlmStart = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     try {
         plan = await _callPlanner({
-            systemPrompt: AGENTIC_PLANNER_SYSTEM_PROMPT,
+            systemPrompt: getAgenticPlannerPrompt(settings?.cjk_tokenizer_mode),
             userMessage,
             llmCfg,
             timeoutMs,

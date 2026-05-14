@@ -56,8 +56,11 @@ const defaultSettings = {
     qdrant_api_key: '',
     qdrant_use_cloud: false,
     qdrant_multitenancy: false, // Use single collection with content_type field instead of separate collections
-    alt_endpoint_url: '',
-    use_alt_endpoint: false,
+    ollama_alt_endpoint_url: '',
+    ollama_use_alt_endpoint: false,
+    ollama_api_key: '',
+    vllm_alt_endpoint_url: '',
+    vllm_use_alt_endpoint: false,
     rate_limit_calls: 5,
     rate_limit_interval: 60, // seconds
 

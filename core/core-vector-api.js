@@ -195,11 +195,12 @@ export function getVectorsRequestBody(args = {}, settings) {
             break;
         case 'ollama':
             body.model = settings.ollama_model;
-            body.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+            body.apiUrl = settings.ollama_use_alt_endpoint ? settings.ollama_alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
             body.keep = !!settings.ollama_keep;
+            if (settings.ollama_api_key) body.apiKey = settings.ollama_api_key;
             break;
         case 'vllm':
-            body.apiUrl = (settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.VLLM])
+            body.apiUrl = (settings.vllm_use_alt_endpoint ? settings.vllm_alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.VLLM])
                 ?.replace(/\/$/, '')
                 .replace(/\/v1\/embeddings$/, '')
                 .replace(/\/embeddings$/, '');

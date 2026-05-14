@@ -68,14 +68,15 @@ function getPluginProviderParams(settings) {
 
     switch (settings.source) {
         case 'ollama':
-            params.apiUrl = settings.use_alt_endpoint
-                ? settings.alt_endpoint_url
+            params.apiUrl = settings.ollama_use_alt_endpoint
+                ? settings.ollama_alt_endpoint_url
                 : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
             params.keep = !!settings.ollama_keep;
+            if (settings.ollama_api_key) params.apiKey = settings.ollama_api_key;
             break;
         case 'vllm':
-            params.apiUrl = (settings.use_alt_endpoint
-                ? settings.alt_endpoint_url
+            params.apiUrl = (settings.vllm_use_alt_endpoint
+                ? settings.vllm_alt_endpoint_url
                 : textgenerationwebui_settings.server_urls[textgen_types.VLLM])
                 ?.replace(/\/$/, '')
                 .replace(/\/v1\/embeddings$/, '')

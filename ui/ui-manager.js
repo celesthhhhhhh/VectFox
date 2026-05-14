@@ -179,32 +179,38 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <!-- Provider-Specific Settings -->
                                 <div id="VectFox_provider_settings">
 
-                                    <!-- Alternative Endpoint (for local providers) -->
-                                    <div class="VectFox_provider_setting" data-provider="ollama,vllm">
+                                    <!-- Ollama Settings -->
+                                    <div class="VectFox_provider_setting" data-provider="ollama">
                                         <label class="checkbox_label">
-                                            <input type="checkbox" id="VectFox_use_alt_endpoint" />
+                                            <input type="checkbox" id="VectFox_ollama_use_alt_endpoint" />
                                             <span>Use Alternative Endpoint</span>
                                         </label>
-                                        <input type="text" id="VectFox_alt_endpoint_url" class="vectfox-input" placeholder="http://localhost:11434" />
-                                        <small class="VectFox_hint">Override default API URL for this provider</small>
-                                    </div>
-
-                                    <!-- Ollama Model -->
-                                    <div class="VectFox_provider_setting" data-provider="ollama">
-                                        <label for="VectFox_ollama_model">
+                                        <input type="text" id="VectFox_ollama_alt_endpoint_url" class="vectfox-input" placeholder="http://localhost:11434" />
+                                        <small class="VectFox_hint">Override default Ollama API URL</small>
+                                        <label for="VectFox_ollama_model" style="margin-top: 8px;">
                                             <small>Ollama Model:</small>
                                         </label>
                                         <input type="text" id="VectFox_ollama_model" class="vectfox-input" placeholder="mxbai-embed-large" />
-                                        <label class="checkbox_label">
+                                        <label class="checkbox_label" style="margin-top: 6px;">
                                             <input type="checkbox" id="VectFox_ollama_keep" />
                                             <span>Keep Model in Memory</span>
                                         </label>
-                                        <small class="VectFox_hint">Enter the model name from your local Ollama installation</small>
+                                        <small class="VectFox_hint">Enter the model name from your Ollama installation</small>
+                                        <label for="VectFox_ollama_api_key" style="margin-top: 8px;">
+                                            <small>API Key <span style="opacity:0.6;">(optional — for remote/proxied Ollama endpoints)</span>:</small>
+                                        </label>
+                                        <input type="password" id="VectFox_ollama_api_key" class="vectfox-input" placeholder="Leave blank for local deployments" autocomplete="off" />
                                     </div>
 
-                                    <!-- vLLM Model -->
+                                    <!-- vLLM Settings -->
                                     <div class="VectFox_provider_setting" data-provider="vllm">
-                                        <label for="VectFox_vllm_model">
+                                        <label class="checkbox_label">
+                                            <input type="checkbox" id="VectFox_vllm_use_alt_endpoint" />
+                                            <span>Use Alternative Endpoint</span>
+                                        </label>
+                                        <input type="text" id="VectFox_vllm_alt_endpoint_url" class="vectfox-input" placeholder="http://localhost:8000" />
+                                        <small class="VectFox_hint">Override default vLLM API URL</small>
+                                        <label for="VectFox_vllm_model" style="margin-top: 8px;">
                                             <small>vLLM Model:</small>
                                         </label>
                                         <input type="text" id="VectFox_vllm_model" class="vectfox-input" placeholder="Model name" />
@@ -3116,21 +3122,55 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // Alternative endpoint
-    $('#VectFox_use_alt_endpoint')
-        .prop('checked', settings.use_alt_endpoint)
+    // Ollama alternative endpoint
+    $('#VectFox_ollama_use_alt_endpoint')
+        .prop('checked', settings.ollama_use_alt_endpoint)
         .on('input', function() {
-            settings.use_alt_endpoint = $(this).prop('checked');
+            settings.ollama_use_alt_endpoint = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
-            $('#VectFox_alt_endpoint_url').toggle(settings.use_alt_endpoint);
+            $('#VectFox_ollama_alt_endpoint_url').toggle(settings.ollama_use_alt_endpoint);
         });
 
-    $('#VectFox_alt_endpoint_url')
-        .val(settings.alt_endpoint_url)
-        .toggle(settings.use_alt_endpoint)
+    $('#VectFox_ollama_alt_endpoint_url')
+        .val(settings.ollama_alt_endpoint_url)
+        .toggle(settings.ollama_use_alt_endpoint)
         .on('input', function() {
-            settings.alt_endpoint_url = String($(this).val());
+            settings.ollama_alt_endpoint_url = String($(this).val());
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // Ollama API key
+    $('#VectFox_ollama_api_key')
+        .val(settings.ollama_api_key ? '••••••••' : '')
+        .attr('placeholder', settings.ollama_api_key ? '••••••••' : 'Leave blank for local deployments')
+        .on('change', function() {
+            const value = String($(this).val()).trim();
+            if (value && value !== '••••••••') {
+                settings.ollama_api_key = value;
+                Object.assign(extension_settings.vectfox, settings);
+                saveSettingsDebounced();
+                $(this).val('••••••••').attr('placeholder', '••••••••');
+                toastr.success('Ollama API key saved');
+            }
+        });
+
+    // vLLM alternative endpoint
+    $('#VectFox_vllm_use_alt_endpoint')
+        .prop('checked', settings.vllm_use_alt_endpoint)
+        .on('input', function() {
+            settings.vllm_use_alt_endpoint = $(this).prop('checked');
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+            $('#VectFox_vllm_alt_endpoint_url').toggle(settings.vllm_use_alt_endpoint);
+        });
+
+    $('#VectFox_vllm_alt_endpoint_url')
+        .val(settings.vllm_alt_endpoint_url)
+        .toggle(settings.vllm_use_alt_endpoint)
+        .on('input', function() {
+            settings.vllm_alt_endpoint_url = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -4143,11 +4183,14 @@ function copyDiagnosticsReport(results) {
 
     // Build provider URL info
     let providerUrl = 'n/a';
-    if (settings.use_alt_endpoint && settings.alt_endpoint_url) {
-        providerUrl = settings.alt_endpoint_url;
-    } else if (['bananabread', 'ollama', 'llamacpp', 'koboldcpp', 'vllm'].includes(source)) {
-        // Local server providers - show their configured URL
-        providerUrl = settings.alt_endpoint_url || 'http://localhost:8008';
+    if (source === 'ollama') {
+        providerUrl = settings.ollama_use_alt_endpoint && settings.ollama_alt_endpoint_url
+            ? settings.ollama_alt_endpoint_url
+            : (textgenerationwebui_settings?.server_urls?.[textgen_types?.OLLAMA] || 'http://localhost:11434');
+    } else if (source === 'vllm') {
+        providerUrl = settings.vllm_use_alt_endpoint && settings.vllm_alt_endpoint_url
+            ? settings.vllm_alt_endpoint_url
+            : (textgenerationwebui_settings?.server_urls?.[textgen_types?.VLLM] || 'http://localhost:8000');
     }
 
     let report = `╔══════════════════════════════════════════════════════════════╗

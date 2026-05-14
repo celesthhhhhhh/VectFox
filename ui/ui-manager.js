@@ -23,6 +23,7 @@ import { progressTracker } from './progress-tracker.js';
 import { resetBackendHealth } from '../backends/backend-manager.js';
 import { getHealthIndicatorHtml, getHealthModalHtml, initializeHealthDashboard } from './health-dashboard.js';
 import { doesChatHaveVectors, getCollectionRegistry } from '../core/collection-loader.js';
+import { parseRegistryKey } from '../core/collection-ids.js';
 import { getModelField } from '../core/providers.js';
 import { getChunkingStrategies } from '../core/content-types.js';
 import { CJK_TOKENIZER_MODES, setCjkTokenizerMode, ensureJiebaTokenizerLoaded, ensureJiebaTwLoaded } from '../core/bm25-scorer.js';
@@ -1678,7 +1679,9 @@ export function refreshWIStatus() {
     if (!$status.length) return;
     const registry = getCollectionRegistry();
     const lorebookIds = Array.isArray(registry)
-        ? registry.filter(id => id.startsWith('vf_lorebook_'))
+        ? registry
+            .map(key => parseRegistryKey(key).collectionId)
+            .filter(id => id.startsWith('vf_lorebook_'))
         : [];
     if (lorebookIds.length === 0) {
         $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> No lorebooks vectorized — vectorize one first');
@@ -2788,7 +2791,7 @@ function bindSettingsEvents(settings, callbacks) {
             if (enabled) {
                 // Check if any lorebook collections have been vectorized
                 const registry = getCollectionRegistry();
-                const hasLorebookVectors = Array.isArray(registry) && registry.some(id => id.startsWith('vf_lorebook_'));
+                const hasLorebookVectors = Array.isArray(registry) && registry.some(key => parseRegistryKey(key).collectionId.startsWith('vf_lorebook_'));
 
                 if (!hasLorebookVectors) {
                     $checkbox.prop('checked', false);

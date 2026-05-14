@@ -466,7 +466,7 @@ Not reliably. The keyword dictionary is English-only and regex `\b` word boundar
 Scene support was removed (it was a chunk-based-chat-era feature, and chat now runs through EventBase). Grouping events together is not quite logical, so the feature was removed.
 
 **The explanation of the system sounds way too technical and I can't understand!**
-I agree. This extension might be overkill for a typical SillyTavern chat. Who will chat for 10,000+ replies? But the quality of retrieval does matter.
+I agree. This extension might be overkill for a typical SillyTavern chat. Who the hell will chat for 10,000+ replies? But the quality of retrieval does matter.
 
 ---
 

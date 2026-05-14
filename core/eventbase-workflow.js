@@ -123,7 +123,10 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         console.log(`[EventBase] Ingestion: ${messages.length} messages → ${windows.length} windows (size=${windowSize}, overlap=${windowOverlap})`);
     }
 
-    progressTracker.show('EventBase Extraction', windows.length, 'Windows');
+    const showProgressModal = !isAutoSync || settings.autosync_show_progress_modal === true;
+    if (showProgressModal) {
+        progressTracker.show('EventBase Extraction', windows.length, 'Windows');
+    }
 
     const totalLegacyChunks = Number(progressPlan?.totalChunks) || 0;
     const legacyStrategy = progressPlan?.strategy || 'per_message';

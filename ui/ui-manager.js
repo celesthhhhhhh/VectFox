@@ -767,6 +767,14 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <small class="VectFox_hint">Show a notification toast each time auto-sync triggers a new EventBase extraction window.</small>
                             </div>
 
+                            <div class="vectfox-form-group" style="margin-top: 8px;">
+                                <label class="checkbox_label" for="VectFox_autosync_show_progress_modal">
+                                    <input type="checkbox" id="VectFox_autosync_show_progress_modal" />
+                                    <span>Show progress modal during auto-sync</span>
+                                </label>
+                                <small class="VectFox_hint">When unchecked, auto-sync runs silently in the background without opening the progress popup. The Vectorizing Content page always shows the progress modal regardless.</small>
+                            </div>
+
                             <small class="VectFox_hint" style="display:block; margin-top: 8px;">
                                 Chat Auto-Sync follows the EventBase extraction settings. Legacy chat chunking controls are hidden because chat history no longer uses the old chunk-based retrieval path.
                             </small>
@@ -2770,6 +2778,15 @@ function bindSettingsEvents(settings, callbacks) {
         .prop('checked', settings.eventbase_autosync_popup !== false)
         .on('change', function() {
             settings.eventbase_autosync_popup = $(this).prop('checked');
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // Auto-sync progress modal toggle (default: hidden)
+    $('#VectFox_autosync_show_progress_modal')
+        .prop('checked', settings.autosync_show_progress_modal === true)
+        .on('change', function() {
+            settings.autosync_show_progress_modal = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

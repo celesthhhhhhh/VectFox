@@ -358,22 +358,7 @@ half-life = 50일 때: 50 메시지 전 메시지는 50% 관련도, 100 전은 2
 
 그게 다입니다! VectFox가 자동으로 다운로드되고 활성화됩니다.
 
-### 단계 2: VectFox 설정
-1. **VectFox Settings** 열기 (익스텐션 패널의 Core 탭).
-2. 벡터 저장소 선택 (Standard 또는 Qdrant).
-3. 임베딩 제공자 선택 (Transformers, vLLM, Ollama, OpenRouter, etc.).
-   - 💡 **권장:** **OpenRouter**를 통해 `qwen/qwen3-embedding-8b`를 사용하세요. 매우 저렴하고 다국어 지원이 뛰어나며 (CJK 및 라틴 문자 모두 우수) VectFox가 대상으로 하는 코퍼스 규모에 대해 고품질 밀집 벡터를 생성합니다.
-4. 요약 LLM 선택 (OpenRouter 또는 vLLM) — 벡터화 중 EventBase 추출에 사용됩니다.
-   - 💡 **추천하는 저렴하고 빠른 모델:** OpenRouter를 통한 `openai/gpt-4o-mini` 또는 `x-ai/grok-4.1-fast`. 둘 다 매우 저렴하고, 수집 지연을 낮게 유지할 만큼 빠릅니다. **Agent Mode LLM** (AgentMode 탭에서 별도 설정)에도 같은 권장이 적용됩니다 — AgentMode의 모델 필드를 비워두면 이 요약기 설정을 상속합니다.
-5. 클라우드 제공자(OpenRouter / vLLM )를 사용한다면 API 키를 구성합니다.
-6. **Keyword Extraction**에서 스토리의 언어를 선택합니다.
-7. 대부분의 설정은 기본값으로 두면 됩니다 — 자유롭게 조정하세요.
-8. SillyTavern에서 채팅을 클릭한 다음 VectFox 익스텐션 아이콘을 다시 클릭하세요. 첫 DB를 벡터화하려면 "Vectorize Content"를 클릭하고 **Chat History**를 선택**해야 합니다**.
-9. 필요시 **AutoSync** 탭에서 Auto-Sync를 활성화합니다. 빈도는 EventBase 탭 아래 *Extraction > Window Size*에서 제어합니다.
-10. 필요시 **WorldInfo** 탭에서 로어북 / World Info를 벡터화합니다.
-11. (선택) 다른 설정이 모두 작동하면 **AgentMode** 탭에서 **Agent Mode**를 켤 수 있습니다. provider / model / API key를 비워두면 요약기 설정을 상속합니다 — 즉 단계 4에서 사용한 저렴하고 빠른 모델이 플래너도 구동하게 됩니다. 자세한 작동 방식은 위의 "작동 방식 → Agent Mode" 섹션을 참조하세요.
-
-### 단계 3: (Qdrant 백엔드에만 필요) Similharity 플러그인 설치
+### 단계 2: (Qdrant 백엔드에만 필요) Similharity 플러그인 설치
 
 ```bash
 Windows에서는 명령 프롬프트, Linux/Mac에서는 터미널, docker에 있다면 콘솔에 들어가세요
@@ -390,6 +375,22 @@ enableServerPlugins: true
 ```
 
 SillyTavern 재시작.
+
+### 단계 3: VectFox 설정
+1. **VectFox Settings** 열기 (익스텐션 패널의 Core 탭).
+2. 벡터 저장소 선택 (Standard 또는 Qdrant).
+3. 임베딩 제공자 선택 (Transformers, vLLM, Ollama, OpenRouter, etc.).
+   - 💡 **권장:** **OpenRouter**를 통해 `qwen/qwen3-embedding-8b`를 사용하세요. 매우 저렴하고 다국어 지원이 뛰어나며 (CJK 및 라틴 문자 모두 우수) VectFox가 대상으로 하는 코퍼스 규모에 대해 고품질 밀집 벡터를 생성합니다.
+4. 요약 LLM 선택 (OpenRouter 또는 vLLM) — 벡터화 중 EventBase 추출에 사용됩니다.
+   - 💡 **추천하는 저렴하고 빠른 모델:** OpenRouter를 통한 `openai/gpt-4o-mini` 또는 `x-ai/grok-4.1-fast`. 둘 다 매우 저렴하고, 수집 지연을 낮게 유지할 만큼 빠릅니다. **Agent Mode LLM** (AgentMode 탭에서 별도 설정)에도 같은 권장이 적용됩니다 — AgentMode의 모델 필드를 비워두면 이 요약기 설정을 상속합니다.
+5. 클라우드 제공자(OpenRouter / vLLM )를 사용한다면 API 키를 구성합니다.
+6. **Keyword Extraction**에서 스토리의 언어를 선택합니다.
+7. 대부분의 설정은 기본값으로 두면 됩니다 — 자유롭게 조정하세요.
+8. SillyTavern에서 채팅을 클릭한 다음 VectFox 익스텐션 아이콘을 다시 클릭하세요. 첫 DB를 벡터화하려면 "Vectorize Content"를 클릭하고 **Chat History**를 선택**해야 합니다**.
+9. 필요시 **AutoSync** 탭에서 Auto-Sync를 활성화합니다. 빈도는 EventBase 탭 아래 *Extraction > Window Size*에서 제어합니다.
+10. 필요시 **WorldInfo** 탭에서 로어북 / World Info를 벡터화합니다.
+11. (선택) 다른 설정이 모두 작동하면 **AgentMode** 탭에서 **Agent Mode**를 켤 수 있습니다. provider / model / API key를 비워두면 요약기 설정을 상속합니다 — 즉 단계 4에서 사용한 저렴하고 빠른 모델이 플래너도 구동하게 됩니다. 자세한 작동 방식은 위의 "작동 방식 → Agent Mode" 섹션을 참조하세요.
+
 
 ---
 

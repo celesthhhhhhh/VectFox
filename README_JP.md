@@ -357,22 +357,7 @@ half-life = 50 の場合：50 メッセージ前の内容は関連度 50%、100 
 
 これで完了です！VectFox は自動でダウンロードされ、有効化されます。
 
-### ステップ 2：VectFox を設定する
-1. **VectFox Settings** を開きます（拡張機能パネルの Core タブ）。
-2. ベクトルストレージを選びます（Standard または Qdrant）。
-3. エンベディングプロバイダーを選びます (Transformers, vLLM, Ollama, OpenRouter, etc.).。
-   - 💡 **おすすめ：** **OpenRouter** 経由で `qwen/qwen3-embedding-8b` を使ってください。非常に安価で、多言語対応に優れ（CJK・ラテン双方とも優秀）、VectFox が想定するコーパス規模に対して高品質な密ベクトルを生成します。
-4. 要約 LLM を選びます（OpenRouter または vLLM）—— ベクトル化中の EventBase 抽出で使われます。
-   - 💡 **安価で高速なおすすめモデル：** OpenRouter 経由の `openai/gpt-4o-mini` または `x-ai/grok-4.1-fast`。どちらも非常に安価で、取り込みのレイテンシを低く保てるほど高速です。**Agent Mode の LLM**（AgentMode タブで別途設定）にも同じ推奨が当てはまります —— AgentMode のモデル欄を空欄のままにしておくと、この要約器設定が継承されます。
-5. クラウドプロバイダー（OpenRouter / vLLM ）を使う場合は、API キーを設定します。
-6. **Keyword Extraction** で、あなたのストーリーの言語を選びます。
-7. ほとんどの設定はデフォルトのままで大丈夫ですが、必要に応じて自由に調整してください。
-8. SillyTavern で対象のチャットを開き、もう一度 VectFox 拡張アイコンをクリックします。最初の DB をベクトル化するには、**必ず** "Vectorize Content" をクリックし、**Chat History** を選んでください。
-9. 必要であれば、**AutoSync** タブで Auto-Sync を有効化します。頻度は EventBase タブの *Extraction > Window Size* で制御されます。
-10. 必要であれば、**WorldInfo** タブでロアブック / World Info をベクトル化します。
-11. （オプション）他の設定が動作することを確認したら、**AgentMode** タブで **Agent Mode** をオンにできます。provider / model / API key を空欄のままにすれば、要約器の設定が継承されます —— つまりステップ 4 で選んだ安価で高速なモデルがプランナーも動かしてくれます。詳しい仕組みは上の「どう動くのか → Agent Mode」セクションを参照してください。
-
-### ステップ 3：（Qdrant バックエンドのみ）Similharity プラグインをインストール
+### ステップ 2：（Qdrant バックエンドのみ）Similharity プラグインをインストール
 
 ```bash
 Windows ではコマンドプロンプト、Linux/Mac ではターミナルを開いてください。docker 上で使っている場合は Console に入ってください
@@ -389,6 +374,22 @@ enableServerPlugins: true
 ```
 
 SillyTavern を再起動します。
+
+### ステップ 3：VectFox を設定する
+1. **VectFox Settings** を開きます（拡張機能パネルの Core タブ）。
+2. ベクトルストレージを選びます（Standard または Qdrant）。
+3. エンベディングプロバイダーを選びます (Transformers, vLLM, Ollama, OpenRouter, etc.).。
+   - 💡 **おすすめ：** **OpenRouter** 経由で `qwen/qwen3-embedding-8b` を使ってください。非常に安価で、多言語対応に優れ（CJK・ラテン双方とも優秀）、VectFox が想定するコーパス規模に対して高品質な密ベクトルを生成します。
+4. 要約 LLM を選びます（OpenRouter または vLLM）—— ベクトル化中の EventBase 抽出で使われます。
+   - 💡 **安価で高速なおすすめモデル：** OpenRouter 経由の `openai/gpt-4o-mini` または `x-ai/grok-4.1-fast`。どちらも非常に安価で、取り込みのレイテンシを低く保てるほど高速です。**Agent Mode の LLM**（AgentMode タブで別途設定）にも同じ推奨が当てはまります —— AgentMode のモデル欄を空欄のままにしておくと、この要約器設定が継承されます。
+5. クラウドプロバイダー（OpenRouter / vLLM ）を使う場合は、API キーを設定します。
+6. **Keyword Extraction** で、あなたのストーリーの言語を選びます。
+7. ほとんどの設定はデフォルトのままで大丈夫ですが、必要に応じて自由に調整してください。
+8. SillyTavern で対象のチャットを開き、もう一度 VectFox 拡張アイコンをクリックします。最初の DB をベクトル化するには、**必ず** "Vectorize Content" をクリックし、**Chat History** を選んでください。
+9. 必要であれば、**AutoSync** タブで Auto-Sync を有効化します。頻度は EventBase タブの *Extraction > Window Size* で制御されます。
+10. 必要であれば、**WorldInfo** タブでロアブック / World Info をベクトル化します。
+11. （オプション）他の設定が動作することを確認したら、**AgentMode** タブで **Agent Mode** をオンにできます。provider / model / API key を空欄のままにすれば、要約器の設定が継承されます —— つまりステップ 4 で選んだ安価で高速なモデルがプランナーも動かしてくれます。詳しい仕組みは上の「どう動くのか → Agent Mode」セクションを参照してください。
+
 
 ---
 

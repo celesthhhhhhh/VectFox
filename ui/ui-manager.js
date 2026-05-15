@@ -2919,7 +2919,7 @@ function bindSettingsEvents(settings, callbacks) {
             if (window.VectFox_WorldInfo && typeof window.VectFox_WorldInfo.getSemanticEntries === 'function') {
                 const entries = await window.VectFox_WorldInfo.getSemanticEntries(recentMessages, activeEntries, cfg);
                 console.log('VectFox: Semantic WI test results (via window hooks):', entries);
-                toastr.info(`Semantic WI test completed - ${entries.length} entries (see console)`);
+                if (cfg.world_info_retrieval_popup) toastr.info(`Semantic WI test completed - ${entries.length} entries (see console)`);
 
                 // If no entries found, provide extended diagnostics to help debug
                 if (!entries || entries.length === 0) {
@@ -2949,18 +2949,23 @@ function bindSettingsEvents(settings, callbacks) {
                                 }
 
                                 // Run a direct vector query against this collection
-                                try {
-                                    const qres = await coreApi.queryCollection(collKey, recentMessages.join('\n'), cfg.world_info_top_k || 3, cfg);
-                                    console.log(`VectFox: queryCollection result for ${collKey}:`, qres);
-                                } catch (qErr) {
-                                    console.warn(`VectFox: queryCollection failed for ${collKey}:`, qErr.message);
+                                const diagQueryText = recentMessages.join('\n');
+                                if (!diagQueryText.trim()) {
+                                    console.log(`VectFox: skipping queryCollection for ${collKey} — no test messages provided`);
+                                } else {
+                                    try {
+                                        const qres = await coreApi.queryCollection(collKey, diagQueryText, cfg.world_info_top_k || 3, cfg);
+                                        console.log(`VectFox: queryCollection result for ${collKey}:`, qres);
+                                    } catch (qErr) {
+                                        console.warn(`VectFox: queryCollection failed for ${collKey}:`, qErr.message);
+                                    }
                                 }
                             } catch (inner) {
                                 console.warn('VectFox: Error inspecting collection', collKey, inner.message);
                             }
                         }
 
-                        toastr.info('Extended WI diagnostics written to console (registry + per-collection queries)');
+                        if (cfg.world_info_retrieval_popup) toastr.info('Extended WI diagnostics written to console (registry + per-collection queries)');
                     } catch (diagErr) {
                         console.error('VectFox: Failed to run extended WI diagnostics', diagErr);
                         toastr.error('Failed to run WI diagnostics: ' + (diagErr.message || diagErr));
@@ -2979,7 +2984,7 @@ function bindSettingsEvents(settings, callbacks) {
                 }
                 const entries = await fn(recentMessages, activeEntries, cfg);
                 console.log('VectFox: Semantic WI test results (via dynamic import):', entries);
-                toastr.info(`Semantic WI test completed - ${entries.length} entries (see console)`);
+                if (cfg.world_info_retrieval_popup) toastr.info(`Semantic WI test completed - ${entries.length} entries (see console)`);
                 return;
             } catch (impErr) {
                 console.warn('VectFox: Dynamic import fallback failed:', impErr.message);

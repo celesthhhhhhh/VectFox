@@ -24,7 +24,7 @@ import { getSavedHashes } from './core-vector-api.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { retrieveEventsWithAgent } from './agentic-retrieval.js';
 import { formatEventsForInjectionDetailed } from './eventbase-injection.js';
-import { isCollectionEnabled, isCollectionLockedToChat } from './collection-metadata.js';
+import { isCollectionEnabled, isCollectionLockedToChat, setCollectionLock } from './collection-metadata.js';
 import { progressTracker } from '../ui/progress-tracker.js';
 
 /** Extension prompt tag for EventBase (distinct from legacy chunks tag) */
@@ -59,6 +59,14 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
     // Respect the global collection pause toggle before doing any extraction,
     // ingestion, or insertion work. Pause is a hard stop regardless of chat locks.
     const collectionId = collectionIdOverride || buildEventBaseCollectionId(uuid, settings?.vector_backend);
+
+    // Lock to current chat at start so the index is populated even if vectorization is interrupted.
+    // Archive collections are excluded — they are locked manually by the user.
+    const _startChatId = getCurrentChatId();
+    if (_startChatId && !collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT)) {
+        setCollectionLock(collectionId, _startChatId);
+    }
+
     const backend = getRegistryBackend(settings?.vector_backend);
     const candidateKeys = [
         `${backend}:${collectionId}`,

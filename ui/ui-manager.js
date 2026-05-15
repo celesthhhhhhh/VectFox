@@ -1685,77 +1685,67 @@ export async function loadWebLlmModels(settings) {
  * Call this when chat changes to keep UI in sync
  * @param {object} settings - VectFox settings object (unused, kept for API compatibility)
  */
-export function refreshWIStatus() {
+export async function refreshWIStatus() {
     const $status = $('#VectFox_wi_status');
     if (!$status.length) return;
+
+    // State 1: no lorebooks vectorized at all (in-memory registry scan, no backend call)
     const registry = getCollectionRegistry();
-    const lorebookIds = Array.isArray(registry)
-        ? registry
-            .map(key => parseRegistryKey(key).collectionId)
-            .filter(id => id.startsWith('vf_lorebook_'))
-        : [];
-    if (lorebookIds.length === 0) {
+    const anyLorebook = Array.isArray(registry) &&
+        registry.some(key => parseRegistryKey(key).collectionId.startsWith('vf_lorebook_'));
+    if (!anyLorebook) {
         $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> No lorebooks vectorized — vectorize one first');
         return;
     }
-    import('../core/collection-metadata.js').then(({ getCollectionMeta, isCollectionLockedToChat }) => {
-        const chatId = getCurrentChatId();
-        const lockedIds = chatId ? lorebookIds.filter(id => isCollectionLockedToChat(id, chatId)) : [];
-        if (lockedIds.length === 0) {
-            const names = lorebookIds.map(id => getCollectionMeta(id)?.sourceName || id);
-            const nameList = names.map(n => `<span style="font-style:italic;">${n}</span>`).join(', ');
-            $status.html(
-                `<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> ` +
-                `Vectorized (${nameList}) but not locked to this chat — open Database Browser → Collection Settings to lock it`
-            );
-            return;
-        }
-        const names = lockedIds.map(id => getCollectionMeta(id)?.sourceName || id);
-        const nameList = names.map(n => `<span style="font-style:italic;">${n}</span>`).join(', ');
+
+    const chatId = getCurrentChatId();
+    const { getChatLockedCollections, getCollectionMeta } = await import('../core/collection-metadata.js');
+    const lockedIds = getChatLockedCollections(chatId).filter(id => id.startsWith('vf_lorebook_'));
+
+    if (lockedIds.length === 0) {
         $status.html(
-            `<i class="fa-solid fa-circle-check" style="color: var(--success-color, #27ae60);"></i> ` +
-            `Active for this chat: ${nameList}`
+            '<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> ' +
+            'Lorebook vectorized but not locked to this chat — open Database Browser → Collection Settings to lock it'
         );
-        // Auto-enable the feature when a lorebook is confirmed active for this chat
-        const $wiCheckbox = $('#VectFox_enabled_world_info');
-        if ($wiCheckbox.length && !$wiCheckbox.prop('checked')) {
-            $wiCheckbox.prop('checked', true).trigger('change');
-        }
-    });
+        return;
+    }
+
+    const names = lockedIds.map(id => getCollectionMeta(id)?.sourceName || id);
+    const nameList = names.map(n => `<span style="font-style:italic;">${n}</span>`).join(', ');
+    $status.html(
+        `<i class="fa-solid fa-circle-check" style="color: var(--success-color, #27ae60);"></i> ` +
+        `Active for this chat: ${nameList}`
+    );
+    const $wiCheckbox = $('#VectFox_enabled_world_info');
+    if ($wiCheckbox.length && !$wiCheckbox.prop('checked')) {
+        $wiCheckbox.prop('checked', true).trigger('change');
+    }
 }
 
-export function refreshAutoSyncCheckbox(settings) {
+export async function refreshAutoSyncCheckbox(settings) {
     const $checkbox = $('#VectFox_autosync_enabled');
     const $status = $('#VectFox_autosync_status');
 
     $checkbox.prop('checked', false);
-    $status.html('<i class="fa-solid fa-spinner fa-spin" style="opacity:0.5;"></i> Checking...');
 
-    doesChatHaveVectors(settings).then(async ({ hasVectors, allMatches }) => {
-        if (!hasVectors) {
-            $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> Not initialized — vectorize chat first');
-            return;
-        }
+    const chatId = getCurrentChatId();
+    if (!chatId) {
+        $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> No chat loaded');
+        return;
+    }
 
-        const { isChatFullyVectorized } = await import('../core/eventbase-workflow.js');
-        const { getChatUUID } = await import('../core/collection-ids.js');
-        const messages = (getContext().chat || []).filter(m => m.mes && m.mes.trim().length > 0);
-        const fullyVectorized = isChatFullyVectorized(messages, settings, getChatUUID());
+    const { getChatLockedCollections, isCollectionAutoSyncEnabled } = await import('../core/collection-metadata.js');
+    const lockedIds = getChatLockedCollections(chatId);
+    const eventbaseId = lockedIds.find(id => id.startsWith('vf_eventbase_'));
 
-        const totalChunks = allMatches.reduce((sum, m) => sum + (m.chunkCount || 0), 0);
+    if (!eventbaseId) {
+        $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> Not initialized — vectorize chat first');
+        return;
+    }
 
-        const { isCollectionAutoSyncEnabled } = await import('../core/collection-metadata.js');
-        const isEnabled = isCollectionAutoSyncEnabled(allMatches[0].collectionId);
-        $checkbox.prop('checked', isEnabled);
-
-        if (fullyVectorized) {
-            $status.html(`<i class="fa-solid fa-circle-check" style="color: var(--success-color, #27ae60);"></i> Ready (${totalChunks} chunks)`);
-        } else {
-            $status.html(`<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> Partially vectorized (${totalChunks} chunks) — finish vectorization first`);
-        }
-    }).catch(() => {
-        $status.html('');
-    });
+    const isEnabled = isCollectionAutoSyncEnabled(eventbaseId);
+    $checkbox.prop('checked', isEnabled);
+    $status.html('<i class="fa-solid fa-circle-check" style="color: var(--success-color, #27ae60);"></i> Ready');
 }
 
 export function updateWebLlmStatus() {
@@ -2051,20 +2041,7 @@ function bindSettingsEvents(settings, callbacks) {
                     return;
                 }
 
-                // Check that all messages are already vectorized before allowing auto-sync
-                const { isChatFullyVectorized } = await import('../core/eventbase-workflow.js');
-                const { getChatUUID } = await import('../core/collection-ids.js');
-                const messages = (getContext().chat || []).filter(m => m.mes && m.mes.trim().length > 0);
-                const fullyVectorized = isChatFullyVectorized(messages, settings, getChatUUID());
-
-                if (!fullyVectorized) {
-                    $checkbox.prop('checked', false);
-                    toastr.info('Finish vectorizing your full chat history first, then enable auto-sync');
-                    openContentVectorizer('chat');
-                    return;
-                }
-
-                // All messages vectorized — connect to collection
+                // Connect to collection (auto-sync will resume from last processed window)
                 if (allMatches.length === 1) {
                     // Single collection: auto-connect without a modal
                     resolvedCollectionId = allMatches[0].collectionId;

@@ -15,11 +15,10 @@ import {
     getAdditionalArgs,
     getSavedHashes,
 } from './core-vector-api.js';
-import { getCurrentChatId, chat_metadata, saveSettingsDebounced, getRequestHeaders } from '../../../../../script.js';
+import { saveSettingsDebounced, getRequestHeaders } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
 import { getChatUUID, buildEventBaseCollectionId, getRegistryBackend, COLLECTION_PREFIXES, parseRegistryKey } from './collection-ids.js';
 import { registerCollection, getCollectionRegistry } from './collection-loader.js';
-import { setCollectionLock } from './collection-metadata.js';
 import { buildEmbedText } from './eventbase-schema.js';
 
 // Re-export so callers can import from here if needed
@@ -105,18 +104,6 @@ export async function insertEvents(events, settings, abortSignal = null, collect
     const registryBackend = getRegistryBackend(settings?.vector_backend);
     const registryKey = `${registryBackend}:${collectionId}`;
     registerCollection(registryKey);
-
-    // Auto-lock live EventBase collections to the current chat after first insert.
-    // Archive event collections are NOT auto-locked — users must enable them manually
-    // via the "Active for current chat" checkbox on the collection card.
-    const isArchive = collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT);
-    const currentChatId = getCurrentChatId();
-    if (!isArchive && currentChatId) {
-        setCollectionLock(collectionId, currentChatId);
-        if (debugLog) {
-            console.log(`[EventBase] Locked collection "${collectionId}" to current chat "${currentChatId}"`);
-        }
-    }
 
     if (debugLog) {
         console.log(`[EventBase] Insert complete for collection "${collectionId}"`);

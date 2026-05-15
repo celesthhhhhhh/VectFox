@@ -97,7 +97,13 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
         // Step 3: Enrich and hash
         progressTracker.updateProgress(3, 'Processing chunks...');
         const collectionId = generateCollectionId(contentType, source, settings);
-        
+
+        // Lock to current chat at start so the index is populated even if vectorization is interrupted.
+        const currentChatId = getCurrentChatId();
+        if (currentChatId) {
+            setCollectionLock(collectionId, currentChatId);
+        }
+
         // Get full extension settings for keyword extraction (includes custom_stopwords)
         const VectFoxSettings = extension_settings.vectfox;
         
@@ -248,12 +254,6 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
         registerCollection(collectionId);
         console.log(`VectFox: Registered collection ${collectionId}`);
 
-        // Make newly vectorized collections active for the current chat by default.
-        const currentChatId = getCurrentChatId();
-        if (currentChatId) {
-            setCollectionLock(collectionId, currentChatId);
-            console.log(`VectFox: Locked collection ${collectionId} to current chat ${currentChatId}`);
-        }
 
         throwIfAborted();
         progressTracker.complete(true, `Vectorized ${finalChunks.length} chunks`);

@@ -1868,11 +1868,12 @@ function openActivationEditor(collectionId, collectionName) {
   const currentChatId = getCurrentChatId();
   const hasChatLockMatch = currentChatId && isCollectionLockedToChat(collectionId, currentChatId);
   const chatScopedActive = Boolean(hasChatLockMatch);
-  const resolvedAlwaysActive = chatScopedActive;
+  const isGlobalScope = meta.scope === 'global';
+  const resolvedAlwaysActive = chatScopedActive || isGlobalScope;
   console.log(
     `[VECTFOX DB Browser] Active-for-current-chat resolution for ${collectionId}: ` +
     `resolved=${resolvedAlwaysActive}, ` +
-    `chatScopedActive=${chatScopedActive}, currentChatId=${currentChatId || 'none'}`
+    `chatScopedActive=${chatScopedActive}, globalScope=${isGlobalScope}, currentChatId=${currentChatId || 'none'}`
   );
 
   activationEditorState = {
@@ -2485,15 +2486,20 @@ function saveActivation() {
 
   const isChecked = $("#vectfox_always_active").prop("checked");
   const currentChatId = getCurrentChatId();
-  console.log(`[VectFox] saveActivation: alwaysActive checkbox=${isChecked}, chatId=${currentChatId || 'none'}, collection=${state.collectionId}`);
-  if (currentChatId) {
-    if (isChecked) {
-      setCollectionLock(state.collectionId, currentChatId);
+  const saveMeta = getCollectionMeta(state.collectionId);
+  const isGlobalScopeCollection = saveMeta.scope === 'global';
+  console.log(`[VectFox] saveActivation: alwaysActive checkbox=${isChecked}, chatId=${currentChatId || 'none'}, collection=${state.collectionId}, globalScope=${isGlobalScopeCollection}`);
+  // Global-scope collections activate everywhere — chat lock is irrelevant, skip it.
+  if (!isGlobalScopeCollection) {
+    if (currentChatId) {
+      if (isChecked) {
+        setCollectionLock(state.collectionId, currentChatId);
+      } else {
+        removeCollectionLock(state.collectionId, currentChatId);
+      }
     } else {
-      removeCollectionLock(state.collectionId, currentChatId);
+      toastr.info('No active chat context; "Active for current chat" was not changed');
     }
-  } else {
-    toastr.info('No active chat context; "Active for current chat" was not changed');
   }
 
   const alwaysActiveValue = false;

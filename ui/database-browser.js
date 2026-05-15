@@ -1353,7 +1353,7 @@ function bindCollectionCardEvents() {
 
           const chunks = results.map((item, idx) => ({
             hash: item.hash,
-            index: item.index ?? idx,
+            index: (item.index != null && item.index >= 0) ? item.index : idx,
             text: item.text || item.metadata?.text || "No text available",
             score: 1.0,
             similarity: 1.0,
@@ -3522,7 +3522,7 @@ function renderSearchResults(results, query, originalResults = null) {
 
           const chunks = results.map((item, idx) => ({
             hash: item.hash,
-            index: item.index ?? idx,
+            index: (item.index != null && item.index >= 0) ? item.index : idx,
             text: item.text || item.metadata?.text || "No text available",
             score: 1.0,
             similarity: 1.0,

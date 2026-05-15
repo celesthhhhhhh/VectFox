@@ -49,7 +49,7 @@ let allChunksMap = new Map(); // uniqueId -> chunk
 let filteredChunksMap = new Map(); // uniqueId -> index in filteredChunks
 let selectedChunkId = null; // Use uniqueId, not hash (hashes can be duplicated)
 let displayLimit = 50;
-let chunkFetchLimit = 1000;
+let chunkFetchLimit = 0; // 0 = no limit (fetch all)
 let onReloadCallback = null;
 let sortBy = 'index'; // 'index', 'length-desc', 'length-asc', 'keywords', 'modified'
 let filterBy = 'all'; // 'all', 'enabled', 'disabled', 'conditions', 'blind'
@@ -478,7 +478,7 @@ function createModal() {
                             </div>
                                 <div class="vectfox-fetch-limit-control">
                                     <label>Fetch limit:</label>
-                                    <input type="number" id="VectFox_fetch_limit" min="100" max="99999" step="100" value="${chunkFetchLimit}" title="Max chunks loaded from server">
+                                    <input type="number" id="VectFox_fetch_limit" min="0" max="99999" step="100" value="${chunkFetchLimit}" title="Max chunks loaded from server (0 = all)">
                                     <button id="VectFox_reload_chunks" title="Reload chunks from server with new limit">↺ Reload</button>
                                 </div>
                                 <div class="vectfox-db-total" id="VectFox_db_chunk_total">DB max chunks: ${dbChunkText}</div>
@@ -1386,10 +1386,10 @@ function bindEvents() {
         renderChunkList();
     });
 
-    // Fetch limit
+    // Fetch limit (0 = no limit)
     $('#VectFox_fetch_limit').on('change', function() {
         const val = parseInt($(this).val());
-        chunkFetchLimit = isNaN(val) || val < 100 ? 1000 : val;
+        chunkFetchLimit = isNaN(val) || val < 0 ? 0 : val;
         $(this).val(chunkFetchLimit);
     });
 
@@ -1403,7 +1403,7 @@ function bindEvents() {
         e.preventDefault();
         e.stopPropagation();
         const uid = $(this).attr('data-uid');
-        console.log('VectFox: Clicked chunk with uniqueId:', uid);
+        if (currentSettings?.eventbase_debug_logging) console.log('VectFox: Clicked chunk with uniqueId:', uid);
         if (!uid) {
             console.error('VectFox: No uniqueId found on clicked element');
             return;

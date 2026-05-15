@@ -1768,31 +1768,50 @@ export async function refreshWIStatus() {
 export async function refreshAutoSyncCheckbox(settings) {
     const $checkbox = $('#VectFox_autosync_enabled');
     const $status = $('#VectFox_autosync_status');
-
-    $checkbox.prop('checked', false);
-
     const $hint = $('#VectFox_autosync_hint');
+
+    const { getChatAutoSyncStatus } = await import('../core/eventbase-workflow.js');
+    const { isCollectionAutoSyncEnabled, isCollectionLockedToChat } = await import('../core/collection-metadata.js');
+
+    const status = getChatAutoSyncStatus(settings);
     const chatId = getCurrentChatId();
-    if (!chatId) {
+
+    const LED = {
+        white:  '<i class="fa-solid fa-circle" style="color: var(--muted-color, #8a8a8a);"></i>',
+        yellow: '<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i>',
+        green:  '<i class="fa-solid fa-circle-check" style="color: var(--success-color, #27ae60);"></i>',
+    };
+
+    // no-chat: no chat open at all
+    if (status.state === 'no-chat') {
+        $checkbox.prop('checked', false);
         $hint.show();
-        $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> No chat loaded');
+        $status.html(`${LED.yellow} No chat loaded`);
         return;
     }
 
-    const { getChatLockedCollections, isCollectionAutoSyncEnabled } = await import('../core/collection-metadata.js');
-    const lockedIds = getChatLockedCollections(chatId);
-    const eventbaseId = lockedIds.find(id => id.startsWith('vf_eventbase_'));
-
-    if (!eventbaseId) {
+    // no-collection: chat is open but no eventbase collection exists yet
+    if (status.state === 'no-collection') {
+        $checkbox.prop('checked', false);
         $hint.show();
-        $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> Not initialized — vectorize chat first');
+        $status.html(`${LED.yellow} Not initialized — vectorize chat first`);
         return;
     }
 
-    const isEnabled = isCollectionAutoSyncEnabled(eventbaseId);
-    $checkbox.prop('checked', isEnabled);
+    // Collection exists. The checkbox reflects the per-collection autoSync flag.
+    // The LED reflects whether the chat is fully synced or has a backlog.
+    const isEnabled = isCollectionAutoSyncEnabled(status.collectionId);
+    const isLocked = chatId && isCollectionLockedToChat(status.collectionId, chatId);
+    $checkbox.prop('checked', Boolean(isEnabled && isLocked));
     $hint.hide();
-    $status.html('<i class="fa-solid fa-circle-check" style="color: var(--success-color, #27ae60);"></i> Ready');
+
+    if (!isEnabled || !isLocked) {
+        $status.html(`${LED.white} Auto-sync inactive`);
+    } else if (status.state === 'fully-vectorized') {
+        $status.html(`${LED.green} Ready — fully synced`);
+    } else {
+        $status.html(`${LED.yellow} Locked — will sync to latest history on next auto-sync trigger`);
+    }
 }
 
 export function updateWebLlmStatus() {
@@ -2065,70 +2084,46 @@ function bindSettingsEvents(settings, callbacks) {
             const enabling = $(this).prop('checked');
             const $checkbox = $(this);
 
+            const { getChatAutoSyncStatus } = await import('../core/eventbase-workflow.js');
+            const { setCollectionAutoSync, setCollectionLock, removeCollectionLock } = await import('../core/collection-metadata.js');
+            const status = getChatAutoSyncStatus(settings);
             const chatId = getCurrentChatId();
-            if (!chatId) {
-                // No chat open - warn and don't enable
+
+            if (status.state === 'no-chat') {
                 toastr.warning('Open a chat first before enabling auto-sync');
                 $checkbox.prop('checked', false);
+                await refreshAutoSyncCheckbox(settings);
                 return;
             }
 
-            // Import the metadata functions
-            const { setCollectionAutoSync } = await import('../core/collection-metadata.js');
-
-            let resolvedCollectionId = null;
-
             if (enabling) {
-                const { hasVectors, allMatches } = await doesChatHaveVectors(settings);
-
-                if (!hasVectors) {
+                if (status.state === 'no-collection') {
+                    // No collection for this chat yet — send the user to vectorize first.
                     $checkbox.prop('checked', false);
                     toastr.info('Vectorize your chat history first');
                     openContentVectorizer('chat');
                     return;
                 }
-
-                // Connect to collection (auto-sync will resume from last processed window)
-                if (allMatches.length === 1) {
-                    // Single collection: auto-connect without a modal
-                    resolvedCollectionId = allMatches[0].collectionId;
-                    console.log(`VectFox: Auto-sync enabled - connected to ${resolvedCollectionId} (${allMatches[0].chunkCount} chunks)`);
-                } else {
-                    // Multiple collections: let user pick
-                    const result = await showAutoSyncConfirmModal(allMatches, settings);
-
-                    if (result.action === 'cancel') {
-                        $checkbox.prop('checked', false);
-                        return;
-                    }
-
-                    if (result.action === 'reconnect' && result.selectedCollection) {
-                        const selected = result.selectedCollection;
-                        resolvedCollectionId = selected.collectionId;
-                        console.log(`VectFox: Auto-sync enabled - connected to ${selected.collectionId} (${selected.chunkCount} chunks)`);
-                    } else if (result.action === 'revectorize') {
-                        $checkbox.prop('checked', false);
-                        openContentVectorizer('chat');
-                        return;
-                    }
-                }
+                // Collection exists (partial or fully-vectorized) — lock + enable.
+                setCollectionLock(status.collectionId, chatId);
+                setCollectionAutoSync(status.collectionId, true);
+                const message = status.state === 'fully-vectorized'
+                    ? 'Auto-sync enabled — chat is fully synced'
+                    : 'Auto-sync enabled — will catch up on next trigger';
+                toastr.success(message);
+                console.log(`VectFox: Chat auto-sync ENABLED for ${status.collectionId} (state=${status.state})`);
             } else {
-                // Disabling - find the current collection to clear its auto-sync flag
-                const { hasVectors, allMatches } = await doesChatHaveVectors(settings);
-                if (hasVectors && allMatches.length > 0) {
-                    resolvedCollectionId = allMatches[0].collectionId;
+                // Uncheck — clear the flag and release the chat lock.
+                if (status.state !== 'no-collection') {
+                    setCollectionAutoSync(status.collectionId, false);
+                    if (chatId) removeCollectionLock(status.collectionId, chatId);
+                    toastr.info('Auto-sync disabled for this chat');
+                    console.log(`VectFox: Chat auto-sync DISABLED for ${status.collectionId}`);
                 }
             }
 
-            // Save to per-collection metadata
-            setCollectionAutoSync(resolvedCollectionId, enabling);
-
-            if (!enabling) {
-                toastr.info('Auto-sync disabled for this chat');
-            } else {
-                toastr.success('Auto-sync enabled for this chat');
-            }
-            console.log(`VectFox: Chat auto-sync for ${resolvedCollectionId}: ${enabling ? 'enabled' : 'disabled'}`);
+            await refreshAutoSyncCheckbox(settings);
+            document.dispatchEvent(new CustomEvent('vectfox:collections-updated'));
         });
 
         // Collection lock handled inside Database Browser per-collection settings
@@ -2839,25 +2834,28 @@ function bindSettingsEvents(settings, callbacks) {
             const enabled = $(this).prop('checked');
             const $checkbox = $(this);
 
+            // Filter lorebook collections to only those owned by the current persona handle.
+            // superadmin=true (hand-edited into settings.json) bypasses the handle filter.
+            const ownHandle = sanitizeHandleId(getContext()?.name1);
+            const isSuperadmin = settings.superadmin === true;
+            const registry = getCollectionRegistry();
+            // Use creatorHandle stamp (set via substring search) — reliable for handles with underscores.
+            const _isOwnLorebook = (key) => {
+                const id = parseRegistryKey(key).collectionId;
+                if (!id.startsWith('vf_lorebook_')) return false;
+                if (isSuperadmin) return true;
+                registerCollection(key); // stamps creatorHandle if missing
+                const meta = getCollectionMeta(key) || getCollectionMeta(id);
+                return String(meta?.creatorHandle || '').toLowerCase() === ownHandle;
+            };
+
+            const chatId = getCurrentChatId();
+            const characterId = getContext()?.characterId;
+            const metaMod = await import('../core/collection-metadata.js');
+            const { isCollectionActiveForContext, removeCollectionLock, removeCollectionCharacterLock } = metaMod;
+
             if (enabled) {
-                // Filter lorebook collections to only those owned by the current persona handle.
-                // superadmin=true (hand-edited into settings.json) bypasses the handle filter.
-                const ownHandle = sanitizeHandleId(getContext()?.name1);
-                const isSuperadmin = settings.superadmin === true;
-
-                const registry = getCollectionRegistry();
-                // Use creatorHandle stamp (set via substring search) — reliable for handles with underscores.
-                const _isOwnLorebook = (key) => {
-                    const id = parseRegistryKey(key).collectionId;
-                    if (!id.startsWith('vf_lorebook_')) return false;
-                    if (isSuperadmin) return true;
-                    registerCollection(key); // stamps creatorHandle if missing
-                    const meta = getCollectionMeta(key) || getCollectionMeta(id);
-                    return String(meta?.creatorHandle || '').toLowerCase() === ownHandle;
-                };
-
                 const hasLorebookVectors = Array.isArray(registry) && registry.some(_isOwnLorebook);
-
                 if (!hasLorebookVectors) {
                     $checkbox.prop('checked', false);
                     toastr.info('Vectorize a lorebook first to use Semantic WI Activation');
@@ -2865,29 +2863,44 @@ function bindSettingsEvents(settings, callbacks) {
                     return;
                 }
 
-                // Lorebook exists for this persona — verify at least one is active for this chat.
-                // Active = scope='chat' locked to current chat, OR scope='character' locked to current character.
-                const chatId = getCurrentChatId();
-                const characterId = getContext()?.characterId;
-                const { isCollectionActiveForContext } = await import('../core/collection-metadata.js');
-                const hasActive = Array.isArray(registry) && registry.some(key => {
+                // Verify at least one own lorebook is active for this chat.
+                const hasActive = registry.some(key => {
                     if (!_isOwnLorebook(key)) return false;
                     const id = parseRegistryKey(key).collectionId;
                     return isCollectionActiveForContext(id, { chatId, characterId });
                 });
-
                 if (!hasActive) {
                     $checkbox.prop('checked', false);
                     toastr.info('Lock a lorebook to this chat in Database Browser → Collection Settings');
                     openDatabaseBrowser();
                     return;
                 }
+            } else {
+                // Uncheck mirrors Collection Settings uncheck: remove the lock that's making each
+                // active own-persona lorebook active. After this, isCollectionActiveForContext
+                // returns false for all of them and the listing badge drops the 🔒.
+                let removed = 0;
+                for (const key of registry) {
+                    if (!_isOwnLorebook(key)) continue;
+                    const id = parseRegistryKey(key).collectionId;
+                    if (!isCollectionActiveForContext(id, { chatId, characterId })) continue;
+                    const meta = getCollectionMeta(key) || getCollectionMeta(id);
+                    if (meta.scope === 'chat' && chatId) {
+                        removeCollectionLock(id, chatId);
+                        removed++;
+                    } else if (meta.scope === 'character' && characterId) {
+                        removeCollectionCharacterLock(id, String(characterId));
+                        removed++;
+                    }
+                }
+                if (removed > 0) {
+                    document.dispatchEvent(new CustomEvent('vectfox:collections-updated'));
+                }
             }
 
             settings.enabled_world_info = enabled;
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
-            // Show/hide the detailed world info settings panel
             $('#VectFox_world_info_settings').toggle(enabled);
         });
 
@@ -2971,6 +2984,12 @@ function bindSettingsEvents(settings, callbacks) {
     refreshWIStatus();
     document.addEventListener('vectfox:collections-updated', refreshWIStatus);
     eventSource.on(event_types.CHAT_CHANGED, refreshWIStatus);
+
+    // Chat auto-sync UI also follows the same events: collection list changes
+    // (e.g. chat just got vectorized) and chat-changed shift the state.
+    const _refreshAutoSync = () => refreshAutoSyncCheckbox(extension_settings.vectfox);
+    document.addEventListener('vectfox:collections-updated', _refreshAutoSync);
+    document.addEventListener('vectfox:eventbase-synced', _refreshAutoSync);
 
     // Debug buttons: Test semantic WI and dump registry
     $('#VectFox_wi_test_btn').on('click', async function() {

@@ -13,7 +13,7 @@
 
 import { setExtensionPrompt, extension_prompts, getCurrentChatId, substituteParams } from '../../../../../script.js';
 import { extension_settings, getContext } from '../../../../extensions.js';
-import { getChatUUID, parseRegistryKey, COLLECTION_PREFIXES, getRegistryBackend } from './collection-ids.js';
+import { getChatUUID, parseRegistryKey, COLLECTION_PREFIXES, getRegistryBackend, buildChatSearchPatterns, matchesPatterns } from './collection-ids.js';
 import { getCollectionRegistry } from './collection-loader.js';
 import { queryCollection } from './core-vector-api.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
@@ -287,6 +287,14 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
 
     if (debugLog) {
         console.log(`[EventBase] Ingestion complete: extracted=${eventsExtracted}, processed=${windowsProcessed}, skipped=${windowsSkipped}`);
+    }
+
+    // Notify the UI so the Chat Auto-Sync LED can flip from yellow → green.
+    // Cheap signal; listeners just re-evaluate state, they don't read this payload.
+    if (typeof document !== 'undefined' && typeof CustomEvent === 'function') {
+        document.dispatchEvent(new CustomEvent('vectfox:eventbase-synced', {
+            detail: { collectionId, eventsExtracted, windowsProcessed }
+        }));
     }
 
     return { eventsExtracted, windowsProcessed, windowsSkipped };
@@ -619,4 +627,58 @@ export function isChatFullyVectorized(messages, settings, chatUUID) {
     const step = windowSize - windowOverlap;
     const msgHash = m => { const t = (m.mes || '').trim(); return m.hash ?? _djb2(`${m.name || ''}:${t}`); };
     return isLastWindowExtracted(messages, windowSize, step, chatUUID, msgHash);
+}
+
+/**
+ * In-memory evaluation of chat auto-sync state for the current chat.
+ * No backend probes — uses the registry, the eventbase window cache, and
+ * extension_settings only. Used by the Chat Auto-Sync checkbox + LED.
+ *
+ * Returns one of:
+ *   { state: 'no-chat' }                                              — no chat is open
+ *   { state: 'no-collection' }                                        — chat has no eventbase collection yet
+ *   { state: 'partial',          collectionId, registryKey }          — collection exists, last window not extracted
+ *   { state: 'fully-vectorized', collectionId, registryKey }          — collection exists, last window already extracted
+ *
+ * @param {object} settings - extension_settings.vectfox
+ * @returns {object}
+ */
+export function getChatAutoSyncStatus(settings) {
+    const chatId = getCurrentChatId();
+    if (!chatId) return { state: 'no-chat' };
+
+    const uuid = getChatUUID();
+    if (!uuid) return { state: 'no-chat' };
+
+    // Match by UUID — robust to legacy ID formats and character renames
+    // (the chat's UUID is the stable identifier; everything else can drift).
+    const patterns = buildChatSearchPatterns(chatId, uuid);
+    const registry = getCollectionRegistry();
+    const matchedRegistryKey = Array.isArray(registry)
+        ? registry.find(key => {
+            const parsed = parseRegistryKey(key);
+            const id = parsed.collectionId || '';
+            if (!id.toLowerCase().startsWith('vf_eventbase_') &&
+                !id.toLowerCase().includes('eventbase_')) return false;
+            return matchesPatterns(id, patterns) || matchesPatterns(key, patterns);
+        })
+        : null;
+
+    if (!matchedRegistryKey) {
+        return { state: 'no-collection' };
+    }
+
+    const matchedCollectionId = parseRegistryKey(matchedRegistryKey).collectionId;
+
+    const ctx = getContext();
+    const messages = Array.isArray(ctx?.chat)
+        ? ctx.chat.filter(m => m.mes && m.mes.trim().length > 0)
+        : [];
+
+    const fullyVectorized = isChatFullyVectorized(messages, settings, uuid);
+    return {
+        state: fullyVectorized ? 'fully-vectorized' : 'partial',
+        collectionId: matchedCollectionId,
+        registryKey: matchedRegistryKey,
+    };
 }

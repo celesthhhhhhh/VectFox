@@ -72,7 +72,7 @@ export async function insertEvents(events, settings, abortSignal = null, collect
         return {
             hash,
             text: embedText,
-            index: event.source_window_start != null ? event.source_window_start + 1 : idx + 1, // 1-based source message index for browser display
+            index: event.source_window_end ?? (event.source_window_start != null ? event.source_window_start + 1 : idx + 1), // source_window_end for consistency with message_order injection field
             vector,             // null → server-side embedding
             // Top-level fields read by qdrant.js's payload builder.
             // qdrant.js spreads item.metadata first then explicitly overwrites these

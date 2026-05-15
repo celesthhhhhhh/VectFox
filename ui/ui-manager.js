@@ -519,7 +519,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <small><b>CJK Tokenizer Mode</b></small>
                                 </label>
                                 <select id="VectFox_cjk_tokenizer_mode" class="vectfox-select" style="margin-top: 4px;">
-                                    <option value="intl">Intl.Segmenter (English / Korean / Latin)</option>
+                                    <option value="intl">Intl.Segmenter (English / Latin)</option>
                                     <option value="jieba">Simplified Chinese (Jieba WASM)</option>
                                     <option value="jieba_tw">Traditional Chinese (Jieba WASM)</option>
                                     <option value="tiny_segmenter">Japanese (TinySegmenter)</option>

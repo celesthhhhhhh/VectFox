@@ -36,6 +36,7 @@ function _cleanEventForInjection(event) {
     return {
         event_type: event.event_type,
         importance: event.importance,
+        message_order: event.source_window_end ?? null,
         summary: _summaryFromText(event.text),
         DateTime: event.DateTime || null,
         cause: event.cause || '',
@@ -85,6 +86,7 @@ function _formatAsDenseText(events) {
             `# Event ${idx + 1}`,
             `event_type: ${event.event_type || '-'}`,
             `importance: ${event.importance ?? '-'}`,
+            `message_order: ${event.message_order ?? '-'}`,
             `summary: ${event.summary || '-'}`,
             `DateTime: ${event.DateTime || '-'}`,
             `cause: ${event.cause || '-'}`,
@@ -111,6 +113,7 @@ function _formatAsSummaryOnly(events) {
         const event = _cleanEventForInjection(rawEvent);
         return [
             `# Event ${idx + 1}`,
+            `message_order: ${event.message_order ?? '-'}`,
             `summary: ${event.summary || '-'}`,
             `DateTime: ${event.DateTime || '-'}`,
         ].join('\n');

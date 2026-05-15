@@ -2815,6 +2815,18 @@ function bindSettingsEvents(settings, callbacks) {
                     openContentVectorizer('lorebook');
                     return;
                 }
+
+                // Lorebook exists in registry — verify one is locked to this chat
+                const chatId = getCurrentChatId();
+                const { getChatLockedCollections } = await import('../core/collection-metadata.js');
+                const lockedLorebooks = getChatLockedCollections(chatId).filter(id => id.startsWith('vf_lorebook_'));
+
+                if (lockedLorebooks.length === 0) {
+                    $checkbox.prop('checked', false);
+                    toastr.info('Lock a lorebook to this chat in Database Browser → Collection Settings');
+                    openDatabaseBrowser();
+                    return;
+                }
             }
 
             settings.enabled_world_info = enabled;

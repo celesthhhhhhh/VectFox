@@ -126,6 +126,11 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
     const deduplicatedEntries = deduplicateWithActiveEntries(semanticEntries, activeEntries);
 
     console.log(`VectFox: Found ${deduplicatedEntries.length} semantic WI entries to activate`);
+
+    if (settings.world_info_retrieval_popup && deduplicatedEntries.length > 0) {
+        try { toastr.info(`Semantic WI: retrieved ${deduplicatedEntries.length} lorebook entry/entries`, 'VectFox'); } catch (_) {}
+    }
+
     return deduplicatedEntries;
 }
 

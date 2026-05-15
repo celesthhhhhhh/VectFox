@@ -733,6 +733,14 @@ export function renderSettings(containerId, settings, callbacks) {
                                             <input id="VectFox_max_entries" type="number" class="vectfox-input" min="1" max="9999" />
                                         </div>
                                     </div>
+
+                                    <div class="vectfox-form-group" style="margin-top:10px;">
+                                        <label class="checkbox_label" for="VectFox_world_info_retrieval_popup">
+                                            <input type="checkbox" id="VectFox_world_info_retrieval_popup" />
+                                            <span>Popup: show when lorebook entries are retrieved</span>
+                                        </label>
+                                        <small class="VectFox_hint">Show a notification toast each time semantic WI activation retrieves lorebook entries.</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -754,7 +762,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <input type="checkbox" id="VectFox_autosync_enabled" />
                                 <span>Enable Auto-Sync</span>
                             </label>
-                            <small class="VectFox_hint">Auto-Sync new messages (requires initial vectorization)</small>
+                            <small id="VectFox_autosync_hint" class="VectFox_hint">Auto-Sync new messages (requires initial vectorization)</small>
                             <div id="VectFox_autosync_status" style="margin-top: 6px; font-size: 0.82em;"></div>
 
                             <!-- Collection lock moved to Database Browser (per-collection settings) -->
@@ -1728,8 +1736,10 @@ export async function refreshAutoSyncCheckbox(settings) {
 
     $checkbox.prop('checked', false);
 
+    const $hint = $('#VectFox_autosync_hint');
     const chatId = getCurrentChatId();
     if (!chatId) {
+        $hint.show();
         $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> No chat loaded');
         return;
     }
@@ -1739,12 +1749,14 @@ export async function refreshAutoSyncCheckbox(settings) {
     const eventbaseId = lockedIds.find(id => id.startsWith('vf_eventbase_'));
 
     if (!eventbaseId) {
+        $hint.show();
         $status.html('<i class="fa-solid fa-circle-exclamation" style="color: var(--warning-color, #f39c12);"></i> Not initialized — vectorize chat first');
         return;
     }
 
     const isEnabled = isCollectionAutoSyncEnabled(eventbaseId);
     $checkbox.prop('checked', isEnabled);
+    $hint.hide();
     $status.html('<i class="fa-solid fa-circle-check" style="color: var(--success-color, #27ae60);"></i> Ready');
 }
 
@@ -2838,6 +2850,14 @@ function bindSettingsEvents(settings, callbacks) {
             const value = parseInt($(this).val());
             const safeValue = isNaN(value) ? 3 : Math.max(1, Math.min(10, value));
             settings.world_info_query_depth = safeValue;
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    $('#VectFox_world_info_retrieval_popup')
+        .prop('checked', settings.world_info_retrieval_popup === true)
+        .on('change', function() {
+            settings.world_info_retrieval_popup = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

@@ -160,6 +160,7 @@ const defaultSettings = {
     world_info_threshold: 0.3,          // Score threshold for WI activation
     world_info_top_k: 3,                // Max entries to activate per lorebook
     world_info_query_depth: 3,          // Recent messages to use for query
+    world_info_retrieval_popup: false,  // Show popup toast when WI lorebook entries are retrieved
 
     // Keyword Extraction
     custom_stopwords: '',               // Custom stopwords (comma-separated)

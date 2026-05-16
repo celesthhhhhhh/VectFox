@@ -426,6 +426,238 @@ export function getDefaultSummarizePrompt(mode) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// EVENTBASE EXTRACTION PROMPT
+// ─────────────────────────────────────────────────────────────────────────────
+// The extraction prompt is sent to the LLM for every chat window during
+// EventBase ingestion. It tells the LLM to return a JSON array of structured
+// event records. Mostly the same across languages — what varies is:
+//   1. The LANGUAGE rule (which language to write string fields in)
+//   2. The VALID OUTPUT EXAMPLES (shown in the target language so the LLM
+//      anchors on the right script)
+// Everything else (event_type list, importance guide, schema fields) stays
+// shared since it's instructional metadata for the LLM, not output.
+
+// ── Shared TOP: intro + ABSOLUTE RULES heading ───────────────────────────────
+const _EXTRACTION_TOP =
+`You are a story event archivist for a roleplay session. Extract ONLY narratively significant story events from the excerpt below.
+
+=========================
+ABSOLUTE RULES (DO NOT BREAK)
+=========================
+`;
+
+// ── Per-language LANGUAGE rule (Rule 1) ──────────────────────────────────────
+const _EXTRACTION_LANG_INTL =
+`1. LANGUAGE — MANDATORY:
+   - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in English.
+   - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - Violating this rule makes the output invalid.
+
+`;
+
+const _EXTRACTION_LANG_JIEBA =
+`1. LANGUAGE — MANDATORY:
+   - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in Simplified Chinese (简体中文).
+   - DO NOT convert to Traditional Chinese.
+   - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - Violating this rule makes the output invalid.
+
+`;
+
+const _EXTRACTION_LANG_JIEBA_TW =
+`1. LANGUAGE — MANDATORY:
+   - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in Traditional Chinese (繁體中文).
+   - DO NOT convert to Simplified Chinese.
+   - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - Violating this rule makes the output invalid.
+
+`;
+
+const _EXTRACTION_LANG_TINY_SEGMENTER =
+`1. LANGUAGE — MANDATORY:
+   - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in Japanese (日本語).
+   - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - Violating this rule makes the output invalid.
+
+`;
+
+const _EXTRACTION_LANG_KOREAN =
+`1. LANGUAGE — MANDATORY:
+   - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in Korean (한국어).
+   - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - Violating this rule makes the output invalid.
+
+`;
+
+const _EXTRACTION_LANG_OTHERS =
+`1. LANGUAGE — MANDATORY:
+   - Detect the dominant language of the excerpt. All string fields MUST be in THAT language.
+   - Do NOT default to English unless the excerpt is in English.
+   - If the excerpt mixes languages, follow the dominant language of each individual field's source content.
+   - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - Violating this rule makes the output invalid.
+
+`;
+
+// ── Shared middle: Rules 2, 3, and full OUTPUT SCHEMA ────────────────────────
+// This is instructional text for the LLM, not output content, so it stays in
+// English regardless of story language. The schema fields are also defined here
+// since their structure is identical across languages.
+const _EXTRACTION_RULES_BODY =
+`2. EVENT COUNT:
+   - Return AT MOST {{maxCount}} events.
+   - Return as many real events as actually occurred — do not artificially cap or pad.
+   - Zero events ([]) is correct only when the excerpt is pure filler with no character interaction, relationship movement, world information, or narrative consequence whatsoever.
+   - DO NOT invent events. DO NOT duplicate the same event under different names.
+
+3. WHEN TO RETURN ZERO EVENTS ([]):
+   Return [] if BOTH of the following are true:
+   a) The excerpt does not contain any event that maps to the defined event_type list above.
+   OR
+   b) It does map to an event_type, but the event has no lasting consequence worth retrieving later.
+
+   THE ONE-WEEK TEST — ask yourself: "If someone reads this story one week from now, would knowing this event change their understanding of the characters, world, or plot?"
+   - If YES → extract it.
+   - If NO → skip it.
+
+   Examples that FAIL the test (return []):
+   - The party has dinner at home with no plot discussion.
+   - The main character teases the heroine playfully with no consequence.
+   - Characters chat about the weather or daily routine.
+
+   Examples that PASS the test (extract):
+   - Main character pays for the heroine's freedom — her status permanently changed. Money involved is a concrete detail worth remembering.
+   - A promise or oath is made — it shapes future obligations.
+   - A character's inner fear or secret is revealed — it reframes past or future behaviour.
+
+   Sexual / intimate scenes: return [] UNLESS the scene contains a confession, promise, relationship change, revelation, or any narrative consequence that would still matter one week later. The intimacy itself is not the event — extract only what changes.
+
+=========================
+OUTPUT SCHEMA
+=========================
+Return ONLY a valid JSON array. No prose. No markdown. No code fences.
+
+Each event object MUST have these fields:
+- event_type: one of [main_quest_update, side_quest_update, combat, travel, discovery, dialogue_significant, relationship_change, character_introduction, character_state_change, item_acquired, item_lost, faction_change, location_change, revelation, promise_or_oath, betrayal, death, other]
+- importance: integer 1-10. Use the one-week test: higher = more likely to matter one week later.
+  Anchor your score against these per-type guidelines:
+
+  PERMANENT / IRREVERSIBLE changes score highest — they reshape the story permanently.
+  EPHEMERAL moments score lowest — they happened but leave no lasting trace.
+
+  main_quest_update:    7-10 (major milestone/turning point), 4-6 (incremental progress)
+  side_quest_update:    3-6  (completion or key step), 1-3 (minor update)
+  combat:               2-4  (routine fight, won or lost), 6-8 (boss or pivotal battle),
+                        9-10 (combat that kills a major character or changes the story permanently)
+  travel:               1-2  (moving between locations), 3-5 (arrival at a key destination that opens new story)
+  discovery:            3-5  (minor lore or clue), 6-8 (world-changing revelation or hidden truth uncovered)
+  dialogue_significant: 3-5  (key conversation, character insight), 6-8 (confession, confrontation, defining moment)
+  relationship_change:  5-7  (gradual shift in trust/bond), 8-10 (permanent status change — e.g. freed from slavery, marriage, sworn enemy)
+  character_introduction: 3-5 (new named character joins), 6-8 (introduction of a major antagonist or pivotal NPC)
+  character_state_change: 4-6 (injury, level-up, mood shift), 7-9 (permanent transformation — power gained, identity revealed, disability)
+  item_acquired:        1-3  (common item), 5-7 (plot-critical item or unique artifact)
+  item_lost:            1-3  (minor loss), 6-8 (loss of a plot-critical item or irreplaceable object)
+  faction_change:       6-9  (political/social alignment shifted — alliances broken or formed)
+  location_change:      1-2  (routine travel), 3-5 (arrival at a narratively important new location)
+  revelation:           6-8  (important hidden truth exposed), 9-10 (revelation that fundamentally reframes the story or a character)
+  promise_or_oath:      5-7  (significant promise between characters), 8-9 (binding oath with major consequences)
+  betrayal:             7-10 (trust broken — scale with how close the relationship was and how severe the consequences)
+  death:                6-8  (minor/enemy character), 9-10 (death of a named ally or major character)
+  other:                1-4  (flavor worth remembering), 5-7 (genuinely significant but doesn't fit other types)
+- summary: 2-8 dense sentences capturing WHO did WHAT, the key detail, the emotional/narrative impact, and any important consequences or reactions. SAME LANGUAGE AS EXCERPT (see Rule 1)
+- cause: short explanation of why it happened, SAME LANGUAGE AS EXCERPT (may be "")
+- result: outcome / state change, SAME LANGUAGE AS EXCERPT (may be "")
+- characters: array of proper-noun names, EXACT ORIGINAL SCRIPT
+- locations: array of strings, EXACT ORIGINAL SCRIPT
+- factions: array of strings, EXACT ORIGINAL SCRIPT
+- DateTime: ISO 8601 string (e.g., "2024-01-01T12:00:00Z") representing when the event occurred in the story timeline, if it can be determined from the excerpt; otherwise omit or set to null.
+- items: array of strings, EXACT ORIGINAL SCRIPT
+- concepts: array of strings, SAME LANGUAGE AS EXCERPT
+- keywords: array of 8-15 strings, SAME LANGUAGE AS EXCERPT. Search aids used by a keyword retrieval engine — be GENEROUS and INCLUSIVE. Include every distinctive term that a future query about this event might use: key actions/verbs, distinctive objects/items, emotional or thematic tags, unique concepts, and any rare/specific noun that isn't generic filler. DO NOT pad with generic words. Quality matters but err on the side of MORE rather than fewer — sparse keywords cause retrieval misses. CRITICAL: keywords MUST be in the same language as the excerpt (see Rule 1). NEVER output a different language in this field.
+- open_threads: array of strings, SAME LANGUAGE AS EXCERPT (unresolved questions/promises)
+- should_persist: boolean (false for ephemeral moments unlikely to matter later)
+
+=========================
+VALID OUTPUT EXAMPLES
+=========================
+Zero events (filler scene):
+[]
+
+`;
+
+// ── Per-language EXAMPLES (one localized example per variant) ────────────────
+const _EXTRACTION_EXAMPLES_INTL =
+`One event (English excerpt):
+[{"event_type":"relationship_change","importance":7,"summary":"Aria takes the blame for Leon's mistake in front of the commander, shielding him from punishment at personal cost. Leon is visibly shaken by her sacrifice and vows to repay her.","cause":"Leon froze during the mission briefing and Aria covered for him without hesitation.","result":"Leon feels indebted to Aria; their dynamic shifts from rivalry to fragile trust.","characters":["Aria","Leon","Commander Voss"],"locations":["Command Tent"],"factions":["Iron Company"],"DateTime":null,"items":[],"concepts":["sacrifice","debt","trust"],"keywords":["blame","shield","punishment","mistake","sacrifice","debt","trust","rivalry","vow","repay","commander","mission briefing","froze","covered"],"open_threads":["Will Leon repay Aria?","How will Commander Voss react if he finds out?"],"should_persist":true}]
+
+`;
+
+const _EXTRACTION_EXAMPLES_JIEBA =
+`One event (Simplified Chinese excerpt):
+[{"event_type":"promise_or_oath","importance":9,"summary":"师傅承诺帮梅拉寻找失踪的父亲暗影之翼。","cause":"梅拉在房间中央哭着请求帮助。","result":"寻找暗影之翼成为队伍的核心目标。","characters":["梅拉","师父"],"locations":["星月绿洲顶楼公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失踪的父亲"],"keywords":["暗影之翼","寻找父亲","承诺","哭泣","请求","失踪","核心目标","队伍任务","誓言","亲情"],"open_threads":["确定暗影之翼是生是死"],"should_persist":true}]
+
+`;
+
+const _EXTRACTION_EXAMPLES_JIEBA_TW =
+`One event (Traditional Chinese excerpt):
+[{"event_type":"promise_or_oath","importance":9,"summary":"師傅承諾幫梅拉尋找失蹤的父親暗影之翼。","cause":"梅拉在房間中央哭著請求幫助。","result":"尋找暗影之翼成為隊伍的核心目標。","characters":["梅拉","師父"],"locations":["星月綠洲頂樓公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失蹤的父親"],"keywords":["暗影之翼","尋找父親","承諾","哭泣","請求","失蹤","核心目標","隊伍任務","誓言","親情"],"open_threads":["確定暗影之翼是生是死"],"should_persist":true}]
+
+`;
+
+const _EXTRACTION_EXAMPLES_TINY_SEGMENTER =
+`One event (Japanese excerpt):
+[{"event_type":"promise_or_oath","importance":9,"summary":"師匠はメイラの行方不明の父・影の翼を見つけることを約束した。","cause":"メイラが部屋の中央で泣きながら助けを求めた。","result":"影の翼の捜索がパーティーの中心目標となった。","characters":["メイラ","師匠"],"locations":["星月オアシス最上階アパート"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["行方不明の父"],"keywords":["影の翼","父の捜索","約束","泣く","懇願","行方不明","中心目標","パーティーの任務","誓い","親子の絆"],"open_threads":["影の翼の生死を確認する"],"should_persist":true}]
+
+`;
+
+const _EXTRACTION_EXAMPLES_KOREAN =
+`One event (Korean excerpt):
+[{"event_type":"promise_or_oath","importance":9,"summary":"스승은 메이라의 실종된 아버지 그림자의 날개를 찾아주기로 약속했다.","cause":"메이라가 방 한가운데서 울며 도움을 청했다.","result":"그림자의 날개를 찾는 것이 파티의 핵심 목표가 되었다.","characters":["메이라","스승"],"locations":["성월 오아시스 옥상 아파트"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["실종된 아버지"],"keywords":["그림자의 날개","아버지 찾기","약속","울음","간청","실종","핵심 목표","파티 임무","맹세","부녀의 정"],"open_threads":["그림자의 날개의 생사 확인"],"should_persist":true}]
+
+`;
+
+// "others" reuses the English example with a notice — the LLM will follow the
+// LANGUAGE rule from this variant's _EXTRACTION_LANG block to write its own
+// output in whatever language the excerpt actually uses.
+const _EXTRACTION_EXAMPLES_OTHERS =
+`One event (English excerpt — apply the same field structure in your detected language):
+[{"event_type":"relationship_change","importance":7,"summary":"Aria takes the blame for Leon's mistake in front of the commander, shielding him from punishment at personal cost. Leon is visibly shaken by her sacrifice and vows to repay her.","cause":"Leon froze during the mission briefing and Aria covered for him without hesitation.","result":"Leon feels indebted to Aria; their dynamic shifts from rivalry to fragile trust.","characters":["Aria","Leon","Commander Voss"],"locations":["Command Tent"],"factions":["Iron Company"],"DateTime":null,"items":[],"concepts":["sacrifice","debt","trust"],"keywords":["blame","shield","punishment","mistake","sacrifice","debt","trust","rivalry","vow","repay","commander","mission briefing","froze","covered"],"open_threads":["Will Leon repay Aria?","How will Commander Voss react if he finds out?"],"should_persist":true}]
+
+`;
+
+// ── Shared FOOTER: the excerpt slot ──────────────────────────────────────────
+const _EXTRACTION_FOOTER =
+`=========================
+EXCERPT
+=========================
+{{text}}`;
+
+const _EXTRACTION_PROMPTS = {
+    intl:           _EXTRACTION_TOP + _EXTRACTION_LANG_INTL           + _EXTRACTION_RULES_BODY + _EXTRACTION_EXAMPLES_INTL           + _EXTRACTION_FOOTER,
+    jieba:          _EXTRACTION_TOP + _EXTRACTION_LANG_JIEBA          + _EXTRACTION_RULES_BODY + _EXTRACTION_EXAMPLES_JIEBA          + _EXTRACTION_FOOTER,
+    jieba_tw:       _EXTRACTION_TOP + _EXTRACTION_LANG_JIEBA_TW       + _EXTRACTION_RULES_BODY + _EXTRACTION_EXAMPLES_JIEBA_TW       + _EXTRACTION_FOOTER,
+    tiny_segmenter: _EXTRACTION_TOP + _EXTRACTION_LANG_TINY_SEGMENTER + _EXTRACTION_RULES_BODY + _EXTRACTION_EXAMPLES_TINY_SEGMENTER + _EXTRACTION_FOOTER,
+    korean:         _EXTRACTION_TOP + _EXTRACTION_LANG_KOREAN         + _EXTRACTION_RULES_BODY + _EXTRACTION_EXAMPLES_KOREAN         + _EXTRACTION_FOOTER,
+    others:         _EXTRACTION_TOP + _EXTRACTION_LANG_OTHERS         + _EXTRACTION_RULES_BODY + _EXTRACTION_EXAMPLES_OTHERS         + _EXTRACTION_FOOTER,
+};
+
+/**
+ * Returns the EventBase extraction prompt template for the given story
+ * language mode. The template still contains the {{text}} and {{maxCount}}
+ * placeholders — buildExtractionPrompt() in eventbase-schema.js substitutes
+ * those before sending to the LLM.
+ *
+ * Falls back to the English (intl) prompt for unknown modes.
+ *
+ * @param {string} [mode] - Value from CJK_TOKENIZER_MODES (e.g. 'jieba_tw')
+ * @returns {string}
+ */
+export function getEventBaseExtractionPrompt(mode) {
+    return _EXTRACTION_PROMPTS[mode] ?? _EXTRACTION_PROMPTS.intl;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PLANNER USER MESSAGE BUILDER
 // ─────────────────────────────────────────────────────────────────────────────
 

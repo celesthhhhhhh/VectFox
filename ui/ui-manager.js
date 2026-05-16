@@ -3442,11 +3442,16 @@ function bindSettingsEvents(settings, callbacks) {
         toastr.success('Re-rank weights reset to defaults');
     });
 
-    // Custom extraction prompt textarea — pre-fill with default if nothing saved
+    // Custom extraction prompt textarea — pre-fill with default if nothing saved.
+    // The "default" is now localized via CJK Tokenizer Mode (intl / jieba /
+    // jieba_tw / tiny_segmenter / korean / others). When no custom prompt has
+    // been saved, we show the localized built-in so the user sees the variant
+    // that will actually be sent at extraction time.
     (async () => {
-        const { DEFAULT_EXTRACTION_PROMPT } = await import('../core/eventbase-schema.js');
+        const { getEventBaseExtractionPrompt } = await import('../core/prompts-i18n.js');
         const saved = settings.eventbase_custom_prompt || '';
-        $('#VectFox_eventbase_custom_prompt').val(saved || DEFAULT_EXTRACTION_PROMPT);
+        const mode = settings.cjk_tokenizer_mode || 'intl';
+        $('#VectFox_eventbase_custom_prompt').val(saved || getEventBaseExtractionPrompt(mode));
     })();
 
     $('#VectFox_eventbase_custom_prompt').on('input', function() {
@@ -3455,14 +3460,26 @@ function bindSettingsEvents(settings, callbacks) {
         saveSettingsDebounced();
     });
 
-    // Reset prompt to built-in default
+    // Reset prompt to built-in default for the current CJK Tokenizer Mode.
     $('#VectFox_eventbase_prompt_reset').on('click', async function() {
-        const { DEFAULT_EXTRACTION_PROMPT } = await import('../core/eventbase-schema.js');
+        const { getEventBaseExtractionPrompt } = await import('../core/prompts-i18n.js');
+        const mode = settings.cjk_tokenizer_mode || 'intl';
         settings.eventbase_custom_prompt = '';
-        $('#VectFox_eventbase_custom_prompt').val(DEFAULT_EXTRACTION_PROMPT);
+        $('#VectFox_eventbase_custom_prompt').val(getEventBaseExtractionPrompt(mode));
         Object.assign(extension_settings.vectfox, settings);
         saveSettingsDebounced();
-        toastr.success('Extraction prompt reset to default', 'EventBase');
+        toastr.success(`Extraction prompt reset to ${mode} default`, 'EventBase');
+    });
+
+    // When the user changes CJK Tokenizer Mode AND has no custom prompt saved,
+    // re-fill the textarea with the new mode's localized default so the
+    // displayed text matches what extraction will actually use. If the user
+    // has a custom prompt, leave it alone — they explicitly customized it.
+    $('#VectFox_cjk_tokenizer_mode').on('change.eventbasePromptSync', async function() {
+        if (settings.eventbase_custom_prompt && settings.eventbase_custom_prompt.trim()) return;
+        const { getEventBaseExtractionPrompt } = await import('../core/prompts-i18n.js');
+        const mode = $(this).val() || 'intl';
+        $('#VectFox_eventbase_custom_prompt').val(getEventBaseExtractionPrompt(mode));
     });
 
     // ── End EventBase settings ───────────────────────────────────────────────

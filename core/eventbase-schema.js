@@ -4,8 +4,14 @@
  * ============================================================================
  * Canonical schema constants, validator, and embed-text builder for EventBase.
  * All extraction, storage, and retrieval depend on this single module.
+ *
+ * The LLM extraction prompt itself lives in core/prompts-i18n.js
+ * (`getEventBaseExtractionPrompt(mode)`), which has per-language variants
+ * driven by the CJK Tokenizer Mode setting. buildExtractionPrompt() below
+ * just selects the right variant and substitutes {{text}} / {{maxCount}}.
  * ============================================================================
  */
+import { getEventBaseExtractionPrompt } from './prompts-i18n.js';
 
 /**
  * Controlled vocabulary for event_type field.
@@ -211,127 +217,37 @@ export function buildEmbedText(event) {
 // ---------------------------------------------------------------------------
 
 /**
- * The built-in default extraction prompt template.
- * Use {{maxCount}} and {{text}} as placeholders — they are replaced at runtime.
- * Exposed so the UI can pre-fill the custom prompt textarea with this value.
+ * Deprecated direct export — points at the English (intl) variant for any
+ * importers that haven't migrated. New callers should pass the user's
+ * cjk_tokenizer_mode through buildExtractionPrompt() or call
+ * getEventBaseExtractionPrompt(mode) from prompts-i18n.js directly.
  */
-export const DEFAULT_EXTRACTION_PROMPT = `You are a story event archivist for a roleplay session. Extract ONLY narratively significant story events from the excerpt below.
+export const DEFAULT_EXTRACTION_PROMPT = getEventBaseExtractionPrompt('intl');
 
-=========================
-ABSOLUTE RULES (DO NOT BREAK)
-=========================
-1. LANGUAGE MATCH — MANDATORY:
-   - You MUST write every string field (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) in the EXACT SAME LANGUAGE AND SCRIPT as the excerpt.
-   - If the excerpt is in Traditional Chinese (繁體中文), write in Traditional Chinese. Do not convert to Simplified.
-   - If the excerpt is in Simplified Chinese (简体中文), write in Simplified Chinese. Do not convert to Traditional.
-   - If the excerpt is in Japanese, write in Japanese.
-   - If the excerpt is in Korean, write in Korean.
-   - If the excerpt is in English, write in English.
-   - If the excerpt mixes languages, follow the dominant language of each individual field's source content.
-   - DO NOT translate. DO NOT romanize. DO NOT transliterate proper nouns.
-   - Violating this rule makes the output invalid.
-
-2. EVENT COUNT:
-   - Return AT MOST {{maxCount}} events.
-   - Return as many real events as actually occurred — do not artificially cap or pad.
-   - Zero events ([]) is correct only when the excerpt is pure filler with no character interaction, relationship movement, world information, or narrative consequence whatsoever.
-   - DO NOT invent events. DO NOT duplicate the same event under different names.
-
-3. WHEN TO RETURN ZERO EVENTS ([]):
-   Return [] if BOTH of the following are true:
-   a) The excerpt does not contain any event that maps to the defined event_type list above.
-   OR
-   b) It does map to an event_type, but the event has no lasting consequence worth retrieving later.
-
-   THE ONE-WEEK TEST — ask yourself: "If someone reads this story one week from now, would knowing this event change their understanding of the characters, world, or plot?"
-   - If YES → extract it.
-   - If NO → skip it.
-
-   Examples that FAIL the test (return []):
-   - The party has dinner at home with no plot discussion.
-   - The main character teases the heroine playfully with no consequence.
-   - Characters chat about the weather or daily routine.
-
-   Examples that PASS the test (extract):
-   - Main character pays for the heroine's freedom (贖身) — her status permanently changed. And money involved is a concrete detail worth remembering.
-   - A promise or oath is made — it shapes future obligations.
-   - A character's inner fear or secret is revealed — it reframes past or future behaviour.
-
-   Sexual / intimate scenes: return [] UNLESS the scene contains a confession, promise, relationship change, revelation, or any narrative consequence that would still matter one week later. The intimacy itself is not the event — extract only what changes.
-
-=========================
-OUTPUT SCHEMA
-=========================
-Return ONLY a valid JSON array. No prose. No markdown. No code fences.
-
-Each event object MUST have these fields:
-- event_type: one of [main_quest_update, side_quest_update, combat, travel, discovery, dialogue_significant, relationship_change, character_introduction, character_state_change, item_acquired, item_lost, faction_change, location_change, revelation, promise_or_oath, betrayal, death, other]
-- importance: integer 1-10. Use the one-week test: higher = more likely to matter one week later.
-  Anchor your score against these per-type guidelines:
-
-  PERMANENT / IRREVERSIBLE changes score highest — they reshape the story permanently.
-  EPHEMERAL moments score lowest — they happened but leave no lasting trace.
-
-  main_quest_update:    7-10 (major milestone/turning point), 4-6 (incremental progress)
-  side_quest_update:    3-6  (completion or key step), 1-3 (minor update)
-  combat:               2-4  (routine fight, won or lost), 6-8 (boss or pivotal battle),
-                        9-10 (combat that kills a major character or changes the story permanently)
-  travel:               1-2  (moving between locations), 3-5 (arrival at a key destination that opens new story)
-  discovery:            3-5  (minor lore or clue), 6-8 (world-changing revelation or hidden truth uncovered)
-  dialogue_significant: 3-5  (key conversation, character insight), 6-8 (confession, confrontation, defining moment)
-  relationship_change:  5-7  (gradual shift in trust/bond), 8-10 (permanent status change — e.g. freed from slavery, marriage, sworn enemy)
-  character_introduction: 3-5 (new named character joins), 6-8 (introduction of a major antagonist or pivotal NPC)
-  character_state_change: 4-6 (injury, level-up, mood shift), 7-9 (permanent transformation — power gained, identity revealed, disability)
-  item_acquired:        1-3  (common item), 5-7 (plot-critical item or unique artifact)
-  item_lost:            1-3  (minor loss), 6-8 (loss of a plot-critical item or irreplaceable object)
-  faction_change:       6-9  (political/social alignment shifted — alliances broken or formed)
-  location_change:      1-2  (routine travel), 3-5 (arrival at a narratively important new location)
-  revelation:           6-8  (important hidden truth exposed), 9-10 (revelation that fundamentally reframes the story or a character)
-  promise_or_oath:      5-7  (significant promise between characters), 8-9 (binding oath with major consequences)
-  betrayal:             7-10 (trust broken — scale with how close the relationship was and how severe the consequences)
-  death:                6-8  (minor/enemy character), 9-10 (death of a named ally or major character)
-  other:                1-4  (flavor worth remembering), 5-7 (genuinely significant but doesn't fit other types)
-- summary: 2-8 dense sentences capturing WHO did WHAT, the key detail, the emotional/narrative impact, and any important consequences or reactions. SAME LANGUAGE AS EXCERPT (see Rule 1)
-- cause: short explanation of why it happened, SAME LANGUAGE AS EXCERPT (may be "")
-- result: outcome / state change, SAME LANGUAGE AS EXCERPT (may be "")
-- characters: array of proper-noun names, EXACT ORIGINAL SCRIPT
-- locations: array of strings, EXACT ORIGINAL SCRIPT
-- factions: array of strings, EXACT ORIGINAL SCRIPT
-- DateTime: in the format of ISO 8601 string (e.g., "2024-01-01T12:00:00Z") representing when the event occurred in the story timeline, if it can be determined from the excerpt; otherwise, this field can be omitted or set to null. 
-- items: array of strings, EXACT ORIGINAL SCRIPT
-- concepts: array of strings, SAME LANGUAGE AS EXCERPT
-- keywords: array of 8-15 strings, SAME LANGUAGE AS EXCERPT. These are search aids used by a keyword retrieval engine — be GENEROUS and INCLUSIVE. Include every distinctive term that a future query about this event might use: key actions/verbs (e.g. "ransom"/"oath"/"betray" for English, 贖身/誓言/背叛 for Chinese), distinctive objects/items mentioned, emotional or thematic tags (e.g. "breakdown"/"loyalty"/"fear" for English, 崩潰/忠誠/恐懼 for Chinese), unique concepts, and any rare/specific noun that isn't generic filler. DO NOT pad with generic words (the/and/then/我/你). Quality matters but err on the side of MORE rather than fewer — sparse keywords cause retrieval misses. CRITICAL: if the excerpt is in English, every keyword MUST be in English. NEVER output Chinese, Japanese, or any other language in this field when the excerpt is in English.
-- open_threads: array of strings, SAME LANGUAGE AS EXCERPT (unresolved questions/promises)
-- should_persist: boolean (false for ephemeral moments unlikely to matter later)
-
-=========================
-VALID OUTPUT EXAMPLES
-=========================
-Zero events (filler scene):
-[]
-
-One event (English excerpt):
-[{"event_type":"relationship_change","importance":7,"summary":"Aria takes the blame for Leon's mistake in front of the commander, shielding him from punishment at personal cost. Leon is visibly shaken by her sacrifice and vows to repay her.","cause":"Leon froze during the mission briefing and Aria covered for him without hesitation.","result":"Leon feels indebted to Aria; their dynamic shifts from rivalry to fragile trust.","characters":["Aria","Leon","Commander Voss"],"locations":["Command Tent"],"factions":["Iron Company"],"DateTime":null,"items":[],"concepts":["sacrifice","debt","trust"],"keywords":["blame","shield","punishment","mistake","sacrifice","debt","trust","rivalry","vow","repay","commander","mission briefing","froze","covered"],"open_threads":["Will Leon repay Aria?","How will Commander Voss react if he finds out?"],"should_persist":true}]
-
-One event (Traditional Chinese excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"師傅承諾幫梅拉尋找失蹤的父親暗影之翼。","cause":"梅拉在房間中央哭著請求幫助。","result":"尋找暗影之翼成為隊伍的核心目標。","characters":["梅拉","師父"],"locations":["星月綠洲頂樓公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失蹤的父親"],"keywords":["暗影之翼","尋找父親","承諾","哭泣","請求","失蹤","核心目標","隊伍任務","誓言","親情"],"open_threads":["確定暗影之翼是生是死"],"should_persist":true}]
-
-=========================
-EXCERPT
-=========================
-{{text}}`;
 
 /**
  * Builds the LLM extraction prompt for a given excerpt.
- * If settings.eventbase_custom_prompt is non-empty, it is used as the template
- * with `{{text}}` and `{{maxCount}}` replaced. Otherwise the built-in default is used.
+ *
+ * Template selection (first non-empty wins):
+ *   1. `customPrompt` — user-edited override from settings.eventbase_custom_prompt
+ *   2. `getEventBaseExtractionPrompt(mode)` — built-in default localized to the
+ *      user's CJK Tokenizer Mode (defaults to 'intl' / English when mode is
+ *      unset or unrecognized)
+ *
+ * Then `{{text}}` and `{{maxCount}}` are substituted before returning.
+ *
  * @param {string} text  - The chat excerpt (already joined messages)
  * @param {number} maxCount - Max events to return (eventbase_max_events_per_window)
  * @param {string} [customPrompt] - Optional custom prompt template from settings
+ * @param {string} [mode] - CJK Tokenizer Mode (intl / jieba / jieba_tw /
+ *                          tiny_segmenter / korean / others). Ignored when
+ *                          customPrompt is provided.
  * @returns {string}
  */
-export function buildExtractionPrompt(text, maxCount, customPrompt = '') {
-    const template = (customPrompt && customPrompt.trim()) ? customPrompt : DEFAULT_EXTRACTION_PROMPT;
+export function buildExtractionPrompt(text, maxCount, customPrompt = '', mode = 'intl') {
+    const template = (customPrompt && customPrompt.trim())
+        ? customPrompt
+        : getEventBaseExtractionPrompt(mode);
     return template
         .replace(/\{\{maxCount\}\}/g, String(maxCount))
         .replace(/\{\{text\}\}/g, text);

@@ -458,7 +458,12 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     // Detect dominant script BEFORE building prompt so we can inject an explicit language hint
     const excerptScript = _detectScript(excerptText);
     const languageHint = _inferLanguageHint(excerptText);
-    let basePrompt = buildExtractionPrompt(excerptText, maxCount, settings.eventbase_custom_prompt || '');
+    let basePrompt = buildExtractionPrompt(
+        excerptText,
+        maxCount,
+        settings.eventbase_custom_prompt || '',
+        settings.cjk_tokenizer_mode || 'intl',
+    );
     if (languageHint) {
         basePrompt = `DETECTED EXCERPT LANGUAGE: ${languageHint}. You MUST write ALL string fields in that language — no exceptions.\n\n${basePrompt}`;
     }

@@ -469,12 +469,11 @@ export function renderSettings(containerId, settings, callbacks) {
 
                                     <label class="checkbox_label" style="margin-top: 12px;">
                                         <input type="checkbox" id="VectFox_bm25_use_corpus_idf" />
-                                        <span>Corpus-wide IDF weights (BM25)</span>
+                                        <span>Corpus-wide IDF for BM25 scoring &nbsp;<small style="opacity:0.7;">(recommended — default ON)</small></span>
                                     </label>
                                     <small class="VectFox_hint">
-                                        BM25 IDF weights are computed once per session over every chunk in the collection (vs. just the ANN top-K when OFF). Keeps rare-term scoring accurate.<br>
-                                        <strong>This does NOT search the full corpus.</strong> BM25 still only scores the ANN top-K candidates the vector layer surfaced — turning this ON gives you better <em>weights</em> for those candidates, not more <em>candidates</em>. For actual full-corpus retrieval, use the Qdrant backend (path A3).<br>
-                                        Cost: ~700&nbsp;ms cold build per collection per session (cached after); ~400&nbsp;KB memory per collection. Applies to client-side BM25 paths (A1/A2). Default: <strong>ON</strong>.
+                                        <strong>What it does:</strong> Makes BM25 use rarity statistics (IDF weights) computed over <em>every</em> chunk in the collection, so rare keywords keep their discriminative power. Builds once per session per collection and caches in memory. <br><br>
+                                        <strong>What it does NOT do:</strong> It does <em>not</em> search the full corpus. BM25 still only scores the candidates the vector layer surfaced — this just gives those candidates better <em>scoring weights</em>, not more candidates. For true full-corpus retrieval, switch to the Qdrant backend (A3 path). Disable if comptuer slow down.<br><br>
                                     </small>
                                 </div>
 

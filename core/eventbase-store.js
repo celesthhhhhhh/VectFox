@@ -370,7 +370,14 @@ async function _resolveEventBaseCollectionIdForRead(settings, chatUUID) {
     const backend = getRegistryBackend(settings?.vector_backend);
     const registered = findEventBaseCollectionIdsForChat(uuid, backend);
 
-    for (const { collectionId } of registered) {
+    for (const { collectionId, registryKey } of registered) {
+        // Only probe collections that match the current backend.
+        // Cross-backend probing causes the similharity plugin's getIndex() to
+        // auto-create empty vectra directories for qdrant-named collections (and
+        // vice versa), producing ghost 0-chunk entries in the DB Browser.
+        const { backend: ownBackend } = parseRegistryKey(registryKey);
+        if (ownBackend && ownBackend !== backend) continue;
+
         try {
             const hashes = await getSavedHashes(collectionId, settings);
             if (hashes?.length > 0) return collectionId;

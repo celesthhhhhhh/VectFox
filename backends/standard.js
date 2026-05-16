@@ -277,18 +277,50 @@ export class StandardBackend extends VectorBackend {
                 ...providerParams,
             };
 
+            // DEBUG: capture body size and per-field breakdown so we can pin
+            // down where a runaway-large insert body is coming from.
+            const bodyJson = JSON.stringify(payload);
+            const sizeKB = (bodyJson.length / 1024).toFixed(1);
+            const sizeMB = (bodyJson.length / (1024 * 1024)).toFixed(2);
+            const firstItem = payload.items?.[0];
+            const fieldSizes = firstItem
+                ? Object.fromEntries(
+                    Object.entries(firstItem).map(([k, v]) => [
+                        k,
+                        JSON.stringify(v ?? null).length,
+                    ])
+                )
+                : {};
+            const metadataFieldSizes = firstItem?.metadata
+                ? Object.fromEntries(
+                    Object.entries(firstItem.metadata).map(([k, v]) => [
+                        k,
+                        JSON.stringify(v ?? null).length,
+                    ])
+                )
+                : {};
+            console.log(
+                `VectFox DEBUG: insert body = ${sizeKB} KB (${sizeMB} MB), ` +
+                `items=${payload.items?.length || 0}, ` +
+                `first item field sizes:`, fieldSizes,
+                `metadata field sizes:`, metadataFieldSizes
+            );
+            if (bodyJson.length > 500 * 1024) {
+                console.warn(`VectFox DEBUG: ⚠️ insert body exceeds 500 KB — dumping first 1000 chars: ${bodyJson.slice(0, 1000)}`);
+            }
+
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 signal: abortSignal
                     ? AbortSignal.any([abortSignal, AbortSignal.timeout(120000)])
                     : AbortSignal.timeout(120000),
-                body: JSON.stringify(payload),
+                body: bodyJson,
             });
 
             if (!response.ok) {
                 const errorBody = await response.text().catch(() => 'No response body');
-                throw new Error(`Failed to insert vectors: ${response.status} - ${errorBody}`);
+                throw new Error(`Failed to insert vectors: ${response.status} - ${errorBody} (sent body size: ${sizeKB} KB)`);
             }
 
             console.log(`VectFox Standard: Inserted ${items.length} vectors into ${collectionId}`);

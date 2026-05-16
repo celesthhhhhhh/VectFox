@@ -183,14 +183,22 @@ async function clientSideHybridSearch(backend, collectionId, searchText, topK, s
         metadata: meta
     }));
 
-    // 3. Perform BM25 scoring over the ANN candidate set only (not full-corpus).
-    //    Unlike native hybrid (Qdrant), this cannot surface documents that the
-    //    dense vector search missed — BM25 is computed only on the vector top-K.
-    if (debugLog) console.log(`[HybridSearch] Computing BM25 scores for ${resultsWithText.length} results...`);
+    // 3. Perform BM25 scoring over the ANN candidate set.
+    //    By default IDF is computed locally over those candidates. When
+    //    settings.bm25_use_corpus_idf is ON, IDF is pulled from full-corpus
+    //    stats (N + df across every chunk) — same idea as Qdrant A3's global IDF.
+    //    Either way, recall is still bounded by what vector ANN returned.
+    let corpusStats = null;
+    if (settings?.bm25_use_corpus_idf === true) {
+        const { getCorpusStats } = await import('./corpus-stats.js');
+        corpusStats = await getCorpusStats(collectionId, settings);
+    }
+    if (debugLog) console.log(`[HybridSearch] Computing BM25 scores for ${resultsWithText.length} results (idf=${corpusStats ? 'corpus' : 'local'})...`);
     const bm25Results = performBM25Search(resultsWithText, searchText, {
         k1: settings.bm25_k1 || 1.5,
         b: settings.bm25_b || 0.75,
         fieldBoosting: true,  // Enable title (3x) and tags (2x) boosting
+        corpusStats,
         settings,
         debugLog,
     });

@@ -890,11 +890,12 @@ export async function queryCollection(collectionId, searchText, topK, settings, 
         text: meta.text || ''
     }));
 
-    let finalResults = scoreResults(resultsForBoost, searchText, topK, settings);
+    let finalResults = await scoreResults(resultsForBoost, searchText, topK, settings, collectionId);
 
     if (settings.eventbase_debug_logging) {
+        const idfMode = settings.bm25_use_corpus_idf ? 'corpus-IDF' : 'local-IDF';
         finalResults.forEach((r, i) => {
-            console.log(`[VectFox] #${i + 1} final=${r.score?.toFixed(4)} vector=${r.vectorScore?.toFixed(4) ?? 'n/a'} bm25=${r.bm25Score?.toFixed(4) ?? 'n/a'} (A1 BM25 re-rank)`);
+            console.log(`[VectFox] #${i + 1} final=${r.score?.toFixed(4)} vector=${r.vectorScore?.toFixed(4) ?? 'n/a'} bm25=${r.bm25Score?.toFixed(4) ?? 'n/a'} (A1 BM25 re-rank, ${idfMode})`);
         });
     }
 
@@ -916,7 +917,7 @@ export async function queryCollection(collectionId, searchText, topK, settings, 
     };
 }
 
-function scoreResults(resultsForBoost, searchText, topK, settings) {
+async function scoreResults(resultsForBoost, searchText, topK, settings, collectionId = null) {
     // Short-circuit: nothing to re-rank means no need to extract keywords or run BM25.
     if (!resultsForBoost || resultsForBoost.length === 0) {
         return [];
@@ -928,12 +929,23 @@ function scoreResults(resultsForBoost, searchText, topK, settings) {
     const rawKeywords = extractQueryKeywords(searchText, maxKeywords);
     const queryTokens = rawKeywords.map(token => isCJKToken(token) ? token : porterStemmer(token));
 
+    // Optional: full-corpus IDF (A/B toggle in Core → Hybrid Search & BM25).
+    // Fetches and tokenizes every chunk of the collection on first use, then
+    // caches in-memory for the session. Falls back to local IDF on failure.
+    // Dynamic import keeps the script.js dependency out of unrelated test setups.
+    let corpusStats = null;
+    if (settings?.bm25_use_corpus_idf === true && collectionId) {
+        const { getCorpusStats } = await import('./corpus-stats.js');
+        corpusStats = await getCorpusStats(collectionId, settings);
+    }
+
     const bm25Results = applyBM25Scoring(resultsForBoost, searchText, {
         k1: settings.bm25_k1 || 1.5,
         b: settings.bm25_b || 0.75,
         alpha: 0.5,
         beta: 0.5,
-        queryTokens
+        queryTokens,
+        corpusStats,
     });
     return bm25Results.slice(0, topK);
 }
@@ -1034,7 +1046,7 @@ export async function queryMultipleCollections(collectionIds, searchText, topK, 
             text: meta.text || ''
         }));
 
-        let finalResults = scoreResults(resultsForBoost, searchText, topK, settings);
+        let finalResults = await scoreResults(resultsForBoost, searchText, topK, settings, collectionId);
 
         // Convert back to expected format
         processedResults[collectionId] = {

@@ -441,15 +441,21 @@ function calculateIDF(documentTermFreqs, totalDocs, delta = DEFAULT_DELTA) {
         }
     }
 
-    // Calculate IDF for each term using BM25+ formula
+    return _idfFromDocumentFrequencies(documentFrequency, totalDocs, delta);
+}
+
+/**
+ * Build the IDF map directly from a pre-computed {term -> df} map. Used when
+ * corpus statistics are supplied externally (full-corpus IDF mode) so the
+ * scorer skips the local-candidate df pass.
+ */
+function _idfFromDocumentFrequencies(documentFrequency, totalDocs, delta = DEFAULT_DELTA) {
     const idf = new Map();
     for (const [term, df] of documentFrequency.entries()) {
-        // BM25+ IDF: max(0, log(...)) + delta to prevent negative values
         const rawIdf = Math.log((totalDocs - df + 0.5) / (df + 0.5));
         const idfScore = Math.max(0, rawIdf) + delta;
         idf.set(term, idfScore);
     }
-
     return idf;
 }
 
@@ -493,8 +499,14 @@ export class BM25Scorer {
     /**
      * Index a corpus of documents
      * @param {Array<{text: string, title?: string, tags?: string[], id?: any}>} documents - Documents to index
+     * @param {object} [opts]
+     * @param {{totalDocs: number, documentFrequencies: Map<string, number>, avgDocLength?: number}} [opts.corpusStats]
+     *   When supplied, IDF and avgDocLength are computed from these external stats
+     *   (full-corpus mode) instead of from the candidate set. Used by the A1/A2
+     *   bm25_use_corpus_idf path — see core/corpus-stats.js.
      */
-    indexDocuments(documents) {
+    indexDocuments(documents, opts = {}) {
+        const corpusStats = opts.corpusStats || null;
         this.documents = documents;
         this.totalDocs = documents.length;
         this.documentTermFreqs = [];
@@ -539,13 +551,22 @@ export class BM25Scorer {
             totalLength += contentLength;
         }
 
-        // Calculate average document length
-        this.avgDocLength = this.totalDocs > 0 ? totalLength / this.totalDocs : 0;
-
-        // Calculate IDF for all terms in corpus
-        this.idf = calculateIDF(this.documentTermFreqs, this.totalDocs, this.delta);
-
-        console.log(`[BM25+] Indexed ${this.totalDocs} documents, avg length: ${this.avgDocLength.toFixed(1)} tokens, sublinearTf=${this.sublinearTf}, fieldBoosting=${this.fieldBoosting}`);
+        // Length normalization and IDF: prefer external corpus stats when supplied
+        // (full-corpus mode). This makes "rare globally" terms keep high IDF even
+        // when the candidate set is topically clustered around them.
+        if (corpusStats && Number.isFinite(corpusStats.totalDocs) && corpusStats.totalDocs > 0 && corpusStats.documentFrequencies) {
+            this.corpusN = corpusStats.totalDocs;
+            this.avgDocLength = Number.isFinite(corpusStats.avgDocLength) && corpusStats.avgDocLength > 0
+                ? corpusStats.avgDocLength
+                : (this.totalDocs > 0 ? totalLength / this.totalDocs : 0);
+            this.idf = _idfFromDocumentFrequencies(corpusStats.documentFrequencies, this.corpusN, this.delta);
+            console.log(`[BM25+] Indexed ${this.totalDocs} candidates with FULL-CORPUS IDF (corpusN=${this.corpusN}, terms=${corpusStats.documentFrequencies.size}, avgLen=${this.avgDocLength.toFixed(1)})`);
+        } else {
+            this.corpusN = this.totalDocs;
+            this.avgDocLength = this.totalDocs > 0 ? totalLength / this.totalDocs : 0;
+            this.idf = calculateIDF(this.documentTermFreqs, this.totalDocs, this.delta);
+            console.log(`[BM25+] Indexed ${this.totalDocs} documents, avg length: ${this.avgDocLength.toFixed(1)} tokens, sublinearTf=${this.sublinearTf}, fieldBoosting=${this.fieldBoosting}`);
+        }
     }
 
     /**
@@ -668,8 +689,9 @@ export class BM25Scorer {
  * @returns {BM25Scorer} Initialized BM25 scorer
  */
 export function createBM25Scorer(results, options = {}) {
-    const scorer = new BM25Scorer(options);
-    scorer.indexDocuments(results);
+    const { corpusStats, ...scorerOptions } = options;
+    const scorer = new BM25Scorer(scorerOptions);
+    scorer.indexDocuments(results, { corpusStats });
     return scorer;
 }
 
@@ -695,13 +717,15 @@ export function applyBM25Scoring(results, query, options = {}) {
         b = DEFAULT_B,
         alpha = 0.5,  // Weight for vector similarity
         beta = 0.5,   // Weight for BM25 score
-        queryTokens: preTokenized = null  // Pre-computed tokens (CJK-aware); bypasses internal tokenize()
+        queryTokens: preTokenized = null,  // Pre-computed tokens (CJK-aware); bypasses internal tokenize()
+        corpusStats = null  // When provided, IDF uses full-corpus N + df (see core/corpus-stats.js)
     } = options;
 
-    console.log(`[BM25] Applying BM25 scoring to ${results.length} results (k1=${k1}, b=${b}, α=${alpha}, β=${beta})`);
+    const idfMode = corpusStats ? 'corpus' : 'local';
+    console.log(`[BM25] Applying BM25 scoring to ${results.length} results (k1=${k1}, b=${b}, α=${alpha}, β=${beta}, idf=${idfMode})`);
 
     // Create BM25 scorer
-    const scorer = createBM25Scorer(results, { k1, b });
+    const scorer = createBM25Scorer(results, { k1, b, corpusStats });
 
     // Score all results — use pre-tokenized tokens when available (caller handles CJK + stemming)
     const queryTokens = preTokenized && preTokenized.length > 0 ? preTokenized : tokenize(query);

@@ -1629,10 +1629,20 @@ export function openQueryTestModal() {
                 $('#VectFox_qtester_meta').text(`${result.eventCount ?? '?'} event(s) retrieved`);
                 $('#VectFox_qtester_output').val(result.injectionText);
             } else {
+                // Distinguish "no locks" from "locks exist but query returned nothing"
+                // so the user can troubleshoot the right thing (lock the collection
+                // vs. fix threshold/model/query terms).
+                const lockedCount = (result?.lockedCollectionsCount ?? 0) + (result?.archiveCollectionsCount ?? 0);
                 $('#VectFox_qtester_meta').text('No events retrieved');
-                $('#VectFox_qtester_output').val(
-                    '(no events matched — verify a collection is locked to this chat)'
-                );
+                if (lockedCount === 0) {
+                    $('#VectFox_qtester_output').val(
+                        '(no collections are locked to this chat — open Database Browser → Settings on a collection → check "Active for current chat")'
+                    );
+                } else {
+                    $('#VectFox_qtester_output').val(
+                        `(searched ${lockedCount} locked collection(s) — 0 events matched the query "${testMessage}". Try a longer/more specific query, lower the score threshold, or check that the collection's embedding model matches your current setting.)`
+                    );
+                }
             }
             $('#VectFox_qtester_result').css('display', 'flex').show();
         } catch (err) {

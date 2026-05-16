@@ -436,7 +436,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
 
     if (!queryEventbase && archiveCollections.length === 0) {
         if (debugLog) console.log('[EventBase] No live collection and no archive collections — skipping Phase A');
-        if (dryRun) return { injectionText: null, eventCount: 0 };
+        if (dryRun) return { injectionText: null, eventCount: 0, lockedCollectionsCount: lockedLiveCollections.length, archiveCollectionsCount: archiveCollections.length };
         setExtensionPrompt(EVENTBASE_PROMPT_TAG, '', settings.position, settings.depth, false);
         return;
     }
@@ -512,7 +512,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
 
     if (!events?.length) {
         if (debugLog) console.log('[EventBase] No events to inject');
-        if (dryRun) return { injectionText: null, eventCount: 0 };
+        if (dryRun) return { injectionText: null, eventCount: 0, lockedCollectionsCount: lockedLiveCollections.length, archiveCollectionsCount: archiveCollections.length };
         if (settings.retrieval_popup_on_result) {
             const rawCount = debug?.rawCount ?? 0;
             const msg = rawCount > 0
@@ -529,7 +529,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
     const injectedCount = injectionResult.includedCount;
     if (!injectionText) {
         if (debugLog) console.log('[EventBase] Injection text empty after formatting');
-        if (dryRun) return { injectionText: null, eventCount: 0 };
+        if (dryRun) return { injectionText: null, eventCount: 0, lockedCollectionsCount: lockedLiveCollections.length, archiveCollectionsCount: archiveCollections.length };
         setExtensionPrompt(EVENTBASE_PROMPT_TAG, '', settings.position, settings.depth, false);
         return;
     }
@@ -548,7 +548,7 @@ export async function runEventBaseRetrieval({ chat, searchText, settings, chatUU
 
     // Dry-run: return text without touching the extension prompt slot
     if (dryRun) {
-        return { injectionText, eventCount: injectedCount };
+        return { injectionText, eventCount: injectedCount, lockedCollectionsCount: lockedLiveCollections.length, archiveCollectionsCount: archiveCollections.length };
     }
 
     // Clear any previous EventBase injection

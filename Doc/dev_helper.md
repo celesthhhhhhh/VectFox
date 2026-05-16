@@ -81,17 +81,6 @@ Exact constant names:
 - `DEFAULT_MAX_TOKENS`
 - `DEFAULT_TIMEOUT_MS`
 
-## 4) Group Batch Message Settings — REMOVED
-
-The `message_group_batch` chunking strategy, its `group_batch_size` /
-`groupBatchSize` setting, the GUI slider in the Vectorize Content modal, and
-the `summarizeTextGroup()` helper (plus its private support functions in
-`core/summarizer.js`) were removed in the
-[plans/remove-message-group-batch.md](../plans/remove-message-group-batch.md)
-cleanup. Pre-existing collection chunks may still carry
-`metadata.strategy: 'message_group_batch'` — that field is no longer read by
-any code path and is silently ignored, the same orphan-but-harmless pattern as
-the post-Scenes data in §11.
 
 ## 5) Card Pause/Resume Button (`enabled` flag)
 
@@ -301,36 +290,6 @@ request fails with a Qdrant error, check the server version and set
 **Keep-in-sync note:** if the extraction algorithm changes in `similharity/index.js` (e.g. anchor budget, bigram fallback, Latin regex), update `core/query-keyword-extractor.js` to match. The console log prefix was changed from `[Qdrant]` to `[vectfox]` — that difference is intentional.
 
 
-## Scene support — REMOVED
-
-Scenes were a chunk-based-chat-era feature for bundling raw message chunks into
-composite "scene" chunks (with `isScene: true` metadata). With chat now handled
-exclusively by EventBase (events extracted by LLM, not raw message chunks), the
-original semantic no longer applied, and the feature was removed wholesale.
-
-**What was deleted:**
-- Modules: `core/scenes.js`, `ui/scene-markers.js`, `ui/scenes-panel.js`, `ui/scenes.css`
-- Chunk visualizer "Scenes" tab (and all its renderers in `ui/chunk-visualizer.js`)
-- Bookmark scene-marker buttons attached to chat messages
-- Scene-aware temporal decay (`applySceneAwareDecay`, `getSceneContext`, `sceneAware` flag) — the entire temporal-decay subsystem was later removed too (see §9)
-- `per_scene` chunking strategy + content-type entry
-- Scene-filtering in `chat-vectorization.js` (`filterSceneDisabledChunks`)
-- Scene-aware checkbox in the Database Browser settings panel
-
-**Orphan-but-harmless data (silently ignored):**
-- `settings.chunking_strategy: "per_scene"` in saved user configs
-- `metadata.isScene` / `metadata.sceneStart` / `metadata.sceneEnd` / `metadata.containedHashes`
-  / `metadata.disabledByScene` on existing chunks in vector DBs
-- All `settings.temporal_decay.*` and `meta.temporalDecay.*` fields (including `sceneAware`) — the temporal-decay subsystem was deleted wholesale; any user config or per-collection metadata still carrying these keys is silently ignored
-
-These fields are no longer read by any code; they sit dormant on disk and have
-no migration step. They will eventually rot out of the data as collections are
-re-vectorized or replaced.
-
-**Prompt text that still mentions "scene":** `core/summarizer.js` and
-`core/eventbase-schema.js` use the word generically in LLM instructions
-("filler scene", "where the scene takes place") — that's English, not feature
-wiring, and was left alone.
 
 ---
 
@@ -640,6 +599,51 @@ These patterns will look correct but produce broken state:
 #### Older primitives — when you might still need them
 
 `setCollectionLock`, `removeCollectionLock`, `clearCollectionLock`, `setCollectionCharacterLock`, etc. ([collection-metadata.js:527+](../core/collection-metadata.js#L527)) are the raw write primitives without authorization. The facade routes to these. **Only call them directly from inside `setLock` or from system code that already enforces auth at a higher layer** (`registerCollection`'s creatorHandle stamping is the canonical example). Application code, UI handlers, and anything user-triggered should go through `setLock`.
+
+### ⚠️ Embedding model resolution — `getModelFromSettings`
+
+Sibling principle to the lock facade — same "use the one helper, never reimplement inline" rule, different domain.
+
+The settings object stores the embedding model under **provider-specific** field names: `openrouter_model`, `ollama_model`, `vllm_model`, `cohere_model`, etc. There is **no flat `settings.model`** — that key is always empty/undefined. Code that reads `settings.model` directly silently produces the wrong value (empty string) without throwing.
+
+**Always use** [`getModelFromSettings(settings, fallback?)`](../core/providers.js#L99) from `core/providers.js`:
+
+```js
+import { getModelFromSettings } from './providers.js';
+
+const model = getModelFromSettings(settings);              // → 'qwen/qwen3-embedding-8b' for openrouter
+const modelOrNull = getModelFromSettings(settings, null);  // null when provider has no model field
+```
+
+It internally calls `getModelField(settings.source)` to look up the right field name, then reads that field.
+
+#### Why this matters
+
+Every site that sends a `model` to the plugin API (`chunks/insert`, `chunks/list`, `chunks/query`, `get-embedding`) is part of the **storage-key contract**. Inserts under `model='qwen/qwen3-embedding-8b'` must be queried under the same `model` value or the plugin's per-model partitioning silently returns 0 results. This bug surfaced as "vectra returns 0 results while qdrant works" — qdrant doesn't partition by model field, so it masked the bug; vectra exposed it.
+
+#### What NOT to do
+
+| Wrong | Right |
+|---|---|
+| `model: settings.model` (flat key — always empty) | `model: getModelFromSettings(settings)` |
+| `settings.model \|\| ''` | `getModelFromSettings(settings)` |
+| `settings[getModelField(settings.source)] \|\| null` (one-liner with manual fallback) | `getModelFromSettings(settings, null)` |
+| `const modelField = getModelField(s.source); s[modelField] \|\| ''` (4-line inline expansion) | `getModelFromSettings(settings)` |
+| Defining a local `getModelFromSettings` private helper (this happened 3 times before consolidation) | Import the canonical one |
+
+#### When to use `getModelField` directly instead
+
+`getModelField(source)` returns the **field name** (a string like `'openrouter_model'`) or `null`. Use it only when you need the *name* itself for a validation check or display:
+
+```js
+// Validation: does the user need to configure a model for the current provider?
+const modelField = getModelField(settings.source);
+if (config.requiresModel && modelField && !settings[modelField]) {
+    return { error: 'Model not configured' };
+}
+```
+
+If you just need the value, `getModelFromSettings(settings)` is shorter and harder to misuse.
 
 ### Single source of truth — `isCollectionActiveForContext`
 

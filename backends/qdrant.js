@@ -30,7 +30,7 @@
 
 import { getRequestHeaders } from '../../../../../script.js';
 import { VectorBackend } from './backend-interface.js';
-import { getModelField } from '../core/providers.js';
+import { getModelFromSettings } from '../core/providers.js';
 import { VECTOR_LIST_LIMIT } from '../core/constants.js';
 import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
 
@@ -55,13 +55,6 @@ function _warnDimensionMismatch(errorBody) {
 // with existing user Qdrant data. Do not rebrand. See plans/vectfox-rename-plan.md §1.5.
 const MULTITENANCY_COLLECTION = 'vectfox_main';
 
-/**
- * Get the model value from settings based on provider
- */
-function getModelFromSettings(settings) {
-    const modelField = getModelField(settings.source);
-    return modelField ? settings[modelField] || '' : '';
-}
 
 function getPluginProviderParams(settings) {
     const params = {};

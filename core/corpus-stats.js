@@ -18,7 +18,7 @@
  */
 import { getRequestHeaders } from '../../../../script.js';
 import { tokenize } from './bm25-scorer.js';
-import { getModelField } from './providers.js';
+import { getModelFromSettings } from './providers.js';
 
 const _cache = new Map(); // collectionId -> { totalDocs, documentFrequencies, avgDocLength, builtAt }
 const _inflight = new Map(); // collectionId -> Promise (dedupe concurrent fetches)
@@ -69,10 +69,6 @@ export async function getCorpusStats(collectionId, settings) {
 
 async function _buildStats(collectionId, settings) {
     const t0 = Date.now();
-    // Model field is provider-specific; settings.model is unused by real
-    // providers and would make the plugin look up chunks under model=''.
-    const modelField = getModelField(settings?.source);
-    const model = modelField ? (settings?.[modelField] || '') : '';
     const response = await fetch('/api/plugins/similharity/chunks/list', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -80,7 +76,7 @@ async function _buildStats(collectionId, settings) {
             backend: _pluginBackendName(settings),
             collectionId,
             source: settings?.source || 'transformers',
-            model,
+            model: getModelFromSettings(settings),
             limit: FETCH_LIMIT,
             includeVectors: false,
         }),

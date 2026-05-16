@@ -14,7 +14,7 @@
 
 import { getRequestHeaders } from '../../../../../script.js';
 import { VectorBackend } from './backend-interface.js';
-import { getModelField } from '../core/providers.js';
+import { getModelFromSettings } from '../core/providers.js';
 import { VECTOR_LIST_LIMIT } from '../core/constants.js';
 import { INTERNAL_COLLECTION_IDS } from '../core/collection-ids.js';
 import { extension_settings } from '../../../../extensions.js';
@@ -22,13 +22,6 @@ import { textgen_types, textgenerationwebui_settings } from '../../../../textgen
 import { oai_settings } from '../../../../openai.js';
 import { secret_state } from '../../../../secrets.js';
 
-/**
- * Get the model value from settings based on provider
- */
-function getModelFromSettings(settings) {
-    const modelField = getModelField(settings.source);
-    return modelField ? settings[modelField] || '' : '';
-}
 
 /**
  * Build provider-specific parameters for API requests.

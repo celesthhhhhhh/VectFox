@@ -98,6 +98,31 @@ export function getModelField(providerId) {
 }
 
 /**
+ * Resolve the actual model value from settings for the active provider.
+ *
+ * The settings object uses provider-specific field names — `openrouter_model`,
+ * `ollama_model`, `vllm_model`, etc. — not a flat `settings.model`. Code that
+ * sends a `model` field to the plugin API (chunks/insert, chunks/list,
+ * chunks/query) MUST use this function. Reading `settings.model` directly
+ * returns an empty string for every real provider and leads to insert/query
+ * model-bucket mismatches (chunks land under model='' while queries look up
+ * the real name → 0-result silent failures).
+ *
+ * The query path in backends/standard.js + backends/qdrant.js already routes
+ * through this — keep insert/list/import paths in sync by calling it here.
+ *
+ * @param {object} settings - VectFox settings
+ * @param {string} [fallback=''] - Returned when the provider has no model field
+ *   or the value is empty/unset.
+ * @returns {string}
+ */
+export function getModelFromSettings(settings, fallback = '') {
+    const modelField = getModelField(settings?.source);
+    if (!modelField) return fallback;
+    return settings[modelField] || fallback;
+}
+
+/**
  * Get the secret key constant for a provider
  */
 export function getSecretKey(providerId) {

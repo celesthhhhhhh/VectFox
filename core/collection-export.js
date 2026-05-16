@@ -33,7 +33,7 @@ import {
     getCollectionRegistry,
 } from './collection-loader.js';
 import { COLLECTION_PREFIXES, getRegistryBackend, parseCollectionId } from './collection-ids.js';
-import { getModelField } from './providers.js';
+import { getModelFromSettings } from './providers.js';
 import { encodeSparseVector } from './sparse-vector-encoder.js';
 import { progressTracker } from '../ui/progress-tracker.js';
 import { getStringHash } from '../../../../utils.js';
@@ -130,12 +130,6 @@ function _remapCollectionIdToBackend(collectionId, targetBackend) {
  */
 async function fetchChunksWithVectors(collectionId, settings) {
     const backendName = settings.vector_backend || 'standard';
-    // Model field is provider-specific (openrouter_model, ollama_model, etc.).
-    // Using a flat `settings.model` writes/reads an empty string, which makes
-    // the plugin store chunks under model='' while queries look up under the
-    // real model name — 0-result mismatch.
-    const modelField = getModelField(settings.source);
-    const model = modelField ? (settings[modelField] || '') : '';
     const response = await fetch('/api/plugins/similharity/chunks/list', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -143,7 +137,7 @@ async function fetchChunksWithVectors(collectionId, settings) {
             backend: backendName === 'standard' ? 'vectra' : backendName,
             collectionId: collectionId,
             source: settings.source || 'transformers',
-            model,
+            model: getModelFromSettings(settings),
             limit: 50000, // High limit to get all chunks
             includeVectors: true, // Include the actual embedding vectors
         }),
@@ -172,12 +166,14 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
     progressTracker.show('Exporting Collection', 3, 'Steps');
     progressTracker.updateCurrentItem(collectionId);
 
-    // Use collection-specific settings if provided (for multi-backend support)
+    // Use collection-specific settings if provided (for multi-backend support).
+    // Note: model is NOT set here as a flat key — it's looked up via
+    // getModelFromSettings(exportSettings) wherever needed, since the real value
+    // lives under the provider-specific field (openrouter_model, ollama_model, …).
     const exportSettings = {
         ...settings,
         vector_backend: collectionInfo.backend || settings.vector_backend,
         source: collectionInfo.source || settings.source,
-        model: collectionInfo.model || settings.model,
     };
 
     try {
@@ -240,7 +236,7 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
             // backend is just storage location - vectors work across backends
             embedding: {
                 source: exportSettings.source || 'transformers',
-                model: exportSettings.model || '',
+                model: getModelFromSettings(exportSettings),
                 backend: exportSettings.vector_backend || 'standard', // For reference only
                 dimension: vectorDimension,
                 hasVectors: chunksWithVectors > 0,
@@ -507,15 +503,16 @@ export function validateImportData(data, currentSettings = {}) {
 
             if (hasVectors && currentSettings.source) {
                 // Check if current settings match export
+                const currentModel = getModelFromSettings(currentSettings);
                 const sourceMatch = col.embedding.source === currentSettings.source;
-                const modelMatch = !col.embedding.model || !currentSettings.model ||
-                    col.embedding.model === currentSettings.model;
+                const modelMatch = !col.embedding.model || !currentModel ||
+                    col.embedding.model === currentModel;
 
                 if (!sourceMatch || !modelMatch) {
                     compatible = false;
                     warnings.push(
                         `Embedding mismatch: Export used ${col.embedding.source}/${col.embedding.model || 'default'}, ` +
-                        `but you're using ${currentSettings.source}/${currentSettings.model || 'default'}. ` +
+                        `but you're using ${currentSettings.source}/${currentModel || 'default'}. ` +
                         `Switch your settings to match, or vectors will be re-embedded.`
                     );
                 }
@@ -548,9 +545,7 @@ export function validateImportData(data, currentSettings = {}) {
  */
 async function insertChunksWithVectors(collectionId, chunks, settings, onBatchProgress, abortSignal = null) {
     const backendName = settings.vector_backend || 'standard';
-    // Model field is provider-specific. See fetchChunksWithVectors comment.
-    const modelField = getModelField(settings.source);
-    const model = modelField ? (settings[modelField] || '') : '';
+    const model = getModelFromSettings(settings);
     // Batch to avoid 413. Qdrant accepts up to 32 MB per request; live ingestion uses 100
     // (backends/qdrant.js). Per-batch overhead (collection metadata GETs + wait=true index)
     // dominates total time, so larger batches roughly amortize that cost. 100 chunks ≈ 5 MB
@@ -660,7 +655,7 @@ export async function importCollection(exportData, settings, options = {}) {
     const canUseVectors = !options.forceReembed &&
         chunksWithVectors.length === validChunks.length &&
         embeddingInfo.source === settings.source &&
-        (!embeddingInfo.model || !settings.model || embeddingInfo.model === settings.model);
+        (!embeddingInfo.model || !getModelFromSettings(settings) || embeddingInfo.model === getModelFromSettings(settings));
 
     const totalSteps = 4;
     progressTracker.show('Importing Collection', totalSteps, 'Steps');
@@ -905,7 +900,7 @@ async function importCollectionSilent(exportData, settings, options = {}) {
     const canUseVectors = !options.forceReembed &&
         chunksWithVectors.length === validChunks.length &&
         embeddingInfo.source === settings.source &&
-        (!embeddingInfo.model || !settings.model || embeddingInfo.model === settings.model);
+        (!embeddingInfo.model || !getModelFromSettings(settings) || embeddingInfo.model === getModelFromSettings(settings));
 
     // Handle existing collection
     if (options.overwrite) {

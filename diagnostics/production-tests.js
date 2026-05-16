@@ -12,7 +12,7 @@
 import { getRequestHeaders } from '../../../../../script.js';
 import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
 import { getSavedHashes, purgeVectorIndex } from '../core/core-vector-api.js';
-import { getModelField, getProviderConfig } from '../core/providers.js';
+import { getModelField, getModelFromSettings, getProviderConfig } from '../core/providers.js';
 import { unregisterCollection } from '../core/collection-loader.js';
 import { reciprocalRankFusion, weightedCombination } from '../core/hybrid-search.js';
 import { applyKeywordBoost, extractTextKeywords, extractLorebookKeywords } from '../core/keyword-boost.js';
@@ -196,7 +196,7 @@ export async function testEmbeddingGeneration(settings) {
             body: JSON.stringify({
                 text: testText,
                 source: settings.source || 'transformers',
-                model: settings[getModelField(settings.source)] || null,
+                model: getModelFromSettings(settings, null),
                 // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
                 ...getPluginProviderParams(settings),
             })
@@ -265,7 +265,7 @@ export async function testVectorStorage(settings) {
                     index: 0
                 }],
                 source: settings.source || 'transformers',
-                model: settings[getModelField(settings.source)] || null,
+                model: getModelFromSettings(settings, null),
                 // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
                 ...getPluginProviderParams(settings),
             })
@@ -616,7 +616,7 @@ export async function testPluginEmbeddingGeneration(settings) {
                     // NOTE: No vector provided - plugin must generate it
                 }],
                 source: settings.source || 'transformers',
-                model: settings[getModelField(settings.source)] || null,
+                model: getModelFromSettings(settings, null),
                 // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
                 ...getPluginProviderParams(settings),
             }),
@@ -642,7 +642,7 @@ export async function testPluginEmbeddingGeneration(settings) {
                 searchText: testText,
                 topK: 1,
                 source: settings.source || 'transformers',
-                model: settings[getModelField(settings.source)] || null,
+                model: getModelFromSettings(settings, null),
                 // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
                 ...getPluginProviderParams(settings),
             }),

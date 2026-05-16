@@ -18,6 +18,7 @@ import {
     isValidProvider,
     getProviderConfig,
     getModelField,
+    getModelFromSettings,
     getSecretKey,
     requiresApiKey,
     requiresUrl,
@@ -585,13 +586,6 @@ export async function checkQdrantDimensionMatch(settings) {
     }
 }
 
-/**
- * Helper to get model from settings based on source
- */
-function getModelFromSettings(settings) {
-    const modelField = getModelField(settings.source);
-    return modelField ? settings[modelField] || '' : '';
-}
 
 /**
  * Check: Embedding provider is configured properly

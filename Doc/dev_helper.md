@@ -176,14 +176,9 @@ Related client-side behavior (vectfox):
 
 Analysis of whether non-EventBase modules should be integrated into the EventBase pipeline.
 
-### temporal-decay.js — NOT compatible
+### temporal-decay.js — DELETED
 
-**Module:** [`core/temporal-decay.js`](core/temporal-decay.js)
-**Decision:** ❌ Do not add to EventBase.
-
-`applyDecayToResults` checks `chunk.metadata.source === 'chat'` and `chunk.metadata.messageId`. EventBase [`EventBase`](core/eventbase-schema.js) events do not carry `source: 'chat'` or a `messageId` field — they use `source_window_end`. Every event would be skipped with `decayApplied: false`.
-
-Additionally, EventBase already has its own `_recencyBonus` — an exponential decay term computed from `source_window_end` and `chatLength` — baked into the 4-weight re-ranker formula in [`eventbase-store.js`](core/eventbase-store.js). Applying `temporal-decay.js` would be redundant and silently do nothing.
+The whole `core/temporal-decay.js` subsystem (and `tests/temporal-decay.test.js`) was removed. It only operated on chunks with `metadata.source === 'chat'` — a stamp produced exclusively by the legacy chunk-based chat path that EventBase replaced. EventBase events never carried that stamp, so the subsystem was unreachable from the EventBase pipeline. Recency on the EventBase side is — and always was — handled by the `_recencyBonus` term inside the 4-weight re-ranker formula in [`eventbase-store.js`](core/eventbase-store.js) (computed from `source_window_end` and `chatLength`). Mentioned here only because the rest of this document used to cross-reference the old module.
 
 ### hybrid-search.js — Used indirectly (do not wire directly)
 
@@ -198,7 +193,7 @@ Do **not** call `hybridSearch()` directly from `eventbase-retrieval.js` or `even
 
 | Module | Add directly to EventBase? | Reason |
 |---|---|---|
-| [`temporal-decay.js`](core/temporal-decay.js) | No | Already covered by `_recencyBonus` in the 4-weight formula; `applyDecayToResults` would silently skip all events due to missing `source: 'chat'` / `messageId` fields |
+| `core/temporal-decay.js` | n/a — module deleted | Subsystem only fired on `source: 'chat'` chunks (legacy chunk path). Recency on EventBase is handled by `_recencyBonus` inside the 4-weight formula. |
 | [`hybrid-search.js`](core/hybrid-search.js) | No (used indirectly) | EventBase inherits A2/A3 hybrid automatically via `queryCollection()`. Direct calls would bypass `queryEvents()` and the store layer. |
 
 ---
@@ -317,18 +312,16 @@ original semantic no longer applied, and the feature was removed wholesale.
 - Modules: `core/scenes.js`, `ui/scene-markers.js`, `ui/scenes-panel.js`, `ui/scenes.css`
 - Chunk visualizer "Scenes" tab (and all its renderers in `ui/chunk-visualizer.js`)
 - Bookmark scene-marker buttons attached to chat messages
-- Scene-aware temporal decay (`applySceneAwareDecay`, `getSceneContext`, `sceneAware` flag)
+- Scene-aware temporal decay (`applySceneAwareDecay`, `getSceneContext`, `sceneAware` flag) — the entire temporal-decay subsystem was later removed too (see §9)
 - `per_scene` chunking strategy + content-type entry
 - Scene-filtering in `chat-vectorization.js` (`filterSceneDisabledChunks`)
 - Scene-aware checkbox in the Database Browser settings panel
-- `applySceneAwareDecay` test block in `tests/temporal-decay.test.js`
 
 **Orphan-but-harmless data (silently ignored):**
-- `settings.temporal_decay.sceneAware: true` in saved user configs
 - `settings.chunking_strategy: "per_scene"` in saved user configs
-- `meta.temporalDecay.sceneAware` on collection metadata
 - `metadata.isScene` / `metadata.sceneStart` / `metadata.sceneEnd` / `metadata.containedHashes`
   / `metadata.disabledByScene` on existing chunks in vector DBs
+- All `settings.temporal_decay.*` and `meta.temporalDecay.*` fields (including `sceneAware`) — the temporal-decay subsystem was deleted wholesale; any user config or per-collection metadata still carrying these keys is silently ignored
 
 These fields are no longer read by any code; they sit dormant on disk and have
 no migration step. They will eventually rot out of the data as collections are
@@ -771,13 +764,13 @@ There is **no global-scope priority**. That branch (formerly "priority 1.5") was
 
 **Status**: Deferred — NOT yet decided / executed.
 
-The deletion plan [`plans/delete-dead-chunk-chat-and-temporal-decay.md`](../plans/delete-dead-chunk-chat-and-temporal-decay.md) Phase D documents an optional cleanup that has **not been done**:
+Phases B + C of the deletion plan [`plans/delete-dead-chunk-chat-and-temporal-decay.md`](../plans/delete-dead-chunk-chat-and-temporal-decay.md) shipped (DEAD-CHUNK-CHAT removed, temporal-decay subsystem removed). Phase D is the remaining optional step:
 
-- **Where**: `core/collection-loader.js` around lines 1170-1230. The branch that materializes legacy `vf_chat_*` collection chunks for the database browser ("museum mode" loader for users who still have old chunk-based chat data in storage).
+- **Where**: `core/collection-loader.js` around lines 1140-1190 (inside the `if (collectionMetadata.type === 'chat' && context.chatId === collectionMetadata.rawId)` branch). This is the "museum mode" loader that materializes legacy `vf_chat_*` collection chunks for the database browser when an old user still has them on disk.
 - **Why deferred**: Deleting this loader would make pre-EventBase `vf_chat_*` collections invisible in the database browser. Acceptable only once we're confident no user still has these collections, OR we add an explicit migration/orphan-cleanup pass to delete them outright.
-- **Current state after Phase B+C**: The Phase B cleanup did strip the `source: 'chat'` stamp at line 1213 (so the museum-loaded chunks won't accidentally re-enter the dead temporal-decay path). The branch itself remains.
-- **What to decide before executing Phase D**: 
+- **Current state after Phase B+C**: The `source: 'chat'` stamp on the museum-loaded chunks is already gone (was at the old line 1213, stripped during Phase B). The branch itself remains and just hands the database browser displayable chunks; nothing downstream looks at `source: 'chat'` anymore (the temporal-decay subsystem that was the only consumer is deleted).
+- **What to decide before executing Phase D**:
   1. Do we keep museum mode indefinitely (small maintenance cost, lets old users see their data)?
   2. Or delete the branch + add a one-time orphan cleanup that purges any `vf_chat_*` collections at startup?
 
-**Search tag in code**: none yet. If/when this is acted on, grep for `vf_chat_` in `core/collection-loader.js` to find the loader branch.
+**Search tag in code**: none yet. If/when this is acted on, grep for `_chat_` (the `VECTFOX_CHAT` prefix constant was removed during Phase B, so the loader compares against `collectionMetadata.type === 'chat'` rather than a literal prefix string).

@@ -962,14 +962,6 @@ export function renderSettings(containerId, settings, callbacks) {
                                     placeholder="Leave empty to use the built-in default prompt…"></textarea>
                             </div>
 
-                            <!-- Browser button -->
-                            <div style="margin-top:20px;">
-                                <button id="VectFox_eventbase_open_browser" class="vectfox-action-btn vectfox-btn-secondary">
-                                    <i class="fa-solid fa-list"></i>
-                                    <span>Open Event Browser</span>
-                                </button>
-                            </div>
-
                         </div>
                     </div>
 
@@ -3446,10 +3438,6 @@ function bindSettingsEvents(settings, callbacks) {
         Object.assign(extension_settings.vectfox, settings);
         saveSettingsDebounced();
         toastr.success('Extraction prompt reset to default', 'EventBase');
-    });
-
-    $('#VectFox_eventbase_open_browser').on('click', function() {
-        toastr.info('Event Browser coming in a future update.', 'EventBase');
     });
 
     // ── End EventBase settings ───────────────────────────────────────────────

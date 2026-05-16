@@ -357,20 +357,6 @@ Conditions support emotion (via Character Expressions sprite detection), keyword
 
 ---
 
-## ⏳ Temporal Decay
-
-Older content gets a lower score so it only surfaces when really relevant.
-
-```
-relevance = original_score × (0.5 ^ (message_age / half_life))
-```
-
-With half-life = 50: a message 50 ago is at 50% relevance, 100 ago at 25%, 150 ago at 12.5%. Floor (default 0.3) prevents complete forgetting. Mark important chunks **temporally blind** to make them immune.  A3 Path should not need to use this feature because the whole point of using A3 path is to allow the backend search the complete database with no performance penalty.
-
-> **EventBase note:** EventBase has its own built-in recency bonus in the 4-weight re-ranker. The standalone decay setting only affects non-chat content (lorebook, documents).
-
----
-
 ## 📦 Backends
 
 
@@ -464,9 +450,6 @@ No — don't do it. The CJK Tokenizer Mode is **locked into each Qdrant collecti
 2. **Re-vectorize the collection from scratch** with the new mode (throw away all extracted events and start over).
 
 Pick your tokenizer mode *before* you start vectorizing a chat and stick with it. There's no in-place migration — sparse vectors were tokenized with the original mode, so they're incompatible with a different tokenizer's output.  Pick your embedding model *before* you start vectorizing a chat and stick with it.
-
-**Why is EventBase ignoring my temporal decay setting?**
-EventBase has its own built-in recency bonus baked into the 4-weight re-ranker. The standalone temporal decay setting only applies to non-chat content (lorebook, documents). This is intentional — applying both would double-decay chat events.
 
 **Can I use triggers/emotion conditions on Chinese/Japanese/Korean chats?**
 Not reliably. The keyword dictionary is English-only and regex `\b` word boundaries don't fire between CJK characters. Use "Active for current chat" / Character lock instead, or numeric Message Count / Turn Count conditions.

@@ -7,57 +7,30 @@
  * @author Kritblade
  * @version 3.3.1
  * ============================================================================
- *
- * NOTE — DEAD-CHUNK-CHAT branches present in this file:
- * Several checks below call `getChatCollectionId()`, which is now disabled (returns
- * null). Chat history runs through the EventBase pipeline; there are no more
- * `VectFox_chat_*` collections to validate. The conditional branches that depend
- * on `chatCollectionId` are effectively skipped at runtime.
- *
- * These diagnostics need to be rewritten to inspect EventBase collections instead.
- * Until then, the no-op behavior is harmless — diagnostics that previously reported
- * "chat collection healthy" will silently skip.
- *
- * Search tag: DEAD-CHUNK-CHAT
- * ============================================================================
  */
 
 import { getSavedHashes } from '../core/core-vector-api.js';
 import { VALID_EMOTIONS, VALID_GENERATION_TYPES, validateConditionRule } from '../core/conditional-activation.js';
-import { getTemporallyBlindCount, getTemporallyBlindChunks, isCollectionEnabled } from '../core/collection-metadata.js';
+import { isCollectionEnabled } from '../core/collection-metadata.js';
 import { getCollectionRegistry } from '../core/collection-loader.js';
 
-// DEAD-CHUNK-CHAT: chunk-based chat is removed; chat runs through the EventBase pipeline.
-// Diagnostics that used to validate chunk-based chat collections now report "not applicable".
-// EventBase (vf_eventbase_*) collections use their own validation rules.
 const CHAT_NOT_APPLICABLE_MESSAGE = 'Not applicable (EventBase mode — chat is not stored as a chunk collection)';
 
 /**
  * Check: RAG Query Status
- * Checks if there are ANY enabled collections (chat or otherwise)
- * that can be queried during generation.
+ * Checks if there are ANY enabled collections that can be queried during generation.
  */
 export function checkChatEnabled(settings) {
     const chatEnabled = settings.enabled_chats;
-    // DEAD-CHUNK-CHAT: chat collection ID is always null; the "skip current chat" branch
-    // below is preserved for legacy registries but is now a no-op.
-    const chatCollectionId = null;
 
-    // Count other enabled collections (not the current chat)
     const registry = getCollectionRegistry();
     let otherEnabledCount = 0;
     const otherEnabledNames = [];
 
     for (const registryKey of registry) {
-        // Parse registry key to get collection ID
         let collectionId = registryKey;
         if (registryKey.includes(':')) {
             collectionId = registryKey.substring(registryKey.indexOf(':') + 1);
-        }
-
-        // Skip current chat collection (handled separately)
-        if (collectionId === chatCollectionId) {
-            continue;
         }
 
         if (isCollectionEnabled(registryKey)) {
@@ -213,63 +186,11 @@ export function checkInsertQueryCounts(settings) {
  * Check: Current chat has vectors
  */
 export async function checkChatVectors(settings) {
-    // DEAD-CHUNK-CHAT: chat is no longer stored as a chunk collection; EventBase
-    // handles chat history. This check has nothing to validate.
     return {
         name: 'Chat Vectors',
         status: 'pass',
         message: CHAT_NOT_APPLICABLE_MESSAGE
     };
-}
-
-/**
- * Check: Temporal decay system status
- * Note: Temporal decay is now per-collection (chat collections enabled by default)
- */
-export function checkTemporalDecaySettings(settings) {
-    // Check for temporally blind chunks
-    const blindCount = getTemporallyBlindCount();
-
-    return {
-        name: 'Temporal Decay',
-        status: 'pass',
-        message: `Per-collection decay active. ${blindCount} chunk(s) temporally blind.`
-    };
-}
-
-/**
- * Check: Temporally blind chunks integrity
- */
-export async function checkTemporallyBlindChunks(settings) {
-    // DEAD-CHUNK-CHAT: the "in current chat" cross-check is gone with chunk-based chat.
-    // Just report the global blind-chunk count instead.
-    try {
-        const blindChunks = getTemporallyBlindChunks();
-        const blindCount = blindChunks.length;
-
-        if (blindCount === 0) {
-            return {
-                name: 'Temporally Blind Chunks',
-                status: 'pass',
-                message: 'No chunks marked as temporally blind',
-                category: 'configuration'
-            };
-        }
-
-        return {
-            name: 'Temporally Blind Chunks',
-            status: 'pass',
-            message: `${blindCount} total blind chunk(s)`,
-            category: 'configuration'
-        };
-    } catch (error) {
-        return {
-            name: 'Temporally Blind Chunks',
-            status: 'warning',
-            message: `Could not verify: ${error.message}`,
-            category: 'configuration'
-        };
-    }
 }
 
 /**
@@ -319,12 +240,8 @@ export function checkVisualizerApiReadiness(settings) {
 
 /**
  * Check: Collection ID format and UUID availability
- * DEAD-CHUNK-CHAT — see function body.
  */
 export function checkCollectionIdFormat() {
-    // DEAD-CHUNK-CHAT: chunk-based chat collections are no longer used.
-    // EventBase collections use their own naming scheme and don't need
-    // this validation.
     return {
         name: 'Collection ID Format',
         status: 'pass',
@@ -387,8 +304,6 @@ export function checkConditionalActivationModule() {
  * High collision rate (>10%) may indicate repetitive conversations or chunking misconfiguration.
  */
 export async function checkHashCollisionRate(settings) {
-    // DEAD-CHUNK-CHAT: the per-chat collection used for this check no longer exists.
-    // (Could be re-implemented to walk EventBase collections later; not worth it now.)
     return {
         name: 'Hash Collision Rate',
         status: 'pass',
@@ -403,9 +318,6 @@ export async function checkHashCollisionRate(settings) {
  * Missing or malformed UUIDs can cause collection mismatches.
  */
 export function checkChatMetadataIntegrity() {
-    // DEAD-CHUNK-CHAT: this check validated the chat UUID used to build chunk-based
-    // chat collection IDs. With chat handled by EventBase, the UUID is no longer
-    // load-bearing for collection identification.
     return {
         name: 'Chat Metadata Integrity',
         status: 'pass',
@@ -419,10 +331,6 @@ export function checkChatMetadataIntegrity() {
  * Verifies all chunk conditions in the current chat collection use valid operators and values.
  */
 export async function checkConditionRuleValidity(settings) {
-    // DEAD-CHUNK-CHAT: this used to scan the per-chat chunk collection for
-    // condition rules. Condition rules now live on EventBase / Lorebook /
-    // ArchiveEvent collections; a full validator would need to walk those
-    // separately. Skipping for now rather than reporting a misleading status.
     return {
         name: 'Condition Rules',
         status: 'pass',

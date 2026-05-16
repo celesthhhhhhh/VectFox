@@ -35,7 +35,6 @@ const MAX_QUERY_HISTORY = 13;
  * @property {Object} settings - Settings used for the search
  * @property {Object} stages - Data from each pipeline stage
  * @property {Array} stages.initial - Chunks from initial vector query
- * @property {Array} stages.afterDecay - Chunks after temporal decay
  * @property {Array} stages.afterConditions - Chunks after condition filtering
  * @property {Array} stages.injected - Chunks that were actually injected
  * @property {Object} stats - Summary statistics
@@ -54,7 +53,6 @@ export function createDebugData() {
         stages: {
             initial: [],
             afterThreshold: [],
-            afterDecay: [],
             afterConditions: [],
             injected: []
         },
@@ -66,7 +64,6 @@ export function createDebugData() {
             totalInCollection: 0,
             retrievedFromVector: 0,
             passedThreshold: 0,
-            afterDecay: 0,
             afterConditions: 0,
             actuallyInjected: 0,
             skippedDuplicates: 0,
@@ -149,7 +146,6 @@ export function setLastSearchDebug(data) {
         query: data.query?.substring(0, 50) + '...',
         stages: {
             initial: data.stages.initial.length,
-            afterDecay: data.stages.afterDecay.length,
             afterConditions: data.stages.afterConditions.length,
             injected: data.stages.injected.length
         },
@@ -286,9 +282,7 @@ function createModalHtml(data, historyIndex = 0) {
                             <div class="vectfox-debug-pipeline-arrow">→</div>
                             ${createPipelineStage('Threshold', data.stages.afterThreshold?.length ?? data.stages.initial.filter(c => c.score >= (data.settings.threshold || 0)).length, data.stages.initial.length, 'fa-filter', 'info', false)}
                             <div class="vectfox-debug-pipeline-arrow">→</div>
-                            ${createPipelineStage('Decay', data.stages.afterDecay.length, data.stages.afterThreshold?.length ?? 0, 'fa-clock', 'warning', !data.settings.temporal_decay?.enabled)}
-                            <div class="vectfox-debug-pipeline-arrow">→</div>
-                            ${createPipelineStage('Conditions', data.stages.afterConditions.length, data.stages.afterDecay.length, 'fa-code-branch', 'secondary', false)}
+                            ${createPipelineStage('Conditions', data.stages.afterConditions.length, data.stages.afterThreshold?.length ?? 0, 'fa-code-branch', 'secondary', false)}
                             <div class="vectfox-debug-pipeline-arrow">→</div>
                             ${createPipelineStage('Injected', data.stages.injected.length, data.stages.afterConditions.length, 'fa-syringe', 'success', false)}
                         </div>
@@ -311,10 +305,6 @@ function createModalHtml(data, historyIndex = 0) {
                                     <span class="vectfox-debug-setting-value">${data.settings.topK || 'N/A'}</span>
                                 </div>
                                 <div class="vectfox-debug-setting">
-                                    <span class="vectfox-debug-setting-label">Temporal Decay</span>
-                                    <span class="vectfox-debug-setting-value">${data.settings.temporal_decay?.enabled ? 'On' : 'Off'}</span>
-                                </div>
-                                <div class="vectfox-debug-setting">
                                     <span class="vectfox-debug-setting-label">Collection</span>
                                     <span class="vectfox-debug-setting-value vectfox-debug-setting-mono">${data.collectionId || 'Unknown'}</span>
                                 </div>
@@ -333,9 +323,6 @@ function createModalHtml(data, historyIndex = 0) {
                             <div class="vectfox-debug-stage-tabs">
                                 <button class="vectfox-debug-stage-tab active" data-stage="initial">
                                     Initial (${data.stages.initial.length})
-                                </button>
-                                <button class="vectfox-debug-stage-tab" data-stage="afterDecay">
-                                    After Decay (${data.stages.afterDecay.length})
                                 </button>
                                 <button class="vectfox-debug-stage-tab" data-stage="afterConditions">
                                     After Conditions (${data.stages.afterConditions.length})
@@ -452,11 +439,6 @@ function renderStageChunks(chunks, stageName, data) {
         const hasMoreText = chunk.text && chunk.text.length > 80;
 
         const scoreClass = getScoreClass(chunk.score);
-        const decayInfo = chunk.decayApplied
-            ? `<span class="vectfox-debug-decay-badge" title="Original: ${chunk.originalScore?.toFixed(3)}">
-                   Decay: ${((1 - chunk.decayMultiplier) * 100).toFixed(0)}%↓
-               </span>`
-            : '';
 
         // Show matched query keywords badge
         const keywordMatchInfo = chunk.matchedQueryKeywords && chunk.matchedQueryKeywords.length > 0
@@ -513,11 +495,9 @@ function renderStageChunks(chunks, stageName, data) {
         const fullMeta = {
             hash: chunk.hash,
             index: chunk.index,
-            messageAge: chunk.messageAge,
             score: chunk.score,
             originalScore: chunk.originalScore,
             keywordBoost: chunk.keywordBoost,
-            decayMultiplier: chunk.decayMultiplier,
             keywords: chunk.matchedKeywordsWithWeights || chunk.matchedKeywords || [],
             collection: chunk.collection || chunk.collectionId,
             metadata: chunk.metadata
@@ -529,7 +509,6 @@ function renderStageChunks(chunks, stageName, data) {
                     <span class="vectfox-debug-chunk-rank">#${idx + 1}</span>
                     ${scoreDisplay}
                     ${keywordMatchInfo}
-                    ${decayInfo}
                     ${wasExcluded ? `<span class="vectfox-debug-excluded-badge">${wasExcluded}</span>` : ''}
                     <i class="fa-solid fa-chevron-down vectfox-debug-chunk-expand-icon"></i>
                 </div>
@@ -552,11 +531,6 @@ function renderStageChunks(chunks, stageName, data) {
                             <div class="vectfox-debug-meta-item">
                                 <span class="meta-label">Message #</span>
                                 <span class="meta-value">${chunk.index}</span>
-                            </div>` : ''}
-                            ${chunk.messageAge !== undefined ? `
-                            <div class="vectfox-debug-meta-item">
-                                <span class="meta-label">Age</span>
-                                <span class="meta-value">${chunk.messageAge} messages</span>
                             </div>` : ''}
                             ${chunk.collection || chunk.collectionId ? `
                             <div class="vectfox-debug-meta-item">
@@ -632,12 +606,6 @@ function getExclusionStatus(chunk, currentStage, data) {
             return 'Below threshold';
         }
 
-        // Check if in afterDecay
-        const inAfterDecay = data.stages.afterDecay?.some(c => c.hash === chunk.hash);
-        if (!inAfterDecay) {
-            return 'Lost to decay';
-        }
-
         // Check if in afterConditions
         const inAfterConditions = data.stages.afterConditions?.some(c => c.hash === chunk.hash);
         if (!inAfterConditions) {
@@ -652,7 +620,7 @@ function getExclusionStatus(chunk, currentStage, data) {
     }
 
     // For other stages, check forward
-    if (currentStage === 'afterThreshold' || currentStage === 'afterDecay') {
+    if (currentStage === 'afterThreshold') {
         const inAfterConditions = data.stages.afterConditions?.some(c => c.hash === chunk.hash);
         if (!inAfterConditions) {
             return 'Failed conditions';
@@ -675,7 +643,7 @@ function getExclusionStatus(chunk, currentStage, data) {
 
 /**
  * Builds a score breakdown showing the math behind the final score
- * Shows: vectorScore × keywordBoost × decayMultiplier = finalScore
+ * Shows: vectorScore × keywordBoost = finalScore
  * For hybrid search: shows vector and text scores separately
  */
 function buildScoreBreakdown(chunk) {
@@ -722,29 +690,22 @@ function buildScoreBreakdown(chunk) {
     }
 
     // Standard (non-hybrid) breakdown
-    // Get the original vector similarity score (before any boosts)
     const vectorScore = chunk.originalScore ?? chunk.score;
     const keywordBoost = chunk.keywordBoost ?? 1.0;
-    const decayMultiplier = chunk.decayMultiplier ?? 1.0;
     const finalScore = chunk.score;
 
-    // Only show breakdown if there's something to break down
     const hasKeywordBoost = keywordBoost && keywordBoost !== 1.0;
-    const hasDecay = chunk.decayApplied && decayMultiplier !== 1.0;
 
-    if (!hasKeywordBoost && !hasDecay && vectorScore === finalScore) {
-        // No modifications, just show vector score
+    if (!hasKeywordBoost && vectorScore === finalScore) {
         return `<div class="vectfox-debug-score-breakdown">
             <span class="vectfox-score-math">Vector: ${vectorScore?.toFixed(3) || 'N/A'}</span>
         </div>`;
     }
 
-    // Build the math equation
     let mathParts = [];
     mathParts.push(`<span class="vectfox-score-vector">${vectorScore?.toFixed(3) || '?'}</span>`);
 
     if (hasKeywordBoost) {
-        // Show keyword breakdown with weights if available
         let boostTitle = 'Keyword boost';
         if (chunk.matchedKeywordsWithWeights?.length > 0) {
             const kwDetails = chunk.matchedKeywordsWithWeights.map(k =>
@@ -756,11 +717,6 @@ function buildScoreBreakdown(chunk) {
         }
         mathParts.push(`<span class="vectfox-score-operator">×</span>`);
         mathParts.push(`<span class="vectfox-score-boost" title="${boostTitle}">${keywordBoost.toFixed(2)}x</span>`);
-    }
-
-    if (hasDecay) {
-        mathParts.push(`<span class="vectfox-score-operator">×</span>`);
-        mathParts.push(`<span class="vectfox-score-decay" title="Age: ${chunk.messageAge || '?'} msgs">${decayMultiplier.toFixed(2)}↓</span>`);
     }
 
     mathParts.push(`<span class="vectfox-score-operator">=</span>`);
@@ -915,7 +871,6 @@ function diagnosePipeline(data) {
     const diagnosis = [];
     const threshold = data.settings.threshold || 0;
     const topK = data.settings.topK || 10;
-    const temporalDecay = data.settings.temporal_decay;
 
     // Step 1: Initial Vector Search
     const initialCount = data.stages.initial.length;
@@ -989,84 +944,18 @@ function diagnosePipeline(data) {
         });
     }
 
-    // Step 3: Temporal Decay - analyze actual decay impact
-    const afterDecay = data.stages.afterDecay;
-    const afterDecayCount = afterDecay.length;
-
-    if (temporalDecay?.enabled) {
-        // Find chunks that were lost specifically to decay
-        const lostToDecay = aboveThreshold.filter(chunk => {
-            return !afterDecay.some(dc => dc.hash === chunk.hash);
-        });
-
-        if (afterDecayCount === 0 && aboveThreshold.length > 0) {
-            // All chunks killed by decay - analyze the decay impact
-            const decayedChunks = aboveThreshold.map(chunk => {
-                const afterDecayChunk = data.stages.initial.find(c => c.hash === chunk.hash);
-                return {
-                    ...chunk,
-                    originalScore: chunk.originalScore || chunk.score,
-                    finalScore: afterDecayChunk?.score || 0,
-                    age: chunk.messageAge || 'unknown'
-                };
-            });
-
-            // Find the chunk that was closest to surviving
-            const bestSurvivor = decayedChunks.reduce((best, chunk) => {
-                return (chunk.finalScore || 0) > (best.finalScore || 0) ? chunk : best;
-            });
-
-            const decayStrength = temporalDecay.strength || temporalDecay.rate || 'unknown';
-            const halfLife = temporalDecay.halfLife || temporalDecay.half_life || 'unknown';
-
-            diagnosis.push({
-                label: 'Temporal Decay',
-                detail: `All ${aboveThreshold.length} chunks fell below threshold after decay. Best surviving score was ${bestSurvivor.finalScore?.toFixed(3) || 'N/A'} (age: ${bestSurvivor.age} messages).`,
-                fix: `Your decay settings (strength: ${decayStrength}, half-life: ${halfLife}) are too aggressive. Either disable temporal decay, or increase half-life to preserve older messages longer.`,
-                isCause: true,
-                isOk: false
-            });
-            return diagnosis;
-        } else if (lostToDecay.length > 0) {
-            // Some chunks lost to decay - show specifics
-            const oldestLost = lostToDecay.reduce((oldest, c) => {
-                return (c.messageAge || 0) > (oldest.messageAge || 0) ? c : oldest;
-            });
-            diagnosis.push({
-                label: 'Temporal Decay',
-                detail: `${afterDecayCount}/${aboveThreshold.length} survived decay. Lost ${lostToDecay.length} chunks, oldest was ${oldestLost.messageAge || '?'} messages ago.`,
-                isCause: false,
-                isOk: true
-            });
-        } else {
-            diagnosis.push({
-                label: 'Temporal Decay',
-                detail: `All ${afterDecayCount} chunks survived decay.`,
-                isCause: false,
-                isOk: true
-            });
-        }
-    } else {
-        diagnosis.push({
-            label: 'Temporal Decay',
-            detail: 'Disabled.',
-            isCause: false,
-            isOk: true
-        });
-    }
-
     // Step 4: Condition Filtering - analyze what conditions failed
     const afterConditions = data.stages.afterConditions;
     const afterConditionsCount = afterConditions.length;
 
     // Find chunks lost to conditions
-    const lostToConditions = afterDecay.filter(chunk => {
+    const lostToConditions = aboveThreshold.filter(chunk => {
         return !afterConditions.some(cc => cc.hash === chunk.hash);
     });
 
-    if (afterConditionsCount === 0 && afterDecayCount > 0) {
+    if (afterConditionsCount === 0 && aboveThreshold.length > 0) {
         // All chunks failed conditions - try to determine why
-        const chunksWithConditions = afterDecay.filter(c => c.metadata?.conditions);
+        const chunksWithConditions = aboveThreshold.filter(c => c.metadata?.conditions);
 
         if (chunksWithConditions.length > 0) {
             // Chunks had explicit conditions that failed
@@ -1075,7 +964,7 @@ function diagnosePipeline(data) {
             ))];
             diagnosis.push({
                 label: 'Condition Filtering',
-                detail: `All ${afterDecayCount} chunks failed their conditions. Condition types present: ${conditionTypes.join(', ')}.`,
+                detail: `All ${aboveThreshold.length} chunks failed their conditions. Condition types present: ${conditionTypes.join(', ')}.`,
                 fix: `Check the conditions on your chunks. ${chunksWithConditions.length} chunks have explicit conditions (${conditionTypes.join(', ')}). These may be character filters, keyword requirements, or custom rules that aren't being met.`,
                 isCause: true,
                 isOk: false
@@ -1084,7 +973,7 @@ function diagnosePipeline(data) {
             // No explicit conditions - might be protected messages or other filtering
             diagnosis.push({
                 label: 'Condition Filtering',
-                detail: `All ${afterDecayCount} chunks were filtered out. This may be due to message protection settings.`,
+                detail: `All ${aboveThreshold.length} chunks were filtered out. This may be due to message protection settings.`,
                 fix: `Check if these messages fall within your "protect recent N messages" setting. Messages in the protected range won't be injected as RAG context.`,
                 isCause: true,
                 isOk: false
@@ -1094,7 +983,7 @@ function diagnosePipeline(data) {
     } else if (lostToConditions.length > 0) {
         diagnosis.push({
             label: 'Condition Filtering',
-            detail: `${afterConditionsCount}/${afterDecayCount} passed conditions. ${lostToConditions.length} filtered out.`,
+            detail: `${afterConditionsCount}/${aboveThreshold.length} passed conditions. ${lostToConditions.length} filtered out.`,
             isCause: false,
             isOk: true
         });
@@ -1207,14 +1096,10 @@ function renderExcludedAnalysis(data) {
 
     // Categorize exclusions
     const belowThreshold = excluded.filter(c => c.score < (data.settings.threshold || 0));
-    const lostToDecay = excluded.filter(c => {
-        const inDecay = data.stages.afterDecay.some(d => d.hash === c.hash);
-        return !inDecay && c.score >= (data.settings.threshold || 0);
-    });
     const failedConditions = excluded.filter(c => {
-        const inDecay = data.stages.afterDecay.some(d => d.hash === c.hash);
+        const aboveThreshold = c.score >= (data.settings.threshold || 0);
         const inConditions = data.stages.afterConditions.some(d => d.hash === c.hash);
-        return inDecay && !inConditions;
+        return aboveThreshold && !inConditions;
     });
     const limitExceeded = excluded.filter(c => {
         const inConditions = data.stages.afterConditions.some(d => d.hash === c.hash);
@@ -1239,17 +1124,6 @@ function renderExcludedAnalysis(data) {
                             <div class="vectfox-debug-exclusion-info">
                                 <strong>${belowThreshold.length}</strong> below threshold
                                 <small>Score < ${data.settings.threshold}</small>
-                            </div>
-                        </div>
-                    ` : ''}
-                    ${lostToDecay.length > 0 ? `
-                        <div class="vectfox-debug-exclusion-category">
-                            <div class="vectfox-debug-exclusion-icon vectfox-debug-exclusion-decay">
-                                <i class="fa-solid fa-clock"></i>
-                            </div>
-                            <div class="vectfox-debug-exclusion-info">
-                                <strong>${lostToDecay.length}</strong> lost to temporal decay
-                                <small>Score reduced below threshold</small>
                             </div>
                         </div>
                     ` : ''}
@@ -1486,12 +1360,10 @@ SETTINGS
   Threshold: ${s.threshold}
   Top K: ${s.topK}
   Min Chat Length: ${s.min_chat_length ?? 0} (current: ${s.chatLength} messages)
-  Temporal Decay: ${s.temporal_decay?.enabled ? `ON (half-life: ${s.temporal_decay.halfLife || s.temporal_decay.half_life})` : 'OFF'}
 
 PIPELINE RESULTS
   Vector Search: ${st.initial?.length || 0} chunks retrieved
   After Threshold: ${st.afterThreshold?.length || 0} passed (threshold: ${s.threshold})
-  After Decay: ${st.afterDecay?.length || 0} survived
   After Conditions: ${st.afterConditions?.length || 0} passed
   Final Injected: ${st.injected?.length || 0}
 
@@ -1502,9 +1374,6 @@ INITIAL SCORES (top 10)
           parts.push(`(vector: ${c.originalScore?.toFixed(3)}`);
           if (c.keywordBoost && c.keywordBoost !== 1.0) {
               parts.push(`× ${c.keywordBoost?.toFixed(2)}x boost`);
-          }
-          if (c.decayMultiplier && c.decayMultiplier !== 1.0) {
-              parts.push(`× ${c.decayMultiplier?.toFixed(2)} decay`);
           }
           parts.push(')');
       }

@@ -911,11 +911,6 @@ function updateOptionsSection(type) {
         `;
     }
 
-    // Temporal decay (only for types that support it)
-    if (hasFeature(type.id, 'temporalDecay')) {
-        html += renderTemporalDecayOptions();
-    }
-
     // Lorebook-specific: respect disabled entries
     if (hasFeature(type.id, 'respectDisabled')) {
         html += `
@@ -1016,123 +1011,6 @@ function renderFieldSelection() {
                         <span class="vectfox-cv-field-name">${field.name}</span>
                     </label>
                 `).join('')}
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Renders temporal weighting options with toggle cards
- */
-function renderTemporalDecayOptions() {
-    const decay = currentSettings.temporalDecay || {};
-    const isEnabled = decay.enabled || false;
-    const decayType = decay.type || 'decay';
-    const decayMode = decay.mode || 'exponential';
-    const halfLife = decay.halfLife || 50;
-    const linearRate = decay.linearRate || 0.01;
-    const minRelevance = decay.minRelevance || 0.3;
-    const maxBoost = decay.maxBoost || 1.2;
-
-    return `
-        <div class="vectfox-cv-option-row vectfox-cv-temporal-settings ${isEnabled ? 'enabled' : ''}">
-            <div class="vectfox-cv-temporal-header">
-                <span>Temporal Weighting</span>
-                <label class="vectfox-toggle-switch">
-                    <input type="checkbox" id="vectfox_cv_temporal_decay"
-                           ${isEnabled ? 'checked' : ''}>
-                    <span class="vectfox-toggle-slider"></span>
-                </label>
-            </div>
-            <span class="vectfox-cv-option-hint">
-                Adjust relevance based on message age
-            </span>
-
-            <div class="vectfox-cv-decay-type-section" style="display: ${isEnabled ? 'block' : 'none'};">
-                <!-- Type: Decay vs Nostalgia -->
-                <div class="vectfox-type-toggle">
-                    <label class="vectfox-type-option ${decayType === 'decay' ? 'selected' : ''}" data-type="decay">
-                        <input type="radio" name="vectfox_cv_decay_type" value="decay" ${decayType === 'decay' ? 'checked' : ''}>
-                        <div class="vectfox-type-card">
-                            <div class="vectfox-type-header">
-                                <span class="vectfox-type-icon">📉</span>
-                                <strong>Decay</strong>
-                            </div>
-                            <small>Recent messages score higher. Older memories fade over time.</small>
-                        </div>
-                    </label>
-                    <label class="vectfox-type-option ${decayType === 'nostalgia' ? 'selected' : ''}" data-type="nostalgia">
-                        <input type="radio" name="vectfox_cv_decay_type" value="nostalgia" ${decayType === 'nostalgia' ? 'checked' : ''}>
-                        <div class="vectfox-type-card">
-                            <div class="vectfox-type-header">
-                                <span class="vectfox-type-icon">📈</span>
-                                <strong>Nostalgia</strong>
-                            </div>
-                            <small>Older messages score higher. Ancient history becomes more relevant.</small>
-                        </div>
-                    </label>
-                </div>
-
-                <!-- Curve: Exponential vs Linear -->
-                <div class="vectfox-curve-label">Curve</div>
-                <div class="vectfox-type-toggle vectfox-curve-toggle">
-                    <label class="vectfox-type-option ${decayMode === 'exponential' ? 'selected' : ''}" data-mode="exponential">
-                        <input type="radio" name="vectfox_cv_decay_mode" value="exponential" ${decayMode === 'exponential' ? 'checked' : ''}>
-                        <div class="vectfox-type-card">
-                            <div class="vectfox-type-header">
-                                <span class="vectfox-type-icon">📐</span>
-                                <strong>Exponential</strong>
-                            </div>
-                            <small>Smooth half-life curve. Effect halves every N messages. Natural decay pattern.</small>
-                        </div>
-                    </label>
-                    <label class="vectfox-type-option ${decayMode === 'linear' ? 'selected' : ''}" data-mode="linear">
-                        <input type="radio" name="vectfox_cv_decay_mode" value="linear" ${decayMode === 'linear' ? 'checked' : ''}>
-                        <div class="vectfox-type-card">
-                            <div class="vectfox-type-header">
-                                <span class="vectfox-type-icon">📏</span>
-                                <strong>Linear</strong>
-                            </div>
-                            <small>Fixed rate per message. Predictable, steady change. Hits limits faster.</small>
-                        </div>
-                    </label>
-                </div>
-
-                <!-- Exponential settings -->
-                <div class="vectfox-cv-decay-exponential" style="display: ${decayMode === 'exponential' ? 'block' : 'none'};">
-                    <div class="vectfox-cv-inline-setting">
-                        <label>Half-life:</label>
-                        <input type="number" id="vectfox_cv_decay_halflife" min="1" max="500" value="${halfLife}" class="vectfox-input-number">
-                        <small>messages until 50% effect</small>
-                    </div>
-                </div>
-
-                <!-- Linear settings -->
-                <div class="vectfox-cv-decay-linear" style="display: ${decayMode === 'linear' ? 'block' : 'none'};">
-                    <div class="vectfox-cv-inline-setting">
-                        <label>Rate:</label>
-                        <input type="number" id="vectfox_cv_decay_rate" min="0.001" max="0.5" step="0.001" value="${linearRate}" class="vectfox-input-number">
-                        <small>per message (0.01 = 1%)</small>
-                    </div>
-                </div>
-
-                <!-- Decay floor (for decay mode) -->
-                <div class="vectfox-cv-decay-floor" style="display: ${decayType === 'decay' ? 'block' : 'none'};">
-                    <div class="vectfox-cv-inline-setting">
-                        <label>Min relevance:</label>
-                        <input type="number" id="vectfox_cv_decay_min" min="0" max="1" step="0.05" value="${minRelevance}" class="vectfox-input-number">
-                        <small>floor (0-1)</small>
-                    </div>
-                </div>
-
-                <!-- Nostalgia ceiling (for nostalgia mode) -->
-                <div class="vectfox-cv-nostalgia-ceiling" style="display: ${decayType === 'nostalgia' ? 'block' : 'none'};">
-                    <div class="vectfox-cv-inline-setting">
-                        <label>Max boost:</label>
-                        <input type="number" id="vectfox_cv_decay_max_boost" min="1" max="3" step="0.1" value="${maxBoost}" class="vectfox-input-number">
-                        <small>ceiling (1.2 = 20% boost)</small>
-                    </div>
-                </div>
             </div>
         </div>
     `;
@@ -1299,66 +1177,6 @@ function bindEvents() {
         const value = parseFloat($(this).val());
         currentSettings.keywordBaseWeight = isNaN(value) ? 1.5 : Math.min(3.0, Math.max(0.01, value));
         $(this).val(currentSettings.keywordBaseWeight);
-    });
-
-    // Temporal weighting enable/disable
-    $(document).on('change', '#vectfox_cv_temporal_decay', function() {
-        const isEnabled = $(this).prop('checked');
-        if (!currentSettings.temporalDecay) {
-            currentSettings.temporalDecay = { enabled: false, type: 'decay', mode: 'exponential' };
-        }
-        currentSettings.temporalDecay.enabled = isEnabled;
-        $('.vectfox-cv-decay-type-section').toggle(isEnabled);
-        // Toggle the enabled class for purple styling
-        $('.vectfox-cv-temporal-settings').toggleClass('enabled', isEnabled);
-    });
-
-    // Temporal weighting type toggle (decay vs nostalgia)
-    $(document).on('change', 'input[name="vectfox_cv_decay_type"]', function() {
-        const type = $(this).val();
-        if (!currentSettings.temporalDecay) {
-            currentSettings.temporalDecay = { enabled: true, type: 'decay', mode: 'exponential' };
-        }
-        currentSettings.temporalDecay.type = type;
-        // Update visual selection state for type cards only
-        $('.vectfox-cv-decay-options .vectfox-type-toggle:not(.vectfox-curve-toggle) .vectfox-type-option').removeClass('selected');
-        $(this).closest('.vectfox-type-option').addClass('selected');
-        // Show/hide floor vs ceiling based on type
-        $('.vectfox-cv-decay-floor').toggle(type === 'decay');
-        $('.vectfox-cv-nostalgia-ceiling').toggle(type === 'nostalgia');
-    });
-
-    // Temporal weighting curve toggle (exponential vs linear)
-    $(document).on('change', 'input[name="vectfox_cv_decay_mode"]', function() {
-        const mode = $(this).val();
-        if (!currentSettings.temporalDecay) {
-            currentSettings.temporalDecay = { enabled: true, type: 'decay', mode: 'exponential' };
-        }
-        currentSettings.temporalDecay.mode = mode;
-        // Update visual selection state for curve cards only
-        $('.vectfox-curve-toggle .vectfox-type-option').removeClass('selected');
-        $(this).closest('.vectfox-type-option').addClass('selected');
-        // Show/hide exponential vs linear settings
-        $('.vectfox-cv-decay-exponential').toggle(mode === 'exponential');
-        $('.vectfox-cv-decay-linear').toggle(mode === 'linear');
-    });
-
-    // Temporal weighting numeric inputs
-    $(document).on('change', '#vectfox_cv_decay_halflife', function() {
-        if (!currentSettings.temporalDecay) currentSettings.temporalDecay = {};
-        currentSettings.temporalDecay.halfLife = parseInt($(this).val()) || 50;
-    });
-    $(document).on('change', '#vectfox_cv_decay_rate', function() {
-        if (!currentSettings.temporalDecay) currentSettings.temporalDecay = {};
-        currentSettings.temporalDecay.linearRate = parseFloat($(this).val()) || 0.01;
-    });
-    $(document).on('change', '#vectfox_cv_decay_min', function() {
-        if (!currentSettings.temporalDecay) currentSettings.temporalDecay = {};
-        currentSettings.temporalDecay.minRelevance = parseFloat($(this).val()) || 0.3;
-    });
-    $(document).on('change', '#vectfox_cv_decay_max_boost', function() {
-        if (!currentSettings.temporalDecay) currentSettings.temporalDecay = {};
-        currentSettings.temporalDecay.maxBoost = parseFloat($(this).val()) || 1.2;
     });
 
     // Cleaning preset dropdown

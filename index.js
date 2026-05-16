@@ -25,8 +25,6 @@ import { debounce_timeout } from '../../../constants.js';
 // VectFox modules - Core
 import { synchronizeChat, rearrangeChat, vectorizeAll } from './core/chat-vectorization.js';
 import { purgeAllVectorIndexes, purgeVectorIndex } from './core/core-vector-api.js';
-import { getChatCollectionId } from './core/chat-vectorization.js';
-import { getDefaultDecaySettings } from './core/temporal-decay.js';
 import { migrateOldEnabledKeys } from './core/collection-metadata.js';
 import { clearCollectionRegistry, discoverExistingCollections, cleanupCorruptedCollections } from './core/collection-loader.js';
 import AsyncUtils from './utils/async-utils.js';
@@ -136,13 +134,6 @@ const defaultSettings = {
     hybrid_text_weight: 0.5,            // Weight for text/BM25 scores (0-1) — A2 weighted mode only
     hybrid_rrf_k: 60,                   // RRF constant — A2 only (Qdrant uses its own default)
     hybrid_native_prefer: true,         // KEPT (no UI): A3 vs A2 selector for backends that support both. Default = prefer native.
-
-    // Advanced features
-    temporal_decay: getDefaultDecaySettings(),
-
-    // Global defaults for new collections
-    default_decay_enabled: false,    // Whether new collections have temporal weighting enabled
-    default_decay_type: 'decay',     // 'decay' or 'nostalgia' for new collections
 
     // RAG Prompt Context (Global level)
     // Wraps ALL injected content with context prompts and/or XML tags
@@ -390,10 +381,6 @@ jQuery(async () => {
     settings = {
         ...defaultSettings,
         ...extension_settings.vectfox,
-        temporal_decay: {
-            ...defaultSettings.temporal_decay,
-            ...extension_settings.vectfox.temporal_decay
-        },
         collections: {
             ...defaultSettings.collections,
             ...extension_settings.vectfox.collections
@@ -530,36 +517,6 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_SENT, onChatEvent);
     eventSource.on(event_types.MESSAGE_RECEIVED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
-    // DEAD-CHUNK-CHAT — disabled for good.
-    // These handlers used to purge `vf_chat_*` collections on chat deletion.
-    // Chat history now lives in `vf_eventbase_*` collections, which use a
-    // UUID-based ID that survives the chat-file deletion (and the chat UUID isn't
-    // recoverable once the chat is gone). EventBase collections need to be cleaned
-    // up via the Database Browser, not auto-purged on chat delete.
-    //
-    // TODO: implement EventBase-aware chat-delete cleanup if/when we want it back.
-    // The hard part is mapping the deleted chatId → chatUUID → eventbase collection
-    // ID, since chat_metadata.integrity is gone after deletion.
-    /* DEAD-CHUNK-CHAT — original handlers:
-    eventSource.on(event_types.CHAT_DELETED, async (chatId) => {
-        if (chatId) {
-            const collectionId = getChatCollectionId(chatId);
-            if (collectionId) {
-                await purgeVectorIndex(collectionId, settings);
-                console.log(`VectFox: Purged vectors for deleted chat: ${chatId}`);
-            }
-        }
-    });
-    eventSource.on(event_types.GROUP_CHAT_DELETED, async (chatId) => {
-        if (chatId) {
-            const collectionId = getChatCollectionId(chatId);
-            if (collectionId) {
-                await purgeVectorIndex(collectionId, settings);
-                console.log(`VectFox: Purged vectors for deleted group chat: ${chatId}`);
-            }
-        }
-    });
-    */
 
     // When WebLLM extension is loaded, refresh the model list
     eventSource.on(event_types.EXTENSION_SETTINGS_LOADED, async (manifest) => {

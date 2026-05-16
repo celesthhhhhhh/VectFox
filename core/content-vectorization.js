@@ -13,12 +13,11 @@
 import { getContentType, getContentTypeDefaults, hasFeature } from './content-types.js';
 import { chunkText } from './chunking.js';
 import { insertVectorItems, purgeVectorIndex, getSavedHashes } from './core-vector-api.js';
-import { setCollectionMeta, getDefaultDecayForType, setCollectionLock, setCollectionCharacterLock } from './collection-metadata.js';
+import { setCollectionMeta, setCollectionLock, setCollectionCharacterLock } from './collection-metadata.js';
 import { registerCollection } from './collection-loader.js';
 import { getBackend } from '../backends/backend-manager.js';
 // Import from collection-ids.js - single source of truth for collection ID operations
 import {
-    buildChatCollectionId,
     buildLorebookCollectionId,
     buildCharacterCollectionId,
     buildDocumentCollectionId,
@@ -250,9 +249,6 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
                 strategy: settings.strategy,
                 chunkSize: settings.chunkSize,
             },
-            temporalDecay: hasFeature(contentType, 'temporalDecay')
-                ? (settings.temporalDecay || getDefaultDecayForType(contentType))
-                : { enabled: false },
         });
 
         // Register collection in the registry so it's discoverable
@@ -747,27 +743,11 @@ function generateCollectionId(contentType, source, settings) {
     const timestamp = Date.now();
 
     switch (contentType) {
-        // DEAD-CHUNK-CHAT — disabled for good.
-        // Chat history is hard-routed through the EventBase pipeline; non-chat
-        // content types (lorebook/character/document/url/wiki/youtube) are the only
-        // valid inputs to this function. If contentType === 'chat' reaches here, it's
-        // a bug — fail loudly rather than silently produce a VectFox_chat_* ID.
         case 'chat':
             throw new Error(
                 'VectFox: generateCollectionId(contentType="chat") is disabled. ' +
                 'Chat history must go through eventbase-workflow.js, not the chunk content pipeline.'
             );
-        /* DEAD-CHUNK-CHAT — original 'chat' branch:
-        case 'chat':
-            // Use UUID-based ID (single source of truth)
-            const chatCollectionId = buildChatCollectionId();
-            if (chatCollectionId) {
-                return chatCollectionId;
-            }
-            // Fall through to legacy generation if UUID not available
-            console.warn('VectFox: Chat UUID not available, using legacy ID generation');
-            break;
-        */
 
         case 'lorebook':
             return buildLorebookCollectionId(sourceName, settings.vector_backend, timestamp);

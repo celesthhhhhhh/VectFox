@@ -600,47 +600,6 @@ export function renderSettings(containerId, settings, callbacks) {
                         </div>
                     </div>
 
-                    <!-- Global Temporal Weighting Defaults Card -->
-                    <div class="vectfox-card" data-vectfox-tab="weight">
-                        <div class="vectfox-card-header">
-                            <h3 class="vectfox-card-title">
-                                <span class="vectfox-icon">
-                                    <i class="fa-solid fa-clock"></i>
-                                </span>
-                                Temporal Weighting Defaults (Non-Chat Collections)
-                            </h3>
-                            <p class="vectfox-card-subtitle">Default settings for newly created non-chat collections that still use chunk retrieval (can be overridden per-collection)</p>
-                        </div>
-                        <div class="vectfox-card-body">
-
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                                <input type="checkbox" id="VectFox_default_decay_enabled" />
-                                <label for="VectFox_default_decay_enabled" style="margin: 0;">
-                                    <small>Enable temporal weighting by default for non-chat collections</small>
-                                </label>
-                            </div>
-
-                            <div id="VectFox_default_decay_type_section" class="vectfox-subsection-disabled">
-                                <label style="margin-bottom: 4px;">
-                                    <small>Default Type</small>
-                                </label>
-                                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-                                    <label style="display: flex; align-items: center; gap: 4px; margin: 0;">
-                                        <input type="radio" name="VectFox_default_decay_type" value="decay" />
-                                        <small>Decay (favor recent)</small>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 4px; margin: 0;">
-                                        <input type="radio" name="VectFox_default_decay_type" value="nostalgia" />
-                                        <small>Nostalgia (favor old)</small>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <small class="VectFox_hint">These defaults apply only to newly created non-chat collections that use the chunk-based retrieval path. Chat history/EventBase retrieval does not use this setting. Existing collections keep their settings.</small>
-
-                        </div>
-                    </div>
-
                     <!-- RAG Context Card -->
                     <div class="vectfox-card" data-vectfox-tab="rag">
                         <div class="vectfox-card-header">
@@ -3190,42 +3149,6 @@ function bindSettingsEvents(settings, callbacks) {
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
-
-    // Global temporal weighting defaults
-    const updateDecayTypeSection = (enabled) => {
-        const $section = $('#VectFox_default_decay_type_section');
-        const $radios = $section.find('input[type="radio"]');
-
-        if (enabled) {
-            $section.removeClass('vectfox-subsection-disabled');
-            $radios.prop('disabled', false);
-            // Select the saved type (or default to 'decay') when enabling
-            const savedType = settings.default_decay_type || 'decay';
-            $(`input[name="VectFox_default_decay_type"][value="${savedType}"]`).prop('checked', true);
-        } else {
-            $section.addClass('vectfox-subsection-disabled');
-            $radios.prop('disabled', true).prop('checked', false);
-        }
-    };
-
-    $('#VectFox_default_decay_enabled')
-        .prop('checked', settings.default_decay_enabled || false)
-        .on('change', function() {
-            const enabled = $(this).prop('checked');
-            settings.default_decay_enabled = enabled;
-            updateDecayTypeSection(enabled);
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-        });
-
-    // Initialize the section state
-    updateDecayTypeSection(settings.default_decay_enabled || false);
-
-    $('input[name="VectFox_default_decay_type"]').on('change', function() {
-        settings.default_decay_type = $(this).val();
-        Object.assign(extension_settings.vectfox, settings);
-        saveSettingsDebounced();
-    });
 
     // Provider-specific settings
 

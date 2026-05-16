@@ -59,21 +59,6 @@ const defaultCollectionMeta = {
     },
 
     // =========================================================================
-    // TEMPORAL DECAY (Per-Collection)
-    // =========================================================================
-    // Controls how older chunks lose relevance over time.
-    // Chat collections default to enabled; others default to disabled.
-    temporalDecay: {
-        enabled: false,           // Enable temporal decay for this collection
-        type: 'decay',            // 'decay' (favor recent) or 'nostalgia' (favor old)
-        mode: 'exponential',      // 'exponential' or 'linear'
-        halfLife: 50,             // Messages until 50% relevance (exponential)
-        linearRate: 0.01,         // % per message (linear mode)
-        minRelevance: 0.3,        // Never decay below this (0-1) - decay mode only
-        maxBoost: 2.0,            // Maximum boost multiplier (1-5) - nostalgia mode only
-    },
-
-    // =========================================================================
     // PROMPT CONTEXT (Per-Collection)
     // =========================================================================
     // Wraps all chunks from this collection with context/guidance for the AI.
@@ -82,28 +67,6 @@ const defaultCollectionMeta = {
     context: '',      // Natural language context shown before this collection's chunks
     xmlTag: '',       // XML tag to wrap this collection's chunks (e.g., "memories")
 };
-
-/**
- * Gets default temporal decay settings based on collection type
- * @param {string} collectionType - 'chat', 'lorebook', 'file', 'document', etc.
- * @returns {object} Default decay settings for this type
- */
-export function getDefaultDecayForType(collectionType) {
-    // Get global defaults from settings
-    const globalSettings = extension_settings.vectfox || {};
-    const globalEnabled = globalSettings.default_decay_enabled ?? false;
-    const globalType = globalSettings.default_decay_type || 'decay';
-
-    return {
-        enabled: globalEnabled,
-        type: globalType,
-        mode: 'exponential',
-        halfLife: 50,
-        linearRate: 0.01,
-        minRelevance: 0.3,
-        maxBoost: 2.0,
-    };
-}
 
 /**
  * ============================================================================
@@ -771,23 +734,13 @@ export function ensureCollectionMeta(collectionId, initialData = {}) {
     ensureCollectionsObject();
 
     if (!extension_settings.vectfox.collections[collectionId]) {
-        // Determine collection type for temporal decay defaults
-        // Check initialData.type, or infer from scope, or parse from collectionId
-        let collectionType = initialData.type || initialData.scope || 'unknown';
-        if (collectionType === 'unknown' && collectionId.includes('_chat_')) {
-            collectionType = 'chat';
-        } else if (collectionType === 'unknown' && collectionId.includes('_lorebook_')) {
-            collectionType = 'lorebook';
-        }
-
         extension_settings.vectfox.collections[collectionId] = {
             ...defaultCollectionMeta,
-            temporalDecay: getDefaultDecayForType(collectionType),
             createdAt: Date.now(),
             ...initialData,
         };
         saveSettingsDebounced();
-        console.log(`VectFox: Created metadata for new collection ${collectionId} (type: ${collectionType})`);
+        console.log(`VectFox: Created metadata for new collection ${collectionId}`);
     }
 }
 
@@ -937,7 +890,6 @@ async function evaluateAdvancedConditions(meta, context, collectionId) {
 export async function shouldCollectionActivate(collectionId, context) {
     const meta = getCollectionMeta(collectionId);
     const currentChatId = context?.currentChatId;
-    const currentChatCollectionId = context?.currentChatCollectionId;
     const debug = !!extension_settings.vectfox?.eventbase_debug_logging;
 
     // Priority 1: Pause button — global disable, blocks everything
@@ -1097,155 +1049,3 @@ export function getCollectionConditions(collectionId) {
     return meta.conditions || { enabled: false, logic: 'AND', rules: [] };
 }
 
-// ============================================================================
-// TEMPORAL DECAY HELPERS (Per-Collection)
-// ============================================================================
-
-/**
- * Default temporal decay settings
- */
-const defaultTemporalDecay = {
-    enabled: false,
-    mode: 'exponential',
-    halfLife: 50,
-    linearRate: 0.01,
-    minRelevance: 0.3,
-};
-
-/**
- * Gets temporal decay settings for a collection
- * Uses type-aware defaults (chat = enabled by default)
- * @param {string} collectionId Collection identifier
- * @returns {object} Decay settings for this collection
- */
-export function getCollectionDecaySettings(collectionId) {
-    const meta = getCollectionMeta(collectionId);
-
-    // If collection has explicit decay settings, use them
-    if (meta.temporalDecay) {
-        return {
-            enabled: meta.temporalDecay.enabled ?? false,
-            mode: meta.temporalDecay.mode || 'exponential',
-            halfLife: meta.temporalDecay.halfLife || 50,
-            linearRate: meta.temporalDecay.linearRate || 0.01,
-            minRelevance: meta.temporalDecay.minRelevance || 0.3,
-        };
-    }
-
-    // Otherwise use type-aware defaults
-    const collectionType = meta.scope === 'chat' ? 'chat' : (meta.type || 'unknown');
-    return getDefaultDecayForType(collectionType);
-}
-
-/**
- * Sets temporal decay settings for a collection
- * @param {string} collectionId Collection identifier
- * @param {object} decaySettings Temporal decay settings
- */
-export function setCollectionDecaySettings(collectionId, decaySettings) {
-    const existing = getCollectionMeta(collectionId);
-    const merged = {
-        ...defaultTemporalDecay,
-        ...existing.temporalDecay,
-        ...decaySettings,
-    };
-    setCollectionMeta(collectionId, { temporalDecay: merged });
-}
-
-/**
- * Checks if a collection has custom (non-default) decay settings
- * @param {string} collectionId Collection identifier
- * @returns {boolean} Whether collection has custom decay configuration
- */
-export function hasCustomDecaySettings(collectionId) {
-    const meta = getCollectionMeta(collectionId);
-    return meta.temporalDecay !== undefined && meta.temporalDecay !== null;
-}
-
-/**
- * Gets a summary of temporal decay for display
- * @param {string} collectionId Collection identifier
- * @returns {object} Summary { isCustom, enabled, mode, description }
- */
-export function getCollectionDecaySummary(collectionId) {
-    const meta = getCollectionMeta(collectionId);
-    const isCustom = hasCustomDecaySettings(collectionId);
-    const settings = getCollectionDecaySettings(collectionId);
-
-    let description = 'Disabled';
-    if (settings.enabled) {
-        if (settings.mode === 'exponential') {
-            description = `Exponential (half-life: ${settings.halfLife} msgs)`;
-        } else {
-            description = `Linear (${(settings.linearRate * 100).toFixed(1)}% per msg)`;
-        }
-    }
-
-    return {
-        isCustom,
-        enabled: settings.enabled,
-        mode: settings.mode,
-        description,
-    };
-}
-
-// ============================================================================
-// TEMPORALLY BLIND CHUNKS
-// ============================================================================
-// Chunks marked as "temporally blind" are immune to temporal decay.
-// Their relevance score will not decrease over time regardless of age.
-// Useful for important context that should always remain relevant.
-
-/**
- * Marks a chunk as temporally blind (immune to decay)
- * @param {string} hash Chunk hash
- * @param {boolean} isBlind Whether the chunk is temporally blind
- */
-export function setChunkTemporallyBlind(hash, isBlind) {
-    const existing = getChunkMetadata(hash) || {};
-    saveChunkMetadata(hash, {
-        ...existing,
-        temporallyBlind: isBlind,
-    });
-    console.log(`VectFox: Chunk ${hash} temporally blind: ${isBlind}`);
-}
-
-/**
- * Checks if a chunk is temporally blind
- * @param {string} hash Chunk hash
- * @returns {boolean} Whether the chunk is immune to decay
- */
-export function isChunkTemporallyBlind(hash) {
-    const meta = getChunkMetadata(hash);
-    return meta?.temporallyBlind === true;
-}
-
-/**
- * Gets all temporally blind chunk hashes
- * @returns {string[]} Array of chunk hashes that are temporally blind
- */
-export function getTemporallyBlindChunks() {
-    if (!extension_settings.vectfox) {
-        return [];
-    }
-
-    const blindChunks = [];
-    for (const key in extension_settings.vectfox) {
-        if (key.startsWith('vectfox_chunk_meta_')) {
-            const meta = extension_settings.vectfox[key];
-            if (meta?.temporallyBlind === true) {
-                const hash = key.replace('vectfox_chunk_meta_', '');
-                blindChunks.push(hash);
-            }
-        }
-    }
-    return blindChunks;
-}
-
-/**
- * Gets count of temporally blind chunks
- * @returns {number} Number of temporally blind chunks
- */
-export function getTemporallyBlindCount() {
-    return getTemporallyBlindChunks().length;
-}

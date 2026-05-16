@@ -30,8 +30,6 @@ import { purgeVectorIndex } from './core-vector-api.js';
 // Import from collection-ids.js - single source of truth for collection ID operations
 import {
     getChatUUID,
-    buildChatCollectionId as getChatCollectionId,
-    buildLegacyChatCollectionId as getLegacyChatCollectionId,
     parseCollectionId,
     buildChatSearchPatterns,
     matchesPatterns,
@@ -97,7 +95,7 @@ export function getCollectionRegistry() {
  */
 /**
  * Sanitize a persona name into the handleId form used by collection-ID builders.
- * Must match buildChatCollectionId / buildEventBaseCollectionId / buildArchiveEventCollectionId.
+ * Must match buildEventBaseCollectionId / buildArchiveEventCollectionId.
  */
 export function sanitizeHandleId(name) {
     return String(name || 'user')
@@ -792,33 +790,6 @@ async function discoverViaFallback(settings) {
         }
     }
 
-    // 2. Probe for current chat's collection (both formats)
-    if (context.chatId) {
-        // vf_chat_{charName}_{uuid}
-        const newFormatId = getChatCollectionId();
-        if (newFormatId && !probed.has(newFormatId)) {
-            probed.add(newFormatId);
-            const result = await probeCollection(newFormatId, settings);
-            if (result.exists) {
-                registerCollection(newFormatId);
-                discovered.push(newFormatId);
-                console.log(`VectFox: Discovered current chat collection: ${newFormatId} (${result.count} chunks)`);
-            }
-        }
-
-        // Legacy format (DEAD): vf_chat_{chatId}
-        const legacyFormatId = getLegacyChatCollectionId(context.chatId);
-        if (legacyFormatId && !probed.has(legacyFormatId)) {
-            probed.add(legacyFormatId);
-            const result = await probeCollection(legacyFormatId, settings);
-            if (result.exists) {
-                registerCollection(legacyFormatId);
-                discovered.push(legacyFormatId);
-                console.log(`VectFox: Discovered legacy chat collection: ${legacyFormatId} (${result.count} chunks)`);
-            }
-        }
-    }
-
     // 3. Probe for character-based collections
     for (const char of characters) {
         if (!char.name) continue;
@@ -945,29 +916,6 @@ export async function doesChatHaveVectors(settings, overrideChatId, overrideUUID
             chunkCount: best.chunkCount,
             allMatches: matchingCollections  // Return ALL matches for user selection
         };
-    }
-
-    // Not found in registry - try direct query as last resort
-    const newFormatId = getChatCollectionId(uuid);
-    const legacyFormatId = getLegacyChatCollectionId(chatId);
-
-    for (const id of [newFormatId, legacyFormatId].filter(Boolean)) {
-        try {
-            const hashes = await getSavedHashes(id, settings);
-            if (hashes && hashes.length > 0) {
-                // Found vectors! Register it now
-                registerCollection(id);
-                console.log(`VectFox: Found ${hashes.length} vectors via direct query, registered ${id}`);
-                return {
-                    hasVectors: true,
-                    collectionId: id,
-                    registryKey: id,
-                    chunkCount: hashes.length
-                };
-            }
-        } catch (e) {
-            // Query failed, continue to next format
-        }
     }
 
     console.log('VectFox: No vectors found for current chat');
@@ -1210,7 +1158,6 @@ export async function loadCollectionChunks(collectionId, settings) {
                     index: chat.indexOf(message),
                     metadata: {
                         messageId: chat.indexOf(message),
-                        source: 'chat',
                         // Include keywords and other metadata from DB
                         keywords: dbMetadata.keywords || [],
                         ...dbMetadata

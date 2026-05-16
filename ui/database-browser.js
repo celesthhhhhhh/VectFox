@@ -36,11 +36,6 @@ import {
   getCollectionMeta,
   setCollectionMeta,
   getCollectionActivationSummary,
-  getCollectionDecaySummary,
-  getCollectionDecaySettings,
-  setCollectionDecaySettings,
-  hasCustomDecaySettings,
-  getDefaultDecayForType,
   isCollectionEnabled,
   // Locking API
   getCollectionLock,
@@ -680,7 +675,7 @@ function switchTab(tabName) {
  */
 /**
  * Sanitize a persona name into a handleId — must match the logic used by collection-ids.js
- * builders (buildEventBaseCollectionId, buildArchiveEventCollectionId, buildChatCollectionId).
+ * builders (buildEventBaseCollectionId, buildArchiveEventCollectionId).
  * @param {string} name
  * @returns {string}
  */
@@ -718,7 +713,6 @@ function _extractHandleFromCollectionId(collectionId) {
  * naming protocol and are persona-scoped.
  */
 const _PERSONA_SCOPED_PREFIXES = [
-  COLLECTION_PREFIXES.VECTFOX_CHAT,
   COLLECTION_PREFIXES.VECTFOX_EVENTBASE,
   COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT,
   COLLECTION_PREFIXES.VECTFOX_LOREBOOK,
@@ -972,17 +966,6 @@ function renderCollectionCard(collection, isActiveById = null) {
     ? `<span class="vectfox-badge vectfox-badge-model" title="Current model: ${currentModelName} (${collection.models.length} available)">📐 ${currentModelName}</span>`
     : "";
 
-  // Temporal decay badge
-  const decaySummary = getCollectionDecaySummary(collection.id);
-  let decayBadge = "";
-  if (decaySummary.enabled) {
-    const decayIcon = decaySummary.isCustom ? "⏳" : "⏱️";
-    const decayTitle = decaySummary.isCustom
-      ? `Custom decay: ${decaySummary.description}`
-      : `Default decay: ${decaySummary.description}`;
-    decayBadge = `<span class="vectfox-badge vectfox-badge-decay ${decaySummary.isCustom ? "vectfox-badge-decay-custom" : ""}" title="${decayTitle}">${decayIcon}</span>`;
-  }
-
   // Lock badge — show only when locked to the CURRENT chat. Locks to other chats
   // still exist (visible in the Settings modal as "X lock (other chat)"), but the
   // listing badge would be misleading there since the collection isn't active here.
@@ -1025,7 +1008,6 @@ function renderCollectionCard(collection, isActiveById = null) {
                     ${backendBadge}
                     ${sourceBadge}
                     ${modelBadge}
-                    ${decayBadge}
                     ${lockBadge}
                     ${statusBadge}
                 </div>
@@ -1048,9 +1030,9 @@ function renderCollectionCard(collection, isActiveById = null) {
                         title="Rename this collection">
                     ${icons.pencil(16)} Rename
                 </button>
-                <button class="vectfox-btn-sm vectfox-action-activation ${activationSummary.mode !== "auto" || decaySummary.isCustom ? "vectfox-has-settings" : ""}"
+                <button class="vectfox-btn-sm vectfox-action-activation ${activationSummary.mode !== "auto" ? "vectfox-has-settings" : ""}"
                         data-collection-key="${uniqueKey}"
-                        title="Configure activation, triggers, conditions, and temporal decay">
+                        title="Configure activation, triggers, and conditions">
                     ${icons.settings(16)} Settings
                 </button>
                 ${
@@ -1870,16 +1852,6 @@ let activationEditorState = {
   triggerCaseSensitive: false,
   triggerScanDepth: 5,
   conditions: null,
-  // Temporal Weighting (decay or nostalgia)
-  temporalDecay: {
-    enabled: false,
-    type: "decay", // 'decay' or 'nostalgia'
-    mode: "exponential",
-    halfLife: 50,
-    linearRate: 0.01,
-    minRelevance: 0.3,
-    maxBoost: 1.2,
-  },
   // Injection settings (position/depth)
   position: null, // null = use global default
   depth: null, // null = use global default
@@ -1895,10 +1867,8 @@ function openActivationEditor(collectionId, collectionName) {
   const triggerSettings = getCollectionTriggers(collectionId);
   const conditions = getCollectionConditions(collectionId);
 
-  // Get decay settings - use type-aware defaults if not explicitly set
   const collectionType =
     meta.scope === "chat" ? "chat" : meta.type || "unknown";
-  const decaySettings = getCollectionDecaySettings(collectionId);
 
   const currentChatId = getCurrentChatId();
   const currentCharacterId = getContext()?.characterId;
@@ -1921,15 +1891,6 @@ function openActivationEditor(collectionId, collectionName) {
     triggerCaseSensitive: triggerSettings.caseSensitive || false,
     triggerScanDepth: triggerSettings.scanDepth || 5,
     conditions,
-    temporalDecay: {
-      enabled: decaySettings.enabled,
-      type: decaySettings.type || "decay",
-      mode: decaySettings.mode,
-      halfLife: decaySettings.halfLife,
-      linearRate: decaySettings.linearRate,
-      minRelevance: decaySettings.minRelevance,
-      maxBoost: decaySettings.maxBoost || 1.2,
-    },
     // Prompt context
     context: meta.context || "",
     xmlTag: meta.xmlTag || "",
@@ -2063,99 +2024,6 @@ function createActivationEditorModal() {
                     </div>
 
                     <!-- ========================================== -->
-                    <!-- TEMPORAL DECAY (Per-Collection) -->
-                    <!-- ========================================== -->
-                    <div class="vectfox-activation-section vectfox-decay-section">
-                        <div class="vectfox-section-header">
-                            <h4>⏳ Temporal Weighting</h4>
-                            <small>Adjust chunk relevance based on message age</small>
-                        </div>
-
-                        <div class="vectfox-decay-settings">
-                            <div class="vectfox-option-row">
-                                <label class="vectfox-checkbox-label">
-                                    <input type="checkbox" id="vectfox_decay_enabled">
-                                    <strong>Enable temporal weighting</strong>
-                                </label>
-                            </div>
-
-                            <div class="vectfox-decay-advanced" id="vectfox_decay_advanced">
-                                <div class="vectfox-type-toggle">
-                                    <label class="vectfox-type-option" data-type="decay">
-                                        <input type="radio" name="vectfox_decay_type" value="decay" checked>
-                                        <div class="vectfox-type-card">
-                                            <div class="vectfox-type-header">
-                                                <span class="vectfox-type-icon">📉</span>
-                                                <strong>Decay</strong>
-                                            </div>
-                                            <small>Recent messages score higher. Older memories fade over time.</small>
-                                        </div>
-                                    </label>
-                                    <label class="vectfox-type-option" data-type="nostalgia">
-                                        <input type="radio" name="vectfox_decay_type" value="nostalgia">
-                                        <div class="vectfox-type-card">
-                                            <div class="vectfox-type-header">
-                                                <span class="vectfox-type-icon">📈</span>
-                                                <strong>Nostalgia</strong>
-                                            </div>
-                                            <small>Older messages score higher. Ancient history becomes more relevant.</small>
-                                        </div>
-                                    </label>
-                                </div>
-
-                                <div class="vectfox-curve-label">Curve</div>
-                                <div class="vectfox-type-toggle vectfox-curve-toggle">
-                                    <label class="vectfox-type-option" data-mode="exponential">
-                                        <input type="radio" name="vectfox_decay_mode" value="exponential" checked>
-                                        <div class="vectfox-type-card">
-                                            <div class="vectfox-type-header">
-                                                <span class="vectfox-type-icon">📐</span>
-                                                <strong>Exponential</strong>
-                                            </div>
-                                            <small>Smooth half-life curve. Effect halves every N messages. Natural decay pattern.</small>
-                                        </div>
-                                    </label>
-                                    <label class="vectfox-type-option" data-mode="linear">
-                                        <input type="radio" name="vectfox_decay_mode" value="linear">
-                                        <div class="vectfox-type-card">
-                                            <div class="vectfox-type-header">
-                                                <span class="vectfox-type-icon">📏</span>
-                                                <strong>Linear</strong>
-                                            </div>
-                                            <small>Fixed rate per message. Predictable, steady change. Hits limits faster.</small>
-                                        </div>
-                                    </label>
-                                </div>
-
-                                <div class="vectfox-option-row vectfox-decay-exponential">
-                                    <label>Half-life:</label>
-                                    <input type="number" id="vectfox_decay_halflife" min="1" max="500" value="50">
-                                    <small id="vectfox_halflife_hint">messages until 50% effect</small>
-                                </div>
-
-                                <div class="vectfox-option-row vectfox-decay-linear" style="display: none;">
-                                    <label>Rate:</label>
-                                    <input type="number" id="vectfox_decay_rate" min="0.001" max="0.5" step="0.001" value="0.01">
-                                    <small>per message (0.01 = 1%)</small>
-                                </div>
-
-                                <div class="vectfox-option-row vectfox-decay-floor">
-                                    <label id="vectfox_limit_label">Min relevance:</label>
-                                    <input type="number" id="vectfox_decay_min" min="0" max="2" step="0.05" value="0.3">
-                                    <small id="vectfox_limit_hint">floor for decay (0-1)</small>
-                                </div>
-
-                                <div class="vectfox-option-row vectfox-nostalgia-ceiling" style="display: none;">
-                                    <label>Max boost:</label>
-                                    <input type="number" id="vectfox_decay_max_boost" min="1" max="3" step="0.1" value="1.2">
-                                    <small>ceiling for nostalgia (1.2 = 20% max boost)</small>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ========================================== -->
                     <!-- PROMPT CONTEXT -->
                     <!-- ========================================== -->
                     <div class="vectfox-activation-section vectfox-context-section">
@@ -2224,20 +2092,6 @@ function createActivationEditorModal() {
 }
 
 /**
- * Updates hint text based on decay vs nostalgia mode
- * @param {boolean} isNostalgia True if nostalgia mode
- */
-function updateTemporalWeightingHints(isNostalgia) {
-  if (isNostalgia) {
-    $("#vectfox_decay_type_hint").text("Older messages score higher");
-    $("#vectfox_halflife_hint").text("messages until 50% of max boost");
-  } else {
-    $("#vectfox_decay_type_hint").text("Newer messages score higher");
-    $("#vectfox_halflife_hint").text("messages until 50% relevance");
-  }
-}
-
-/**
  * Binds event handlers for activation editor
  */
 function bindActivationEditorEvents() {
@@ -2275,36 +2129,6 @@ function bindActivationEditorEvents() {
   // Active-for-current-chat toggle (status only, does not disable other settings)
   $("#vectfox_always_active").on("change", function (e) {
     e.stopPropagation();
-  });
-
-  // Decay enabled toggle shows/hides advanced settings
-  $("#vectfox_decay_enabled").on("change", function (e) {
-    e.stopPropagation();
-    const enabled = $(this).prop("checked");
-    $("#vectfox_decay_advanced").toggle(enabled);
-  });
-
-  // Decay mode toggle shows/hides exponential vs linear settings
-  $('input[name="vectfox_decay_mode"]').on("change", function (e) {
-    e.stopPropagation();
-    const mode = $(this).val();
-    $(".vectfox-decay-exponential").toggle(mode === "exponential");
-    $(".vectfox-decay-linear").toggle(mode === "linear");
-    // Update visual selection state
-    $(".vectfox-curve-toggle .vectfox-type-option").removeClass("selected");
-    $(this).closest(".vectfox-type-option").addClass("selected");
-  });
-
-  // Decay type toggle shows/hides decay-specific vs nostalgia-specific fields
-  $('input[name="vectfox_decay_type"]').on("change", function (e) {
-    e.stopPropagation();
-    const isNostalgia = $(this).val() === "nostalgia";
-    $(".vectfox-decay-floor").toggle(!isNostalgia);
-    $(".vectfox-nostalgia-ceiling").toggle(isNostalgia);
-    updateTemporalWeightingHints(isNostalgia);
-    // Update visual selection state
-    $(".vectfox-type-option").removeClass("selected");
-    $(this).closest(".vectfox-type-option").addClass("selected");
   });
 
   // Activation editor: Lock-to-chat button - opens dialog to manage multiple locks
@@ -2370,40 +2194,6 @@ function renderActivationEditor() {
   // Conditions
   $("#vectfox_conditions_enabled").prop("checked", state.conditions.enabled);
   $("#vectfox_conditions_logic").val(state.conditions.logic || "AND");
-
-  // Temporal Weighting (decay or nostalgia)
-  const decay = state.temporalDecay;
-  $("#vectfox_decay_enabled").prop("checked", decay.enabled);
-  const decayType = decay.type || "decay";
-  $(`input[name="vectfox_decay_type"][value="${decayType}"]`).prop(
-    "checked",
-    true,
-  );
-  $(".vectfox-type-option").removeClass("selected");
-  $(`.vectfox-type-option[data-type="${decayType}"]`).addClass("selected");
-  const decayMode = decay.mode || "exponential";
-  $(`input[name="vectfox_decay_mode"][value="${decayMode}"]`).prop(
-    "checked",
-    true,
-  );
-  $(`.vectfox-type-option[data-mode="${decayMode}"]`).addClass("selected");
-  $("#vectfox_decay_halflife").val(decay.halfLife);
-  $("#vectfox_decay_rate").val(decay.linearRate);
-  $("#vectfox_decay_min").val(decay.minRelevance);
-  $("#vectfox_decay_max_boost").val(decay.maxBoost || 1.2);
-
-  // Show/hide advanced decay settings based on enabled
-  $("#vectfox_decay_advanced").toggle(decay.enabled);
-
-  // Show correct decay mode fields
-  $(".vectfox-decay-exponential").toggle(decay.mode === "exponential");
-  $(".vectfox-decay-linear").toggle(decay.mode === "linear");
-
-  // Show/hide type-specific fields and update hints
-  const isNostalgia = decayType === "nostalgia";
-  $(".vectfox-decay-floor").toggle(!isNostalgia);
-  $(".vectfox-nostalgia-ceiling").toggle(isNostalgia);
-  updateTemporalWeightingHints(isNostalgia);
 
   // Prompt Context
   $("#vectfox_collection_context").val(state.context || "");
@@ -2483,7 +2273,7 @@ function refreshActivationLockButton() {
 }
 
 /**
- * Saves collection settings (activation + triggers + conditions + decay)
+ * Saves collection settings (activation + triggers + conditions)
  */
 function saveActivation() {
   const state = activationEditorState;
@@ -2494,17 +2284,6 @@ function saveActivation() {
     .split(/[\n,]/)
     .map((t) => t.trim())
     .filter((t) => t.length > 0);
-
-  // Build temporal weighting settings (decay or nostalgia)
-  const temporalDecay = {
-    enabled: $("#vectfox_decay_enabled").prop("checked"),
-    type: $('input[name="vectfox_decay_type"]:checked').val() || "decay",
-    mode: $('input[name="vectfox_decay_mode"]:checked').val() || "exponential",
-    halfLife: parseInt($("#vectfox_decay_halflife").val()) || 50,
-    linearRate: parseFloat($("#vectfox_decay_rate").val()) || 0.01,
-    minRelevance: parseFloat($("#vectfox_decay_min").val()) || 0.3,
-    maxBoost: parseFloat($("#vectfox_decay_max_boost").val()) || 1.2,
-  };
 
   // Get prompt context values (sanitize xml tag)
   const contextPrompt = $("#vectfox_collection_context").val() || "";
@@ -2553,7 +2332,6 @@ function saveActivation() {
     triggerMatchMode: $("#vectfox_trigger_match_mode").val(),
     triggerScanDepth: parseInt($("#vectfox_trigger_scan_depth").val()) || 5,
     triggerCaseSensitive: $("#vectfox_trigger_case_sensitive").prop("checked"),
-    temporalDecay: temporalDecay,
     context: contextPrompt,
     xmlTag: xmlTag,
     position: position,

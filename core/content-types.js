@@ -175,7 +175,6 @@ export const CONTENT_TYPES = {
         description: 'Vectorize conversation history for semantic recall',
 
         features: {
-            temporalDecay: false,
             keywordExtraction: false,
             speakerAware: true,
             autoSync: true,
@@ -207,7 +206,6 @@ export const CONTENT_TYPES = {
         description: 'Vectorize world info entries for semantic activation',
 
         features: {
-            temporalDecay: false,
             keywordExtraction: true,
             keyInheritance: true,
             scopeControl: true,
@@ -238,7 +236,6 @@ export const CONTENT_TYPES = {
         description: 'Vectorize character definitions for context retrieval',
 
         features: {
-            temporalDecay: false,
             keywordExtraction: true,
             fieldSelection: true,
             scopeControl: true,
@@ -279,7 +276,6 @@ export const CONTENT_TYPES = {
         description: 'Fetch and vectorize content from a webpage',
 
         features: {
-            temporalDecay: false,
             keywordExtraction: true,
             scopeControl: true,
             sectionHeaders: true,
@@ -307,7 +303,6 @@ export const CONTENT_TYPES = {
         description: 'Upload documents or text files for retrieval',
 
         features: {
-            temporalDecay: false,
             keywordExtraction: true,
             scopeControl: true,
             sectionHeaders: true,
@@ -338,7 +333,6 @@ export const CONTENT_TYPES = {
         description: 'Scrape Fandom or MediaWiki pages',
 
         features: {
-            temporalDecay: false,
             keywordExtraction: true,
             scopeControl: true,
             sectionHeaders: true,
@@ -375,7 +369,6 @@ export const CONTENT_TYPES = {
         description: 'Extract and vectorize video transcripts',
 
         features: {
-            temporalDecay: false,
             keywordExtraction: true,
             scopeControl: true,
             timestamps: true,

@@ -12,8 +12,6 @@
  */
 
 import {
-    isChunkTemporallyBlind,
-    setChunkTemporallyBlind,
     getChunkMetadata,
     saveChunkMetadata,
     deleteChunkMetadata,
@@ -81,16 +79,6 @@ function isEventBaseCollection() {
     return id.startsWith('vf_eventbase_') || id.includes('_eventbase_');
 }
 
-/**
- * Chat-source collections (legacy ChunkBase chat OR EventBase chat) are the
- * only place temporal decay actually runs — lorebook/document/url chunks have
- * no messageId so decay is skipped regardless of the toggle.
- */
-function isChatCollection() {
-    if (currentResults?.collectionType === 'chat') return true;
-    return isEventBaseCollection();
-}
-
 // ============================================================================
 // CHUNK DATA HELPERS
 // ============================================================================
@@ -134,7 +122,6 @@ function getChunkData(chunk) {
         conditions: stored.conditions || { enabled: false, logic: 'AND', rules: [] },
         chunkLinks: stored.chunkLinks || [],
         summaries: stored.summaries || [],
-        temporallyBlind: stored.temporallyBlind || false,
         name: stored.name || null,
         // Prompt context (existing)
         context: stored.context || '',
@@ -382,9 +369,6 @@ function applyFilters() {
         case 'conditions':
             chunks = chunks.filter(c => c.data.conditions?.enabled && c.data.conditions?.rules?.length > 0);
             break;
-        case 'blind':
-            chunks = chunks.filter(c => c.data.temporallyBlind);
-            break;
         case 'keywords':
             chunks = chunks.filter(c => c.data.keywords?.length > 0);
             break;
@@ -402,10 +386,10 @@ function applyFilters() {
             chunks.sort((a, b) => (b.data.keywords?.length || 0) - (a.data.keywords?.length || 0));
             break;
         case 'modified':
-            // Sort by whether chunk has customizations (keywords, conditions, name, blind)
+            // Sort by whether chunk has customizations (keywords, conditions, name)
             chunks.sort((a, b) => {
-                const aModified = (a.data.keywords?.length || 0) + (a.data.conditions?.rules?.length || 0) + (a.data.name ? 1 : 0) + (a.data.temporallyBlind ? 1 : 0);
-                const bModified = (b.data.keywords?.length || 0) + (b.data.conditions?.rules?.length || 0) + (b.data.name ? 1 : 0) + (b.data.temporallyBlind ? 1 : 0);
+                const aModified = (a.data.keywords?.length || 0) + (a.data.conditions?.rules?.length || 0) + (a.data.name ? 1 : 0);
+                const bModified = (b.data.keywords?.length || 0) + (b.data.conditions?.rules?.length || 0) + (b.data.name ? 1 : 0);
                 return bModified - aModified;
             });
             break;
@@ -475,7 +459,6 @@ function createModal() {
                                     <option value="disabled">Disabled</option>
                                     <option value="keywords">Has Keywords</option>
                                     <option value="conditions">Has Conditions</option>
-                                    <option value="blind">Decay Immune</option>
                                 </select>
                             </div>
                                 <div class="vectfox-fetch-limit-control">
@@ -571,7 +554,6 @@ function renderChunkItem(chunk, listIndex) {
     const featureBadges = [];
     if (hasConditions) featureBadges.push(`<span class="vectfox-chunk-item-badge conditions" title="Has ${data.conditions.rules.length} condition(s)">⚡${data.conditions.rules.length}</span>`);
     if (hasKeywords) featureBadges.push(`<span class="vectfox-chunk-item-badge keywords" title="Has ${data.keywords.length} keyword(s)">🏷️${data.keywords.length}</span>`);
-    if (data.temporallyBlind) featureBadges.push(`<span class="vectfox-chunk-item-badge blind" title="Immune to temporal decay">🛡️</span>`);
 
     return `
         <div class="vectfox-chunk-item ${isSelected ? 'selected' : ''} ${!data.enabled ? 'disabled' : ''}"
@@ -592,21 +574,17 @@ function renderChunkItem(chunk, listIndex) {
 
 function updateStatusBar() {
     const shown = filteredChunks.length;
-    // PERF: Count all stats in a single pass instead of 3 separate filter operations
     let withConditions = 0;
     let withKeywords = 0;
-    let blind = 0;
     for (const c of allChunks) {
         if (c.data.conditions?.enabled && c.data.conditions?.rules?.length > 0) withConditions++;
         if (c.data.keywords?.length > 0) withKeywords++;
-        if (c.data.temporallyBlind) blind++;
     }
 
     $('#VectFox_list_status').html(`
         <span>${shown} chunks</span>
         ${withKeywords > 0 ? `<span>• 🏷️${withKeywords}</span>` : ''}
         ${withConditions > 0 ? `<span>• ⚡${withConditions}</span>` : ''}
-        ${blind > 0 ? `<span>• 🛡️${blind}</span>` : ''}
     `);
 }
 
@@ -644,10 +622,8 @@ function renderDetailPanel() {
     // Feature gating — EventBase chat ignores per-chunk enabled/keywords/conditions/links
     // (its retrieval re-ranks by importance/persist/recency). XML tag and injection
     // position still apply because they're consumed at the post-retrieval injection stage.
-    // Decay Immune is meaningful only for chat-source chunks (decay never runs on lorebook/document).
     const isEventBase = isEventBaseCollection();
     const showEnabledToggle = !isEventBase;
-    const showDecayImmune = isChatCollection();
     const showKeywords = !isEventBase;
     const showConditions = !isEventBase;
     const showChunkLinks = !isEventBase;
@@ -697,7 +673,7 @@ function renderDetailPanel() {
             </div>
 
             <!-- Status Section -->
-            ${(showEnabledToggle || showDecayImmune) ? `
+            ${showEnabledToggle ? `
             <div class="vectfox-detail-section">
                 <div class="vectfox-detail-section-title">Status</div>
                 <div class="vectfox-detail-status-row">
@@ -706,15 +682,6 @@ function renderDetailPanel() {
                         <span class="vectfox-toggle-label">Enabled</span>
                         <label class="vectfox-toggle-switch">
                             <input type="checkbox" id="VectFox_detail_enabled" ${data.enabled ? 'checked' : ''}>
-                            <span class="vectfox-toggle-slider"></span>
-                        </label>
-                    </div>
-                    ` : ''}
-                    ${showDecayImmune ? `
-                    <div class="vectfox-detail-toggle-item">
-                        <span class="vectfox-toggle-label">Decay Immune</span>
-                        <label class="vectfox-toggle-switch">
-                            <input type="checkbox" id="VectFox_detail_blind" ${data.temporallyBlind ? 'checked' : ''}>
                             <span class="vectfox-toggle-slider"></span>
                         </label>
                     </div>
@@ -1070,14 +1037,6 @@ function bindDetailEvents() {
         const enabled = $(this).is(':checked');
         updateChunkData(chunk.hash, { enabled });
         chunk.data.enabled = enabled;
-        renderChunkList();
-    });
-
-    // Blind toggle
-    $('#VectFox_detail_blind').on('change', function() {
-        const blind = $(this).is(':checked');
-        setChunkTemporallyBlind(chunk.hash, blind);
-        chunk.data.temporallyBlind = blind;
         renderChunkList();
     });
 

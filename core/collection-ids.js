@@ -29,7 +29,6 @@ export const INTERNAL_COLLECTION_IDS = Object.freeze([
 /** All known collection prefixes for new collections. */
 export const COLLECTION_PREFIXES = {
     // VectFox formats
-    VECTFOX_CHAT: 'vf_chat_',
     VECTFOX_LOREBOOK: 'vf_lorebook_',
     VECTFOX_CHARACTER: 'vf_character_',
     VECTFOX_DOCUMENT: 'vf_document_',
@@ -110,66 +109,6 @@ export function getChatUUID() {
 // ============================================================================
 // COLLECTION ID BUILDERS
 // ============================================================================
-
-// ============================================================================
-// DEAD-CHUNK-CHAT — disabled for good
-// ============================================================================
-// Chat history is hard-routed through the EventBase pipeline (see dev_helper.md §1).
-// The legacy chunk-based chat format `vf_chat_{handle}_{char}_{uuid}` is no
-// longer produced or queried anywhere. These builders return null so any leftover
-// callers degrade gracefully (no fake IDs leaking into the registry / Qdrant).
-//
-// Search tag: DEAD-CHUNK-CHAT — used at every callsite that previously built or
-// consumed `vf_chat_*` IDs. Remove entirely once the codebase is fully audited.
-// ============================================================================
-
-/**
- * @deprecated DEAD-CHUNK-CHAT. Chat history uses EventBase (`vf_eventbase_*`).
- * Returns null to disable any leftover callers.
- */
-export function buildChatCollectionId(chatUUID) {
-    console.warn('VectFox: buildChatCollectionId() called but chunk-based chat is disabled (use EventBase). Returning null. Stack:', new Error().stack);
-    return null;
-    /* DEAD-CHUNK-CHAT — original implementation:
-    const uuid = chatUUID || getChatUUID();
-    if (!uuid) {
-        return null;
-    }
-
-    const context = getContext();
-    const handleId = context?.name1 || 'user';
-    const charName = context?.name2 || 'chat';
-
-    const sanitizedHandle = handleId
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 30) || 'user';
-
-    const sanitizedChar = charName
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 30) || 'chat';
-
-    return `vf_chat_${sanitizedHandle}_${sanitizedChar}_${uuid}`;
-    */
-}
-
-/**
- * @deprecated DEAD-CHUNK-CHAT. Legacy chunk-based chat collections are not used anywhere.
- */
-export function buildLegacyChatCollectionId(chatId) {
-    console.warn('VectFox: buildLegacyChatCollectionId() called but chunk-based chat is disabled. Returning null.');
-    return null;
-    /* DEAD-CHUNK-CHAT — original implementation:
-    const id = chatId || getCurrentChatId();
-    if (!id) {
-        return null;
-    }
-    return `vf_chat_${id}`;
-    */
-}
 
 /**
  * Sanitize a name segment for use in collection IDs (lowercase, alphanumeric + underscores).
@@ -334,17 +273,6 @@ export function buildArchiveEventCollectionId({ filenameCharName, archiveUUID, b
     return `${COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT}${sanitizedHandle}_${sanitizedChar}_${archiveUUID}`;
 }
 
-/**
- * @deprecated DEAD-CHUNK-CHAT. Both inner builders are dead; this helper now returns
- * `{current: null, legacy: null}` so leftover callers see nothing-to-discover.
- */
-export function getAllChatCollectionIds(chatId, chatUUID) {
-    return {
-        current: buildChatCollectionId(chatUUID),
-        legacy: buildLegacyChatCollectionId(chatId),
-    };
-}
-
 // ============================================================================
 // COLLECTION ID PARSER
 // ============================================================================
@@ -363,16 +291,6 @@ export function parseCollectionId(collectionId) {
             rawId: 'unknown',
             scope: COLLECTION_SCOPES.UNKNOWN,
             format: 'invalid',
-        };
-    }
-
-    // VectFox chat format: vf_chat_*
-    if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_CHAT)) {
-        return {
-            type: COLLECTION_TYPES.CHAT,
-            rawId: collectionId.replace(COLLECTION_PREFIXES.VECTFOX_CHAT, ''),
-            scope: COLLECTION_SCOPES.CHAT,
-            format: 'vectfox',
         };
     }
 

@@ -21,11 +21,9 @@ import {
     queryCollection,
     queryActiveCollections,
     deleteVectorItems,
-    purgeVectorIndex,
 } from './core-vector-api.js';
 import { isBackendAvailable } from '../backends/backend-manager.js';
 import { summarizeText } from './summarizer.js';
-import { applyDecayToResults } from './temporal-decay.js';
 import { registerCollection, getCollectionRegistry, isCollectionEmpty } from './collection-loader.js';
 import { isCollectionEnabled, filterActiveCollections, setCollectionLock } from './collection-metadata.js';
 import { progressTracker } from '../ui/progress-tracker.js';
@@ -40,9 +38,6 @@ import { EXTENSION_PROMPT_TAG, HASH_CACHE_SIZE } from './constants.js';
 // Import from collection-ids.js - single source of truth for collection ID operations
 import {
     getChatUUID,
-    buildChatCollectionId,
-    buildLegacyChatCollectionId,
-    getAllChatCollectionIds,
     COLLECTION_PREFIXES,
     INTERNAL_COLLECTION_IDS,
     parseCollectionId,
@@ -53,37 +48,7 @@ import {
 // Hash cache for performance
 const hashCache = new LRUCache(HASH_CACHE_SIZE);
 
-// Synchronization state (syncBlocked was used by the legacy chunk path, no longer needed)
-
-// ============================================================================
-// RE-EXPORTS from collection-ids.js for backwards compatibility
-// Other files importing from chat-vectorization.js will still work.
-// ============================================================================
-
-// Re-export getChatUUID (already imported above)
-export { getChatUUID };
-
-// ============================================================================
-// DEAD-CHUNK-CHAT — disabled for good
-// ============================================================================
-// These wrappers used to build legacy chunk-based chat collection IDs
-// (vf_chat_*). Chat history now goes exclusively through EventBase,
-// so both wrappers return null. The underlying builders also no-op + warn.
-// Callers should be audited and removed (search tag: DEAD-CHUNK-CHAT).
-// ============================================================================
-
-/** @deprecated DEAD-CHUNK-CHAT. Returns null. Use EventBase for chat. */
-export function getChatCollectionId(chatUUID) {
-    return buildChatCollectionId(chatUUID); // builder is also DEAD-CHUNK-CHAT (returns null + warn)
-}
-
-/** @deprecated DEAD-CHUNK-CHAT. Returns null. Use EventBase for chat. */
-export function getLegacyChatCollectionId(chatId) {
-    return buildLegacyChatCollectionId(chatId); // builder is also DEAD-CHUNK-CHAT
-}
-
-// Re-export getAllChatCollectionIds with adapted return format for backwards compat
-export { getAllChatCollectionIds, parseCollectionId, parseRegistryKey };
+export { getChatUUID, parseCollectionId, parseRegistryKey };
 
 /**
  * Gets the hash value for a string (with LRU caching)
@@ -109,21 +74,6 @@ function getStringHash(str) {
 function getTextWithoutAttachments(message) {
     const fileLength = message?.extra?.fileLength || 0;
     return String(message?.mes || '').substring(fileLength).trim();
-}
-
-/**
- * Prepares items for insertion by adding source metadata
- * @param {object[]} items Array of vector items
- * @returns {object[]} Items with source metadata added
- */
-function prepareItemsForInsertion(items) {
-    return items.map(item => ({
-        ...item,
-        metadata: {
-            ...item.metadata,
-            source: 'chat',
-        }
-    }));
 }
 
 /**
@@ -425,73 +375,26 @@ export async function synchronizeChat(settings, batchSize = 5) {
  * @returns {string[]} Array of collection IDs to query
  */
 function gatherCollectionsToQuery(settings) {
-    const chatCollectionId = null; // DEAD-CHUNK-CHAT: always null, chunk-based chat removed
     const collectionsToQuery = [];
     const registry = getCollectionRegistry();
 
-    // UI pause/resume may be saved either on plain collectionId or on registry keys
-    // (backend:source:collectionId). Collect all matching keys for robust enabled checks.
-    const chatCollectionRegistryKeys = [];
-    if (chatCollectionId) {
-        for (const registryKey of registry) {
-            const parsed = parseRegistryKey(registryKey);
-            if (parsed.collectionId === chatCollectionId) {
-                chatCollectionRegistryKeys.push(registryKey);
-            }
-        }
-    }
-
-    // EventBase owns all chat collections — chunk chat collections are always skipped.
-    // Uses per-collection enabled state, not global enabled_chats.
-    if (false) { // chat chunk collections disabled: EventBase is the exclusive chat path
-        const candidates = [chatCollectionId, ...chatCollectionRegistryKeys];
-        const firstEnabledKey = candidates.find((key) => isCollectionEnabled(key));
-        if (firstEnabledKey) {
-            collectionsToQuery.push(firstEnabledKey);
-        }
-    }
-
-    // Get all other registered collections that are enabled.
     // Workflow isolation:
     //   vf_eventbase_*     → always excluded (EventBase pipeline owns them)
     //   vf_archiveevent_*  → always excluded (EventBase pipeline owns them)
-    //   vf_chat_*          → excluded when EventBase is ON
     for (const registryKey of registry) {
-        // Use proper registry key parser to extract collection ID
         const parsedKey = parseRegistryKey(registryKey);
         const collectionId = parsedKey.collectionId;
 
-        // EventBase and archive event collections are always owned by the EventBase pipeline
         if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE) ||
             collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT)) {
             continue;
         }
 
-        // EventBase owns all vf_chat_* collections — always skip them here.
-        if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_CHAT)) {
-            continue;
-        }
-
-        // Skip if this is the current chat collection (already handled above)
-        if (collectionId === chatCollectionId) {
-            continue;
-        }
-
-        // Skip vf_chat_* collections for other chats — they are chat-specific
-        // and only the current chat's collection is eligible (added in the first block).
-        // When EventBase is ON this is already covered by the filter above.
-        if (collectionId?.startsWith(COLLECTION_PREFIXES.VECTFOX_CHAT)) {
-            continue;
-        }
-
-        // Skip internal system collections (e.g. health check) — never query them for retrieval
         if (INTERNAL_COLLECTION_IDS.includes(collectionId)) {
             continue;
         }
 
-        // Check if collection is enabled (use registryKey for metadata lookup)
         if (isCollectionEnabled(registryKey)) {
-            // Push registryKey, not collectionId - activation filters need the full key for metadata
             collectionsToQuery.push(registryKey);
         }
     }
@@ -802,107 +705,6 @@ function applyThresholdFilter(chunks, threshold, debugData) {
     });
 
     return filtered;
-}
-
-/**
- * Stage 5: Apply temporal decay to chunks
- * @param {object[]} chunks Chunks to process
- * @param {object[]} chat Current chat messages
- * @param {object} settings VECTFOX settings
- * @param {number} threshold Score threshold for re-filtering
- * @param {object} debugData Debug tracking object
- * @returns {object[]} Chunks with decay applied
- */
-function applyTemporalDecayStage(chunks, chat, settings, threshold, debugData) {
-    if (!settings.temporal_decay || !settings.temporal_decay.enabled) {
-        addTrace(debugData, 'decay', 'Temporal decay skipped (disabled)', { enabled: false });
-        chunks.forEach(chunk => {
-            recordChunkFate(debugData, chunk.hash, 'decay', 'passed', 'Decay disabled', {
-                score: chunk.score
-            });
-        });
-        return chunks;
-    }
-
-    const beforeCount = chunks.length;
-    addTrace(debugData, 'decay', 'Starting temporal decay', {
-        enabled: true,
-        halfLife: settings.temporal_decay.halfLife || settings.temporal_decay.half_life,
-        strength: settings.temporal_decay.strength || settings.temporal_decay.rate
-    });
-
-    const currentMessageId = chat.length - 1;
-    const chunksWithScores = chunks.map(chunk => ({
-        hash: chunk.hash,
-        metadata: chunk.metadata,
-        score: chunk.score
-    }));
-
-    const decayType = 'standard';
-    const decayedChunks = applyDecayToResults(chunksWithScores, currentMessageId, settings.temporal_decay);
-    console.log('VectFox: Applied temporal decay to search results');
-
-    decayedChunks.sort((a, b) => b.score - a.score);
-
-    // PERF: Build Map for O(1) lookups instead of O(n) find() per chunk
-    const decayedChunksMap = new Map(decayedChunks.map(dc => [dc.hash, dc]));
-
-    // Map decay results back to chunks and record fate
-    let result = chunks.map(chunk => {
-        const decayedChunk = decayedChunksMap.get(chunk.hash);
-        if (decayedChunk && decayedChunk.decayApplied) {
-            const decayMultiplier = decayedChunk.score / (decayedChunk.originalScore || 1);
-            const newScore = decayedChunk.score;
-            const stillAboveThreshold = newScore >= threshold;
-
-            if (stillAboveThreshold) {
-                recordChunkFate(debugData, chunk.hash, 'decay', 'passed', null, {
-                    originalScore: decayedChunk.originalScore,
-                    decayedScore: newScore,
-                    decayMultiplier,
-                    messageAge: decayedChunk.messageAge || decayedChunk.effectiveAge,
-                    decayType
-                });
-            } else {
-                recordChunkFate(debugData, chunk.hash, 'decay', 'dropped',
-                    `Decayed score ${newScore.toFixed(3)} < threshold ${threshold}`,
-                    {
-                        originalScore: decayedChunk.originalScore,
-                        decayedScore: newScore,
-                        decayMultiplier,
-                        messageAge: decayedChunk.messageAge || decayedChunk.effectiveAge,
-                        decayType
-                    }
-                );
-            }
-
-            return {
-                ...chunk,
-                score: newScore,
-                originalScore: decayedChunk.originalScore,
-                messageAge: decayedChunk.messageAge || decayedChunk.effectiveAge,
-                decayApplied: true,
-                decayMultiplier
-            };
-        }
-
-        recordChunkFate(debugData, chunk.hash, 'decay', 'passed', 'No decay applied', {
-            score: chunk.score
-        });
-        return chunk;
-    });
-
-    // Re-filter by threshold after decay
-    result = result.filter(c => c.score >= threshold);
-
-    addTrace(debugData, 'decay', 'Temporal decay completed', {
-        decayType,
-        before: beforeCount,
-        after: result.length,
-        dropped: beforeCount - result.length
-    });
-
-    return result;
 }
 
 /**
@@ -1462,7 +1264,6 @@ export async function rearrangeChat(chat, settings, type) {
                 currentCharacter: getContext().name2 || null,
                 activeLorebookEntries: [],
                 currentChatId: getCurrentChatId(),
-                currentChatCollectionId: null, // DEAD-CHUNK-CHAT: always null, chunk-based chat removed
                 currentCharacterId: getContext().characterId || null
             });
             activeCollections = await filterActiveCollections(collectionsToQuery, searchContext);
@@ -1504,7 +1305,6 @@ export async function rearrangeChat(chat, settings, type) {
         debugData.settings = {
             threshold: settings.score_threshold,
             topK: effectiveTopK,
-            temporal_decay: settings.temporal_decay,
             protect: settings.protect,
             chatLength: chat.length
         };
@@ -1638,11 +1438,6 @@ export async function rearrangeChat(chat, settings, type) {
         chunks = applyThresholdFilter(chunks, threshold, debugData);
         debugData.stages.afterThreshold = [...chunks];
 
-        // === STAGE 7: Temporal decay ===
-        chunks = applyTemporalDecayStage(chunks, chat, settings, threshold, debugData);
-        debugData.stages.afterDecay = [...chunks];
-        debugData.stats.afterDecay = chunks.length;
-
         // === STAGE 8: Chunk conditions ===
         chunks = await applyConditionsStage(chunks, chat, settings, debugData);
         debugData.stages.afterConditions = [...chunks];
@@ -1658,7 +1453,7 @@ export async function rearrangeChat(chat, settings, type) {
             chunks: chunks,
             query: queryText,
             timestamp: Date.now(),
-            settings: { threshold: settings.score_threshold, topK: (settings.top_k ?? settings.insert), temporal_decay: settings.temporal_decay }
+            settings: { threshold: settings.score_threshold, topK: (settings.top_k ?? settings.insert) }
         };
         console.log(`VectFox: Stored ${chunks.length} chunks for visualizer`);
 
@@ -1796,26 +1591,3 @@ export async function vectorizeAll(settings, batchSize, abortSignal = null) {
     }
 }
 
-/**
- * Purges vector index for current chat
- * @param {object} settings VECTFOX settings
- */
-export async function purgeChatIndex(settings) {
-    if (!getCurrentChatId()) {
-        toastr.info('No chat selected', 'Purge aborted');
-        return;
-    }
-
-    const collectionId = getChatCollectionId();
-    if (!collectionId) {
-        toastr.error('Could not get collection ID', 'Purge aborted');
-        return;
-    }
-
-    if (await purgeVectorIndex(collectionId, settings)) {
-        toastr.success('Vector index purged', 'VectFox');
-        console.log('VectFox: Index purged successfully');
-    } else {
-        toastr.error('Failed to purge vector index', 'VectFox');
-    }
-}

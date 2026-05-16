@@ -7,15 +7,6 @@
  * @author Kritblade
  * @version 3.3.1
  * ============================================================================
- *
- * NOTE — DEAD-CHUNK-CHAT branches present in this file:
- * Some tests call `getChatCollectionId()`, which is now disabled (returns null).
- * Chat history runs through the EventBase pipeline; there are no more
- * `VectFox_chat_*` collections to test against. The dependent branches no-op.
- * These tests should be rewritten to target EventBase collections.
- *
- * Search tag: DEAD-CHUNK-CHAT
- * ============================================================================
  */
 
 import { getRequestHeaders } from '../../../../../script.js';
@@ -26,8 +17,6 @@ import { unregisterCollection } from '../core/collection-loader.js';
 import { reciprocalRankFusion, weightedCombination } from '../core/hybrid-search.js';
 import { applyKeywordBoost, extractTextKeywords, extractLorebookKeywords } from '../core/keyword-boost.js';
 
-// DEAD-CHUNK-CHAT: tests that targeted the per-chat chunk collection are no longer
-// meaningful — chat history runs through EventBase, not `VectFox_chat_*`.
 const CHAT_NOT_APPLICABLE_MESSAGE = 'Not applicable (EventBase mode — chat is not stored as a chunk collection)';
 
 /**
@@ -315,9 +304,6 @@ export async function testVectorStorage(settings) {
  * Test: Can we query and retrieve similar vectors?
  */
 export async function testVectorRetrieval(settings) {
-    // DEAD-CHUNK-CHAT: this test queried the per-chat chunk collection. EventBase
-    // collections are queried through a different pipeline; rewrite needed to
-    // exercise that path. Skipping for now.
     return {
         name: '[PROD] Vector Retrieval',
         status: 'pass',
@@ -333,9 +319,6 @@ export async function testVectorRetrieval(settings) {
  * Uses the dedicated get-embedding endpoint to avoid inserting test data.
  */
 export async function testVectorDimensions(settings) {
-    // DEAD-CHUNK-CHAT: this checked dimension consistency against the per-chat
-    // chunk collection's stored vectors. Could be repurposed to walk EventBase
-    // collections (or accept a collectionId argument) — until then, N/A.
     return {
         name: '[PROD] Vector Dimensions',
         status: 'pass',
@@ -345,75 +328,11 @@ export async function testVectorDimensions(settings) {
 }
 
 /**
- * Test: Does temporal decay calculation work?
- * Now tests with per-collection defaults (chat = enabled by default)
- */
-export async function testTemporalDecay(settings) {
-    try {
-        const { applyTemporalDecay, getDefaultDecaySettings } = await import('../core/temporal-decay.js');
-        const { getDefaultDecayForType } = await import('../core/collection-metadata.js');
-
-        // Test with chat defaults (enabled by default)
-        const chatDecaySettings = getDefaultDecayForType('chat');
-
-        const testScore = 0.85;
-        const testAge = 50;
-        const decayedScore = applyTemporalDecay(testScore, testAge, chatDecaySettings);
-
-        if (decayedScore >= testScore) {
-            return {
-                name: '[PROD] Temporal Decay',
-                status: 'fail',
-                message: `Decay not reducing scores (check formula). Settings: ${JSON.stringify(chatDecaySettings)}, Result: ${testScore} -> ${decayedScore}`,
-                category: 'production'
-            };
-        }
-
-        if (decayedScore < 0 || decayedScore > 1) {
-            return {
-                name: '[PROD] Temporal Decay',
-                status: 'fail',
-                message: `Invalid decayed score: ${decayedScore}`,
-                category: 'production'
-            };
-        }
-
-        // Also test that disabled decay doesn't reduce scores
-        const disabledSettings = { enabled: false };
-        const noDecayScore = applyTemporalDecay(testScore, testAge, disabledSettings);
-        if (noDecayScore !== testScore) {
-            return {
-                name: '[PROD] Temporal Decay',
-                status: 'fail',
-                message: 'Disabled decay should not change scores',
-                category: 'production'
-            };
-        }
-
-        return {
-            name: '[PROD] Temporal Decay',
-            status: 'pass',
-            message: `Decay working (0.85 -> ${decayedScore.toFixed(3)} at age 50 for chat)`,
-            category: 'production'
-        };
-    } catch (error) {
-        return {
-            name: '[PROD] Temporal Decay',
-            status: 'fail',
-            message: `Decay test error: ${error.message}`,
-            category: 'production'
-        };
-    }
-}
-
-/**
  * Test: Are local chunks in sync with server vectors?
  * Compares chunk hashes we have locally vs what's stored on the server
  */
 export async function testChunkServerSync(settings, collectionId) {
     if (!collectionId) {
-        // DEAD-CHUNK-CHAT: auto-discovery used to pick the per-chat chunk collection.
-        // Callers (e.g. the visualizer) can still pass a specific collectionId.
         return {
             name: '[PROD] Chunk-Server Sync',
             status: 'pass',
@@ -515,8 +434,6 @@ export async function fixOrphanedMetadata(orphanedHashes) {
  */
 export async function testDuplicateHashes(settings, collectionId) {
     if (!collectionId) {
-        // DEAD-CHUNK-CHAT: auto-discovery used to pick the per-chat chunk collection.
-        // Callers (e.g. the visualizer) can still pass a specific collectionId.
         return {
             name: '[PROD] Duplicate Hash Check',
             status: 'pass',
@@ -657,84 +574,6 @@ export async function fixDuplicateHashes(duplicates, collectionId, settings) {
         return {
             success: false,
             message: `Failed to fix duplicates: ${error.message}`
-        };
-    }
-}
-
-/**
- * Test: Does temporally blind chunk immunity work?
- */
-export async function testTemporallyBlindChunks(settings) {
-    try {
-        const { applyDecayToResults } = await import('../core/temporal-decay.js');
-        const { setChunkTemporallyBlind, isChunkTemporallyBlind } = await import('../core/collection-metadata.js');
-        const { getDefaultDecayForType } = await import('../core/collection-metadata.js');
-
-        const testHash = `__test_blind_${Date.now()}__`;
-        const chatDecaySettings = getDefaultDecayForType('chat');
-
-        // Create test chunks
-        const testChunks = [
-            { hash: testHash, score: 0.9, metadata: { source: 'chat', messageId: 0 } },
-            { hash: 'normal_chunk', score: 0.9, metadata: { source: 'chat', messageId: 0 } }
-        ];
-
-        // Mark one chunk as blind
-        setChunkTemporallyBlind(testHash, true);
-
-        // Verify it's marked
-        if (!isChunkTemporallyBlind(testHash)) {
-            return {
-                name: '[PROD] Temporally Blind Chunks',
-                status: 'fail',
-                message: 'Failed to mark chunk as temporally blind',
-                category: 'production'
-            };
-        }
-
-        // Apply decay at a high message age
-        const currentMessageId = 100;
-        const decayedChunks = applyDecayToResults(testChunks, currentMessageId, chatDecaySettings);
-
-        // Find results
-        const blindChunk = decayedChunks.find(c => c.hash === testHash);
-        const normalChunk = decayedChunks.find(c => c.hash === 'normal_chunk');
-
-        // Cleanup
-        setChunkTemporallyBlind(testHash, false);
-
-        // Blind chunk should keep original score
-        if (blindChunk.score !== 0.9 || !blindChunk.temporallyBlind) {
-            return {
-                name: '[PROD] Temporally Blind Chunks',
-                status: 'fail',
-                message: 'Blind chunk score was modified',
-                category: 'production'
-            };
-        }
-
-        // Normal chunk should have decayed
-        if (normalChunk.score >= 0.9 || !normalChunk.decayApplied) {
-            return {
-                name: '[PROD] Temporally Blind Chunks',
-                status: 'fail',
-                message: 'Normal chunk should have decayed',
-                category: 'production'
-            };
-        }
-
-        return {
-            name: '[PROD] Temporally Blind Chunks',
-            status: 'pass',
-            message: `Blind: ${blindChunk.score.toFixed(2)} (immune), Normal: ${normalChunk.score.toFixed(2)} (decayed)`,
-            category: 'production'
-        };
-    } catch (error) {
-        return {
-            name: '[PROD] Temporally Blind Chunks',
-            status: 'fail',
-            message: `Test error: ${error.message}`,
-            category: 'production'
         };
     }
 }

@@ -32,8 +32,6 @@ import {
     checkScoreThreshold,
     checkInsertQueryCounts,
     checkChatVectors,
-    checkTemporalDecaySettings,
-    checkTemporallyBlindChunks,
     checkConditionalActivationModule,
     checkCollectionIdFormat,
     checkHashCollisionRate,
@@ -49,8 +47,6 @@ import {
     testVectorStorage,
     testVectorRetrieval,
     testVectorDimensions,
-    testTemporalDecay,
-    testTemporallyBlindChunks,
     testChunkServerSync,
     testDuplicateHashes,
     testPluginEmbeddingGeneration,
@@ -175,10 +171,6 @@ export async function runDiagnostics(settings, includeProductionTests = false) {
     categories.configuration.push(checkInsertQueryCounts(settings));
     categories.configuration.push(await checkChatVectors(settings));
 
-    // Temporal decay is now per-collection, always report status
-    categories.configuration.push(checkTemporalDecaySettings(settings));
-    categories.configuration.push(await checkTemporallyBlindChunks(settings));
-
     // Conditional activation checks
     categories.configuration.push(checkConditionalActivationModule());
 
@@ -214,8 +206,6 @@ export async function runDiagnostics(settings, includeProductionTests = false) {
         categories.production.push(await testVectorStorage(settings));
         categories.production.push(await testVectorRetrieval(settings));
         categories.production.push(await testVectorDimensions(settings));
-        categories.production.push(await testTemporalDecay(settings));
-        categories.production.push(await testTemporallyBlindChunks(settings));
         categories.production.push(await testChunkServerSync(settings));
         categories.production.push(await testDuplicateHashes(settings));
         // Plugin-specific embedding generation test (Qdrant)

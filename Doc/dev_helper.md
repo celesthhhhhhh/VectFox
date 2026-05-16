@@ -764,3 +764,20 @@ There is **no global-scope priority**. That branch (formerly "priority 1.5") was
 - Don't write directly to `lockedToChatIds` / `lockedToCharacterIds`. Use the `setCollectionLock` / `removeCollectionLock` / `setCollectionCharacterLock` / `removeCollectionCharacterLock` helpers — they maintain the `chat_lock_index` reverse map too.
 
 ---
+
+## 15) Known Pending Cleanups
+
+### 15.1 Legacy `vf_chat_*` museum loader in `core/collection-loader.js`
+
+**Status**: Deferred — NOT yet decided / executed.
+
+The deletion plan [`plans/delete-dead-chunk-chat-and-temporal-decay.md`](../plans/delete-dead-chunk-chat-and-temporal-decay.md) Phase D documents an optional cleanup that has **not been done**:
+
+- **Where**: `core/collection-loader.js` around lines 1170-1230. The branch that materializes legacy `vf_chat_*` collection chunks for the database browser ("museum mode" loader for users who still have old chunk-based chat data in storage).
+- **Why deferred**: Deleting this loader would make pre-EventBase `vf_chat_*` collections invisible in the database browser. Acceptable only once we're confident no user still has these collections, OR we add an explicit migration/orphan-cleanup pass to delete them outright.
+- **Current state after Phase B+C**: The Phase B cleanup did strip the `source: 'chat'` stamp at line 1213 (so the museum-loaded chunks won't accidentally re-enter the dead temporal-decay path). The branch itself remains.
+- **What to decide before executing Phase D**: 
+  1. Do we keep museum mode indefinitely (small maintenance cost, lets old users see their data)?
+  2. Or delete the branch + add a one-time orphan cleanup that purges any `vf_chat_*` collections at startup?
+
+**Search tag in code**: none yet. If/when this is acted on, grep for `vf_chat_` in `core/collection-loader.js` to find the loader branch.

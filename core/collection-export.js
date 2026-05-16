@@ -517,30 +517,36 @@ export function validateImportData(data, currentSettings = {}) {
  */
 async function insertChunksWithVectors(collectionId, chunks, settings) {
     const backendName = settings.vector_backend || 'standard';
-    const response = await fetch('/api/plugins/similharity/chunks/insert', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            backend: backendName === 'standard' ? 'vectra' : backendName,
-            collectionId: collectionId,
-            source: settings.source || 'transformers',
-            model: settings.model || '',
-            items: chunks.map(c => ({
-                hash: c.hash,
-                text: c.text,
-                index: c.index,
-                vector: c.vector, // Pre-computed vector!
-                metadata: c.metadata || {},
-            })),
-        }),
-    });
+    // Batch to avoid 413 — large vector dimensions (e.g. 4096-dim) make single-shot
+    // bodies tens of MBs. 20 chunks ≈ 1 MB per request for 4096-dim vectors.
+    const BATCH_SIZE = 20;
+    const items = chunks.map(c => ({
+        hash: c.hash,
+        text: c.text,
+        index: c.index,
+        vector: c.vector,
+        metadata: c.metadata || {},
+    }));
 
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Failed to insert chunks: ${error}`);
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const batch = items.slice(i, i + BATCH_SIZE);
+        const response = await fetch('/api/plugins/similharity/chunks/insert', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                backend: backendName === 'standard' ? 'vectra' : backendName,
+                collectionId,
+                source: settings.source || 'transformers',
+                model: settings.model || '',
+                items: batch,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Failed to insert chunks: ${error}`);
+        }
     }
-
-    return await response.json();
 }
 
 /**

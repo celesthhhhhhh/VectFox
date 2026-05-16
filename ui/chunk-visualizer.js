@@ -70,6 +70,27 @@ function getCollectionIcon() {
     return icons[currentResults?.collectionType] || '📦';
 }
 
+/**
+ * EventBase collections store ingested events from chat history. They use a
+ * dedicated retrieval pipeline (importance/persist/recency re-rank) that
+ * ignores per-chunk metadata like enabled/keywords/conditions/links.
+ * Catches both the new `vf_eventbase_*` prefix and legacy `vecthare_eventbase_*`.
+ */
+function isEventBaseCollection() {
+    const id = String(currentCollectionId || '').toLowerCase();
+    return id.startsWith('vf_eventbase_') || id.includes('_eventbase_');
+}
+
+/**
+ * Chat-source collections (legacy ChunkBase chat OR EventBase chat) are the
+ * only place temporal decay actually runs — lorebook/document/url chunks have
+ * no messageId so decay is skipped regardless of the toggle.
+ */
+function isChatCollection() {
+    if (currentResults?.collectionType === 'chat') return true;
+    return isEventBaseCollection();
+}
+
 // ============================================================================
 // CHUNK DATA HELPERS
 // ============================================================================
@@ -620,6 +641,17 @@ function renderDetailPanel() {
     const hasConditions = data.conditions?.enabled && data.conditions?.rules?.length > 0;
     const hasSummaries = data.summaries?.length > 0;
 
+    // Feature gating — EventBase chat ignores per-chunk enabled/keywords/conditions/links
+    // (its retrieval re-ranks by importance/persist/recency). XML tag and injection
+    // position still apply because they're consumed at the post-retrieval injection stage.
+    // Decay Immune is meaningful only for chat-source chunks (decay never runs on lorebook/document).
+    const isEventBase = isEventBaseCollection();
+    const showEnabledToggle = !isEventBase;
+    const showDecayImmune = isChatCollection();
+    const showKeywords = !isEventBase;
+    const showConditions = !isEventBase;
+    const showChunkLinks = !isEventBase;
+
     panel.html(`
         <!-- Header -->
         <div class="vectfox-detail-header">
@@ -665,9 +697,11 @@ function renderDetailPanel() {
             </div>
 
             <!-- Status Section -->
+            ${(showEnabledToggle || showDecayImmune) ? `
             <div class="vectfox-detail-section">
                 <div class="vectfox-detail-section-title">Status</div>
                 <div class="vectfox-detail-status-row">
+                    ${showEnabledToggle ? `
                     <div class="vectfox-detail-toggle-item">
                         <span class="vectfox-toggle-label">Enabled</span>
                         <label class="vectfox-toggle-switch">
@@ -675,6 +709,8 @@ function renderDetailPanel() {
                             <span class="vectfox-toggle-slider"></span>
                         </label>
                     </div>
+                    ` : ''}
+                    ${showDecayImmune ? `
                     <div class="vectfox-detail-toggle-item">
                         <span class="vectfox-toggle-label">Decay Immune</span>
                         <label class="vectfox-toggle-switch">
@@ -682,8 +718,10 @@ function renderDetailPanel() {
                             <span class="vectfox-toggle-slider"></span>
                         </label>
                     </div>
+                    ` : ''}
                 </div>
             </div>
+            ` : ''}
 
             <!-- Prompt Context Section -->
             <div class="vectfox-detail-section">
@@ -719,6 +757,7 @@ function renderDetailPanel() {
             </div>
 
             <!-- Keywords Section -->
+            ${showKeywords ? `
             <div class="vectfox-detail-section">
                 <div class="vectfox-detail-section-header">
                     <span class="vectfox-detail-section-title">Keywords <span class="vectfox-section-hint">(boost when query matches)</span></span>
@@ -744,8 +783,10 @@ function renderDetailPanel() {
                     `}
                 </div>
             </div>
+            ` : ''}
 
             <!-- Conditions Section -->
+            ${showConditions ? `
             <div class="vectfox-detail-section">
                 <div class="vectfox-detail-section-title">Conditions</div>
                 <div class="vectfox-detail-conditions">
@@ -771,8 +812,10 @@ function renderDetailPanel() {
                     <button class="vectfox-add-condition-btn" id="VectFox_add_condition">+ Add Condition Rule</button>
                 </div>
             </div>
+            ` : ''}
 
             <!-- Chunk Links Section -->
+            ${showChunkLinks ? `
             <div class="vectfox-detail-section">
                 <div class="vectfox-detail-section-title">
                     <i class="fa-solid fa-link"></i> Chunk Links
@@ -795,6 +838,7 @@ function renderDetailPanel() {
                     <button class="vectfox-add-link-btn" id="VectFox_add_link">+ Add Link</button>
                 </div>
             </div>
+            ` : ''}
 
             <!-- Summaries Section -->
             <div class="vectfox-detail-section">

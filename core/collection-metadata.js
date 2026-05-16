@@ -483,13 +483,23 @@ export function migrateOldEnabledKeys() {
 export function cleanupOrphanedMeta(actualCollectionIds) {
     ensureCollectionsObject();
 
+    // Callers pass bare collection IDs (e.g. "vf_eventbase_qdrant_rabbit_...").
+    // Stored metadata keys may be in either form after the lock-bleed fix:
+    //   - bare ID            ("vf_eventbase_qdrant_rabbit_...")  ← legacy entries
+    //   - registry-key form  ("qdrant:vf_eventbase_qdrant_rabbit_...")  ← post-fix entries
+    // Treat a stored key as alive if EITHER form matches an actual collection.
+    // Without this, every backend-qualified entry (including freshly written
+    // locks) gets flagged as an orphan on the very next browser refresh.
     const actualSet = new Set(actualCollectionIds);
     const orphaned = [];
 
-    for (const collectionId in extension_settings.vectfox.collections) {
-        if (!actualSet.has(collectionId)) {
-            orphaned.push(collectionId);
+    for (const storedKey in extension_settings.vectfox.collections) {
+        if (actualSet.has(storedKey)) continue;
+        const parsed = parseRegistryKey(storedKey);
+        if (parsed.backend && parsed.collectionId && actualSet.has(parsed.collectionId)) {
+            continue;
         }
+        orphaned.push(storedKey);
     }
 
     for (const collectionId of orphaned) {

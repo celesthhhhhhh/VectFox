@@ -41,11 +41,14 @@ const CJK_TOKENIZER_MODES = Object.freeze({
 
 const DEFAULT_CJK_TOKENIZER_MODE = CJK_TOKENIZER_MODES.intl;
 const JIEBA_WASM_MODULE_URL = 'https://cdn.jsdelivr.net/gh/cxumol/jieba-wasm-html@gh-pages/jieba_rs_wasm.js';
-// WASM module + binary: versioned npm CDN (stable, cached aggressively, ~1 MB total).
-const JIEBA_TW_WASM_MODULE_URL = 'https://cdn.jsdelivr.net/npm/jieba-wasm@2.4.0/pkg/web/jieba_rs_wasm.js';
-const JIEBA_TW_WASM_BINARY_URL = 'https://cdn.jsdelivr.net/npm/jieba-wasm@2.4.0/pkg/web/jieba_rs_wasm_bg.wasm';
-// TW dict (~4 MB) served locally from core/vendor/jieba/ — committed to git so new
-// installs work without CDN. The old jsdelivr GitHub URL was unreliable.
+// Jieba TW (Traditional Chinese) assets — fully vendored under core/vendor/jieba/ so
+// the loader has zero network dependencies once the user picks `jieba_tw` mode.
+// These files are still lazy-loaded: nothing fetches until cjk_tokenizer_mode='jieba_tw'.
+//   - jieba_rs_wasm.js     (~14 KB, WASM module wrapper, from jieba-wasm@2.4.0)
+//   - jieba_rs_wasm_bg.wasm (~4 MB, compiled tokenizer, from jieba-wasm@2.4.0)
+//   - dict.txt             (~4 MB, Traditional Chinese dictionary)
+const JIEBA_TW_WASM_MODULE_URL = new URL('./vendor/jieba/jieba_rs_wasm.js', import.meta.url).href;
+const JIEBA_TW_WASM_BINARY_URL = new URL('./vendor/jieba/jieba_rs_wasm_bg.wasm', import.meta.url).href;
 const JIEBA_TW_DICT_URL = new URL('./vendor/jieba/dict.txt', import.meta.url).href;
 
 let cjkTokenizerMode = DEFAULT_CJK_TOKENIZER_MODE;
@@ -185,7 +188,10 @@ async function ensureJiebaTwLoaded() {
             const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError' || /aborted|timeout|timed out/i.test(msg);
             const elapsed = _ms(tStart);
             if (isTimeout) {
-                console.warn(`[VectFox CJK] Jieba TW: TIMED OUT during stage "${stage}" after ${elapsed}ms total. Falling back to Intl.Segmenter. This is usually a slow/blocked CDN — try reloading, or check that jsdelivr.net is reachable from your network.`);
+                // All Jieba TW assets are vendored under core/vendor/jieba/ — the
+                // loader never hits a CDN. A timeout here means the SillyTavern
+                // static file server stalled the request, not a network issue.
+                console.warn(`[VectFox CJK] Jieba TW: TIMED OUT during stage "${stage}" after ${elapsed}ms total. Falling back to Intl.Segmenter. All TW assets are served locally from core/vendor/jieba/ — a timeout here means the SillyTavern server stalled. Likely causes: (1) the Node event loop is choked by a long-running plugin request (e.g. a large chunk import or corpus-stats scan); (2) browser cache / Service Worker interference — try a hard reload (Ctrl+Shift+R); (3) endpoint security software intercepting the file read.`);
             } else {
                 console.warn(`[VectFox CJK] Jieba TW: failed during stage "${stage}" after ${elapsed}ms total: ${msg}`);
             }

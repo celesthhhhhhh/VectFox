@@ -372,10 +372,12 @@ function _gatherLockedEventBaseCollections(currentChatId, debugLog) {
     if (!currentChatId) return [];
     const registry = getCollectionRegistry();
     const results = [];
+    const seenIds = new Set();
     for (const registryKey of registry) {
         const parsed = parseRegistryKey(registryKey);
         const colId = parsed.collectionId;
         if (!colId?.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE)) continue;
+        if (seenIds.has(colId)) continue;
 
         const candidateKeys = [registryKey, colId].filter(Boolean);
 
@@ -391,6 +393,7 @@ function _gatherLockedEventBaseCollections(currentChatId, debugLog) {
             continue;
         }
 
+        seenIds.add(colId);
         results.push({ collectionId: colId, registryKey });
     }
     return results;

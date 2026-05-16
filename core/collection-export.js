@@ -26,12 +26,14 @@ import {
     getChunkMetadata,
     saveChunkMetadata,
     getAllChunkMetadata,
+    clearCollectionLock,
 } from './collection-metadata.js';
 import {
     registerCollection,
     getCollectionRegistry,
 } from './collection-loader.js';
 import { COLLECTION_PREFIXES, getRegistryBackend } from './collection-ids.js';
+import { encodeSparseVector } from './sparse-vector-encoder.js';
 import { progressTracker } from '../ui/progress-tracker.js';
 import { getStringHash } from '../../../../utils.js';
 
@@ -158,11 +160,19 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
 
         const chunks = rawChunks.map(item => {
             const meta = item.metadata || item;
+            // Qdrant returns `vector` as a plain array for unnamed-vector collections,
+            // but as `{ '': [dense], text_sparse: {indices, values} }` for named-vector
+            // collections (nativeSparse). Unwrap to the dense array so import-side
+            // validation (Array.isArray) accepts it and the fast direct-insert path runs.
+            let rawVector = item.vector || meta.vector || null;
+            if (rawVector && typeof rawVector === 'object' && !Array.isArray(rawVector)) {
+                rawVector = rawVector[''] ?? null;
+            }
             const chunk = {
                 hash: meta.hash || item.hash,
                 text: meta.text || item.text || '',
                 index: meta.index ?? item.index,
-                vector: item.vector || meta.vector || null, // The actual embedding!
+                vector: rawVector,
                 metadata: {
                     ...meta,
                     keywords: meta.keywords || [],
@@ -509,13 +519,29 @@ async function insertChunksWithVectors(collectionId, chunks, settings, onBatchPr
     // Batch to avoid 413 — large vector dimensions (e.g. 4096-dim) make single-shot
     // bodies tens of MBs. 20 chunks ≈ 1 MB per request for 4096-dim vectors.
     const BATCH_SIZE = 20;
-    const items = chunks.map(c => ({
-        hash: c.hash,
-        text: c.text,
-        index: c.index,
-        vector: c.vector,
-        metadata: c.metadata || {},
-    }));
+    const items = chunks.map(c => {
+        const item = {
+            hash: c.hash,
+            text: c.text,
+            index: c.index,
+            vector: c.vector,
+            metadata: c.metadata || {},
+        };
+        // Qdrant's A3 hybrid path needs a sparse vector per point (text_sparse named slot).
+        // Mirror backends/qdrant.js:insertVectorItems: tokenize text + appended keyword
+        // suffix so BM25 hits match what live ingestion would produce. The stored `text`
+        // stays plain (no keyword suffix) so View Chunks display is unchanged.
+        if (backendName === 'qdrant') {
+            const kws = item.metadata.keywords || [];
+            let sparseSource = item.text || '';
+            if (kws.length > 0) {
+                const kwText = kws.map(kw => (typeof kw === 'string' ? kw : kw?.text || '')).filter(Boolean).join(' ');
+                if (kwText) sparseSource += ` [KEYWORDS: ${kwText}]`;
+            }
+            item.sparseVector = encodeSparseVector(sparseSource);
+        }
+        return item;
+    });
 
     let inserted = 0;
     for (let i = 0; i < items.length; i += BATCH_SIZE) {
@@ -529,6 +555,13 @@ async function insertChunksWithVectors(collectionId, chunks, settings, onBatchPr
                 source: settings.source || 'transformers',
                 model: settings.model || '',
                 items: batch,
+                // qdrant requires nativeSparse=true so the collection is created with text_sparse
+                // index (BM25 hybrid search). Without it, hybrid queries fail with "Not existing
+                // vector name error: text_sparse".
+                ...(backendName === 'qdrant' && {
+                    nativeSparse: true,
+                    cjkTokenizerMode: settings.cjk_tokenizer_mode || null,
+                }),
             }),
         });
 
@@ -648,6 +681,12 @@ export async function importCollection(exportData, settings, options = {}) {
         // Step 4: Save metadata
         progressTracker.updateProgress(4, 'Saving metadata...');
 
+        // Import is treated as a conversion → activation state must start fresh.
+        // Clear any chat locks from a prior collection with the same ID first so the
+        // chat_lock_index reverse map stays consistent; lockedToCharacterIds + autoSync
+        // are zeroed via importedMeta below (no reverse map to maintain).
+        clearCollectionLock(collectionId);
+
         // Collection-level metadata
         const importedMeta = {
             enabled: true,
@@ -665,6 +704,9 @@ export async function importCollection(exportData, settings, options = {}) {
             createdAt: new Date().toISOString(),
             importedFrom: exportData.exportDate,
             importedAt: new Date().toISOString(),
+            // Convert = unchecked: no character lock, auto-sync off.
+            lockedToCharacterIds: [],
+            autoSync: false,
         };
 
         // Merge with exported settings
@@ -821,6 +863,10 @@ async function importCollectionSilent(exportData, settings, options = {}) {
         await insertVectorItems(collectionId, preparedChunks, settings);
     }
 
+    // Convert = unchecked: clear prior chat locks (with reverse-map cleanup)
+    // before merging metadata; lockedToCharacterIds + autoSync are zeroed via importedMeta.
+    clearCollectionLock(collectionId);
+
     // Save metadata
     const importedMeta = {
         enabled: true,
@@ -833,6 +879,8 @@ async function importCollectionSilent(exportData, settings, options = {}) {
         createdAt: new Date().toISOString(),
         importedFrom: exportData.exportDate,
         importedAt: new Date().toISOString(),
+        lockedToCharacterIds: [],
+        autoSync: false,
     };
 
     if (exportData.settings) {

@@ -466,6 +466,12 @@ export function renderSettings(containerId, settings, callbacks) {
                                     </label>
                                     <input type="range" id="VectFox_bm25_b" class="vectfox-slider" min="0" max="1" step="0.05" />
                                     <small class="VectFox_hint">Controls document length normalization (0.75 typical)</small>
+
+                                    <label class="checkbox_label" style="margin-top: 12px;">
+                                        <input type="checkbox" id="VectFox_bm25_use_corpus_idf" />
+                                        <span>Use full-corpus IDF (A/B toggle)</span>
+                                    </label>
+                                    <small class="VectFox_hint">When ON, BM25 uses IDF computed over the entire collection (matches Qdrant A3 behavior — rare query terms stay discriminative). When OFF, IDF is computed only over the ANN top-K candidate set (current default — biased when candidates share key terms). Applies to ChunkBase and EventBase on client-side BM25 paths (A1/A2). Default: OFF.</small>
                                 </div>
 
                                 <!-- Hybrid Search params (visible in A2 hybrid mode and A3 native) -->
@@ -2643,6 +2649,15 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
     $('#VectFox_bm25_b_value').text((settings.bm25_b || 0.75).toFixed(2));
+
+    // BM25 corpus-IDF A/B toggle (GUI-only stub; consumer wired up in a follow-up change)
+    $('#VectFox_bm25_use_corpus_idf')
+        .prop('checked', settings.bm25_use_corpus_idf === true)
+        .on('change', function() {
+            settings.bm25_use_corpus_idf = $(this).prop('checked');
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
 
     // ========== Hybrid Search Settings ==========
 

@@ -887,17 +887,21 @@ There is **no global-scope priority**. That branch (formerly "priority 1.5") was
 
 ## 15) Known Pending Cleanups
 
-### 15.1 Legacy `vf_chat_*` museum loader in `core/collection-loader.js`
+### 15.1 ChunkBase phase early-gate — broaden vs current
 
-**Status**: Deferred — NOT yet decided / executed.
+**Status**: Deferred — investigated 2026-05-17, no code change yet.
 
-Phases B + C of the deletion plan [`plans/delete-dead-chunk-chat-and-temporal-decay.md`](../plans/delete-dead-chunk-chat-and-temporal-decay.md) shipped (DEAD-CHUNK-CHAT removed, temporal-decay subsystem removed). Phase D is the remaining optional step:
+`rearrangeChat` ([core/chat-vectorization.js:1193](../core/chat-vectorization.js#L1193)) runs **EventBase Phase A** then unconditionally falls through to **ChunkBase Phase B**. Phase B has two existing gates:
 
-- **Where**: `core/collection-loader.js` around lines 1140-1190 (inside the `if (collectionMetadata.type === 'chat' && context.chatId === collectionMetadata.rawId)` branch). This is the "museum mode" loader that materializes legacy `vf_chat_*` collection chunks for the database browser when an old user still has them on disk.
-- **Why deferred**: Deleting this loader would make pre-EventBase `vf_chat_*` collections invisible in the database browser. Acceptable only once we're confident no user still has these collections, OR we add an explicit migration/orphan-cleanup pass to delete them outright.
-- **Current state after Phase B+C**: The `source: 'chat'` stamp on the museum-loaded chunks is already gone (was at the old line 1213, stripped during Phase B). The branch itself remains and just hands the database browser displayable chunks; nothing downstream looks at `source: 'chat'` anymore (the temporal-decay subsystem that was the only consumer is deleted).
-- **What to decide before executing Phase D**:
-  1. Do we keep museum mode indefinitely (small maintenance cost, lets old users see their data)?
-  2. Or delete the branch + add a one-time orphan cleanup that purges any `vf_chat_*` collections at startup?
+1. **Early (cheap)** at [line 1247-1240](../core/chat-vectorization.js#L1247): `hasCollections = gatherCollectionsToQuery(settings).length > 0` — passes if *any* non-EventBase collection has `enabled=true`. No lock/scope/activation check.
+2. **Post-activation (expensive)** at [line 1295](../core/chat-vectorization.js#L1295): `filterActiveCollections` runs the full [`shouldCollectionActivate`](../core/collection-metadata.js#L1080) priority chain (triggers → conditions → chat lock → character lock).
 
-**Search tag in code**: none yet. If/when this is acted on, grep for `_chat_` (the `VECTFOX_CHAT` prefix constant was removed during Phase B, so the loader compares against `collectionMetadata.type === 'chat'` rather than a literal prefix string).
+EventBase-only users (the typical case) hit gate 1 and short-circuit — debug log `[VECTFOX ChunkBase] No enabled ChunkBase collections ...` fires once per generation to confirm.
+
+**What was considered**: tightening the early gate so it requires not just "enabled" but "enabled AND has some activation mechanism that could match the current context" — would avoid the keyword-extraction work at [line 1271-1281](../core/chat-vectorization.js#L1271-L1281) when a user has enabled lorebooks that aren't locked/triggered for the current chat.
+
+**Why deferred**: A naïve `isLocked`-only gate would break users who rely on **Activation Triggers** or **Advanced Conditions** for activation without ever locking a collection (priorities 2-3 of `shouldCollectionActivate`). The safe shape is `enabled AND (chat-locked OR character-locked OR has triggers OR has conditions)` — a cheap pre-check that matches every activation path. Not worth doing in isolation; revisit if/when we touch Phase B for another reason.
+
+**Caller count**: 1 — `rearrangeChat` is the only place running the EventBase→ChunkBase ordered workflow ([index.js:273](../index.js#L273) is its sole caller via ST's `generate_interceptor`). No util-extraction is needed if/when we change the gate.
+
+**Search tag in code**: none yet. When acted on, target [core/chat-vectorization.js:1247](../core/chat-vectorization.js#L1247) (the `if (!hasCollections && !canQueryWI)` block).

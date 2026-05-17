@@ -11,9 +11,8 @@
 
 import { extension_settings } from '../../../../extensions.js';
 import { getContext } from '../../../../extensions.js';
-import { characters, substituteParams, getRequestHeaders, saveSettingsDebounced, getCurrentChatId } from '../../../../../script.js';
+import { characters, getRequestHeaders, saveSettingsDebounced, getCurrentChatId } from '../../../../../script.js';
 import { getSavedHashes, queryCollection } from './core-vector-api.js';
-import { getStringHash } from '../../../../utils.js';
 import {
     isCollectionEnabled,
     setCollectionEnabled,
@@ -1106,91 +1105,6 @@ export function isCollectionEmpty(registryKey) {
     if (!pluginCollectionData) return false;
     const cached = pluginCollectionData[registryKey];
     return cached !== undefined && !cached.chunkCount;
-}
-
-/**
- * Loads chunks for a specific collection
- * @param {string} collectionId Collection identifier
- * @param {object} settings VECTFOX settings
- * @returns {Promise<object[]>} Array of chunk objects
- */
-export async function loadCollectionChunks(collectionId, settings) {
-    const context = getContext();
-    const result = await getSavedHashes(collectionId, settings, true); // includeMetadata = true
-
-    console.log(`VECTFOX DEBUG: loadCollectionChunks result type:`, Array.isArray(result) ? 'array' : 'object');
-    if (!Array.isArray(result)) {
-        console.log(`VECTFOX DEBUG: result.metadata length:`, result.metadata?.length);
-        if (result.metadata?.length > 0) {
-            console.log(`VECTFOX DEBUG: First item metadata:`, result.metadata[0]);
-        }
-    }
-
-    // Handle both old format (array) and new format (object with hashes + metadata)
-    const hashes = Array.isArray(result) ? result : result.hashes;
-    const metadataArray = result.metadata || [];
-
-    if (hashes.length === 0) {
-        return [];
-    }
-
-    const chunks = [];
-    const collectionMetadata = parseCollectionId(collectionId);
-
-    // For chat collections, we can get text from chat messages
-    if (collectionMetadata.type === 'chat' && context.chatId === collectionMetadata.rawId) {
-        const chat = context.chat;
-
-        for (let i = 0; i < hashes.length; i++) {
-            const hash = hashes[i];
-            const dbMetadata = metadataArray[i] || {};
-
-            // Find message by hash
-            const message = chat.find(msg => {
-                if (!msg.mes || msg.is_system) return false;
-                const msgText = substituteParams(msg.mes);
-                return getStringHash(msgText) === hash;
-            });
-
-            if (message) {
-                chunks.push({
-                    text: substituteParams(message.mes),
-                    hash: hash,
-                    index: chat.indexOf(message),
-                    metadata: {
-                        messageId: chat.indexOf(message),
-                        // Include keywords and other metadata from DB
-                        keywords: dbMetadata.keywords || [],
-                        ...dbMetadata
-                    }
-                });
-            }
-        }
-    } else {
-        // For other collection types or inactive chats, text is stored in the vector backend
-        // and retrieved via the chunks visualizer's query functionality
-        console.warn(`VectFox: Cannot load chunk text for non-active collection: ${collectionId}`);
-
-        // Return minimal data with metadata
-        for (let i = 0; i < hashes.length; i++) {
-            const hash = hashes[i];
-            const dbMetadata = metadataArray[i] || {};
-
-            chunks.push({
-                text: dbMetadata.text || '(Text not available - collection not active)',
-                hash: hash,
-                index: -1,
-                metadata: {
-                    source: collectionMetadata.type,
-                    keywords: dbMetadata.keywords || [],
-                    ...dbMetadata
-                }
-            });
-        }
-    }
-
-    console.log(`VectFox: Loaded ${chunks.length} chunks for ${collectionId}`);
-    return chunks;
 }
 
 // Re-export chunk metadata functions from collection-metadata.js for backwards compatibility

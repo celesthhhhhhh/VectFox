@@ -105,11 +105,12 @@ function _extractReply(data) {
  * @param {string} raw
  * @returns {unknown[]}
  */
-function _parseJsonArray(raw, debugLog = false, windowIndex = -1) {
+function _parseJsonArray(raw, debugLog = false, windowIndex = -1, msgRange = '') {
     let text = (raw || '').trim();
+    const rangeStr = msgRange ? ` ${msgRange}` : '';
 
     if (debugLog) {
-        console.log(`[EventBase] Parser window=${windowIndex}: raw length=${text.length}, preview:`, text.slice(0, 150));
+        console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: raw length=${text.length}, preview:`, text.slice(0, 150));
     }
 
     // Strip code fences
@@ -219,7 +220,7 @@ function _parseJsonArray(raw, debugLog = false, windowIndex = -1) {
 
     // Pick the first candidate that looks like event objects.
     if (debugLog) {
-        console.log(`[EventBase] Parser window=${windowIndex}: ${candidates.length} candidate array(s) found:`,
+        console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: ${candidates.length} candidate array(s) found:`,
             candidates.map((c, i) => {
                 const first = c[0];
                 const type = Array.isArray(first) ? 'array' : typeof first;
@@ -258,7 +259,7 @@ function _parseJsonArray(raw, debugLog = false, windowIndex = -1) {
 
     if (debugLog) {
         const chosenIdx = candidates.indexOf(chosen);
-        console.log(`[EventBase] Parser window=${windowIndex}: chose candidate[${chosenIdx}] len=${chosen.length}`);
+        console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: chose candidate[${chosenIdx}] len=${chosen.length}`);
     }
 
     if (chosen.length > 0 && (typeof chosen[0] !== 'object' || Array.isArray(chosen[0]))) {
@@ -440,6 +441,10 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     const debugLog = settings.eventbase_debug_logging;
     const debugVectorizing = settings.debug_vectorizing_log === true;
 
+    // Compact message-range tag appended to every log line so chunks in the DB browser
+    // (which display "from Message #<windowEnd>") are searchable directly from the log.
+    const msgRange = `msgs=${windowStart}-${windowEnd}`;
+
     // Build excerpt text from messages
     const excerptLines = messages.map(m => {
         const speaker = m.name || (m.is_user ? 'User' : 'Assistant');
@@ -471,7 +476,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     const provider = (settings.summarize_provider || 'openrouter').toLowerCase();
 
     if (debugLog) {
-        console.log(`[EventBase] Extracting events — window=${windowIndex}, provider=${provider}, messages=${messages.length}`);
+        console.log(`[EventBase] Extracting events — window=${windowIndex} ${msgRange}, provider=${provider}, messages=${messages.length}`);
     }
 
     // Call provider
@@ -483,34 +488,34 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     }
 
     if (debugLog) {
-        console.log(`[EventBase] Raw LLM reply (window=${windowIndex}):`, rawReply.slice(0, 500));
+        console.log(`[EventBase] Raw LLM reply (window=${windowIndex} ${msgRange}):`, rawReply.slice(0, 500));
     }
 
     // Parse JSON
     let rawArray;
     try {
-        rawArray = _parseJsonArray(rawReply, debugLog, windowIndex);
+        rawArray = _parseJsonArray(rawReply, debugLog, windowIndex, msgRange);
     } catch (parseErr) {
         // Always log full raw reply on parse failure regardless of debugLog flag
-        console.warn(`[EventBase] Window ${windowIndex}: parse failed. Full raw reply:\n${rawReply}`);
+        console.warn(`[EventBase] Window ${windowIndex} ${msgRange}: parse failed. Full raw reply:\n${rawReply}`);
         throw new EventBaseExtractionError(
-            `EventBase: JSON parse failed for window ${windowIndex}: ${parseErr.message}`,
+            `EventBase: JSON parse failed for window ${windowIndex} (${msgRange}): ${parseErr.message}`,
             windowIndex,
         );
     }
 
     if (debugVectorizing) {
-        console.log(`[EventBase] Window ${windowIndex}: parsed ${rawArray.length} event candidate(s)`);
+        console.log(`[EventBase] Window ${windowIndex} ${msgRange}: parsed ${rawArray.length} event candidate(s)`);
     }
 
     // Empty array is valid (no events extracted)
     if (rawArray.length === 0) {
-        if (debugLog) console.log(`[EventBase] Window ${windowIndex}: LLM returned no events (valid skip)`);
+        if (debugLog) console.log(`[EventBase] Window ${windowIndex} ${msgRange}: LLM returned no events (valid skip)`);
         return [];
     }
 
     if (debugLog) {
-        console.log(`[EventBase] Parsed array (window=${windowIndex}): ${rawArray.length} items, types: [${rawArray.map(item => typeof item).join(', ')}]`);
+        console.log(`[EventBase] Parsed array (window=${windowIndex} ${msgRange}): ${rawArray.length} items, types: [${rawArray.map(item => typeof item).join(', ')}]`);
         if (rawArray.length > 0 && typeof rawArray[0] !== 'object') {
             console.log(`[EventBase] First item (non-object): ${JSON.stringify(rawArray[0]).slice(0, 100)}`);
         }
@@ -518,7 +523,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
 
     // Enforce hard cap — sort by importance desc, then truncate
     if (rawArray.length > maxCount) {
-        console.warn(`[EventBase] Window ${windowIndex}: LLM returned ${rawArray.length} events (> cap ${maxCount}), truncating by importance`);
+        console.warn(`[EventBase] Window ${windowIndex} ${msgRange}: LLM returned ${rawArray.length} events (> cap ${maxCount}), truncating by importance`);
         rawArray = rawArray
             .slice()
             .sort((a, b) => (Number(b.importance) || 0) - (Number(a.importance) || 0))
@@ -531,11 +536,11 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     for (let i = 0; i < rawArray.length; i++) {
         const { ok, errors, event } = validateEvent(rawArray[i]);
         if (!ok) {
-            console.warn(`[EventBase] Window ${windowIndex}, item ${i}: validation failed — ${errors.join('; ')} — skipped`);
+            console.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: validation failed — ${errors.join('; ')} — skipped`);
             continue;
         }
         if (errors.length > 0) {
-            console.warn(`[EventBase] Window ${windowIndex}, item ${i}: coercion warnings — ${errors.join('; ')}`);
+            console.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: coercion warnings — ${errors.join('; ')}`);
         }
 
         // Post-parse language sanity check (warn only — retained for visibility,
@@ -544,7 +549,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         const summaryScript = _detectScript(event.summary);
         if (excerptScript !== 'empty' && excerptScript !== 'mixed' && summaryScript !== 'empty' && summaryScript !== 'mixed') {
             if (excerptScript !== summaryScript) {
-                console.warn(`[EventBase] Window ${windowIndex}, item ${i}: language mismatch (excerpt=${excerptScript}, summary=${summaryScript}) — kept`);
+                console.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: language mismatch (excerpt=${excerptScript}, summary=${summaryScript}) — kept`);
             }
         }
 
@@ -569,7 +574,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     }
 
     if (debugLog) {
-        console.log(`[EventBase] Window ${windowIndex}: extracted ${validatedEvents.length} valid events`);
+        console.log(`[EventBase] Window ${windowIndex} ${msgRange}: extracted ${validatedEvents.length} valid events`);
     }
 
     return validatedEvents;

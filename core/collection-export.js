@@ -140,6 +140,10 @@ async function fetchChunksWithVectors(collectionId, settings) {
             model: getModelFromSettings(settings),
             limit: 50000, // High limit to get all chunks
             includeVectors: true, // Include the actual embedding vectors
+            // Qdrant scroll batch — pure read, no indexing overhead, so push past the
+            // default 100 to amortize round-trip latency. 500 keeps each scroll well
+            // under Qdrant's 16-32 MB/request target even for 4096-dim + long text.
+            scrollLimit: 500,
         }),
     });
 

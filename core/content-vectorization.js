@@ -501,7 +501,10 @@ function prepareLorebookContent(rawContent, settings) {
         // Each entry becomes its own chunk - return array of content strings
         // Also pass entries so enrichChunks can attach keywords
         return {
-            text: validEntries.map(e => e.content),
+            text: validEntries.map(e => {
+                const header = e.comment || e.name || e.key?.[0] || '';
+                return header ? `# ${header}\n${e.content}` : e.content;
+            }),
             type: 'per_entry',
             entries: validEntries,
             entryCount: validEntries.length,

@@ -13,14 +13,14 @@
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { queryCollection } from './core-vector-api.js';
 import { getCollectionListing } from './collection-loader.js';
-import { getCollectionMeta, shouldCollectionActivate } from './collection-metadata.js';
+import { getCollectionMeta } from './collection-metadata.js';
 import { parseRegistryKey } from './collection-ids.js';
 import { LOREBOOK_PROMPT_TAG } from './constants.js';
 import { detectLorebookRenames, showLorebookRenameModal, openDatabaseBrowserForRename } from './lorebook-rename-detector.js';
 // Lorebook collection ID lookup uses registry scan (see _findLorebookRegistryEntry below);
 // the builder is intentionally not imported here because lookups can't reconstruct the
 // exact ID (backend + handle + timestamp segments are not known at lookup time).
-import { eventSource, event_types, setExtensionPrompt, substituteParams, getCurrentChatId } from '../../../../../script.js';
+import { eventSource, event_types, setExtensionPrompt, substituteParams } from '../../../../../script.js';
 
 // ============================================================================
 // WORLD INFO ACTIVATION HOOKS
@@ -147,32 +147,21 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
 }
 
 /**
- * Get all enabled lorebook collections that pass activation filters
+ * Get all enabled lorebook collections for semantic WI search.
+ * No keyword-trigger or lock gate — vector similarity is the activation mechanism.
+ * shouldCollectionActivate() returns false for collections with no triggers/conditions/locks,
+ * which is the default state for a semantic-WI lorebook. Gating on it silently blocks all results.
  * @param {object} settings - VectFox settings
- * @param {object} searchContext - Search context for activation filter evaluation
- * @returns {Promise<Array<{id: string, name: string}>>}
+ * @returns {Promise<Array<{id: string, name: string, sourceName: string|null}>>}
  */
 async function getEnabledLorebookCollections(settings) {
-    // getCollectionListing reads metadata via registry keys (backend:id form) — the canonical
-    // storage convention. All internal lock checks therefore resolve correctly.
     const listing = getCollectionListing(settings);
-    const currentChatId = getCurrentChatId() ? String(getCurrentChatId()) : null;
-    const currentCharacterId = getContext().characterId != null ? String(getContext().characterId) : null;
-    const context = { currentChatId, currentCharacterId };
-
     const collections = [];
+
     for (const entry of listing) {
-        // Only lorebook collections participate in semantic WI search
         if (!entry.collectionId.startsWith('vf_lorebook_')) continue;
-
-        // Skip explicitly disabled (paused) collections (meta.enabled === false means paused)
+        // Skip explicitly paused collections (meta.enabled === false).
         if (entry.meta.enabled === false) continue;
-
-        // shouldCollectionActivate receives the registry key so its internal getCollectionMeta
-        // and isCollectionLockedToChat calls hit the correct backend:id storage bucket.
-        // Trigger/condition gates are intentional: a lorebook that has active triggers fires
-        // even without a chat lock; one with neither triggers nor a lock is out of scope.
-        if (!(await shouldCollectionActivate(entry.registryKey, context))) continue;
 
         const sourceName = entry.meta?.sourceName || null;
         const name = sourceName || entry.collectionId;

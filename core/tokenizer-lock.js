@@ -204,18 +204,51 @@ export async function applyTokenizerRevert(savedMode, settings) {
  * still visually on top of anything we open behind it.
  */
 async function waitForPopupsClosed(maxWaitMs = 1500) {
+    const dumpDialogs = () => Array.from(document.querySelectorAll('dialog.popup')).map(d => ({
+        open: d.hasAttribute('open'),
+        closing: d.hasAttribute('closing'),
+        opening: d.hasAttribute('opening'),
+        classList: d.className,
+        hasAnimation: window.getComputedStyle(d).animationName !== 'none',
+        animationName: window.getComputedStyle(d).animationName,
+        textSnippet: (d.querySelector('.popup-body, .popup-content')?.textContent || '').trim().slice(0, 60),
+    }));
+
+    console.log('[TokenizerLock] initial dialog state:', dumpDialogs());
+
     const start = Date.now();
-    let waitedMs = 0;
+    let lastReport = 0;
     while (Date.now() - start < maxWaitMs) {
         const stillVisible = document.querySelectorAll('dialog.popup[open], dialog.popup[closing]').length;
         if (stillVisible === 0) {
-            console.log(`[TokenizerLock] popup cleared after ${waitedMs}ms`);
+            console.log(`[TokenizerLock] popup cleared after ${Date.now() - start}ms`);
             return;
         }
+        // Report dialog state every ~300ms so we can see what's keeping it alive
+        if (Date.now() - lastReport > 300) {
+            console.log(`[TokenizerLock] waiting (${Date.now() - start}ms) — dialogs:`, dumpDialogs());
+            lastReport = Date.now();
+        }
         await new Promise(r => setTimeout(r, 30));
-        waitedMs = Date.now() - start;
     }
-    console.warn(`[TokenizerLock] popup did not close within ${maxWaitMs}ms — proceeding anyway`);
+    console.warn(`[TokenizerLock] popup did not close within ${maxWaitMs}ms — final state:`, dumpDialogs());
+
+    // Last-resort manual close: walk Popup.util.popups and force completeCancelled on any
+    // that survived. Then strip them from the DOM if they still cling on.
+    try {
+        const { Popup } = await import('../../../../../scripts/popup.js');
+        const survivors = (Popup?.util?.popups || []).slice();
+        console.log('[TokenizerLock] forcing close on', survivors.length, 'popup util entries');
+        for (const p of survivors) {
+            try { await p.completeCancelled(); } catch (e) { console.warn('[TokenizerLock] completeCancelled failed:', e?.message); }
+        }
+        document.querySelectorAll('dialog.popup[open], dialog.popup[closing]').forEach(d => {
+            try { d.close(); } catch {}
+            d.remove();
+        });
+    } catch (e) {
+        console.warn('[TokenizerLock] force-close path failed:', e?.message);
+    }
 }
 
 export async function openCjkTokenizerSetting() {

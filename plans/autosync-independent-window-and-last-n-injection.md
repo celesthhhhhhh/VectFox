@@ -26,7 +26,7 @@ Before changing code, confirm the surface area is what was read while planning. 
 | Verification | Expected |
 |---|---|
 | `Grep` `eventbase_window_size\|eventbase_window_overlap` across the repo | Reads in workflow: [`core/eventbase-workflow.js:95-96`](core/eventbase-workflow.js#L95-L96) (runEventBaseIngestion) and [`:726-727`](core/eventbase-workflow.js#L726-L727) (isChatFullyVectorized). Writes: [`index.js:179-180`](index.js#L179-L180) (defaults `window_size=2`, `window_overlap=0`). UI slider inputs: [`ui/ui-manager.js:869-876`](ui/ui-manager.js#L869) (lifted in §4.2) with bindings at [`:3413-3414`](ui/ui-manager.js#L3413). One-off vectorize sends them: [`ui/content-vectorizer.js:2598-2599`](ui/content-vectorizer.js#L2598-L2599). If any extra hits appear, audit before changing. |
-| `Grep` `runEventBaseIngestion` call sites | 3 callers: auto-sync at [`core/chat-vectorization.js:371`](core/chat-vectorization.js#L371), backfill at [`core/chat-vectorization.js:1610`](core/chat-vectorization.js#L1610), and one-off vectorize at [`ui/content-vectorizer.js:2642`](ui/content-vectorizer.js#L2642). Only the first is "auto-sync"; the other two are user-triggered. |
+| `Grep` `runEventBaseIngestion` call sites | 3 callers: auto-sync at [`core/chat-vectorization.js:370`](core/chat-vectorization.js#L370), backfill at [`core/chat-vectorization.js:1572`](core/chat-vectorization.js#L1572), and one-off vectorize at [`ui/content-vectorizer.js:2642`](ui/content-vectorizer.js#L2642). Only the first is "auto-sync"; the other two are user-triggered. |
 | `Grep` `findEventBaseCollectionIdsForChat\|stampAutoSyncMarker` | Helpers already exist post-C3 at [`core/eventbase-store.js:254`](core/eventbase-store.js#L254) (stamp) and [`:455`](core/eventbase-store.js#L455) (collection-id resolver). Both will be re-used by the migration hook in §4.1. |
 | Verify EventBase event metadata carries `source_window_end` | See [`core/eventbase-store.js:75`](core/eventbase-store.js#L75) — `index` field is set from `source_window_end`, and the full event is spread into `metadata`. Already exposed via `listChunks` (used by §3.1 and by the C3 marker stamper). |
 | Verify EventBase prompt tag | [`core/eventbase-workflow.js:31`](core/eventbase-workflow.js#L31) — `EVENTBASE_PROMPT_TAG`. Feature B (§3) uses a **separate** tag (`_eventbase_lastn`) so the two injections don't collide. |
@@ -147,7 +147,9 @@ const result = await runEventBaseIngestion({
 
 ### 2.3 Other callers untouched
 
-- [`core/chat-vectorization.js:1610`](core/chat-vectorization.js#L1610) — backfill caller. Do NOT pass `windowSizeOverride`. Backfill respects the EventBase-tab slider, which is the user's intent for a manually-triggered "process my whole chat" action.
+> **Note**: `rearrangeChat` (the ST generation interceptor in this file) now has a 4th optional `{ dryRun, testMessage }` parameter added for the debug query tester. The auto-sync and backfill callers do not pass it — it defaults to `false` and is a no-op for Feature A.
+
+- [`core/chat-vectorization.js:1572`](core/chat-vectorization.js#L1572) — backfill caller. Do NOT pass `windowSizeOverride`. Backfill respects the EventBase-tab slider, which is the user's intent for a manually-triggered "process my whole chat" action.
 - [`ui/content-vectorizer.js:2642`](ui/content-vectorizer.js#L2642) — one-off Vectorize Content. Same: do NOT pass override.
 
 After this change, the EventBase-tab "Window Size (messages)" slider continues to control only those two callers. The AutoSync slider controls only auto-sync. Independence achieved.
@@ -640,7 +642,7 @@ This violates the user's spec for Feature B ("legacy events count as-is, no re-e
 
 The naive "stamp at currentChatLength always" design has a real gap: messages between the last existing event coverage and the moment auto-sync gets enabled are orphaned — never covered by anything. Smart placement closes that gap for the common case (the user just got bit by this exact scenario).
 
-**As-shipped change set** (all on Dev, uncommitted at time of writing):
+**As-shipped change set** (committed to `main` 2026-05-20, SHA `ed40dac` and predecessors):
 
 | Concern | Where it landed | Notes |
 |---|---|---|

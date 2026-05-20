@@ -196,13 +196,41 @@ export async function applyTokenizerRevert(savedMode, settings) {
  * Previously this branch only aborted the query, leaving the user nowhere —
  * the modal said "Open Settings" but nothing actually opened.
  */
-export function openCjkTokenizerSetting() {
+/**
+ * Wait until ST's <dialog.popup> elements have finished their close animation
+ * and been removed from the DOM. callGenericPopup resolves as soon as a button
+ * is clicked, but #hide() sets a `closing` attribute and only removes the
+ * dialog after a CSS fade animation — so for ~300ms after click the popup is
+ * still visually on top of anything we open behind it.
+ */
+async function waitForPopupsClosed(maxWaitMs = 1500) {
+    const start = Date.now();
+    let waitedMs = 0;
+    while (Date.now() - start < maxWaitMs) {
+        const stillVisible = document.querySelectorAll('dialog.popup[open], dialog.popup[closing]').length;
+        if (stillVisible === 0) {
+            console.log(`[TokenizerLock] popup cleared after ${waitedMs}ms`);
+            return;
+        }
+        await new Promise(r => setTimeout(r, 30));
+        waitedMs = Date.now() - start;
+    }
+    console.warn(`[TokenizerLock] popup did not close within ${maxWaitMs}ms — proceeding anyway`);
+}
+
+export async function openCjkTokenizerSetting() {
     console.log('[TokenizerLock] openCjkTokenizerSetting: invoked');
     try {
         if (typeof $ === 'undefined') {
             console.warn('[TokenizerLock] jQuery ($) is undefined — cannot navigate');
             return;
         }
+
+        // The triggering popup is still mid-fade when callGenericPopup resolves.
+        // Wait until it's actually gone before opening drawers behind it.
+        const popupCountBefore = document.querySelectorAll('dialog.popup').length;
+        console.log('[TokenizerLock] popup count before wait:', popupCountBefore);
+        await waitForPopupsClosed();
 
         const $settingsRoot = $('#VectFox_settings');
         console.log('[TokenizerLock] #VectFox_settings found:', $settingsRoot.length,

@@ -105,8 +105,18 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
     // Sort by score descending
     semanticEntries.sort((a, b) => b.score - a.score);
 
+    // Deduplicate by (sourceName, entryUid) — multiple collections from the same lorebook
+    // (different vectorization runs) can return the same entry. Keep the highest-scoring hit.
+    const seenEntryKeys = new Set();
+    const uniqueEntries = semanticEntries.filter(e => {
+        const k = `${e.metadata?.sourceName ?? ''}\x00${e.metadata?.entryUid ?? e.uid}`;
+        if (seenEntryKeys.has(k)) return false;
+        seenEntryKeys.add(k);
+        return true;
+    });
+
     // Deduplicate with already active entries (avoid duplicates from keyword matching)
-    const deduplicatedEntries = deduplicateWithActiveEntries(semanticEntries, activeEntries);
+    const deduplicatedEntries = deduplicateWithActiveEntries(uniqueEntries, activeEntries);
 
     console.log(`VectFox: Found ${deduplicatedEntries.length} semantic WI entries to activate`);
 
@@ -342,6 +352,23 @@ async function handleGenerationStarted() {
         const semanticEntries = await getSemanticWorldInfoEntries(recentMessages, [], settings);
         if (!semanticEntries.length) return;
 
+<<<<<<< HEAD
+=======
+        if (!semanticEntries.length) {
+            console.log('[VectFox WI] No semantic lorebook matches above threshold');
+            return;
+        }
+
+        console.log(`[VectFox WI] Retrieved ${semanticEntries.length} lorebook match(es):`);
+        semanticEntries.forEach(e => {
+            const name = e.metadata?.entryName || e.uid || '(unknown)';
+            const world = e.metadata?.sourceName || '(no sourceName)';
+            const uid = e.metadata?.entryUid ?? '(no entryUid)';
+            const canActivate = e.metadata?.entryUid != null && e.metadata?.sourceName;
+            console.log(`  ${canActivate ? '✓' : '✗'} "${name}" score=${e.score?.toFixed(3)} world="${world}" uid=${uid}${!canActivate ? ' — SKIPPED (missing world/uid)' : ''}`);
+        });
+
+>>>>>>> 65e7afa (fix: deduplicate semantic WI entries at source, not at emit time)
         const toActivate = semanticEntries
             .filter(e => e.metadata?.entryUid != null && e.metadata?.sourceName)
             .map(e => ({ world: e.metadata.sourceName, uid: e.metadata.entryUid }));

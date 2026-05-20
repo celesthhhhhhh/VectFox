@@ -208,9 +208,26 @@ export function openCjkTokenizerSetting() {
         console.log('[TokenizerLock] #VectFox_settings found:', $settingsRoot.length,
             'visible:', $settingsRoot.is(':visible'));
 
+        // Step 1: open ST's top-bar Extensions drawer if it's collapsed.
+        // ST wraps #extensions_settings2 (where VectFox mounts) inside
+        // #extensions-settings-button, which is a .drawer with a .drawer-toggle.
+        // The drawer-icon carries .closedIcon while collapsed and .openIcon when open.
+        // Source: SillyTavern/public/index.html (release branch) — searched 2026-05-20.
+        const $extDrawer = $('#extensions-settings-button');
+        const $extToggle = $extDrawer.children('.drawer-toggle').first();
+        const $extIcon = $extToggle.find('.drawer-icon').first();
+        const extClosed = $extIcon.hasClass('closedIcon');
+        console.log('[TokenizerLock] #extensions-settings-button found:', $extDrawer.length,
+            '| toggle found:', $extToggle.length,
+            '| icon.closedIcon:', extClosed);
+        if ($extToggle.length && extClosed) {
+            console.log('[TokenizerLock] firing extensions drawer toggle click');
+            $extToggle.trigger('click');
+        }
+
+        // Step 2: expand VectFox's own inline drawer if collapsed.
         const $drawerToggle = $('#VectFox_settings .inline-drawer-toggle').first();
         console.log('[TokenizerLock] .inline-drawer-toggle found:', $drawerToggle.length);
-
         if ($drawerToggle.length) {
             const $icon = $drawerToggle.find('.inline-drawer-icon');
             const $content = $drawerToggle.closest('.inline-drawer').find('.inline-drawer-content');
@@ -224,25 +241,39 @@ export function openCjkTokenizerSetting() {
             }
         }
 
+        // Step 3: switch to the Core tab.
         const $coreTab = $('#VectFox_settings .vectfox-tab-btn[data-tab="core"]');
         console.log('[TokenizerLock] core tab button found:', $coreTab.length);
         if ($coreTab.length) $coreTab.trigger('click');
 
-        // Defer scroll/focus to next tick so tab content is visible first.
+        // Step 4: scroll the dropdown into view (deferred so panels finish opening first).
+        // 150ms gives ST's slide animations time to settle before we measure positions.
         setTimeout(() => {
             const $select = $('#VectFox_cjk_tokenizer_mode');
-            console.log('[TokenizerLock] CJK dropdown found:', $select.length,
+            const $settingsNow = $('#VectFox_settings');
+            console.log('[TokenizerLock] post-open — #VectFox_settings visible:',
+                $settingsNow.is(':visible'),
+                '| CJK dropdown found:', $select.length,
                 'visible:', $select.is(':visible'),
-                'in viewport:', $select.length ? (() => {
+                '| viewport:', $select.length ? (() => {
                     const r = $select[0].getBoundingClientRect();
                     return `top=${r.top.toFixed(0)} bottom=${r.bottom.toFixed(0)} (window h=${window.innerHeight})`;
                 })() : 'n/a');
-            if ($select.length) {
+            if ($select.length && $select.is(':visible')) {
                 $select[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
                 $select.focus();
                 console.log('[TokenizerLock] scrollIntoView + focus dispatched');
+            } else {
+                // Couldn't surface the panel automatically — tell the user where to look.
+                try {
+                    toastr.info(
+                        'Open the Extensions drawer and look in VectFox → Core → CJK Tokenizer Mode.',
+                        'VectFox',
+                        { timeOut: 8000 },
+                    );
+                } catch { /* toastr may not be available */ }
             }
-        }, 50);
+        }, 150);
     } catch (error) {
         console.warn('[TokenizerLock] Failed to navigate to settings:', error.message, error);
     }

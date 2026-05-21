@@ -614,6 +614,13 @@
     background: color-mix(in srgb, #ef4444 25%, transparent);
 }
 
+.vectfox-detail-delete.vectfox-btn-dimmed,
+.vectfox-bulk-btn.vectfox-btn-dimmed {
+    opacity: 0.35;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
 /* Detail Content - Scrollable */
 .vectfox-detail-content {
     flex: 1;

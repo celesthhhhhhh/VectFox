@@ -645,7 +645,7 @@ function renderDetailPanel() {
                        placeholder="Name this chunk..."
                        value="${escapeHtml(data.name || '')}">
             </div>
-            <button class="vectfox-detail-delete" id="VectFox_delete_chunk">
+            <button class="vectfox-detail-delete${bulkSelectMode ? ' vectfox-btn-dimmed' : ''}" id="VectFox_delete_chunk" ${bulkSelectMode ? 'disabled' : ''}>
                 <i class="fa-solid fa-trash"></i> Delete
             </button>
         </div>
@@ -966,8 +966,12 @@ function bindEvents() {
     // Bulk mode
     $('#VectFox_bulk_mode').on('change', function() {
         bulkSelectMode = $(this).is(':checked');
-        if (!bulkSelectMode) selectedChunksSet.clear();
+        if (!bulkSelectMode) {
+            selectedChunksSet.clear();
+            $('#VectFox_bulk_delete').text('Delete Selected');
+        }
         $('#VectFox_bulk_buttons').toggle(bulkSelectMode);
+        $('#VectFox_delete_chunk').prop('disabled', bulkSelectMode).toggleClass('vectfox-btn-dimmed', bulkSelectMode);
         renderChunkList();
     });
 

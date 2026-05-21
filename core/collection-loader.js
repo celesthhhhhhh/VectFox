@@ -558,15 +558,34 @@ async function discoverViaPlugin(settings) {
                     models: collection.models || []  // All available models
                 };
 
-                // Cache by "backend:id" — embedding source is not part of the key
+                // Cache by "backend:id" — embedding source is not part of the key.
+                // The plugin's /collections endpoint groups by (source, collectionId),
+                // so the same vectra collectionId can appear in multiple entries (one
+                // per source folder on disk: e.g. openai/, transformers/). When that
+                // happens, keep the entry with the highest chunkCount — that's the
+                // populated one. Last-write-wins would otherwise let an empty/stub
+                // source folder clobber the real data and surface as "0 chunks" in
+                // the UI.
                 const cacheKey = buildRegistryKey(collectionId, backend);
-                pluginCollectionData[cacheKey] = collectionData;
-                uniqueKeys.push(cacheKey);
+                const existing = pluginCollectionData[cacheKey];
+                const incomingCount = collectionData.chunkCount || 0;
+                const existingCount = existing?.chunkCount || 0;
+                if (!existing || incomingCount > existingCount) {
+                    if (existing && existingCount !== incomingCount) {
+                        console.debug(`   🔀 Collision on ${cacheKey}: keeping ${incomingCount} chunks (source=${collectionData.source}) over ${existingCount} (source=${existing.source})`);
+                    }
+                    pluginCollectionData[cacheKey] = collectionData;
+                    uniqueKeys.push(cacheKey);
+                }
 
-                // Also cache by sanitized version (for backend lookups)
+                // Also cache by sanitized version (for backend lookups) — same dedup rule
                 const sanitized = collectionId.replace(/[^a-zA-Z0-9_.-]/g, '_');
                 if (sanitized !== collectionId) {
-                    pluginCollectionData[buildRegistryKey(sanitized, backend)] = collectionData;
+                    const sanitizedKey = buildRegistryKey(sanitized, backend);
+                    const sanitizedExisting = pluginCollectionData[sanitizedKey];
+                    if (!sanitizedExisting || incomingCount > (sanitizedExisting.chunkCount || 0)) {
+                        pluginCollectionData[sanitizedKey] = collectionData;
+                    }
                 }
             }
 

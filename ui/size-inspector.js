@@ -15,13 +15,16 @@
  */
 
 import { getRequestHeaders } from "../../../../../script.js";
+import { extension_settings } from "../../../../extensions.js";
+import { loadAllCollections } from "../core/collection-loader.js";
+import { buildRegistryKey } from "../core/collection-ids.js";
 import { icons } from "./icons.js";
 
 // Cache of last scan so the detail view can reuse already-fetched items
 // without re-hitting the backend.
 const _cache = {
     summaries: [],         // array of summary rows
-    itemsByKey: new Map(), // key = `${backend}::${collectionId}` -> items[]
+    itemsByKey: new Map(), // key = registryKey (`backend:collectionId`) -> items[]
 };
 
 /**
@@ -140,36 +143,20 @@ async function runScan() {
     _cache.itemsByKey.clear();
 
     try {
-        const listRes = await fetch("/api/plugins/similharity/collections", {
-            method: "GET",
-            headers: getRequestHeaders(),
-        });
-        if (!listRes.ok) {
-            throw new Error(`Plugin /collections returned ${listRes.status}. Is the Similharity plugin installed?`);
+        // Single source of truth for collection listing — same path the Database
+        // Browser, WI panel, and auto-sync use. loadAllCollections() handles plugin
+        // discovery, dedup of (backend, collectionId) collisions, scope migration,
+        // and per-entry source/model resolution. Each returned entry already
+        // carries { id, registryKey, backend, source, model, chunkCount } — no
+        // local fetch + dedup needed here. See dev_helper.md §14.
+        const settings = extension_settings?.vectfox;
+        if (!settings) {
+            throw new Error("VectFox settings not initialized");
         }
-        const list = await listRes.json();
-        const rawCollections = list.collections || [];
+        $status.text("Listing collections via loadAllCollections…");
+        const collections = await loadAllCollections(settings, false);
 
-        // Dedupe: the plugin's /collections groups by (source, collectionId), so the
-        // same vectra collectionId can appear multiple times under different `source`
-        // values (e.g. one populated under `openai`, one empty under `transformers`).
-        // Collapse to one entry per (backend, collectionId), preferring the variant
-        // with the highest chunkCount (most likely the one actually in use).
-        const dedupMap = new Map();
-        for (const entry of rawCollections) {
-            const id = typeof entry === "string" ? entry : (entry.collectionId || entry.id || entry.name);
-            const backend = (typeof entry === "object" && entry.backend) ? entry.backend : "qdrant";
-            if (!id) continue;
-            const key = `${backend}::${id}`;
-            const existing = dedupMap.get(key);
-            const count = (typeof entry === "object" && typeof entry.chunkCount === "number") ? entry.chunkCount : 0;
-            if (!existing || count > (existing._count || 0)) {
-                dedupMap.set(key, Object.assign({}, entry, { _count: count }));
-            }
-        }
-        const collections = Array.from(dedupMap.values());
-
-        $status.text(`Found ${collections.length} unique collections (raw: ${rawCollections.length}, Qdrant scanned: ${list.qdrantScanned ? "yes" : "no"}). Probing chunks…`);
+        $status.text(`Found ${collections.length} collections. Probing chunks…`);
 
         if (!collections.length) {
             $btn.prop("disabled", false);
@@ -180,14 +167,15 @@ async function runScan() {
         let done = 0;
 
         for (const entry of collections) {
-            const collectionId = typeof entry === "string" ? entry : (entry.collectionId || entry.id || entry.name);
-            const backend = (typeof entry === "object" && entry.backend) ? entry.backend : "qdrant";
-            // Vectra/standard indexes are partitioned by (source, model) on disk.
-            // The plugin's /collections endpoint already returns the discovered
-            // source + primary model per entry — forward them or chunks/list
-            // returns 0 items (silently opens an empty new index).
-            const source = (typeof entry === "object" && entry.source) ? entry.source : "transformers";
-            const model = (typeof entry === "object" && entry.model) ? entry.model : "";
+            const collectionId = entry.id;
+            const backend = entry.backend || "qdrant";
+            // loadAllCollections already resolved source + primary model from
+            // plugin discovery. Vectra/standard indexes are partitioned by
+            // (source, model) on disk, so forwarding the discovered values is
+            // mandatory — defaults would silently hit an empty new index.
+            const source = entry.source || "transformers";
+            const model = entry.model || "";
+            const registryKey = entry.registryKey || buildRegistryKey(collectionId, backend);
             if (!collectionId) {
                 done++;
                 continue;
@@ -206,12 +194,12 @@ async function runScan() {
                     items = data.items || [];
                 }
 
-                const row = summarize(collectionId, backend, items);
+                const row = summarize(collectionId, backend, items, registryKey);
                 summaries.push(row);
-                _cache.itemsByKey.set(`${backend}::${collectionId}`, items);
+                _cache.itemsByKey.set(registryKey, items);
             } catch (err) {
                 summaries.push({
-                    key: `${backend}::${collectionId}`,
+                    key: registryKey,
                     collectionId,
                     backend,
                     count: 0,
@@ -241,10 +229,11 @@ async function runScan() {
     }
 }
 
-function summarize(collectionId, backend, items) {
+function summarize(collectionId, backend, items, registryKey) {
+    const key = registryKey || buildRegistryKey(collectionId, backend);
     if (!items.length) {
         return {
-            key: `${backend}::${collectionId}`,
+            key,
             collectionId,
             backend,
             count: 0,
@@ -261,7 +250,7 @@ function summarize(collectionId, backend, items) {
     const worstMeta = items[maxIdx]?.metadata || {};
     const previewSrc = worstMeta.text || worstMeta.summary || JSON.stringify(worstMeta);
     return {
-        key: `${backend}::${collectionId}`,
+        key,
         collectionId,
         backend,
         count: items.length,

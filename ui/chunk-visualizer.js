@@ -479,6 +479,7 @@ function createModal() {
                             <div class="vectfox-bulk-buttons" id="VectFox_bulk_buttons" style="display: none;">
                                 <button class="vectfox-bulk-btn" id="VectFox_bulk_enable">Enable All</button>
                                 <button class="vectfox-bulk-btn" id="VectFox_bulk_disable">Disable All</button>
+                                <button class="vectfox-bulk-btn vectfox-bulk-btn-danger" id="VectFox_bulk_delete">Delete Selected</button>
                             </div>
                         </div>
                         <div class="vectfox-list-status" id="VectFox_list_status"></div>
@@ -986,10 +987,12 @@ function bindEvents() {
         const label = count > 0 ? ` (${count})` : '';
         $('#VectFox_bulk_enable').text(`Enable All${label}`);
         $('#VectFox_bulk_disable').text(`Disable All${label}`);
+        $('#VectFox_bulk_delete').text(count > 0 ? `Delete Selected (${count})` : 'Delete Selected');
     });
 
     $('#VectFox_bulk_enable').on('click', () => bulkSetEnabled(true));
     $('#VectFox_bulk_disable').on('click', () => bulkSetEnabled(false));
+    $('#VectFox_bulk_delete').on('click', () => bulkDelete());
 }
 
 function bindDetailEvents() {
@@ -1515,6 +1518,37 @@ async function deleteChunk(chunk) {
 // BULK OPERATIONS
 // ============================================================================
 
+async function bulkDelete() {
+    const targets = selectedChunksSet.size > 0
+        ? filteredChunks.filter(c => selectedChunksSet.has(c.uniqueId))
+        : [];
+    if (targets.length === 0) {
+        toastr.warning('No chunks selected', 'VectFox');
+        return;
+    }
+    if (!confirm(`Delete ${targets.length} selected chunk${targets.length !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+
+    try {
+        const hashes = targets.map(c => c.hash);
+        await deleteVectorItems(currentCollectionId, hashes, currentSettings);
+        for (const chunk of targets) {
+            deleteChunkMetadata(chunk.hash);
+            const idx = allChunks.findIndex(c => c.uniqueId === chunk.uniqueId);
+            if (idx !== -1) allChunks.splice(idx, 1);
+        }
+        selectedChunksSet.clear();
+        if (targets.some(c => c.uniqueId === selectedChunkId)) selectedChunkId = null;
+        $('#VectFox_bulk_delete').text('Delete Selected');
+        applyFilters();
+        renderChunkList();
+        renderDetailPanel();
+        toastr.success(`Deleted ${targets.length} chunk${targets.length !== 1 ? 's' : ''}`, 'VectFox');
+    } catch (error) {
+        console.error('Failed to bulk delete chunks:', error);
+        toastr.error('Failed to delete chunks', 'VectFox');
+    }
+}
+
 function bulkSetEnabled(enabled) {
     // Operate on checked items when any are selected; otherwise on all filtered chunks.
     const targets = selectedChunksSet.size > 0
@@ -1529,6 +1563,7 @@ function bulkSetEnabled(enabled) {
     // Reset button labels after action
     $('#VectFox_bulk_enable').text('Enable All');
     $('#VectFox_bulk_disable').text('Disable All');
+    $('#VectFox_bulk_delete').text('Delete Selected');
     selectedChunksSet.clear();
     toastr.success(`${enabled ? 'Enabled' : 'Disabled'} ${targets.length} chunk${targets.length !== 1 ? 's' : ''}`, 'VectFox');
 }

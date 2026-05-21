@@ -448,6 +448,15 @@
     background: color-mix(in srgb, var(--SmartThemeBodyColor) 10%, transparent);
 }
 
+.vectfox-bulk-btn-danger {
+    color: var(--vectfox-danger, #e05c5c);
+    border-color: color-mix(in srgb, var(--vectfox-danger, #e05c5c) 40%, transparent);
+}
+
+.vectfox-bulk-btn-danger:hover {
+    background: color-mix(in srgb, var(--vectfox-danger, #e05c5c) 15%, transparent);
+}
+
 /* Status Bar */
 .vectfox-list-status {
     padding: 10px 12px;

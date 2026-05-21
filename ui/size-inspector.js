@@ -148,9 +148,28 @@ async function runScan() {
             throw new Error(`Plugin /collections returned ${listRes.status}. Is the Similharity plugin installed?`);
         }
         const list = await listRes.json();
-        const collections = list.collections || [];
+        const rawCollections = list.collections || [];
 
-        $status.text(`Found ${collections.length} collections (Qdrant scanned: ${list.qdrantScanned ? "yes" : "no"}). Probing chunks…`);
+        // Dedupe: the plugin's /collections groups by (source, collectionId), so the
+        // same vectra collectionId can appear multiple times under different `source`
+        // values (e.g. one populated under `openai`, one empty under `transformers`).
+        // Collapse to one entry per (backend, collectionId), preferring the variant
+        // with the highest chunkCount (most likely the one actually in use).
+        const dedupMap = new Map();
+        for (const entry of rawCollections) {
+            const id = typeof entry === "string" ? entry : (entry.collectionId || entry.id || entry.name);
+            const backend = (typeof entry === "object" && entry.backend) ? entry.backend : "qdrant";
+            if (!id) continue;
+            const key = `${backend}::${id}`;
+            const existing = dedupMap.get(key);
+            const count = (typeof entry === "object" && typeof entry.chunkCount === "number") ? entry.chunkCount : 0;
+            if (!existing || count > (existing._count || 0)) {
+                dedupMap.set(key, Object.assign({}, entry, { _count: count }));
+            }
+        }
+        const collections = Array.from(dedupMap.values());
+
+        $status.text(`Found ${collections.length} unique collections (raw: ${rawCollections.length}, Qdrant scanned: ${list.qdrantScanned ? "yes" : "no"}). Probing chunks…`);
 
         if (!collections.length) {
             $btn.prop("disabled", false);

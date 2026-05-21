@@ -263,6 +263,20 @@
     opacity: 0.5;
 }
 
+.vectfox-chunk-item.bulk-checked {
+    background: color-mix(in srgb, var(--vectfox-primary) 10%, transparent);
+    border-color: color-mix(in srgb, var(--vectfox-primary) 50%, transparent);
+}
+
+.vectfox-bulk-checkbox {
+    flex-shrink: 0;
+    align-self: center;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--vectfox-primary);
+}
+
 /* Importance indicator bar */
 .vectfox-chunk-item-bar {
     width: 4px;

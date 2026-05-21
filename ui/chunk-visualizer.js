@@ -46,6 +46,7 @@ let sortBy = 'index'; // 'index', 'length-desc', 'length-asc', 'keywords', 'modi
 let filterBy = 'all'; // 'all', 'enabled', 'disabled', 'conditions', 'blind'
 let searchQuery = '';
 let bulkSelectMode = false;
+let selectedChunksSet = new Set(); // uniqueIds checked in bulk mode
 let selectedHashes = new Set();
 let hasUnsavedChanges = false;
 let pendingChanges = new Map(); // hash -> {keywords, enabled, conditions, etc.}
@@ -249,6 +250,7 @@ export function openVisualizer(results, collectionId, settings, onReload = null)
     displayLimit = 50;
     searchQuery = '';
     bulkSelectMode = false;
+    selectedChunksSet.clear();
     selectedHashes.clear();
     pendingChanges.clear();
     hasUnsavedChanges = false;
@@ -555,9 +557,14 @@ function renderChunkItem(chunk, listIndex) {
     if (hasConditions) featureBadges.push(`<span class="vectfox-chunk-item-badge conditions" title="Has ${data.conditions.rules.length} condition(s)">⚡${data.conditions.rules.length}</span>`);
     if (hasKeywords) featureBadges.push(`<span class="vectfox-chunk-item-badge keywords" title="Has ${data.keywords.length} keyword(s)">🏷️${data.keywords.length}</span>`);
 
+    const bulkCheckbox = bulkSelectMode
+        ? `<input type="checkbox" class="vectfox-bulk-checkbox" data-uid="${chunk.uniqueId}" ${selectedChunksSet.has(chunk.uniqueId) ? 'checked' : ''} title="Select for bulk action">`
+        : '';
+
     return `
-        <div class="vectfox-chunk-item ${isSelected ? 'selected' : ''} ${!data.enabled ? 'disabled' : ''}"
+        <div class="vectfox-chunk-item ${isSelected ? 'selected' : ''} ${!data.enabled ? 'disabled' : ''} ${bulkSelectMode && selectedChunksSet.has(chunk.uniqueId) ? 'bulk-checked' : ''}"
              data-uid="${chunk.uniqueId}" data-list-index="${listIndex}">
+            ${bulkCheckbox}
             <div class="vectfox-chunk-item-content">
                 <div class="vectfox-chunk-item-header">
                     <span class="vectfox-chunk-item-index">${displayNumber}.</span>
@@ -956,7 +963,27 @@ function bindEvents() {
     // Bulk mode
     $('#VectFox_bulk_mode').on('change', function() {
         bulkSelectMode = $(this).is(':checked');
+        if (!bulkSelectMode) selectedChunksSet.clear();
         $('#VectFox_bulk_buttons').toggle(bulkSelectMode);
+        renderChunkList();
+    });
+
+    // Per-chunk bulk checkboxes (delegated — list is re-rendered frequently)
+    $('#VectFox_chunk_list').on('change', '.vectfox-bulk-checkbox', function(e) {
+        e.stopPropagation();
+        const uid = $(this).data('uid');
+        if ($(this).is(':checked')) {
+            selectedChunksSet.add(uid);
+        } else {
+            selectedChunksSet.delete(uid);
+        }
+        // Update the row highlight without a full re-render
+        $(this).closest('.vectfox-chunk-item').toggleClass('bulk-checked', $(this).is(':checked'));
+        // Update button labels to show selection count
+        const count = selectedChunksSet.size;
+        const label = count > 0 ? ` (${count})` : '';
+        $('#VectFox_bulk_enable').text(`Enable All${label}`);
+        $('#VectFox_bulk_disable').text(`Disable All${label}`);
     });
 
     $('#VectFox_bulk_enable').on('click', () => bulkSetEnabled(true));
@@ -1487,13 +1514,21 @@ async function deleteChunk(chunk) {
 // ============================================================================
 
 function bulkSetEnabled(enabled) {
-    for (const chunk of filteredChunks) {
+    // Operate on checked items when any are selected; otherwise on all filtered chunks.
+    const targets = selectedChunksSet.size > 0
+        ? filteredChunks.filter(c => selectedChunksSet.has(c.uniqueId))
+        : filteredChunks;
+    for (const chunk of targets) {
         chunk.data.enabled = enabled;
         updateChunkData(chunk.hash, { enabled });
     }
     renderChunkList();
     if (selectedChunkId) renderDetailPanel();
-    toastr.success(`${enabled ? 'Enabled' : 'Disabled'} ${filteredChunks.length} chunks`, 'VectFox');
+    // Reset button labels after action
+    $('#VectFox_bulk_enable').text('Enable All');
+    $('#VectFox_bulk_disable').text('Disable All');
+    selectedChunksSet.clear();
+    toastr.success(`${enabled ? 'Enabled' : 'Disabled'} ${targets.length} chunk${targets.length !== 1 ? 's' : ''}`, 'VectFox');
 }
 
 // ============================================================================

@@ -163,6 +163,12 @@ async function runScan() {
         for (const entry of collections) {
             const collectionId = typeof entry === "string" ? entry : (entry.collectionId || entry.id || entry.name);
             const backend = (typeof entry === "object" && entry.backend) ? entry.backend : "qdrant";
+            // Vectra/standard indexes are partitioned by (source, model) on disk.
+            // The plugin's /collections endpoint already returns the discovered
+            // source + primary model per entry — forward them or chunks/list
+            // returns 0 items (silently opens an empty new index).
+            const source = (typeof entry === "object" && entry.source) ? entry.source : "transformers";
+            const model = (typeof entry === "object" && entry.model) ? entry.model : "";
             if (!collectionId) {
                 done++;
                 continue;
@@ -172,7 +178,7 @@ async function runScan() {
                 const r = await fetch("/api/plugins/similharity/chunks/list", {
                     method: "POST",
                     headers: getRequestHeaders(),
-                    body: JSON.stringify({ backend, collectionId, limit: 5000 }),
+                    body: JSON.stringify({ backend, collectionId, source, model, limit: 5000 }),
                 });
 
                 let items = [];

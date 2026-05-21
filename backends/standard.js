@@ -340,13 +340,47 @@ export class StandardBackend extends VectorBackend {
      * Uses native ST API
      */
     async deleteVectorItems(collectionId, hashes, settings) {
+        const model = getModelFromSettings(settings);
+        const source = settings.source || 'transformers';
+
+        // Strip backend prefix from registry keys (same as queryCollection)
+        const knownBackends = ['standard', 'vectra', 'qdrant'];
+        const parts = collectionId.split(':');
+        let bareCollectionId = collectionId;
+        if (parts.length >= 2 && knownBackends.includes(parts[0])) {
+            bareCollectionId = parts.slice(1).join(':');
+        }
+
+        // When the plugin is available, data lives at vectors/{source}/{collectionId}/{model}/
+        // The native /api/vector/delete doesn't know about the model subfolder — route through plugin.
+        if (this.pluginAvailable) {
+            const response = await fetch('/api/plugins/similharity/chunks/delete', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    backend: 'vectra',
+                    collectionId: bareCollectionId,
+                    hashes,
+                    source,
+                    model,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text().catch(() => 'No response body');
+                throw new Error(`Failed to delete vectors (plugin): ${response.status} ${response.statusText} - ${errorBody}`);
+            }
+            return;
+        }
+
+        // Fallback: native ST API
         const response = await fetch('/api/vector/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
-                collectionId: collectionId,
+                collectionId: bareCollectionId,
                 hashes: hashes,
-                source: settings.source || 'transformers',
+                source,
             }),
         });
 

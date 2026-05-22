@@ -477,10 +477,56 @@ export class StandardBackend extends VectorBackend {
     // ========================================================================
 
     /**
-     * List chunks with pagination
-     * Native ST API returns hashes only
+     * List chunks with their stored text.
+     * Native /api/vector/list returns hashes only, so we use /api/vector/query
+     * with threshold=0 and a large topK to retrieve all items including text.
      */
     async listChunks(collectionId, settings, options = {}) {
+        const limit = options.limit || VECTOR_LIST_LIMIT;
+        const model = getModelFromSettings(settings);
+        const source = settings.source || 'transformers';
+        const providerParams = getProviderSpecificParams(settings, true);
+
+        // Strip backend prefix (same as queryCollection)
+        const knownBackends = ['standard', 'vectra', 'qdrant'];
+        const parts = collectionId.split(':');
+        const bareCollectionId = (parts.length >= 2 && knownBackends.includes(parts[0]))
+            ? parts.slice(1).join(':')
+            : collectionId;
+
+        try {
+            const response = await fetch('/api/vector/query', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    collectionId: bareCollectionId,
+                    searchText: 'event',
+                    topK: limit,
+                    threshold: 0,
+                    source,
+                    model,
+                    ...providerParams,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.hashes?.length) {
+                    return {
+                        items: (data.metadata || []).map((m, idx) => ({
+                            hash: data.hashes[idx],
+                            text: m.text || '',
+                            metadata: m,
+                        })),
+                        total: data.hashes.length,
+                    };
+                }
+            }
+        } catch (_) {
+            // fall through to hash-only
+        }
+
+        // Fallback: hashes only (query endpoint unavailable or empty collection)
         const hashes = await this.getSavedHashes(collectionId, settings);
         return {
             items: hashes.map(hash => ({ hash, text: '', metadata: {} })),

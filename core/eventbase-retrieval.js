@@ -16,6 +16,7 @@
 import { queryCollection } from './core-vector-api.js';
 import { getBackendForCollection, getBackend } from '../backends/backend-manager.js';
 import { parseRegistryKey } from './collection-ids.js';
+import { parseEmbedText } from './eventbase-schema.js';
 
 // ---------------------------------------------------------------------------
 // Default re-rank weights (tuned for long-form SillyTavern RP)
@@ -214,7 +215,15 @@ async function _runOneLiveQuery({
     // Legacy path: queryCollection (vector-only or hybrid, depending on settings).
     const { hashes, metadata } = await queryCollection(colId, queryText, topK, ebSettings);
     if (!hashes?.length) return [];
-    return metadata.map((m, i) => ({ ...m, _hash: hashes[i] }));
+    return metadata.map((m, i) => {
+        const base = { ...m, _hash: hashes[i] };
+        // Native ST Vectra only stores {hash, text, index} — no EventBase metadata.
+        // Parse the embed text to recover content fields when they are absent.
+        if (base.text && !base.event_type) {
+            Object.assign(base, parseEmbedText(base.text));
+        }
+        return base;
+    });
 }
 
 /**

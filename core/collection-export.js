@@ -550,6 +550,7 @@ export function validateImportData(data, currentSettings = {}) {
 async function insertChunksWithVectors(collectionId, chunks, settings, onBatchProgress, abortSignal = null) {
     const backendName = settings.vector_backend || 'standard';
     const model = getModelFromSettings(settings);
+
     // Batch to avoid 413. Qdrant accepts up to 32 MB per request; live ingestion uses 100
     // (backends/qdrant.js). Per-batch overhead (collection metadata GETs + wait=true index)
     // dominates total time, so larger batches roughly amortize that cost. 100 chunks ≈ 5 MB
@@ -585,24 +586,45 @@ async function insertChunksWithVectors(collectionId, chunks, settings, onBatchPr
             throw Object.assign(new Error('Import stopped by user'), { name: 'AbortError' });
         }
         const batch = items.slice(i, i + BATCH_SIZE);
-        const response = await fetch('/api/plugins/similharity/chunks/insert', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                backend: backendName === 'standard' ? 'vectra' : backendName,
-                collectionId,
-                source: settings.source || 'transformers',
-                model,
-                items: batch,
-                // qdrant requires nativeSparse=true so the collection is created with text_sparse
-                // index (BM25 hybrid search). Without it, hybrid queries fail with "Not existing
-                // vector name error: text_sparse".
-                ...(backendName === 'qdrant' && {
-                    nativeSparse: true,
-                    cjkTokenizerMode: settings.cjk_tokenizer_mode || null,
+
+        let response;
+        if (backendName === 'standard') {
+            // Standard backend always uses native ST API — plugin is Qdrant-only
+            response = await fetch('/api/vector/insert', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    collectionId,
+                    source: settings.source || 'transformers',
+                    model,
+                    items: batch.map(item => ({
+                        hash: item.hash,
+                        text: item.text || '',
+                        index: item.index ?? 0,
+                    })),
+                    embeddings: Object.fromEntries(batch.map(item => [item.text || '', item.vector])),
                 }),
-            }),
-        });
+            });
+        } else {
+            response = await fetch('/api/plugins/similharity/chunks/insert', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    backend: backendName === 'standard' ? 'vectra' : backendName,
+                    collectionId,
+                    source: settings.source || 'transformers',
+                    model,
+                    items: batch,
+                    // qdrant requires nativeSparse=true so the collection is created with text_sparse
+                    // index (BM25 hybrid search). Without it, hybrid queries fail with "Not existing
+                    // vector name error: text_sparse".
+                    ...(backendName === 'qdrant' && {
+                        nativeSparse: true,
+                        cjkTokenizerMode: settings.cjk_tokenizer_mode || null,
+                    }),
+                }),
+            });
+        }
 
         if (!response.ok) {
             const error = await response.text();

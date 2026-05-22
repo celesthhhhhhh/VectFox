@@ -1,11 +1,24 @@
 /**
  * ============================================================================
- * STANDARD BACKEND (Vectra - ST Native + Plugin)
+ * STANDARD BACKEND (Vectra - ST Native)
  * ============================================================================
- * Uses ST's native /api/vector/* endpoints as the primary method.
- * Falls back to Similharity plugin endpoints if available for extended features.
+ * Uses ST's native /api/vector/* endpoints as the primary path.
+ * This is the default backend — no setup required.
  *
- * This is the default backend - no setup required.
+ * ## Plugin dependency rule
+ *
+ * The Similharity plugin (/api/plugins/similharity/*) is an OPTIONAL
+ * enhancement here, NOT a requirement. Every method that calls the plugin
+ * MUST check `this.pluginAvailable` first and fall back to a native-API path
+ * when the plugin is absent. The standard backend must be fully functional
+ * without the plugin installed.
+ *
+ * Plugin-enhanced features (metadata, chunk listing, chunk editing) degrade
+ * gracefully to reduced functionality — never to a hard error.
+ *
+ * See Doc/dev_helper.md §16 for the full plugin dependency policy.
+ *
+ * !! DO NOT add any unconditional plugin calls here !!
  *
  * @author VectFox
  * @version 3.1.0

@@ -920,6 +920,40 @@ There is **no global-scope priority**. That branch (formerly "priority 1.5") was
 
 ---
 
+## 16) Similharity Plugin — Dependency Policy
+
+The Similharity plugin (`/api/plugins/similharity/*`) was built for Qdrant. Its relationship with the standard backend follows strict rules.
+
+### Rule: plugin is Qdrant-native, optional-only on standard
+
+| Backend | Plugin role |
+|---|---|
+| **Qdrant** | Required. All inserts, queries, chunk listing, and management go through the plugin. |
+| **Standard (Vectra)** | Optional enhancement only. Standard backend must be fully functional without it. |
+
+### Standard backend — what the plugin enhances (when installed)
+
+| Feature | Without plugin | With plugin |
+|---|---|---|
+| Insert / write | Native `/api/vector/insert` | Plugin `/chunks/insert` — adds metadata (keywords, importance, conditions) |
+| Query / read | Native `/api/vector/query` | Plugin `/chunks/query` — returns metadata alongside results |
+| Chunk listing (View Chunks) | Not possible | Plugin `/chunks/list` — full text + metadata |
+| Chunk editing (text/metadata) | Not possible | Plugin `/chunks/{hash}/text` + `/metadata` |
+| Stats | Hash count only | Plugin `/chunks/stats` — rich stats |
+| Collection discovery | Registry only | Plugin `/collections` — filesystem scan |
+
+### The rule for new code
+
+- **Standard backend (`backends/standard.js`):** Every plugin call MUST be gated by `this.pluginAvailable`. Every gated call MUST have a native-API fallback. No unconditional plugin calls.
+- **UI and core modules (outside `backends/`):** Check `browserState.pluginAvailable` (UI) or make an explicit health check before calling plugin endpoints. Show a graceful message if unavailable — never throw an unhandled error.
+- **Import/export (`core/collection-export.js`):** `insertChunksWithVectors` uses native `/api/vector/insert` for standard backend unconditionally — plugin is never called for inserts on standard backend regardless of plugin availability. This is intentional: the plugin insert path was originally there by mistake.
+
+### Why the separation matters
+
+Using the plugin for standard backend inserts created a hidden dependency: users without the plugin couldn't import collections. The native ST API supports pre-computed vector inserts via an `embeddings` map — there is no reason to route standard backend inserts through the plugin. The plugin's value on standard backend is read-side enhancement (metadata retrieval, chunk listing), not write-side.
+
+---
+
 ## 15) Known Pending Cleanups
 
 ### 15.1 ChunkBase phase early-gate — broaden vs current  (mainly performance issue, spending 20ms unnecessarily)

@@ -24,6 +24,7 @@ import { COLLECTION_PREFIXES } from "../core/collection-ids.js";
 import {
   purgeVectorIndex,
   queryMultipleCollections,
+  listChunks,
 } from "../core/core-vector-api.js";
 import { getRequestHeaders, getCurrentChatId, eventSource, event_types } from "../../../../../script.js";
 import {
@@ -1332,36 +1333,19 @@ function bindCollectionCardEvents() {
         const collectionSettings = {
           ...browserState.settings,
           vector_backend: collection.backend,
+          source: collection.source || browserState.settings.source,
         };
 
         const doLoad = async (limit) => {
-          const requestBody = {
-            backend: collection.backend || "vectra",
-            collectionId: collection.id,
-            source: collection.source || "transformers",
-            model: collection.model || "",
-            ...(limit ? { limit } : {}),
-          };
+          const data = await listChunks(
+            collection.id,
+            collectionSettings,
+            limit ? { limit } : {},
+          );
 
-          console.log("VECTFOX DB Browser: Requesting chunks with:", requestBody);
-
-          const response = await fetch("/api/plugins/similharity/chunks/list", {
-            method: "POST",
-            headers: getRequestHeaders(),
-            body: JSON.stringify(requestBody),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to list chunks: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          // Support all plugin response shapes: items (new), chunks/results (older/backends)
-          const results = data.items || data.chunks || data.results || [];
+          const results = data.items || [];
           const dbChunkCount = Number(
             data.total ??
-            data.totalCount ??
-            data.count ??
             collection.chunkCount ??
             results.length,
           );
@@ -2907,21 +2891,12 @@ async function scanKeywords() {
 
     for (const collection of collectionsToScan) {
       try {
-        const response = await fetch("/api/plugins/similharity/chunks/list", {
-          method: "POST",
-          headers: getRequestHeaders(),
-          body: JSON.stringify({
-            backend: collection.backend || "vectra",
-            collectionId: collection.id,
-            source: collection.source || "transformers",
-            model: collection.model || "",
-            limit: 500,
-          }),
-        });
-
-        if (!response.ok) continue;
-
-        const data = await response.json();
+        const scanSettings = {
+          ...browserState.settings,
+          vector_backend: collection.backend,
+          source: collection.source || browserState.settings.source,
+        };
+        const data = await listChunks(collection.id, scanSettings, { limit: 500 });
         const items = data.items || [];
 
         for (const item of items) {
@@ -3320,31 +3295,19 @@ function renderSearchResults(results, query, originalResults = null) {
         const collectionSettings = {
           ...browserState.settings,
           vector_backend: collection.backend,
+          source: collection.source || browserState.settings.source,
         };
 
         const doLoad = async (limit) => {
-          const response = await fetch("/api/plugins/similharity/chunks/list", {
-            method: "POST",
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-              backend: collection.backend || "vectra",
-              collectionId: collection.id,
-              source: collection.source || "transformers",
-              model: collection.model || "",
-              ...(limit ? { limit } : {}),
-            }),
-          });
+          const data = await listChunks(
+            collection.id,
+            collectionSettings,
+            limit ? { limit } : {},
+          );
 
-          if (!response.ok) {
-            throw new Error(`Failed to list chunks: ${response.statusText}`);
-          }
-
-          const data = await response.json();
           const results = data.items || [];
           const dbChunkCount = Number(
             data.total ??
-            data.totalCount ??
-            data.count ??
             collection.chunkCount ??
             results.length,
           );

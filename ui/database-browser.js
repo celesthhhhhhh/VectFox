@@ -490,6 +490,21 @@ function bindBrowserEvents() {
     }
   });
 
+  // Chunk visualizer — delegated so it covers both the main collection listing
+  // and dynamically-rendered search results without re-binding on every render.
+  $("#vectfox_database_browser_modal").on("click", ".vectfox-action-visualize", async function (e) {
+    e.stopPropagation();
+    const collectionKey = $(this).data("collection-key");
+    const collection = findCollectionByKey(collectionKey);
+    if (!collection) return;
+    try {
+      await openCollectionVisualizer(collection);
+    } catch (error) {
+      console.error("VectFox: Failed to load chunks", error);
+      toastr.error(`Failed to load chunks: ${error.message}`, "VectFox");
+    }
+  });
+
   // Tab switching
   $("#vectfox_database_browser_modal .vectfox-tab-btn").on("click", function (e) {
     e.stopPropagation();
@@ -1220,6 +1235,69 @@ function escapeHtml(text) {
 /**
  * Binds events for collection card actions
  */
+/**
+ * Open the chunk visualizer for a collection.
+ * Single canonical implementation — called by the delegated click handler
+ * in bindBrowserEvents so both the main listing and search results share
+ * exactly one code path.
+ */
+async function openCollectionVisualizer(collection) {
+  if (!collection.backend) {
+    toastr.error("Collection has no backend defined - this is a bug", "VectFox");
+    console.error("VectFox: Collection missing backend:", collection);
+    return;
+  }
+
+  toastr.info("Loading chunks...", "VectFox");
+
+  const collectionSettings = {
+    ...browserState.settings,
+    vector_backend: collection.backend,
+    source: collection.source || browserState.settings.source,
+  };
+
+  const doLoad = async (limit) => {
+    const data = await listChunks(
+      collection.id,
+      collectionSettings,
+      limit ? { limit } : {},
+    );
+
+    const results = data.items || [];
+    const dbChunkCount = Number(
+      data.total ??
+      collection.chunkCount ??
+      results.length,
+    );
+
+    if (results.length === 0) {
+      toastr.warning("No chunks found in this collection", "VectFox");
+      return;
+    }
+
+    const chunks = results.map((item, idx) => ({
+      hash: item.hash,
+      index: (item.index != null && item.index >= 0) ? item.index : idx,
+      text: item.text || item.metadata?.text || "No text available",
+      score: 1.0,
+      similarity: 1.0,
+      messageAge: item.metadata?.messageAge,
+      decayApplied: false,
+      decayMultiplier: 1.0,
+      metadata: item.metadata,
+    }));
+
+    openVisualizer(
+      { chunks, collectionType: collection.type, dbChunkCount },
+      collection.id,
+      collectionSettings,
+      doLoad,
+    );
+  };
+
+  await doLoad(null);
+}
+
 function bindCollectionCardEvents() {
   // Toggle enabled/disabled
   $(".vectfox-action-toggle")
@@ -1302,83 +1380,6 @@ function bindCollectionCardEvents() {
       } catch (error) {
         console.error("VectFox: Failed to delete collection", error);
         toastr.error(`Failed to delete collection: ${error.message}`, "VectFox");
-      }
-    });
-
-  // Visualize chunks
-  $(".vectfox-action-visualize")
-    .off("click")
-    .on("click", async function (e) {
-      console.log("test");
-      e.stopPropagation();
-      const collectionKey = $(this).data("collection-key");
-      const collection = findCollectionByKey(collectionKey);
-
-      if (!collection) return;
-
-      try {
-        toastr.info("Loading chunks...", "VectFox");
-
-        // Use the collection's actual backend, not the global setting
-        // This ensures we query Standard collections with Standard backend, etc.
-        if (!collection.backend) {
-          toastr.error(
-            "Collection has no backend defined - this is a bug",
-            "VectFox",
-          );
-          console.error("VectFox: Collection missing backend:", collection);
-          return;
-        }
-
-        const collectionSettings = {
-          ...browserState.settings,
-          vector_backend: collection.backend,
-          source: collection.source || browserState.settings.source,
-        };
-
-        const doLoad = async (limit) => {
-          const data = await listChunks(
-            collection.id,
-            collectionSettings,
-            limit ? { limit } : {},
-          );
-
-          const results = data.items || [];
-          const dbChunkCount = Number(
-            data.total ??
-            collection.chunkCount ??
-            results.length,
-          );
-
-          if (!results || results.length === 0) {
-            toastr.warning("No chunks found in this collection", "VectFox");
-            return;
-          }
-
-          const chunks = results.map((item, idx) => ({
-            hash: item.hash,
-            index: (item.index != null && item.index >= 0) ? item.index : idx,
-            text: item.text || item.metadata?.text || "No text available",
-            score: 1.0,
-            similarity: 1.0,
-            messageAge: item.metadata?.messageAge,
-            decayApplied: false,
-            decayMultiplier: 1.0,
-            metadata: item.metadata,
-          }));
-
-          openVisualizer(
-            { chunks, collectionType: collection.type, dbChunkCount },
-            collection.id,
-            collectionSettings,
-            doLoad,
-          );
-        };
-
-        await doLoad(null);
-      } catch (error) {
-        console.error("VectFox: Failed to load chunks", error);
-        toastr.error(`Failed to load chunks: ${error.message}`, "VectFox");
       }
     });
 
@@ -3267,82 +3268,6 @@ function renderSearchResults(results, query, originalResults = null) {
   }
 
   $("#vectfox_search_results").html(html);
-  // sloppy, temporary fix to replicate OG chunk link functionality (1091)
-  $(".vectfox-action-visualize")
-    .off("click")
-    .on("click", async function (e) {
-      console.log("test");
-      e.stopPropagation();
-      const collectionKey = $(this).data("collection-key");
-      const collection = findCollectionByKey(collectionKey);
-
-      if (!collection) return;
-
-      try {
-        toastr.info("Loading chunks...", "VectFox");
-
-        // Use the collection's actual backend, not the global setting
-        // This ensures we query Standard collections with Standard backend, etc.
-        if (!collection.backend) {
-          toastr.error(
-            "Collection has no backend defined - this is a bug",
-            "VectFox",
-          );
-          console.error("VectFox: Collection missing backend:", collection);
-          return;
-        }
-
-        const collectionSettings = {
-          ...browserState.settings,
-          vector_backend: collection.backend,
-          source: collection.source || browserState.settings.source,
-        };
-
-        const doLoad = async (limit) => {
-          const data = await listChunks(
-            collection.id,
-            collectionSettings,
-            limit ? { limit } : {},
-          );
-
-          const results = data.items || [];
-          const dbChunkCount = Number(
-            data.total ??
-            collection.chunkCount ??
-            results.length,
-          );
-
-          if (!results || results.length === 0) {
-            toastr.warning("No chunks found in this collection", "VectFox");
-            return;
-          }
-
-          const chunks = results.map((item, idx) => ({
-            hash: item.hash,
-            index: (item.index != null && item.index >= 0) ? item.index : idx,
-            text: item.text || item.metadata?.text || "No text available",
-            score: 1.0,
-            similarity: 1.0,
-            messageAge: item.metadata?.messageAge,
-            decayApplied: false,
-            decayMultiplier: 1.0,
-            metadata: item.metadata,
-          }));
-
-          openVisualizer(
-            { chunks, collectionType: collection.type, dbChunkCount },
-            collection.id,
-            collectionSettings,
-            doLoad,
-          );
-        };
-
-        await doLoad(null);
-      } catch (error) {
-        console.error("VectFox: Failed to load chunks", error);
-        toastr.error(`Failed to load chunks: ${error.message}`, "VectFox");
-      }
-    });
 }
 
 // ============================================================================

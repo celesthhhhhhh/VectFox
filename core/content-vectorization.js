@@ -23,6 +23,7 @@ import {
     buildDocumentCollectionId,
     COLLECTION_PREFIXES,
     buildRegistryKey,
+    getBackendFromCollectionId,
 } from './collection-ids.js';
 import { extractLorebookKeywords, extractTextKeywords, extractChatKeywords, extractBM25Keywords, EXTRACTION_LEVELS, DEFAULT_EXTRACTION_LEVEL, DEFAULT_BASE_WEIGHT } from './keyword-boost.js';
 import { cleanText, cleanMessages } from './text-cleaning.js';
@@ -927,24 +928,10 @@ function enrichChunks(chunks, contentType, source, settings, preparedContent, Ve
 export async function deleteContentCollection(collectionId, callerSettings = null) {
     let baseSettings = callerSettings;
     if (!baseSettings) {
-        const detected = _detectBackendFromCollectionId(collectionId);
+        const detected = getBackendFromCollectionId(collectionId);
         if (detected) baseSettings = { vector_backend: detected };
     }
     const effectiveSettings = resolveEffectiveSettings(baseSettings);
     await purgeVectorIndex(collectionId, effectiveSettings);
     console.log(`VectFox: Deleted collection: ${collectionId} (routed via ${effectiveSettings.vector_backend})`);
-}
-
-/**
- * Pull the backend name out of a VectFox collection ID.
- * IDs follow the shape `vf_{contentType}_{backend}_{handle}_{name}_{ts}`.
- * Returns null when the ID doesn't match (caller should fall back to globals).
- */
-function _detectBackendFromCollectionId(collectionId) {
-    if (!collectionId || typeof collectionId !== 'string') return null;
-    // Strip any registry-key prefix (`qdrant:`, `vectra:`, `standard:`)
-    const colonIdx = collectionId.indexOf(':');
-    const bare = colonIdx > 0 ? collectionId.slice(colonIdx + 1) : collectionId;
-    const match = bare.match(/^vf_[^_]+_([^_]+)_/);
-    return match?.[1] || null;
 }

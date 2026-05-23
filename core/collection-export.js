@@ -32,7 +32,7 @@ import {
     registerCollection,
     getCollectionRegistry,
 } from './collection-loader.js';
-import { COLLECTION_PREFIXES, buildRegistryKey, parseCollectionId } from './collection-ids.js';
+import { COLLECTION_PREFIXES, buildRegistryKey, parseCollectionId, normalizeBackendForId, remapCollectionIdToBackend } from './collection-ids.js';
 import { getModelFromSettings } from './providers.js';
 import { encodeSparseVector } from './sparse-vector-encoder.js';
 import { progressTracker } from '../ui/progress-tracker.js';
@@ -75,48 +75,10 @@ export const EXPORT_FILE_EXTENSION = '.vectfox.json';
 /** Maximum chunks to export at once (for progress updates) */
 const EXPORT_BATCH_SIZE = 100;
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-/** Backend labels that appear in collection IDs (normalized form). */
-const _BACKEND_ID_LABELS = ['standard', 'qdrant'];
-
-/**
- * Returns the normalized backend label used inside collection IDs.
- * 'vectra' is the internal storage name but IDs always use 'standard'.
- * @param {string} backend - Value from settings.vector_backend or embedding.backend
- * @returns {string}
- */
-function _normalizeBackendLabel(backend) {
-    const b = String(backend || 'standard').toLowerCase();
-    return b === 'vectra' ? 'standard' : b;
-}
-
-/**
- * Replaces the backend segment in a collection ID so it matches the target backend.
- * Only touches IDs that use a known VectFox prefix + known backend label.
- * Returns the original ID unchanged for legacy / unknown formats.
- *
- * @param {string} collectionId - e.g. 'vf_eventbase_standard_rabbit_chat_uuid'
- * @param {string} targetBackend - normalized label, e.g. 'qdrant' or 'standard'
- * @returns {string}
- */
-function _remapCollectionIdToBackend(collectionId, targetBackend) {
-    for (const prefix of Object.values(COLLECTION_PREFIXES)) {
-        if (!collectionId.startsWith(prefix)) continue;
-        const rest = collectionId.slice(prefix.length); // e.g. 'standard_rabbit_chat_uuid'
-        for (const srcBackend of _BACKEND_ID_LABELS) {
-            if (rest.startsWith(srcBackend + '_')) {
-                return srcBackend === targetBackend
-                    ? collectionId
-                    : prefix + targetBackend + rest.slice(srcBackend.length);
-            }
-        }
-        break; // matched prefix but no backend segment — legacy ID
-    }
-    return collectionId; // unknown format — leave unchanged
-}
+// Backend-name helpers (normalize / remap) used to live here as private copies;
+// they're now canonicalized in core/collection-ids.js (`normalizeBackendForId`,
+// `remapCollectionIdToBackend`). Importing from there keeps a single source of
+// truth — see dev_helper.md §14 single-source-of-truth rule.
 
 // ============================================================================
 // EXPORT FUNCTIONS
@@ -672,11 +634,11 @@ export async function importCollection(exportData, settings, options = {}) {
 
     // Remap collection ID when the export's backend differs from the current backend.
     // e.g. vf_eventbase_standard_rabbit_... → vf_eventbase_qdrant_rabbit_... when importing to qdrant.
-    const targetBackendLabel = _normalizeBackendLabel(settings.vector_backend);
-    const collectionId = _remapCollectionIdToBackend(sourceId, targetBackendLabel);
+    const targetBackendLabel = normalizeBackendForId(settings.vector_backend);
+    const collectionId = remapCollectionIdToBackend(sourceId, targetBackendLabel);
     const wasRemapped = collectionId !== sourceId;
     if (wasRemapped) {
-        const srcLabel = _normalizeBackendLabel(exportData.embedding?.backend || '?');
+        const srcLabel = normalizeBackendForId(exportData.embedding?.backend || '?');
         console.log(`VectFox Import: remapped collection ID ${srcLabel} → ${targetBackendLabel}: "${sourceId}" → "${collectionId}"`);
     }
 
@@ -919,10 +881,22 @@ export async function importMultipleCollections(multiExportData, settings, optio
  */
 async function importCollectionSilent(exportData, settings, options = {}) {
     const sourceCollection = exportData.collection || {};
-    const collectionId = options.collectionId || sourceCollection.id;
+    const sourceId = options.collectionId || sourceCollection.id;
 
-    if (!collectionId) {
+    if (!sourceId) {
         throw new Error('No collection ID specified');
+    }
+
+    // Remap collection ID when the export's backend differs from the current
+    // backend — same logic as importCollection. Missing this previously caused
+    // bulk-imports of qdrant exports into standard to keep the `_qdrant_`
+    // segment in the on-disk vectra folder name, breaking every other code
+    // path that parses the backend out of the ID. Surfaced 2026-05-23.
+    const targetBackendLabel = normalizeBackendForId(settings.vector_backend);
+    const collectionId = remapCollectionIdToBackend(sourceId, targetBackendLabel);
+    if (collectionId !== sourceId) {
+        const srcLabel = normalizeBackendForId(exportData.embedding?.backend || '?');
+        console.log(`VectFox Import (silent): remapped ${srcLabel} → ${targetBackendLabel}: "${sourceId}" → "${collectionId}"`);
     }
 
     const chunks = exportData.chunks || [];

@@ -7,6 +7,25 @@
  *
  * On first run: a Playwright browser window opens. Log in, then open the chat
  * that has your locked collections. Tests start automatically once the chat is open.
+ *  * npm install -D @playwright/test
+ * npx playwright install
+ * 
+ * # Run all 8 tests
+npm run test:e2e
+npm run test:e2e:no-log.
+npm run test:e2e -- --grep "TEST 008"
+--grep "TEST 008|TEST 009" (regex, run multiple)
+--grep "TEST 008" --debug (Playwright inspector)
+--grep-invert "TEST 00[1-7]" (everything except 1-7)
+
+
+# Run a specific test
+npx playwright test --grep "TEST 001"
+npm run test:e2e -- --grep "TEST 00[5-9]|TEST 01[01]"
+
+
+# View HTML report after a run
+npm run test:e2e:report
  */
 
 import { test, expect } from '@playwright/test';
@@ -624,6 +643,7 @@ test('TEST 005 — Standard lorebook: lock + query isolation', async () => {
         const { shouldCollectionActivate, deleteCollectionMeta } = await import(base + 'core/collection-metadata.js');
         const { unregisterCollection } = await import(base + 'core/collection-loader.js');
         const { runLorebookWIDryRun } = await import(base + 'core/world-info-integration.js');
+        const { getBackend } = await import(base + 'backends/backend-manager.js');
         const { extension_settings } = await import('/scripts/extensions.js');
 
         const vf = extension_settings?.vectfox;
@@ -693,6 +713,13 @@ test('TEST 005 — Standard lorebook: lock + query isolation', async () => {
         } finally {
             try {
                 await deleteContentCollection(collectionId);
+                // TEST-ONLY: also nuke the parent on-disk folder so vectra storage stays
+                // truly orphan-free. Production purge only removes the model subdir; this
+                // test helper finishes the job. Never call this from production code.
+                try {
+                    const stdBackend = await getBackend({ ...vf, vector_backend: 'standard' });
+                    await stdBackend._purgeCollectionFolderForTestCleanup(collectionId, vf);
+                } catch (e) { console.warn(`${TEST} [WARN] folder-cleanup helper failed: ${e.message}`); }
                 deleteCollectionMeta(registryKey);
                 unregisterCollection(registryKey);
                 console.log(`${TEST} Cleanup: test collection removed ✓`);
@@ -725,6 +752,7 @@ test('TEST 006 — Standard EventBase: insert + parseEmbedText recovery', async 
         const { insertEvents } = await import(base + 'core/eventbase-store.js');
         const { deleteCollection } = await import(base + 'core/collection-loader.js');
         const { StandardBackend } = await import(base + 'backends/standard.js');
+        const { getBackend } = await import(base + 'backends/backend-manager.js');
         const { parseEmbedText } = await import(base + 'core/eventbase-schema.js');
         const { extension_settings } = await import('/scripts/extensions.js');
 
@@ -831,6 +859,11 @@ test('TEST 006 — Standard EventBase: insert + parseEmbedText recovery', async 
         } finally {
             try {
                 await deleteCollection(collectionId, settings, registryKey);
+                // TEST-ONLY: also nuke the parent on-disk folder.
+                try {
+                    const stdBackend = await getBackend({ ...vf, vector_backend: 'standard' });
+                    await stdBackend._purgeCollectionFolderForTestCleanup(collectionId, vf);
+                } catch (e) { console.warn(`${TEST} [WARN] folder-cleanup helper failed: ${e.message}`); }
                 console.log(`${TEST} Cleanup: test collection removed ✓`);
             } catch (cleanupErr) {
                 console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
@@ -1046,6 +1079,11 @@ test('TEST 008 — DB Browser standard + plugin: listing + delete', async () => 
         } finally {
             try {
                 await deleteContentCollection(collectionId);
+                // TEST-ONLY: also nuke the parent on-disk folder.
+                try {
+                    const stdBackend = await getBackend({ ...vf, vector_backend: 'standard' });
+                    await stdBackend._purgeCollectionFolderForTestCleanup(collectionId, vf);
+                } catch (e) { console.warn(`${TEST} [WARN] folder-cleanup helper failed: ${e.message}`); }
                 deleteCollectionMeta(registryKey);
                 unregisterCollection(registryKey);
                 console.log(`${TEST} Cleanup: test collection removed ✓`);
@@ -1224,6 +1262,12 @@ test('TEST 009 — DB Browser standard, no plugin: graceful degradation', async 
             if (collectionId) {
                 try {
                     await deleteContentCollection(collectionId);
+                    // TEST-ONLY: nuke the parent on-disk folder. `backend` here is the
+                    // SHARED StandardBackend instance — pluginAvailable just got restored
+                    // above so the helper takes the plugin purge path normally.
+                    try {
+                        await backend._purgeCollectionFolderForTestCleanup(collectionId, vf);
+                    } catch (e) { console.warn(`${TEST} [WARN] folder-cleanup helper failed: ${e.message}`); }
                     deleteCollectionMeta(registryKey);
                     unregisterCollection(registryKey);
                     console.log(`${TEST} Cleanup: test collection removed ✓`);
@@ -1587,6 +1631,192 @@ test('TEST 011 — Cross-persona activation isolation', async () => {
                 console.log(`${TEST} Cleanup: test collection removed ✓`);
             } catch (cleanupErr) {
                 console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
+            }
+        }
+    });
+    assertPassed(logs);
+});
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  TEST 012 — Cross-backend import: qdrant ↔ standard rename
+// ═══════════════════════════════════════════════════════════════════
+//
+// Why this test exists:
+//   `importCollection` and `importCollectionSilent` both need to remap the
+//   backend segment in the collection ID when the export's backend differs
+//   from the user's current target backend. Without that, importing a
+//   qdrant export into standard would create a vectra folder named
+//   `vf_*_qdrant_*` — polluting storage and confusing every parser that
+//   reads the backend from the ID.
+//
+//   The remap logic lives in `core/collection-ids.js::remapCollectionIdToBackend`
+//   (formerly duplicated as a private helper in collection-export.js and
+//   MISSING entirely from `importCollectionSilent`). Surfaced 2026-05-23 by
+//   inspecting the standard backend storage tree and finding `_qdrant_`
+//   folders sitting in vectra.
+//
+// What this test proves:
+//   - Pure helper checks first (remap both directions + detection round-trip)
+//   - Phase 1: importing a qdrant-shaped export with vector_backend='standard'
+//     produces a collection ID containing `_standard_`, not `_qdrant_`.
+//   - Phase 2: mirror — standard export imported with vector_backend='qdrant'
+//     produces a `_qdrant_`-segment ID.
+//
+// Boundary rules (same as 009/010/011):
+//   ✗ DO NOT mutate extension_settings.vectfox
+//   ✓ DO use sentinel `__vf_playwright_test_012__` in IDs so beforeAll's
+//     orphan cleanup catches anything left behind by a crash.
+test('TEST 012 — Cross-backend import: qdrant ↔ standard rename', async () => {
+    const logs = await runTestInPage(async () => {
+        const TEST = 'TEST 012 [ImportRename]';
+        const base = '/scripts/extensions/third-party/VectFox/';
+        const { importCollection } = await import(base + 'core/collection-export.js');
+        const { remapCollectionIdToBackend, getBackendFromCollectionId } = await import(base + 'core/collection-ids.js');
+        const { deleteContentCollection } = await import(base + 'core/content-vectorization.js');
+        const { deleteCollectionMeta } = await import(base + 'core/collection-metadata.js');
+        const { unregisterCollection } = await import(base + 'core/collection-loader.js');
+        const { getBackend } = await import(base + 'backends/backend-manager.js');
+        const { extension_settings } = await import('/scripts/extensions.js');
+
+        const vf = extension_settings?.vectfox;
+        if (!vf) { console.error(`${TEST} [FAIL] VectFox settings not found`); return; }
+        if (!(vf.qdrant_url || vf.qdrant_host)) { console.error(`${TEST} [FAIL] Qdrant not configured — need both backends to test the rename`); return; }
+
+        // ═══ Pure-helper sanity checks (no I/O) ═══════════════════════════
+        // Verify the helper does what it claims before triggering an actual
+        // cross-backend import. If the helper is broken, no point chasing
+        // on-disk behavior.
+        const ts = Date.now();
+        const qdrantId   = `vf_lorebook_qdrant_playwright___vf_playwright_test_012__${ts}`;
+        const standardId = `vf_lorebook_standard_playwright___vf_playwright_test_012__${ts}`;
+
+        const q2s = remapCollectionIdToBackend(qdrantId, 'standard');
+        const s2q = remapCollectionIdToBackend(standardId, 'qdrant');
+        console.log(`${TEST} q→s remap: ${qdrantId} → ${q2s}`);
+        console.log(`${TEST} s→q remap: ${standardId} → ${s2q}`);
+        if (q2s !== standardId) { console.error(`${TEST} [FAIL] qdrant→standard remap broken: expected "${standardId}", got "${q2s}"`); return; }
+        if (s2q !== qdrantId)   { console.error(`${TEST} [FAIL] standard→qdrant remap broken: expected "${qdrantId}", got "${s2q}"`); return; }
+
+        // Idempotency: remap to same backend = no-op
+        const noop = remapCollectionIdToBackend(qdrantId, 'qdrant');
+        if (noop !== qdrantId) { console.error(`${TEST} [FAIL] same-backend remap should be a no-op, got "${noop}"`); return; }
+
+        // Detection round-trip + registry-key prefix stripping
+        if (getBackendFromCollectionId(qdrantId)   !== 'qdrant')   { console.error(`${TEST} [FAIL] getBackend(qdrant id) wrong`); return; }
+        if (getBackendFromCollectionId(standardId) !== 'standard') { console.error(`${TEST} [FAIL] getBackend(standard id) wrong`); return; }
+        if (getBackendFromCollectionId(`qdrant:${qdrantId}`) !== 'qdrant') { console.error(`${TEST} [FAIL] getBackend strips registry-key prefix incorrectly`); return; }
+        console.log(`${TEST} Pure-helper checks ✓ — remap + detection work both directions`);
+
+        // ═══ Phase 1: qdrant → standard import ═══════════════════════════
+        const sentinel1 = 'IMPORT_RENAME_CANARY_FOXGLOVE_K8N2';
+        const qdrantExport = {
+            collection: {
+                id: qdrantId,
+                name: '__vf_playwright_test_012_q2s__',
+                type: 'lorebook',
+            },
+            embedding: {
+                backend: 'qdrant',
+                source: vf.source || 'openrouter',
+                model: vf.openrouter_model || vf.model || null,
+            },
+            chunks: [
+                { text: `${sentinel1} — a flower whose pollen induces vivid dreams.`, index: 0, metadata: { entryName: 'Foxglove K8N2' } },
+            ],
+        };
+
+        let p1ResultId = null;
+        try {
+            console.log(`${TEST} Phase 1: importing qdrant export → standard backend...`);
+            const r = await importCollection(qdrantExport, { ...vf, vector_backend: 'standard' }, { overwrite: true, forceReembed: true });
+            p1ResultId = r?.collectionId || r?.id || null;
+            console.log(`${TEST} Phase 1 import returned collectionId="${p1ResultId}"`);
+        } catch (err) {
+            console.error(`${TEST} [FAIL] Phase 1 import threw: ${err.message}`);
+            return;
+        }
+
+        try {
+            if (!p1ResultId) { console.error(`${TEST} [FAIL] Phase 1: importCollection returned no collectionId`); return; }
+            if (p1ResultId.includes('_qdrant_')) {
+                console.error(`${TEST} [FAIL] Phase 1: import kept the qdrant segment — rename did NOT happen. Got "${p1ResultId}"`);
+                return;
+            }
+            if (!p1ResultId.includes('_standard_')) {
+                console.error(`${TEST} [FAIL] Phase 1: import didn't produce a standard-segment ID. Got "${p1ResultId}"`);
+                return;
+            }
+            console.log(`${TEST} Phase 1 ✓ — qdrant export imported as standard ID: ${p1ResultId}`);
+        } finally {
+            if (p1ResultId) {
+                try {
+                    await deleteContentCollection(p1ResultId);
+                    // TEST-ONLY: nuke parent folder in vectra (Phase 1 imports as standard)
+                    try {
+                        const stdBackend = await getBackend({ ...vf, vector_backend: 'standard' });
+                        await stdBackend._purgeCollectionFolderForTestCleanup(p1ResultId, vf);
+                    } catch (e) { console.warn(`${TEST} [WARN] Phase 1 folder-cleanup helper failed: ${e.message}`); }
+                    deleteCollectionMeta(`vectra:${p1ResultId}`);
+                    unregisterCollection(`vectra:${p1ResultId}`);
+                    console.log(`${TEST} Phase 1 cleanup ✓`);
+                } catch (cleanupErr) {
+                    console.warn(`${TEST} [WARN] Phase 1 cleanup failed: ${cleanupErr.message}`);
+                }
+            }
+        }
+
+        // ═══ Phase 2: standard → qdrant import ═══════════════════════════
+        const sentinel2 = 'IMPORT_RENAME_CANARY_VERMILION_R6Q9';
+        const standardExport = {
+            collection: {
+                id: standardId,
+                name: '__vf_playwright_test_012_s2q__',
+                type: 'lorebook',
+            },
+            embedding: {
+                backend: 'standard',
+                source: vf.source || 'openrouter',
+                model: vf.openrouter_model || vf.model || null,
+            },
+            chunks: [
+                { text: `${sentinel2} — a metalwork pigment forged from oxidized copper.`, index: 0, metadata: { entryName: 'Vermilion R6Q9' } },
+            ],
+        };
+
+        let p2ResultId = null;
+        try {
+            console.log(`${TEST} Phase 2: importing standard export → qdrant backend...`);
+            const r = await importCollection(standardExport, { ...vf, vector_backend: 'qdrant' }, { overwrite: true, forceReembed: true });
+            p2ResultId = r?.collectionId || r?.id || null;
+            console.log(`${TEST} Phase 2 import returned collectionId="${p2ResultId}"`);
+        } catch (err) {
+            console.error(`${TEST} [FAIL] Phase 2 import threw: ${err.message}`);
+            return;
+        }
+
+        try {
+            if (!p2ResultId) { console.error(`${TEST} [FAIL] Phase 2: importCollection returned no collectionId`); return; }
+            if (p2ResultId.includes('_standard_')) {
+                console.error(`${TEST} [FAIL] Phase 2: import kept the standard segment — rename did NOT happen. Got "${p2ResultId}"`);
+                return;
+            }
+            if (!p2ResultId.includes('_qdrant_')) {
+                console.error(`${TEST} [FAIL] Phase 2: import didn't produce a qdrant-segment ID. Got "${p2ResultId}"`);
+                return;
+            }
+            console.log(`${TEST} Phase 2 ✓ — standard export imported as qdrant ID: ${p2ResultId}`);
+            console.log(`${TEST} [PASS] Cross-backend import rename works both directions`);
+        } finally {
+            if (p2ResultId) {
+                try {
+                    await deleteContentCollection(p2ResultId);
+                    deleteCollectionMeta(`qdrant:${p2ResultId}`);
+                    unregisterCollection(`qdrant:${p2ResultId}`);
+                    console.log(`${TEST} Phase 2 cleanup ✓`);
+                } catch (cleanupErr) {
+                    console.warn(`${TEST} [WARN] Phase 2 cleanup failed: ${cleanupErr.message}`);
+                }
             }
         }
     });

@@ -59,15 +59,88 @@ export const COLLECTION_SCOPES = {
 };
 
 /**
+ * Backend labels that legitimately appear in collection IDs.
+ * `vectra` is recognized for backwards compatibility — it's the internal
+ * storage name. New IDs always use `standard` instead.
+ * Exported so other helpers (parsers, remappers) share one truth.
+ */
+export const KNOWN_BACKEND_LABELS = Object.freeze(['standard', 'qdrant', 'vectra']);
+
+/**
  * Normalize backend names used in IDs.
  * Keeps old alias "vectra" mapped to "standard" to avoid split IDs.
+ * Exported (was private) so collection-export.js and any other caller stops
+ * rolling its own version. See dev_helper.md §14 single-source-of-truth rule.
+ *
  * @param {string} backend
- * @returns {string}
+ * @returns {string} normalized backend label suitable for use in a collection ID
  */
-function normalizeBackendForId(backend) {
+export function normalizeBackendForId(backend) {
     const b = String(backend || '').toLowerCase();
     if (!b) return '';
     return b === 'vectra' ? 'standard' : b;
+}
+
+/**
+ * Parse the backend segment out of a VectFox collection ID.
+ *
+ * Collection IDs follow the shape:
+ *   vf_{contentType}_{backend}_{handle}_{name}_{timestamp}
+ *
+ * Strips any registry-key prefix (`qdrant:`, `vectra:`, `standard:`) before
+ * parsing so callers can pass either form.
+ *
+ * Returns null when the ID doesn't match any known VectFox shape — caller
+ * should fall back to global settings in that case rather than guessing.
+ *
+ * @param {string} collectionId - bare or registry-keyed ID
+ * @returns {string|null} backend label (`'qdrant'` | `'standard'`) or null
+ */
+export function getBackendFromCollectionId(collectionId) {
+    if (!collectionId || typeof collectionId !== 'string') return null;
+    // Strip the registry-key prefix if present (e.g. `qdrant:vf_lorebook_...`).
+    const colonIdx = collectionId.indexOf(':');
+    const bare = colonIdx > 0 ? collectionId.slice(colonIdx + 1) : collectionId;
+    const match = bare.match(/^vf_[^_]+_([^_]+)_/);
+    const backend = match?.[1];
+    if (!backend) return null;
+    return KNOWN_BACKEND_LABELS.includes(backend) ? normalizeBackendForId(backend) : null;
+}
+
+/**
+ * Replace the backend segment in a collection ID so it matches a target backend.
+ * Returns the original ID unchanged if:
+ *   - The ID doesn't match a known VectFox prefix
+ *   - There's no backend segment to replace (legacy format)
+ *   - The current backend already equals the target (no-op)
+ *
+ * Used by the import path when converting an export from one backend to another
+ * (qdrant↔standard). Without this, importing a qdrant export into the standard
+ * backend would create a vectra folder named `vf_*_qdrant_*`, which then
+ * confuses every other code path that parses the backend from the ID.
+ *
+ * @param {string} collectionId
+ * @param {string} targetBackend - target backend label (e.g. 'qdrant', 'standard')
+ * @returns {string} remapped ID (or original on no-op / unknown format)
+ */
+export function remapCollectionIdToBackend(collectionId, targetBackend) {
+    const normalizedTarget = normalizeBackendForId(targetBackend);
+    if (!normalizedTarget) return collectionId;
+
+    for (const prefix of Object.values(COLLECTION_PREFIXES)) {
+        if (!collectionId.startsWith(prefix)) continue;
+        const rest = collectionId.slice(prefix.length); // e.g. 'standard_rabbit_chat_uuid'
+        for (const srcBackend of KNOWN_BACKEND_LABELS) {
+            if (rest.startsWith(srcBackend + '_')) {
+                const normalizedSrc = normalizeBackendForId(srcBackend);
+                return normalizedSrc === normalizedTarget
+                    ? collectionId
+                    : prefix + normalizedTarget + rest.slice(srcBackend.length);
+            }
+        }
+        break; // matched prefix but no recognized backend segment — legacy ID
+    }
+    return collectionId; // unknown format — leave unchanged
 }
 
 /**

@@ -586,6 +586,73 @@ export class StandardBackend extends VectorBackend {
      * Purge (delete) a collection
      * Uses native ST API
      */
+    /**
+     * ╔══════════════════════════════════════════════════════════════════╗
+     * ║  TEST-ONLY helper — do NOT call from production code paths       ║
+     * ╚══════════════════════════════════════════════════════════════════╝
+     *
+     * Aggressively remove a collection's entire on-disk folder under
+     * `/data/{handle}/vectors/{source}/{collectionId}/`.
+     *
+     * Why this exists separately from purgeVectorIndex:
+     *   - The Similharity plugin's purge handler at index.js calls
+     *     `store.deleteIndex()` which only removes the index files inside
+     *     `{collectionId}/{model}/`. The parent `{collectionId}/` folder
+     *     remains empty on disk after a normal purge.
+     *   - Production doesn't care (queries skip empty folders), but the
+     *     Playwright suite leaves 30+ orphan folders per session that ST's
+     *     plugin scan then rediscovers as zero-chunk collections, polluting
+     *     the registry and slowing down subsequent runs.
+     *   - Tests need a way to leave NO trace. Production must NOT change
+     *     behavior (the only-models-subdir purge is the agreed contract).
+     *
+     * What this helper does:
+     *   1. Runs the normal plugin purge to drop the model subdir.
+     *   2. Calls ST's native /api/vector/purge as a finisher. Depending on
+     *      ST version this may or may not drop the parent folder — we call
+     *      it best-effort and don't fail the helper if it 404s.
+     *
+     * Only `tests/Eventbase-test.spec.js` should call this. Marked with a
+     * leading underscore + explicit `forTestCleanup` suffix so the intent is
+     * unambiguous in any code review.
+     *
+     * @param {string} collectionId - bare collection ID (no `backend:` prefix)
+     * @param {object} settings - VectFox settings (source + model)
+     * @returns {Promise<{pluginOk: boolean, nativeOk: boolean}>}
+     */
+    async _purgeCollectionFolderForTestCleanup(collectionId, settings) {
+        const result = { pluginOk: false, nativeOk: false };
+
+        // Step 1: standard plugin-side purge (removes the model subdir).
+        try {
+            await this.purgeVectorIndex(collectionId, settings);
+            result.pluginOk = true;
+        } catch (e) {
+            console.warn(`[test cleanup] plugin purgeVectorIndex failed for ${collectionId}: ${e.message}`);
+        }
+
+        // Step 2: ST native /api/vector/purge as a finisher. Best-effort —
+        // some ST versions drop the parent folder, some don't. Either way
+        // it's the highest leverage we have without adding a new plugin
+        // endpoint or filesystem permissions.
+        try {
+            const response = await fetch('/api/vector/purge', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ collectionId }),
+            });
+            result.nativeOk = response.ok;
+            if (!response.ok) {
+                const body = await response.text().catch(() => '');
+                console.warn(`[test cleanup] native /api/vector/purge ${response.status} for ${collectionId}: ${body.slice(0, 120)}`);
+            }
+        } catch (e) {
+            console.warn(`[test cleanup] native purge fetch failed for ${collectionId}: ${e.message}`);
+        }
+
+        return result;
+    }
+
     async purgeVectorIndex(collectionId, settings) {
         // Prefer the Similharity plugin's purge endpoint when available — it knows
         // about the `{source}/{collectionId}/{model}/` path layout that ST's

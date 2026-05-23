@@ -1001,20 +1001,13 @@ export async function loadAllCollections(settings, autoDiscover = true) {
                 console.log(`VectFox: Migrated ${collectionId} from scope='global' to scope='character'`);
             }
 
-            // Use stored contentType if available, otherwise fall back to parsed.
-            // `scope === 'unknown'` is treated as "not set" to handle legacy
-            // collections whose stored meta still carries the pre-2026-05-24
-            // default string. Without this guard, the `||` short-circuits on
-            // the truthy `'unknown'` and the correctly-parsed scope from the
-            // ID structure is ignored — `saveActivation` then can't lock the
-            // collection because it has no branch for scope='unknown'.
-            // See Doc/collection_helper.md (scope handling).
-            const validStoredScope = (storedMeta.scope && storedMeta.scope !== 'unknown')
-                ? storedMeta.scope
-                : null;
+            // `storedMeta.scope` is already auto-resolved by getCollectionMeta
+            // (always returns 'chat' or 'character', never null or 'unknown').
+            // No defensive read needed here — the canonical resolution lives
+            // in getEffectiveScope. See Doc/collection_helper.md.
             const metadata = {
                 type: storedMeta.contentType || parsedMeta.type,
-                scope: validStoredScope || parsedMeta.scope,
+                scope: storedMeta.scope,
                 rawId: parsedMeta.rawId,
             };
             if (debugLog) console.log(`VectFox:   Type: ${metadata.type}, Scope: ${metadata.scope}${storedMeta.contentType ? ' (from stored meta)' : ' (parsed from ID)'}`);

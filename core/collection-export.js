@@ -27,6 +27,7 @@ import {
     saveChunkMetadata,
     getAllChunkMetadata,
     clearCollectionLock,
+    getEffectiveScope,
 } from './collection-metadata.js';
 import {
     registerCollection,
@@ -42,25 +43,9 @@ import { getStringHash } from '../../../../utils.js';
 // HELPERS
 // ============================================================================
 
-/**
- * Resolve a usable scope for export/import metadata.
- *
- * Stored `scope` defaults to the literal string 'unknown' (truthy), so the
- * previous `storedScope || 'character'` idiom never fell through when the
- * collection had never been scoped — and worse, defaulted chat-type imports
- * to 'character', which prevents `saveActivation` from writing a chat lock.
- *
- * Order of preference:
- *   1. Stored scope if it's already a definitive value ('chat' / 'character').
- *   2. Parsed scope from the ID prefix (vf_eventbase_* → 'chat', vf_character_* → 'character').
- *   3. 'character' as a last-resort fallback (preserves previous behavior for unrecognized IDs).
- */
-function _inferScope(storedScope, collectionId) {
-    if (storedScope === 'chat' || storedScope === 'character') return storedScope;
-    const parsed = parseCollectionId(collectionId || '');
-    if (parsed.scope === 'chat' || parsed.scope === 'character') return parsed.scope;
-    return 'character';
-}
+// Scope resolution lives in core/collection-metadata.js as `getEffectiveScope`
+// (formerly duplicated here as a private `_inferScope`). Single source of truth
+// — see Doc/collection_helper.md (scope handling).
 
 // ============================================================================
 // CONSTANTS
@@ -214,7 +199,9 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
                 name: collectionMeta.displayName || collectionId,
                 description: collectionMeta.description || '',
                 contentType: collectionMeta.contentType || detectContentType(collectionId),
-                scope: _inferScope(collectionMeta.scope, collectionId),
+                // collectionMeta.scope is auto-resolved by getCollectionMeta
+                // — see Doc/collection_helper.md (scope handling).
+                scope: collectionMeta.scope,
                 tags: collectionMeta.tags || [],
                 color: collectionMeta.color,
                 createdAt: collectionMeta.createdAt,
@@ -326,7 +313,8 @@ export async function exportMultipleCollections(collectionIds, settings) {
                     name: collectionMeta.displayName || collectionId,
                     description: collectionMeta.description || '',
                     contentType: collectionMeta.contentType || detectContentType(collectionId),
-                    scope: _inferScope(collectionMeta.scope, collectionId),
+                    // Auto-resolved by getCollectionMeta — see Doc/collection_helper.md.
+                    scope: collectionMeta.scope,
                     tags: collectionMeta.tags || [],
                     color: collectionMeta.color,
                     createdAt: collectionMeta.createdAt,
@@ -747,7 +735,10 @@ export async function importCollection(exportData, settings, options = {}) {
                 ? undefined
                 : (sourceCollection.name || collectionId),
             description: sourceCollection.description || '',
-            scope: _inferScope(sourceCollection.scope, collectionId),
+            // Import side: sourceCollection comes from the export file payload
+            // (not getCollectionMeta), so its scope is untrusted. Use the
+            // canonical resolver explicitly. See Doc/collection_helper.md.
+            scope: getEffectiveScope(collectionId, sourceCollection),
             tags: sourceCollection.tags || [],
             color: sourceCollection.color,
             contentType: sourceCollection.contentType,
@@ -953,7 +944,9 @@ async function importCollectionSilent(exportData, settings, options = {}) {
         enabled: true,
         displayName: sourceCollection.name || collectionId,
         description: sourceCollection.description || '',
-        scope: _inferScope(sourceCollection.scope, collectionId),
+        // Import side: sourceCollection is from the export file payload
+        // (not getCollectionMeta), so use the canonical resolver explicitly.
+        scope: getEffectiveScope(collectionId, sourceCollection),
         tags: sourceCollection.tags || [],
         color: sourceCollection.color,
         contentType: sourceCollection.contentType,

@@ -219,23 +219,61 @@ Three tiers exist. Call the highest tier that covers your use case:
 - `scope='character'` → `characterId` is in `lockedToCharacterIds`
 - anything else → `false` (no global scope; legacy `global` was migrated to `character` — see below)
 
-## Scope handling — `'unknown'` is dead, use `null`
+## Scope handling — `getEffectiveScope` is the canonical resolver
 
-`defaultCollectionMeta.scope` is `null`, not the string `'unknown'`. This is load-bearing for the no-plugin fallback discovery path:
+The scope of a collection (`'chat'` vs `'character'`) controls which lock kind `saveActivation` writes, which list `isCollectionActiveForContext` reads, and which UI elements appear in the activation editor. Get it wrong and locks silently fail to persist — exactly the 2026-05-24 no-plugin regression.
 
-- **The trap:** `'unknown'` is a truthy string. Code like `storedMeta.scope || parsedMeta.scope` will short-circuit on the truthy `'unknown'` and never fall through to the correctly-parsed scope from the ID structure.
-- **The symptom:** UI checkbox "Active for current chat" appears to toggle but doesn't persist. `saveActivation` has branches only for `scope='chat'` and `scope='character'`; with `scope='unknown'` it falls through silently. The next render re-reads the still-not-locked state and the checkbox flips back off.
-- **Who's affected:** No-plugin users specifically. With-plugin discovery pre-stamps scope from the plugin's collection listing, so the default never surfaces. Fallback discovery doesn't stamp scope → `getCollectionMeta` returns the default → bug bites.
+**Use the canonical resolver, never branch on bare `meta.scope`:**
 
-**Rules for new code:**
-- ✅ Treat `null`, `undefined`, AND the legacy string `'unknown'` as "not set". Pattern: `(meta.scope && meta.scope !== 'unknown') ? meta.scope : fallback`.
-- ✅ When merging stored + parsed scope, use the defensive pattern above — never bare `||`.
-- ❌ Do not introduce `defaultCollectionMeta.scope = 'unknown'` again. Use `null` if you need an explicit default.
-- ❌ Do not write `'unknown'` to `meta.scope` on disk anywhere. If scope can't be determined, leave the field absent (the loader's fallback chain handles it).
+```js
+import { getEffectiveScope, getCollectionMeta } from './collection-metadata.js';
 
-**Legacy collections:** users who created collections before 2026-05-24 may have `scope: 'unknown'` saved on disk. The defensive check at [collection-loader.js:1007](../core/collection-loader.js#L1007) treats those as "not set" and falls through to the ID-parsed scope. No data migration needed — the read path silently corrects on each access.
+// Read path — getCollectionMeta auto-resolves scope, so .scope is always valid:
+const meta = getCollectionMeta(registryKey);
+if (meta.scope === 'chat') { /* … */ }
 
-History: the 2026-05-24 no-plugin lock-activation regression was caused by `defaultCollectionMeta.scope = 'unknown'`. Fix landed same day. TEST 005/006/007 are the regression coverage — they exercise the standard-backend no-plugin path including the lock checkbox flow.
+// Explicit resolution (e.g. when meta comes from an export payload, not from
+// getCollectionMeta — its scope is untrusted):
+const scope = getEffectiveScope(collectionId, importPayload);
+```
+
+### Resolution order (inside `getEffectiveScope`)
+
+1. **Stored `meta.scope`** if it's already `'chat'` or `'character'`.
+2. **Parse from collection ID structure:**
+   - `vf_eventbase_*` / `vf_archiveevent_*` → `'chat'`
+   - `vf_character_*` / `vf_lorebook_*` / `vf_document_*` → `'character'`
+3. **Default `'character'`** (matches `content-vectorization.js` insert default — the safer wider-scope option).
+
+Returns `'chat'` or `'character'` only — never `null`, `undefined`, or the legacy `'unknown'`.
+
+### Why `getCollectionMeta` auto-resolves scope
+
+`getCollectionMeta` runs `getEffectiveScope` on every read so downstream callers don't have to remember the defensive pattern. Cheap when stored scope is already valid (single string compare); only parses the ID on the no-plugin / legacy code paths. This eliminates the entire class of "bare `meta.scope === 'chat'` silently misses null/unknown" bugs.
+
+### Rules for new code
+
+- ✅ **Use `getCollectionMeta()`** to read scope — its result is always valid.
+- ✅ **Use `getEffectiveScope(id, payload)`** explicitly when the meta comes from an untrusted source (export file, network response).
+- ❌ **Don't write `defaultCollectionMeta.scope = 'unknown'`** again. Default is `null`; the resolver fills it in.
+- ❌ **Don't write `'unknown'` to `meta.scope`** anywhere on disk. If scope can't be determined, leave the field absent and let the resolver derive it from the ID.
+- ❌ **Don't write a new "scope helper"** with `if (meta.scope === ...) return ... else parseFromId ... else default`. That's `getEffectiveScope` — import it. The 2026-05-24 incident was caused by exactly this: a private `_inferScope` lived in `collection-export.js` for months while every other caller wrote its own variant. Discoverable via SigMap; see CLAUDE.md for the workflow.
+
+### Legacy collections (auto-corrected at read time)
+
+Users who created collections before 2026-05-24 may have `scope: 'unknown'` saved on disk. They keep working transparently:
+- `getCollectionMeta` runs the merged value through `getEffectiveScope` before returning, so `meta.scope` reads as `'chat'` or `'character'`.
+- No data migration needed — the read path silently corrects every access.
+- The stored `'unknown'` string stays on disk until the next `setCollectionMeta` call overwrites it. Harmless.
+
+### History
+
+The 2026-05-24 no-plugin lock-activation regression was caused by `defaultCollectionMeta.scope = 'unknown'` (truthy string) breaking the `storedMeta.scope || parsedMeta.scope` fall-through pattern. Fix landed same day:
+1. Default changed to `null`.
+2. `getEffectiveScope` extracted as canonical helper, `_inferScope` (duplicate) deleted.
+3. `getCollectionMeta` wired to auto-resolve via the helper.
+
+TEST 005/006/007 are the regression coverage — they exercise the standard-backend no-plugin path including the lock checkbox flow.
 
 ## Scope migration — global is gone
 

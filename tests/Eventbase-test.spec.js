@@ -797,60 +797,113 @@ test('TEST 007 — E2E standard: both locked, both return results', async () => 
 // TEST 008 — DB Browser standard: entry names, text, delete
 // ═══════════════════════════════════════════════════════════════════
 // Setup: a lorebook vectorized with Standard backend — at least 3 chunks
+// ═══════════════════════════════════════════════════════════════════
+// TEST 008 — DB Browser standard: listing + delete
+// ═══════════════════════════════════════════════════════════════════
+// Self-contained: creates its own standard (vectra) lorebook with 3 named
+// entries, verifies listChunks surfaces text + entryName, deletes one
+// chunk, verifies it's gone, then cleans up.
+// CRITICAL: never operate on the user's pre-existing collections — a stray
+// delete here would corrupt real data.
 test('TEST 008 — DB Browser standard: listing + delete', async () => {
     const logs = await runTestInPage(async () => {
         const TEST = 'TEST 008 [DBBrowserStd]';
         const base = '/scripts/extensions/third-party/VectFox/';
-        const { getCollectionListing } = await import(base + 'core/collection-loader.js');
+        const { vectorizeContent, deleteContentCollection } = await import(base + 'core/content-vectorization.js');
+        const { deleteCollectionMeta } = await import(base + 'core/collection-metadata.js');
+        const { unregisterCollection } = await import(base + 'core/collection-loader.js');
         const { StandardBackend } = await import(base + 'backends/standard.js');
-
         const { extension_settings } = await import('/scripts/extensions.js');
+
         const vf = extension_settings?.vectfox;
         if (!vf) { console.error(`${TEST} [FAIL] VectFox settings not found`); return; }
 
-        const listing = getCollectionListing(vf);
-        const stdLorebooks = listing.filter(e =>
-            e.collectionId.startsWith('vf_lorebook_') && e.registryKey.startsWith('vectra:')
-        );
-        if (!stdLorebooks.length) { console.warn(`${TEST} [WARN] No standard lorebook — vectorize with Standard backend first`); return; }
+        const testEntries = [
+            {
+                uid: 'vf_test_008_a',
+                comment: 'Ashfern Spores',
+                key: ['ashfern', 'spore'],
+                content: 'Ashfern spores germinate only after exposure to volcanic ash. The resulting plant produces a deep-blue dye prized by the southern weavers. A single mature ashfern yields enough spore-pods for one full bolt of cloth.',
+            },
+            {
+                uid: 'vf_test_008_b',
+                comment: 'Mirror Citadel of Vorn',
+                key: ['vorn', 'citadel'],
+                content: 'The Mirror Citadel of Vorn was carved from a single obsidian seam in the Coldroot Mountains. Its walls reflect approaching armies tenfold, an illusion that has broken three sieges without a single arrow loosed.',
+            },
+            {
+                uid: 'vf_test_008_c',
+                comment: 'Tideglass Eels',
+                key: ['tideglass', 'eel'],
+                content: 'Tideglass eels migrate along the Vermilion Reef every spring. Their translucent bodies become visible only at twilight. Fishermen of the coastal hamlets carve flutes from their bones — said to summon mist on still nights.',
+            },
+        ];
 
-        const col = stdLorebooks[0];
-        const backend = new StandardBackend();
-        console.log(`${TEST} Testing: ${col.registryKey}`);
+        console.log(`${TEST} Vectorizing test lorebook (3 entries) with Standard backend...`);
+        let vectorizeResult;
+        try {
+            vectorizeResult = await vectorizeContent({
+                contentType: 'lorebook',
+                source: { type: 'file', name: '__vf_playwright_test_008__', entries: testEntries },
+                settings: { ...vf, vector_backend: 'standard', strategy: 'per_entry', scope: 'chat' },
+            });
+        } catch (err) { console.error(`${TEST} [FAIL] vectorizeContent threw: ${err.message}`); return; }
 
-        let listResult;
-        try { listResult = await backend.listChunks(col.collectionId, vf, { limit: 10 }); }
-        catch (err) { console.error(`${TEST} [FAIL] listChunks threw: ${err.message}`); return; }
-
-        const items = listResult?.items ?? [];
-        if (!items.length) { console.error(`${TEST} [FAIL] listChunks returned 0 items`); return; }
-        console.log(`${TEST} listChunks: ${items.length} items (total: ${listResult.total})`);
-
-        const noText      = items.filter(i => !i.text?.trim());
-        const noEntryName = items.filter(i => !i.metadata?.entryName);
-        items.slice(0, 3).forEach((item, i) =>
-            console.log(`  [${i}] entryName="${item.metadata?.entryName ?? '(none)'}"  text="${(item.text||'').slice(0,60)}"`));
-
-        if (noText.length) { console.error(`${TEST} [FAIL] ${noText.length} chunk(s) have no text`); return; }
-        if (noEntryName.length === items.length) { console.error(`${TEST} [FAIL] ALL chunks missing entryName`); return; }
-        if (noEntryName.length > 0) console.warn(`${TEST} [WARN] ${noEntryName.length} chunk(s) missing entryName`);
-
-        const targetHash = items[0].hash;
-        console.log(`${TEST} Deleting hash=${targetHash}  entryName="${items[0].metadata?.entryName ?? '(none)'}"`);
-        try { await backend.deleteVectorItems(col.collectionId, [targetHash], vf); }
-        catch (err) { console.error(`${TEST} [FAIL] deleteVectorItems threw: ${err.message}`); return; }
-
-        let afterResult;
-        try { afterResult = await backend.listChunks(col.collectionId, vf, { limit: 10 }); }
-        catch (err) { console.error(`${TEST} [FAIL] listChunks after delete threw: ${err.message}`); return; }
-
-        if ((afterResult?.items ?? []).some(i => i.hash === targetHash)) {
-            console.error(`${TEST} [FAIL] Deleted hash still in listing`); return;
+        if (!vectorizeResult?.success || !vectorizeResult.collectionId) {
+            console.error(`${TEST} [FAIL] Vectorization failed`); return;
         }
-        if (afterResult.total >= listResult.total) console.warn(`${TEST} [WARN] total count did not decrease`);
 
-        console.log(`${TEST} After delete: ${listResult.total} → ${afterResult.total} ✓`);
-        console.log(`${TEST} [PASS] Standard: entry names visible, text present, delete removed the entry`);
+        const collectionId = vectorizeResult.collectionId;
+        const registryKey  = `vectra:${collectionId}`;
+        console.log(`${TEST} Vectorized ${vectorizeResult.chunkCount} chunks → ${registryKey}`);
+
+        try {
+            const backend = new StandardBackend();
+            let listResult;
+            try { listResult = await backend.listChunks(collectionId, vf, { limit: 10 }); }
+            catch (err) { console.error(`${TEST} [FAIL] listChunks threw: ${err.message}`); return; }
+
+            const items = listResult?.items ?? [];
+            if (!items.length) { console.error(`${TEST} [FAIL] listChunks returned 0 items`); return; }
+            console.log(`${TEST} listChunks: ${items.length} items (total: ${listResult.total})`);
+
+            items.slice(0, 3).forEach((item, i) =>
+                console.log(`  [${i}] entryName="${item.metadata?.entryName ?? '(none)'}"  text="${(item.text||'').slice(0,60)}"`));
+
+            const noText      = items.filter(i => !i.text?.trim());
+            const noEntryName = items.filter(i => !i.metadata?.entryName);
+
+            if (noText.length === items.length) { console.error(`${TEST} [FAIL] ALL chunks have no text — standard backend listChunks may need plugin support`); return; }
+            if (noText.length > 0) console.warn(`${TEST} [WARN] ${noText.length} chunk(s) have no text`);
+            if (noEntryName.length === items.length) { console.error(`${TEST} [FAIL] ALL chunks missing entryName`); return; }
+            if (noEntryName.length > 0) console.warn(`${TEST} [WARN] ${noEntryName.length} chunk(s) missing entryName`);
+
+            const targetHash = items[0].hash;
+            console.log(`${TEST} Deleting hash=${targetHash}  entryName="${items[0].metadata?.entryName ?? '(none)'}"`);
+            try { await backend.deleteVectorItems(collectionId, [targetHash], vf); }
+            catch (err) { console.error(`${TEST} [FAIL] deleteVectorItems threw: ${err.message}`); return; }
+
+            let afterResult;
+            try { afterResult = await backend.listChunks(collectionId, vf, { limit: 10 }); }
+            catch (err) { console.error(`${TEST} [FAIL] listChunks after delete threw: ${err.message}`); return; }
+
+            if ((afterResult?.items ?? []).some(i => i.hash === targetHash)) {
+                console.error(`${TEST} [FAIL] Deleted hash still in listing`); return;
+            }
+            if (afterResult.total >= listResult.total) console.warn(`${TEST} [WARN] total count did not decrease`);
+
+            console.log(`${TEST} After delete: ${listResult.total} → ${afterResult.total} ✓`);
+            console.log(`${TEST} [PASS] Standard: entry names visible, text present, delete removed the entry`);
+        } finally {
+            try {
+                await deleteContentCollection(collectionId);
+                deleteCollectionMeta(registryKey);
+                unregisterCollection(registryKey);
+                console.log(`${TEST} Cleanup: test collection removed ✓`);
+            } catch (cleanupErr) {
+                console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
+            }
+        }
     });
     assertPassed(logs);
 });

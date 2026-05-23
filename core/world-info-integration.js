@@ -182,6 +182,17 @@ async function getEnabledLorebookCollections(settings) {
     for (const entry of listing) {
         if (!entry.collectionId.startsWith('vf_lorebook_')) continue;
         if (entry.meta.enabled === false) continue;
+        // Respect persona ownership before checking activation. The activation
+        // chain (§14 in Doc/dev_helper.md) lets trigger keywords activate a
+        // collection regardless of who owns it — which leaks another persona's
+        // lorebooks into the current persona's chat when keywords coincide.
+        // `isOwn` (from getCollectionListing) is true when the current persona
+        // owns the collection OR superadmin mode is on, so single-persona and
+        // superadmin users see no behavior change; only multi-persona users
+        // stop seeing cross-persona content. Surfaced by prod symptom on
+        // 2026-05-23 (rabbit's Your Wives lorebook leaking into critblade's
+        // ArtificRealm chat) — TEST 011 covers this gate.
+        if (!entry.isOwn) continue;
         if (!(await shouldCollectionActivate(entry.registryKey, context))) continue;
 
         const sourceName = entry.meta?.sourceName || null;

@@ -1427,3 +1427,166 @@ test('TEST 010 — Cross-collection isolation: lock controls lorebook visibility
     });
     assertPassed(logs);
 });
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  TEST 011 — Cross-persona activation isolation (lorebook ownership)
+// ═══════════════════════════════════════════════════════════════════
+//
+// Why this test exists:
+//   TEST 010 verified LOCK-based isolation — explicit unlock removes a
+//   collection from activation. But the prod symptom we observed
+//   (2026-05-23) was different: rabbit's "Your Wives" lorebook leaking
+//   into critblade's ArtificRealm chat WITHOUT either persona ever
+//   locking that collection to that chat. The leak mechanism is
+//   activation TRIGGERS (keyword matches in chat content) firing on a
+//   collection owned by a DIFFERENT persona.
+//
+//   Per dev_helper.md §14 activation priority chain, triggers (step 2)
+//   activate BEFORE the lock check (steps 4-5). Ownership (`isOwn`) was
+//   NOT checked anywhere in the chain — that's the gap B7 closes.
+//
+// What this test proves:
+//   Phase 1: a test lorebook owned by the current persona appears in WI
+//     injection (baseline — confirms the test setup is functional).
+//   Phase 2: stamp the collection's `creatorHandle` to a foreign value
+//     so `isOwn` flips to false. Re-query. Assert sentinel does NOT
+//     appear — proving B7's filter blocks cross-persona collections from
+//     activating regardless of trigger matches.
+//
+// Boundary rules (same as TEST 009/010):
+//   ✗ DO NOT mutate extension_settings.vectfox at a global level
+//   ✓ DO mutate `creatorHandle` on the TEST collection's meta via
+//     setCollectionMeta (the test owns this collection — we created it).
+//     Restore in finally so cleanup auth passes.
+//
+// Edge case: superadmin mode forces isOwn=true for all collections, which
+// would make Phase 2 fail because the filter wouldn't block anything.
+// We detect and skip with a clear signal in that case.
+test('TEST 011 — Cross-persona activation isolation', async () => {
+    const logs = await runTestInPage(async () => {
+        const TEST = 'TEST 011 [CrossPersona]';
+        const base = '/scripts/extensions/third-party/VectFox/';
+        const { vectorizeContent, deleteContentCollection } = await import(base + 'core/content-vectorization.js');
+        const { getCollectionMeta, setCollectionMeta, deleteCollectionMeta } = await import(base + 'core/collection-metadata.js');
+        const { getCollectionListing, unregisterCollection } = await import(base + 'core/collection-loader.js');
+        const { runLorebookWIDryRun } = await import(base + 'core/world-info-integration.js');
+        const { extension_settings } = await import('/scripts/extensions.js');
+
+        const vf = extension_settings?.vectfox;
+        if (!vf) { console.error(`${TEST} [FAIL] VectFox settings not found`); return; }
+        if (!(vf.qdrant_url || vf.qdrant_host)) { console.error(`${TEST} [FAIL] Qdrant not configured`); return; }
+
+        const ctx = window.SillyTavern?.getContext?.() ?? window.getContext?.() ?? {};
+        const currentChatId = ctx.chatId ? String(ctx.chatId) : null;
+        if (!currentChatId) { console.warn(`${TEST} [WARN] No active chat — open a chat first`); return; }
+
+        // Superadmin override forces isOwn=true for ALL collections — the B7
+        // filter is intentionally bypassed in that mode (it's for cross-persona
+        // admin work). The test can't exercise the filter; skip with a clear
+        // signal so a future reader doesn't think this is a real pass.
+        if (vf.superadmin === true) {
+            console.warn(`${TEST} [WARN] Superadmin mode is ON — test skipped because isOwn=true for all collections by design. Turn superadmin off to exercise the cross-persona filter.`);
+            console.log(`${TEST} [PASS] (skipped: superadmin mode bypasses isOwn filter by design)`);
+            return;
+        }
+
+        const SENTINEL = 'PERSONA_LEAK_CANARY_RUBELLITE_Q3X7';
+        const FAKE_HANDLE = '_fake_other_persona_test_011';
+
+        const testEntries = [{
+            uid: 'vf_test_011_a',
+            comment: 'Rubellite Catacombs',
+            key: ['rubellite', 'catacombs'],
+            content: `The ${SENTINEL} sits beneath the abandoned mine of Thressel. Sentinel-canary describes its blood-red crystal chambers echoing footsteps for hours after passing. Pilgrims of the Old Carmine Faith claim the catacombs realign their inner compass.`,
+        }];
+
+        console.log(`${TEST} Vectorizing test lorebook (sentinel "${SENTINEL}") with Qdrant...`);
+        let res;
+        try {
+            res = await vectorizeContent({
+                contentType: 'lorebook',
+                source: { type: 'file', name: '__vf_playwright_test_011__', entries: testEntries },
+                settings: { ...vf, vector_backend: 'qdrant', strategy: 'per_entry', scope: 'chat' },
+            });
+        } catch (err) { console.error(`${TEST} [FAIL] vectorizeContent threw: ${err.message}`); return; }
+        if (!res?.success || !res.collectionId) { console.error(`${TEST} [FAIL] Vectorization failed`); return; }
+
+        const collectionId = res.collectionId;
+        const registryKey  = `qdrant:${collectionId}`;
+        const originalMeta = getCollectionMeta(registryKey);
+        const originalHandle = originalMeta?.creatorHandle;
+        console.log(`${TEST} Vectorized → ${registryKey}, original creatorHandle="${originalHandle}"`);
+        if (!originalHandle) {
+            console.warn(`${TEST} [WARN] No creatorHandle stamped at vectorize time — baseline isOwn may rely on legacy ID-substring fallback`);
+        }
+
+        try {
+            const chat = ctx.chat ?? [];
+            const query = `${SENTINEL} rubellite catacombs thressel old carmine faith`;
+
+            // ═══ PHASE 1 — baseline: current persona owns, sentinel must appear ═══
+            console.log(`${TEST} Phase 1: query with current persona ownership intact...`);
+            let p1;
+            try { p1 = await runLorebookWIDryRun({ chat, testMessage: query, settings: vf }); }
+            catch (err) { console.error(`${TEST} [FAIL] Phase 1 dry-run threw: ${err.message}`); return; }
+
+            const p1HasSentinel = (p1?.injectionText || '').includes(SENTINEL);
+            console.log(`${TEST} Phase 1 entries=${p1.entryCount}, sentinel found=${p1HasSentinel}`);
+            if (!p1HasSentinel) {
+                console.error(`${TEST} [FAIL] Phase 1 baseline broken — sentinel "${SENTINEL}" not in injection despite current persona owning the collection. Without baseline we can't tell what Phase 2 isolation means.`);
+                return;
+            }
+            console.log(`${TEST} Phase 1 baseline ✓ — sentinel appears when current persona owns the collection`);
+
+            // ═══ PHASE 2 — stamp foreign handle, sentinel must NOT appear ═══
+            console.log(`${TEST} Phase 2: stamping creatorHandle="${FAKE_HANDLE}" on test collection to simulate foreign ownership...`);
+            setCollectionMeta(registryKey, { creatorHandle: FAKE_HANDLE });
+
+            // Sanity check the listing now reports isOwn=false
+            const listingAfter = getCollectionListing(vf);
+            const entry = listingAfter.find(e => e.registryKey === registryKey);
+            if (!entry) { console.error(`${TEST} [FAIL] Test collection vanished from listing after meta update`); return; }
+            console.log(`${TEST} After meta update — entry.isOwn=${entry.isOwn} (expected false)`);
+            if (entry.isOwn) {
+                console.error(`${TEST} [FAIL] entry.isOwn still true after creatorHandle change — superadmin off but isOwn computation didn't honor the new handle. (Possible legacy ID-substring fallback matching: if the collection ID contains the real handle, the fallback can't be defeated by meta-only mutation.)`);
+                return;
+            }
+
+            let p2;
+            try { p2 = await runLorebookWIDryRun({ chat, testMessage: query, settings: vf }); }
+            catch (err) { console.error(`${TEST} [FAIL] Phase 2 dry-run threw: ${err.message}`); return; }
+
+            const p2HasSentinel = (p2?.injectionText || '').includes(SENTINEL);
+            console.log(`${TEST} Phase 2 entries=${p2.entryCount}, sentinel found=${p2HasSentinel}`);
+            console.log(`${TEST} Phase 2 injection preview: ${(p2.injectionText || '').slice(0, 200)}`);
+
+            if (p2HasSentinel) {
+                console.error(`${TEST} [FAIL] CROSS-PERSONA LEAK — sentinel "${SENTINEL}" appeared in injection despite creatorHandle now being foreign (entry.isOwn=false). getEnabledLorebookCollections is not filtering by entry.isOwn. This is the prod symptom mechanism (B7).`);
+                return;
+            }
+            console.log(`${TEST} [PASS] Cross-persona isolation works: foreign-handle collection blocked from activation despite matching triggers`);
+        } finally {
+            // Restore creatorHandle so canonical cleanup (setLock auth gate, etc.)
+            // doesn't choke. Even if cleanup proceeds without auth, leaving the
+            // foreign handle in place would leak state to subsequent test runs.
+            try {
+                if (originalHandle) {
+                    setCollectionMeta(registryKey, { creatorHandle: originalHandle });
+                    console.log(`${TEST} Restored creatorHandle to "${originalHandle}"`);
+                }
+            } catch (restoreErr) {
+                console.warn(`${TEST} [WARN] Restoring creatorHandle failed: ${restoreErr.message}`);
+            }
+            try {
+                await deleteContentCollection(collectionId);
+                deleteCollectionMeta(registryKey);
+                unregisterCollection(registryKey);
+                console.log(`${TEST} Cleanup: test collection removed ✓`);
+            } catch (cleanupErr) {
+                console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
+            }
+        }
+    });
+    assertPassed(logs);
+});

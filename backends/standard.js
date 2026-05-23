@@ -688,8 +688,13 @@ export class StandardBackend extends VectorBackend {
                 if (response.ok) {
                     return await response.json();
                 }
+                // Surface the failure instead of silently falling back — a 4xx/5xx
+                // from the plugin masks real bugs (the DB Browser ends up showing
+                // empty text + metadata for collections that actually have data).
+                const errBody = await response.text().catch(() => '<no body>');
+                console.warn(`VectFox: Plugin listChunks returned ${response.status} ${response.statusText} — falling back to native (hashes only). Body: ${errBody.slice(0, 200)}`);
             } catch (e) {
-                console.warn('VectFox: Plugin listChunks failed, using native fallback');
+                console.warn('VectFox: Plugin listChunks threw, using native fallback:', e.message);
             }
         }
 

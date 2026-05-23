@@ -608,58 +608,96 @@ test('TEST 004 — DB Browser: listing + delete (any backend)', async () => {
 // ═══════════════════════════════════════════════════════════════════
 // Setup: lorebook vectorized with Standard backend + locked to current chat in DB Browser
 // Note: vectorScore=0.0000 is expected — not a failure
+// ═══════════════════════════════════════════════════════════════════
+// TEST 005 — Standard lorebook: lock + query isolation
+// ═══════════════════════════════════════════════════════════════════
+// Self-contained: vectorizes its own standard (vectra) lorebook, asserts
+// it gets locked to the current chat, runs a dry-run WI activation, and
+// verifies the test entries come back. Never touches user data.
 test('TEST 005 — Standard lorebook: lock + query isolation', async () => {
     const logs = await runTestInPage(async () => {
         const TEST = 'TEST 005 [StdLorebook]';
         const base = '/scripts/extensions/third-party/VectFox/';
-        const { getCollectionListing } = await import(base + 'core/collection-loader.js');
-        const { shouldCollectionActivate, getCollectionMeta } = await import(base + 'core/collection-metadata.js');
+        const { vectorizeContent, deleteContentCollection } = await import(base + 'core/content-vectorization.js');
+        const { shouldCollectionActivate, deleteCollectionMeta } = await import(base + 'core/collection-metadata.js');
+        const { unregisterCollection } = await import(base + 'core/collection-loader.js');
         const { runLorebookWIDryRun } = await import(base + 'core/world-info-integration.js');
-
         const { extension_settings } = await import('/scripts/extensions.js');
+
         const vf = extension_settings?.vectfox;
         if (!vf) { console.error(`${TEST} [FAIL] VectFox settings not found`); return; }
         const ctx = window.SillyTavern?.getContext?.() ?? window.getContext?.() ?? {};
         const currentChatId = ctx.chatId ? String(ctx.chatId) : null;
-        if (!currentChatId) { console.warn(`${TEST} [WARN] No active chat`); return; }
+        if (!currentChatId) { console.warn(`${TEST} [WARN] No active chat — open a chat first`); return; }
         const context = { currentChatId, currentCharacterId: ctx.characterId != null ? String(ctx.characterId) : null };
 
-        const listing = getCollectionListing(vf);
-        const lorebookCols = listing.filter(e => e.collectionId.startsWith('vf_lorebook_'));
-        const stdLorebooks = lorebookCols.filter(e => e.registryKey.startsWith('vectra:'));
-        if (!stdLorebooks.length) { console.error(`${TEST} [FAIL] No standard (vectra:) lorebook found`); return; }
+        const testEntries = [
+            {
+                uid: 'vf_test_005_a',
+                comment: 'Quartzwood Beetles',
+                key: ['quartzwood', 'beetle'],
+                content: 'Quartzwood beetles bore into petrified trees of the Ironvale forest. Their carapaces refract moonlight into prism patterns, making them prized by jewellers. A single mature beetle yields enough chitin for one signet ring.',
+            },
+            {
+                uid: 'vf_test_005_b',
+                comment: 'Hollowtongue Caverns',
+                key: ['hollowtongue', 'cavern'],
+                content: 'The Hollowtongue Caverns echo human speech for hours after a single whisper. Travellers report hearing arguments from the previous decade reverberating from the deep tunnels. Cartographers refuse to map them past the second junction.',
+            },
+            {
+                uid: 'vf_test_005_c',
+                comment: 'Saltglass Anvils',
+                key: ['saltglass', 'anvil'],
+                content: 'Saltglass anvils are forged from compressed sea-salt under volcanic heat. They cool blades at twice the rate of stone anvils and impart a faint mineral edge. Only three smiths in the Vermilion Reach know the firing technique.',
+            },
+        ];
 
-        console.log(`${TEST} Collections: ${lorebookCols.length} total, ${stdLorebooks.length} standard`);
-        lorebookCols.forEach(e => {
-            const meta = getCollectionMeta(e.registryKey);
-            console.log(`  ${e.registryKey}  scope=${meta.scope ?? '?'}`);
-        });
+        console.log(`${TEST} Vectorizing test lorebook (3 entries) with Standard backend...`);
+        let vectorizeResult;
+        try {
+            vectorizeResult = await vectorizeContent({
+                contentType: 'lorebook',
+                source: { type: 'file', name: '__vf_playwright_test_005__', entries: testEntries },
+                settings: { ...vf, vector_backend: 'standard', strategy: 'per_entry', scope: 'chat' },
+            });
+        } catch (err) { console.error(`${TEST} [FAIL] vectorizeContent threw: ${err.message}`); return; }
 
-        const active = [];
-        for (const e of lorebookCols) {
-            if (await shouldCollectionActivate(e.registryKey, context)) active.push(e);
+        if (!vectorizeResult?.success || !vectorizeResult.collectionId) {
+            console.error(`${TEST} [FAIL] Vectorization failed`); return;
         }
-        if (!active.length) { console.error(`${TEST} [FAIL] No lorebook activated — lock the standard lorebook first`); return; }
-        if (active.length > 1) {
-            console.error(`${TEST} [FAIL] ${active.length} lorebooks activated — expected 1`);
-            active.forEach(e => console.error(`  UNEXPECTED: ${e.registryKey}`));
-            return;
+
+        const collectionId = vectorizeResult.collectionId;
+        const registryKey  = `vectra:${collectionId}`;
+        console.log(`${TEST} Vectorized ${vectorizeResult.chunkCount} chunks → ${registryKey}`);
+
+        try {
+            const isActive = await shouldCollectionActivate(registryKey, context);
+            if (!isActive) {
+                console.error(`${TEST} [FAIL] New collection not activated for current chat — scope=chat lock did not apply`);
+                return;
+            }
+            console.log(`${TEST} Collection locked and active for current chat ✓`);
+
+            const chat = ctx.chat ?? [];
+            const testQuery = 'quartzwood beetle ironvale prism carapace';
+            let result;
+            try { result = await runLorebookWIDryRun({ chat, testMessage: testQuery, settings: vf }); }
+            catch (err) { console.error(`${TEST} [FAIL] runLorebookWIDryRun threw: ${err.message}`); return; }
+
+            if (!result.entryCount) { console.error(`${TEST} [FAIL] Dry-run returned 0 entries for query "${testQuery}"`); return; }
+            console.log(`${TEST} Dry-run: ${result.entryCount} entries (vectorScore=0.0000 expected for standard backend)`);
+            console.log(`  preview: ${(result.injectionText || '').slice(0, 200)}`);
+            console.log(`${TEST} [PASS] Standard lorebook vectorized, locked, results returned`);
+        } finally {
+            try {
+                await deleteContentCollection(collectionId);
+                deleteCollectionMeta(registryKey);
+                unregisterCollection(registryKey);
+                console.log(`${TEST} Cleanup: test collection removed ✓`);
+            } catch (cleanupErr) {
+                console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
+            }
         }
-
-        const locked = active[0];
-        if (!locked.registryKey.startsWith('vectra:')) console.warn(`${TEST} [WARN] Activated lorebook is not standard: ${locked.registryKey}`);
-        console.log(`${TEST} Activated: ${locked.registryKey} ✓`);
-
-        const chat = ctx.chat ?? [];
-        const lastMsg = [...chat].reverse().find(m => !m.is_system && m.mes)?.mes || 'charlotte';
-        let result;
-        try { result = await runLorebookWIDryRun({ chat, testMessage: lastMsg, settings: vf }); }
-        catch (err) { console.error(`${TEST} [FAIL] runLorebookWIDryRun threw: ${err.message}`); return; }
-
-        if (!result.entryCount) { console.error(`${TEST} [FAIL] Dry-run returned 0 entries`); return; }
-        console.log(`${TEST} Dry-run: ${result.entryCount} entries (vectorScore=0.0000 expected)`);
-        console.log(`  preview: ${(result.injectionText || '').slice(0, 200)}`);
-        console.log(`${TEST} [PASS] Standard lorebook locked, results returned, no contamination`);
     });
     assertPassed(logs);
 });
@@ -670,56 +708,132 @@ test('TEST 005 — Standard lorebook: lock + query isolation', async () => {
 // ═══════════════════════════════════════════════════════════════════
 // Setup: chat history vectorized with Standard backend + locked to this chat
 // Note: imp=undefined and method=bm25 are expected
-test('TEST 006 — Standard EventBase: lock + parseEmbedText recovery', async () => {
+// ═══════════════════════════════════════════════════════════════════
+// TEST 006 — Standard EventBase: insert + parseEmbedText recovery
+// ═══════════════════════════════════════════════════════════════════
+// Self-contained: inserts two test events into its own standard (vectra)
+// EventBase collection, queries them back via StandardBackend, and verifies
+// parseEmbedText can recover event_type / summary from the embed text.
+// This is the no-rich-metadata path — structured fields live INSIDE the
+// embed text and have to be parsed back out client-side.
+test('TEST 006 — Standard EventBase: insert + parseEmbedText recovery', async () => {
     const logs = await runTestInPage(async () => {
         const TEST = 'TEST 006 [StdEventBase]';
         const base = '/scripts/extensions/third-party/VectFox/';
-        const { getCollectionListing } = await import(base + 'core/collection-loader.js');
-        const { getCollectionLocks } = await import(base + 'core/collection-metadata.js');
-
+        const { insertEvents } = await import(base + 'core/eventbase-store.js');
+        const { deleteCollection } = await import(base + 'core/collection-loader.js');
+        const { StandardBackend } = await import(base + 'backends/standard.js');
+        const { parseEmbedText } = await import(base + 'core/eventbase-schema.js');
         const { extension_settings } = await import('/scripts/extensions.js');
+
         const vf = extension_settings?.vectfox;
         if (!vf) { console.error(`${TEST} [FAIL] VectFox settings not found`); return; }
-        const ctx = window.SillyTavern?.getContext?.() ?? window.getContext?.() ?? {};
-        const currentChatId = ctx.chatId ? String(ctx.chatId) : null;
-        if (!currentChatId) { console.warn(`${TEST} [WARN] No active chat`); return; }
 
-        const listing = getCollectionListing(vf);
-        const eventbaseCols = listing.filter(e => e.collectionId.startsWith('vf_eventbase_'));
-        const stdEventbases = eventbaseCols.filter(e => e.registryKey.startsWith('vectra:'));
-        if (!stdEventbases.length) { console.error(`${TEST} [FAIL] No standard EventBase found`); return; }
+        const settings = { ...vf, vector_backend: 'standard' };
+        const ts = Date.now();
+        // collectionId contains __vf_playwright_test_ so beforeAll cleanup catches orphans
+        const collectionId = `vf_eventbase_standard_playwright___vf_playwright_test_006__${ts}`;
+        const registryKey  = `vectra:${collectionId}`;
+        const testChatUUID = `__vf_playwright_test_006__${ts}`;
 
-        const lockedEventbases = eventbaseCols.filter(e => getCollectionLocks(e.registryKey).some(l => l === currentChatId));
-        console.log(`${TEST} EventBase: ${eventbaseCols.length} total, ${stdEventbases.length} standard`);
-        eventbaseCols.forEach(e => console.log(`  ${e.registryKey}  locked=${getCollectionLocks(e.registryKey).some(l => l === currentChatId)}`));
+        const testEvents = [
+            {
+                event_type: 'discovery',
+                importance: 8,
+                summary: 'The party uncovers a hidden Saltglass Anvil chamber beneath the Vermilion Reach forge',
+                DateTime: '2027-03-15T09:00:00Z',
+                cause: 'Investigating mysterious heat signatures',
+                result: 'Anvil chamber catalogued, contents preserved',
+                characters: ['Bramwell the Smith', 'Iris Quench'],
+                locations: ['Vermilion Reach', 'Saltglass Forge'],
+                factions: ['Smiths Conclave'],
+                items: ['Saltglass Anvil'],
+                concepts: ['ancient forging', 'discovery', 'archaeology'],
+                keywords: ['saltglass', 'anvil', 'vermilion', 'forge', 'discovery'],
+                open_threads: ['Who built the original chamber?'],
+                should_persist: true,
+                chat_uuid: testChatUUID,
+                event_id: `test_event_006_001_${ts}`,
+                source_window_start: 0,
+                source_window_end: 5,
+                source_message_hashes: [55501, 55502],
+                schema_version: 1,
+            },
+            {
+                event_type: 'combat',
+                importance: 9,
+                summary: 'Quartzwood beetle swarm attacks Bramwell mid-forging, scattered with Iris pyrotechnics',
+                DateTime: '2027-03-15T11:00:00Z',
+                cause: 'Disturbed nest in the forge ceiling beams',
+                result: 'Swarm dispersed, two beetles captured for study',
+                characters: ['Bramwell the Smith', 'Iris Quench'],
+                locations: ['Vermilion Reach', 'Saltglass Forge'],
+                factions: ['Smiths Conclave'],
+                items: ['quartzwood beetle specimens'],
+                concepts: ['combat', 'insect swarm', 'pyrotechnic dispersal'],
+                keywords: ['quartzwood', 'beetle', 'swarm', 'forge', 'combat'],
+                open_threads: ['Beetles may have been drawn by the chamber discovery'],
+                should_persist: true,
+                chat_uuid: testChatUUID,
+                event_id: `test_event_006_002_${ts}`,
+                source_window_start: 5,
+                source_window_end: 10,
+                source_message_hashes: [55503, 55504],
+                schema_version: 1,
+            },
+        ];
 
-        if (!lockedEventbases.length) { console.error(`${TEST} [FAIL] No EventBase locked to this chat`); return; }
-        if (lockedEventbases.length > 1) { console.error(`${TEST} [FAIL] ${lockedEventbases.length} locked — expected 1`); return; }
+        console.log(`${TEST} Inserting 2 test events into ${collectionId}...`);
+        try {
+            await insertEvents(testEvents, settings, null, collectionId);
+        } catch (err) {
+            console.error(`${TEST} [FAIL] insertEvents threw: ${err.message}`);
+            try { await deleteCollection(collectionId, settings, registryKey); } catch {}
+            return;
+        }
+        console.log(`${TEST} Insert complete ✓`);
 
-        const locked = lockedEventbases[0];
-        if (!locked.registryKey.startsWith('vectra:')) console.warn(`${TEST} [WARN] Locked EventBase is not standard: ${locked.registryKey}`);
-        console.log(`${TEST} Locked: ${locked.registryKey} ✓`);
+        try {
+            const backend = new StandardBackend();
+            let results;
+            try { results = await backend.queryCollection(collectionId, 'saltglass anvil quartzwood beetle', 10, settings); }
+            catch (err) { console.error(`${TEST} [FAIL] queryCollection threw: ${err.message}`); return; }
 
-        const { StandardBackend } = await import(base + 'backends/standard.js');
-        let results;
-        try { results = await (new StandardBackend()).queryCollection(locked.collectionId, 'charlotte', 20, vf); }
-        catch (err) { console.error(`${TEST} [FAIL] queryCollection threw: ${err.message}`); return; }
+            const items = results?.metadata ?? [];
+            if (!items.length) { console.error(`${TEST} [FAIL] Query returned 0 results after insert`); return; }
+            console.log(`${TEST} Query: ${items.length} result(s)`);
 
-        const items = results?.metadata ?? [];
-        if (!items.length) { console.error(`${TEST} [FAIL] Query returned 0 results`); return; }
-        console.log(`${TEST} Query: ${items.length} result(s)`);
+            // For the standard (vectra) backend, structured event fields live INSIDE the
+            // embed text — they have to be recovered via parseEmbedText. Verify both of
+            // our inserted events come back AND their event_type parses out cleanly.
+            const expectedIds = new Set(testEvents.map(e => e.event_id));
+            const foundIds = new Set();
+            let recoveredCount = 0;
+            for (const m of items) {
+                const r = parseEmbedText(m.text || '');
+                if (m.event_id && expectedIds.has(m.event_id)) foundIds.add(m.event_id);
+                if (r.event_type) {
+                    recoveredCount++;
+                    console.log(`  ✓ ${m.event_id || '(no event_id)'}  type="${r.event_type}"  summary="${(r.summary||'').slice(0,50)}"`);
+                }
+            }
 
-        const { parseEmbedText } = await import(base + 'core/eventbase-schema.js');
-        let recoveredCount = 0;
-        items.slice(0, 5).forEach((m, i) => {
-            const r = parseEmbedText(m.text || '');
-            if (r.event_type) recoveredCount++;
-            console.log(`  [${i}] type="${r.event_type || '(none)'}"  imp=${m.importance ?? 'undefined (expected)'}  summary="${(r.summary||'').slice(0,50)}"`);
-        });
+            const missing = [...expectedIds].filter(id => !foundIds.has(id));
+            if (missing.length) { console.error(`${TEST} [FAIL] ${missing.length} inserted event(s) not retrieved: ${missing.join(', ')}`); return; }
+            if (recoveredCount < expectedIds.size) {
+                console.error(`${TEST} [FAIL] parseEmbedText recovered event_type for only ${recoveredCount}/${expectedIds.size} inserted events`);
+                return;
+            }
 
-        if (recoveredCount === 0) { console.error(`${TEST} [FAIL] parseEmbedText recovered no event_type`); return; }
-        console.log(`${TEST} parseEmbedText recovered event_type for ${recoveredCount}/${Math.min(items.length, 5)} events`);
-        console.log(`${TEST} [PASS] Standard EventBase locked, events returned, parseEmbedText working`);
+            console.log(`${TEST} [PASS] All ${expectedIds.size} inserted event(s) retrieved, parseEmbedText recovered event_type cleanly`);
+        } finally {
+            try {
+                await deleteCollection(collectionId, settings, registryKey);
+                console.log(`${TEST} Cleanup: test collection removed ✓`);
+            } catch (cleanupErr) {
+                console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
+            }
+        }
     });
     assertPassed(logs);
 });
@@ -794,18 +908,44 @@ test('TEST 007 — E2E standard: both locked, both return results', async () => 
 
 
 // ═══════════════════════════════════════════════════════════════════
-// TEST 008 — DB Browser standard: entry names, text, delete
+//  Why TEST 008 AND TEST 009? — read this before touching either
 // ═══════════════════════════════════════════════════════════════════
-// Setup: a lorebook vectorized with Standard backend — at least 3 chunks
+//
+// The Standard (vectra) backend has TWO operational modes that look
+// identical at the API surface but behave VERY differently underneath:
+//
+//   1. Standard + Similharity plugin  (the path most users have)
+//      ─ insert/list/delete go through /api/plugins/similharity/chunks/*
+//      ─ FULL metadata round-trip: text, entryName, keywords, custom
+//        fields all persist and come back via listChunks
+//      ─ DB Browser shows everything
+//
+//   2. Standard alone, no plugin       (the bare minimum SillyTavern setup)
+//      ─ insert/list/delete go through ST's native /api/vector/*
+//      ─ DEGRADED mode: only hash + text + index are stored; listChunks
+//        is hashes-only ({ hash, text: '', metadata: {} })
+//      ─ DB Browser shows just hashes — by design, per backends/standard.js
+//        top comment ("Plugin dependency rule"). The standard backend MUST
+//        remain fully functional without the plugin installed.
+//
+// Both modes are *supported* contracts. Both have to work. So we test both
+// — TEST 008 verifies the rich path, TEST 009 verifies graceful degradation
+// to the lean path. A regression in either mode breaks real users.
+//
+// If you find yourself wondering "why are we doing the same test twice?" —
+// you're not. They exercise different code paths via the same surface
+// (StandardBackend.listChunks). The plugin/native branch inside that
+// function is the seam.
+//
+// TEST 010 covers cross-collection isolation (lorebook/EventBase leak)
+// independently of this split.
 // ═══════════════════════════════════════════════════════════════════
-// TEST 008 — DB Browser standard: listing + delete
-// ═══════════════════════════════════════════════════════════════════
-// Self-contained: creates its own standard (vectra) lorebook with 3 named
-// entries, verifies listChunks surfaces text + entryName, deletes one
-// chunk, verifies it's gone, then cleans up.
-// CRITICAL: never operate on the user's pre-existing collections — a stray
-// delete here would corrupt real data.
-test('TEST 008 — DB Browser standard: listing + delete', async () => {
+
+// ─── TEST 008 — standard backend WITH plugin ─────────────────────────
+// Asserts the rich path works: listChunks must surface text + entryName
+// after a self-contained insert. If this fails while pluginAvailable=true,
+// the plugin's /chunks/list endpoint or vectra's storeListItems is broken.
+test('TEST 008 — DB Browser standard + plugin: listing + delete', async () => {
     const logs = await runTestInPage(async () => {
         const TEST = 'TEST 008 [DBBrowserStd]';
         const base = '/scripts/extensions/third-party/VectFox/';
@@ -894,6 +1034,148 @@ test('TEST 008 — DB Browser standard: listing + delete', async () => {
 
             console.log(`${TEST} After delete: ${listResult.total} → ${afterResult.total} ✓`);
             console.log(`${TEST} [PASS] Standard: entry names visible, text present, delete removed the entry`);
+        } finally {
+            try {
+                await deleteContentCollection(collectionId);
+                deleteCollectionMeta(registryKey);
+                unregisterCollection(registryKey);
+                console.log(`${TEST} Cleanup: test collection removed ✓`);
+            } catch (cleanupErr) {
+                console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
+            }
+        }
+    });
+    assertPassed(logs);
+});
+
+
+// ─── TEST 009 — standard backend WITHOUT plugin (degraded path) ─────
+// Read the "Why TEST 008 AND TEST 009?" block above test 008 first.
+//
+// This test verifies graceful degradation: when the Similharity plugin
+// is unavailable, listChunks must still work — it just returns the lean
+// shape ({ hash, text: '', metadata: {} }) instead of full metadata.
+// The standard backend's top comment in backends/standard.js mandates
+// that the standard backend remain fully functional without the plugin.
+//
+// We can't uninstall the plugin from a test, so we simulate it by
+// forcing `pluginAvailable = false` on a freshly-instantiated backend
+// before calling listChunks. This exercises the native fallback branch
+// at backends/standard.js:697.
+//
+// Expectations:
+//   - listChunks returns N items where N matches what insert wrote
+//   - Each item has `hash` populated
+//   - Each item has `text` === '' (degraded, expected)
+//   - Each item has `metadata` === {} (degraded, expected)
+//   - Delete by hash still works via native /api/vector/delete
+//
+// A FAIL here means the no-plugin contract is broken — real users on
+// vanilla SillyTavern would lose DB Browser functionality entirely.
+test('TEST 009 — DB Browser standard, no plugin: graceful degradation', async () => {
+    const logs = await runTestInPage(async () => {
+        const TEST = 'TEST 009 [DBBrowserStdNoPlugin]';
+        const base = '/scripts/extensions/third-party/VectFox/';
+        const { vectorizeContent, deleteContentCollection } = await import(base + 'core/content-vectorization.js');
+        const { deleteCollectionMeta } = await import(base + 'core/collection-metadata.js');
+        const { unregisterCollection } = await import(base + 'core/collection-loader.js');
+        const { StandardBackend } = await import(base + 'backends/standard.js');
+        const { extension_settings } = await import('/scripts/extensions.js');
+
+        const vf = extension_settings?.vectfox;
+        if (!vf) { console.error(`${TEST} [FAIL] VectFox settings not found`); return; }
+
+        const testEntries = [
+            {
+                uid: 'vf_test_009_a',
+                comment: 'Coppervine Trellises',
+                key: ['coppervine', 'trellis'],
+                content: 'Coppervine trellises grow on abandoned watchtowers along the eastern marshes. Their copper-rich sap conducts magical signals over short distances, and apprentice mages use them to practice resonance work without dedicated crystals.',
+            },
+            {
+                uid: 'vf_test_009_b',
+                comment: 'Silt Singers of the Estuary',
+                key: ['silt', 'singer'],
+                content: 'Silt Singers are reclusive mer-folk who emerge from the estuary mud at low tide. They communicate through low-frequency hums that travel further through wet earth than air. Coastal villagers leave salt offerings on the tideline in exchange for storm warnings.',
+            },
+            {
+                uid: 'vf_test_009_c',
+                comment: 'Wraithcap Mushrooms',
+                key: ['wraithcap', 'mushroom'],
+                content: 'Wraithcap mushrooms grow in graveyards and old battlefields. Their pale fruiting bodies fade in and out of visibility on a regular cycle, said to track the breathing of whatever lies buried beneath. Necromancers harvest them by touch alone.',
+            },
+        ];
+
+        console.log(`${TEST} Vectorizing test lorebook (3 entries) with Standard backend...`);
+        let vectorizeResult;
+        try {
+            vectorizeResult = await vectorizeContent({
+                contentType: 'lorebook',
+                source: { type: 'file', name: '__vf_playwright_test_009__', entries: testEntries },
+                settings: { ...vf, vector_backend: 'standard', strategy: 'per_entry', scope: 'chat' },
+            });
+        } catch (err) { console.error(`${TEST} [FAIL] vectorizeContent threw: ${err.message}`); return; }
+
+        if (!vectorizeResult?.success || !vectorizeResult.collectionId) {
+            console.error(`${TEST} [FAIL] Vectorization failed`); return;
+        }
+
+        const collectionId = vectorizeResult.collectionId;
+        const registryKey  = `vectra:${collectionId}`;
+        console.log(`${TEST} Vectorized ${vectorizeResult.chunkCount} chunks → ${registryKey}`);
+
+        try {
+            // Force the no-plugin code path. NOTE: getBackend() caches a backend
+            // instance with pluginAvailable=true from earlier tests — we deliberately
+            // instantiate a FRESH backend here so our override doesn't poison the
+            // shared singleton for later test cases.
+            const backend = new StandardBackend();
+            backend.pluginAvailable = false;
+            console.log(`${TEST} Forced pluginAvailable=false on a fresh StandardBackend — exercising native fallback`);
+
+            let listResult;
+            try { listResult = await backend.listChunks(collectionId, vf, { limit: 10 }); }
+            catch (err) { console.error(`${TEST} [FAIL] listChunks threw: ${err.message}`); return; }
+
+            const items = listResult?.items ?? [];
+            if (!items.length) { console.error(`${TEST} [FAIL] listChunks returned 0 items`); return; }
+            console.log(`${TEST} listChunks: ${items.length} items (total: ${listResult.total})`);
+
+            items.slice(0, 3).forEach((item, i) =>
+                console.log(`  [${i}] hash=${item.hash}  text="${(item.text||'')}"  metaKeys=[${Object.keys(item.metadata || {}).join(',')}]`));
+
+            // Degraded contract: every item has a hash, but text + metadata are intentionally empty.
+            const noHash       = items.filter(i => i.hash == null);
+            const hasText      = items.filter(i => i.text?.trim());
+            const hasMetaField = items.filter(i => i.metadata && Object.keys(i.metadata).length > 0);
+
+            if (noHash.length) { console.error(`${TEST} [FAIL] ${noHash.length} item(s) missing hash — native path must always return hashes`); return; }
+            if (hasText.length) {
+                // Not a failure — means the native path silently grew richer; but it does
+                // mean the contract is now stronger than documented, so flag it.
+                console.warn(`${TEST} [WARN] ${hasText.length} item(s) HAVE text in no-plugin mode — native fallback returning more than documented?`);
+            }
+            if (hasMetaField.length) {
+                console.warn(`${TEST} [WARN] ${hasMetaField.length} item(s) HAVE metadata fields in no-plugin mode — native fallback returning more than documented?`);
+            }
+
+            // Delete-by-hash via native /api/vector/delete should still work even without plugin.
+            const targetHash = items[0].hash;
+            console.log(`${TEST} Deleting hash=${targetHash} via no-plugin path...`);
+            try { await backend.deleteVectorItems(collectionId, [targetHash], vf); }
+            catch (err) { console.error(`${TEST} [FAIL] deleteVectorItems threw: ${err.message}`); return; }
+
+            let afterResult;
+            try { afterResult = await backend.listChunks(collectionId, vf, { limit: 10 }); }
+            catch (err) { console.error(`${TEST} [FAIL] listChunks after delete threw: ${err.message}`); return; }
+
+            if ((afterResult?.items ?? []).some(i => i.hash === targetHash)) {
+                console.error(`${TEST} [FAIL] Deleted hash still in listing after no-plugin delete`); return;
+            }
+            if (afterResult.total >= listResult.total) console.warn(`${TEST} [WARN] total count did not decrease`);
+
+            console.log(`${TEST} After delete: ${listResult.total} → ${afterResult.total} ✓`);
+            console.log(`${TEST} [PASS] Standard (no plugin) listChunks returns hashes, delete-by-hash works`);
         } finally {
             try {
                 await deleteContentCollection(collectionId);

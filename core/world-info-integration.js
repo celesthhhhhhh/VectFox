@@ -12,6 +12,7 @@
 
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { queryCollection } from './core-vector-api.js';
+import { resolveBackendForCollection } from './collection-ids.js';
 import { getCollectionListing } from './collection-loader.js';
 import { getCollectionMeta, shouldCollectionActivate } from './collection-metadata.js';
 import { LOREBOOK_PROMPT_TAG } from './constants.js';
@@ -88,13 +89,18 @@ export async function getSemanticWorldInfoEntries(recentMessages, activeEntries,
         try {
             // Canonical routing (Doc/collection_helper.md): pass the
             // registry-key form ("backend:id") to queryCollection. Its
-            // resolveBackendForCollection helper picks
-            // the right backend per-collection. Previously we extracted the
-            // bare ID here and passed that down, which silently routed all
-            // lorebook queries through settings.vector_backend — broken for
-            // any user with mixed-backend lorebooks (e.g. a qdrant lorebook
-            // locked alongside a vectra lorebook).
+            // resolveBackendForCollection helper picks the right backend
+            // per-collection. Previously we extracted the bare ID here and
+            // passed that down, which silently routed all lorebook queries
+            // through settings.vector_backend — broken for any user with
+            // mixed-backend lorebooks (e.g. a qdrant lorebook locked
+            // alongside a vectra lorebook).
+            //
+            // We also keep the bare collectionId on hand because downstream
+            // ST WI consumers expect entry.collectionId in bare form (the
+            // ID-only field on the semanticEntry object below).
             const lookupKey = collection.id || collection.registryKey;
+            const { collectionId: rawCollectionId } = resolveBackendForCollection(lookupKey);
 
             // Run all query texts in parallel, merge by uid keeping the highest score.
             // In dual-query mode the user's last message runs alongside the full context —

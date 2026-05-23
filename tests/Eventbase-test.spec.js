@@ -779,15 +779,15 @@ test('TEST 007 — E2E standard: both locked, both return results', async () => 
         if (typeof runEventBaseRetrieval !== 'function') { console.warn(`${TEST} [WARN] runEventBaseRetrieval not exported`); return; }
 
         let eventbaseResult;
-        try { eventbaseResult = await runEventBaseRetrieval({ chat, settings: vf, dryRun: true, keywordQuery: lastUserMsg }); }
+        try { eventbaseResult = await runEventBaseRetrieval({ chat, settings: vf, dryRun: true, testMessage: lastUserMsg }); }
         catch (err) { console.error(`${TEST} [FAIL] runEventBaseRetrieval threw: ${err.message}`); return; }
 
-        const events = eventbaseResult?.events ?? [];
-        if (!events.length) { console.error(`${TEST} [FAIL] EventBase returned 0 events`); return; }
-        events.slice(0, 3).forEach((e, i) =>
-            console.log(`  [${i}] type=${e.event_type}  imp=${e.importance ?? 'undefined (expected)'}  summary=${(e.summary||'').slice(0,60)}`));
+        const eventCount = eventbaseResult?.eventCount ?? 0;
+        if (!eventCount) { console.error(`${TEST} [FAIL] EventBase returned 0 events`); return; }
+        console.log(`${TEST} EventBase: ${eventCount} event(s) injected, lockedCollections=${eventbaseResult.lockedCollectionsCount}, archive=${eventbaseResult.archiveCollectionsCount}`);
+        console.log(`  preview: ${(eventbaseResult.injectionText || '').slice(0, 200)}`);
 
-        console.log(`${TEST} [PASS] Lorebook (${lorebookResult.entryCount}) + EventBase (${events.length}) — standard backend, no contamination`);
+        console.log(`${TEST} [PASS] Lorebook (${lorebookResult.entryCount}) + EventBase (${eventCount}) — standard backend, no contamination`);
     });
     assertPassed(logs);
 });

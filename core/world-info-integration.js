@@ -27,6 +27,23 @@ import { eventSource, event_types, setExtensionPrompt, substituteParams, getCurr
 // ============================================================================
 
 /**
+ * Resolve a display title for a semantic-activated lorebook entry.
+ * Prefers stored entryName; falls back to entry.key. `key` may carry either
+ * lorebook trigger strings (legacy ST shape) or VectFox keyword objects
+ * (`{text, weight}` from the extractor) — handle both rather than letting
+ * `[object Object], [object Object]` leak into the injected prompt.
+ */
+function _resolveEntryTitle(entry) {
+    if (entry.metadata?.entryName) return entry.metadata.entryName;
+    if (!Array.isArray(entry.key)) return String(entry.key || '');
+    return entry.key
+        .slice(0, 3)
+        .map(k => (typeof k === 'object' ? (k?.text || k?.keyword || '') : k))
+        .filter(Boolean)
+        .join(', ');
+}
+
+/**
  * Get vectorized lorebook entries that should be activated based on semantic similarity
  * This function is called by ST's world info system to get additional entries to activate
  *
@@ -401,7 +418,7 @@ async function handleGenerationStarted(type, options, dryRun) {
         const entryTexts = semanticEntries
             .filter(e => e.content?.trim())
             .map(e => {
-                const title = e.metadata?.entryName || (Array.isArray(e.key) ? e.key.slice(0, 3).join(', ') : String(e.key || ''));
+                const title = _resolveEntryTitle(e);
                 const content = e.content.trim();
                 return title ? `# ${title}\n${content}` : content;
             });
@@ -445,7 +462,7 @@ export async function runLorebookWIDryRun({ chat, testMessage, settings }) {
     if (!semanticEntries.length) return { injectionText: null, entryCount: 0 };
 
     const entryTexts = semanticEntries.filter(e => e.content?.trim()).map(e => {
-        const title = e.metadata?.entryName || (Array.isArray(e.key) ? e.key.slice(0, 3).join(', ') : String(e.key || ''));
+        const title = _resolveEntryTitle(e);
         const content = e.content.trim();
         return title ? `# ${title}\n${content}` : content;
     });

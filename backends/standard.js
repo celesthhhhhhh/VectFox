@@ -762,12 +762,22 @@ export class StandardBackend extends VectorBackend {
                 if (response.ok) {
                     return await response.json();
                 }
-                // Surface the failure instead of silently falling back — a 4xx/5xx
-                // from the plugin masks real bugs (the DB Browser ends up showing
-                // empty text + metadata for collections that actually have data).
+                // Split the !ok path: 4xx is misconfiguration (wrong route,
+                // bad params, plugin version skew) — fail loud so the DB
+                // Browser shows a real error instead of silently rendering
+                // empty rows for collections that actually have data. 5xx
+                // is treated as a transient plugin outage — warn and fall
+                // back to native list (hashes only) so the UI stays usable.
                 const errBody = await response.text().catch(() => '<no body>');
+                if (response.status >= 400 && response.status < 500) {
+                    throw new Error(`Plugin listChunks ${response.status} ${response.statusText} for ${collectionId}: ${errBody.slice(0, 200)}`);
+                }
                 console.warn(`VectFox: Plugin listChunks returned ${response.status} ${response.statusText} — falling back to native (hashes only). Body: ${errBody.slice(0, 200)}`);
             } catch (e) {
+                // Re-throw the 4xx error we raised above; only swallow real
+                // network/transport failures (fetch reject, timeout, etc.)
+                // which match the "transient outage" graceful-degrade case.
+                if (e?.message?.startsWith('Plugin listChunks 4')) throw e;
                 console.warn('VectFox: Plugin listChunks threw, using native fallback:', e.message);
             }
         }

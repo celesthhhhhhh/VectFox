@@ -903,8 +903,48 @@ function enrichChunks(chunks, contentType, source, settings, preparedContent, Ve
 /**
  * Deletes a content collection
  */
-export async function deleteContentCollection(collectionId) {
-    const VectFoxSettings = extension_settings.vectfox;
-    await purgeVectorIndex(collectionId, VectFoxSettings);
-    console.log(`VectFox: Deleted collection: ${collectionId}`);
+/**
+ * Delete the underlying vector data for a content collection.
+ *
+ * The backend the data physically lives in is encoded in the collection ID
+ * itself (e.g. `vf_lorebook_qdrant_…` vs `vf_lorebook_standard_…`). The
+ * helper auto-detects this from the ID when the caller doesn't pass a
+ * `vector_backend` override, so cleanup ALWAYS targets the backend that
+ * actually holds the data — never the user's currently-selected global.
+ *
+ * Without this auto-detection, the previous code routed every cleanup
+ * through `extension_settings.vectfox.vector_backend`. If the user's global
+ * was `standard` while the data lived in qdrant (e.g. tests overriding
+ * `vector_backend: 'qdrant'` for one call), the purge silently no-op'd
+ * against vectra and the qdrant folder leaked on disk. Accumulated orphans
+ * eventually stalled Qdrant startup → plugin timeout → "Plugin shutting
+ * down" crash. Surfaced 2026-05-23 via 31 qdrant orphans on the NAS.
+ *
+ * @param {string} collectionId - bare collection ID (no `backend:` prefix)
+ * @param {object} [callerSettings] - per-call overrides; if omitted, the
+ *   backend is detected from the collection ID format.
+ */
+export async function deleteContentCollection(collectionId, callerSettings = null) {
+    let baseSettings = callerSettings;
+    if (!baseSettings) {
+        const detected = _detectBackendFromCollectionId(collectionId);
+        if (detected) baseSettings = { vector_backend: detected };
+    }
+    const effectiveSettings = resolveEffectiveSettings(baseSettings);
+    await purgeVectorIndex(collectionId, effectiveSettings);
+    console.log(`VectFox: Deleted collection: ${collectionId} (routed via ${effectiveSettings.vector_backend})`);
+}
+
+/**
+ * Pull the backend name out of a VectFox collection ID.
+ * IDs follow the shape `vf_{contentType}_{backend}_{handle}_{name}_{ts}`.
+ * Returns null when the ID doesn't match (caller should fall back to globals).
+ */
+function _detectBackendFromCollectionId(collectionId) {
+    if (!collectionId || typeof collectionId !== 'string') return null;
+    // Strip any registry-key prefix (`qdrant:`, `vectra:`, `standard:`)
+    const colonIdx = collectionId.indexOf(':');
+    const bare = colonIdx > 0 ? collectionId.slice(colonIdx + 1) : collectionId;
+    const match = bare.match(/^vf_[^_]+_([^_]+)_/);
+    return match?.[1] || null;
 }

@@ -91,16 +91,18 @@ test.beforeAll(async ({ browser }) => {
     // Wait for ST's send button — present once logged in and on the main page
     await sharedPage.waitForSelector('#send_but', { timeout: 120000 });
 
-    // Wait until a chat is actually open.
-    // ST exports getContext() as a module export, not on window — use window.SillyTavern
-    // as the primary check and a DOM fallback (#chat .mes) for reliability.
-    console.log('[setup] Waiting for chat to become active...');
+    // Wait until a chat is actually open. Strictly gate on ctx.chatId — the
+    // previous DOM-presence fallback (#chat .mes count > 0) could trigger on
+    // stale UI from a previous session even when the user hadn't focused the
+    // Playwright window and clicked into a chat yet. Tests downstream all
+    // strictly check ctx.chatId, so beforeAll must match that contract or
+    // tests start before they should and fail mysteriously with "No active
+    // chat — open a chat first."
+    console.log('[setup] Waiting for chat to become active (focus the Playwright window and click a chat)...');
     await sharedPage.waitForFunction(
         () => {
             const ctx = window.SillyTavern?.getContext?.() ?? window.getContext?.() ?? null;
-            if (ctx?.chatId) return true;
-            // Fallback: at least one message rendered in the chat panel
-            return document.querySelectorAll('#chat .mes').length > 0;
+            return !!ctx?.chatId;
         },
         { timeout: 120000 }
     );

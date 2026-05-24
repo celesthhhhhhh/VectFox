@@ -979,7 +979,7 @@ async function scoreResults(resultsForBoost, searchText, topK, settings, collect
             const mod = await import('./corpus-stats.js');
             corpusStats = await mod.getCorpusStats(collectionId, settings);
             if (!corpusStats && settings.eventbase_debug_logging) {
-                console.warn(`[VectFox] Corpus-IDF disabled for ${collectionId}: getCorpusStats returned null (chunks/list fetch failed). Falling back to local-IDF BM25.`);
+                console.warn(`[VectFox] Corpus-IDF disabled for ${collectionId}: getCorpusStats returned null (plugin unavailable or /chunks/list failed). Falling back to local-IDF BM25.`);
             }
         } catch (err) {
             console.warn(`[VectFox] Corpus-IDF unavailable for ${collectionId}, falling back to local-IDF BM25. Reason: ${err?.message || err}`);

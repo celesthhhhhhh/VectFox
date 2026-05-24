@@ -2745,6 +2745,8 @@ test('TEST 016 — stampAutoSyncMarker smart placement (production-function smok
             findEventBaseCollectionIdsForChat,
         } = await import(base + 'core/eventbase-store.js');
         const { registerCollection, unregisterCollection } = await import(base + 'core/collection-loader.js');
+        const { deleteCollectionMeta } = await import(base + 'core/collection-metadata.js');
+        const { deleteContentCollection } = await import(base + 'core/content-vectorization.js');
         const { extension_settings } = await import('/scripts/extensions.js');
 
         const ctx = window.SillyTavern?.getContext?.() ?? window.getContext?.() ?? {};
@@ -2842,7 +2844,17 @@ test('TEST 016 — stampAutoSyncMarker smart placement (production-function smok
 
             console.log(`${TEST} [PASS] stampAutoSyncMarker smart placement holds — Branch A early-exit, Branch B no-candidate falls to chatLength, Branch C empty-candidate falls to chatLength via try/catch, re-stamp overwrites. Branch D (max(source_window_end)+1) is not asserted by this test because env-1/2 standard-backend inserts strip metadata; the one-line reducer is trivial.`);
         } finally {
-            // Cleanup — clear markers and unregister synthetic collection.
+            // Cleanup — markers, on-disk artifacts, meta, and registry.
+            // ORDER MATTERS: deleteContentCollection FIRST so the vectra
+            // directory (auto-created by stampAutoSyncMarker's listChunks
+            // probe in Phase 3 — see "ghost 0-chunk entries" caveat in
+            // eventbase-store.js) is removed BEFORE we unregister. Otherwise
+            // the directory survives on disk and loadAllCollections will
+            // re-discover it on the next ST page load, leaving a ghost
+            // `vf_eventbase_…playwright_test_016__empty_candidate` entry
+            // visible to live retrieval (caught during a 2026-05-24 live
+            // test). Same teardown shape that beforeAll uses for leftover
+            // cleanup.
             try {
                 clearAutoSyncMarker(uuidBranchB);
                 clearAutoSyncMarker(uuidBranchC);
@@ -2850,9 +2862,15 @@ test('TEST 016 — stampAutoSyncMarker smart placement (production-function smok
                     getAutoSyncMarker(uuidBranchC) !== undefined) {
                     console.warn(`${TEST} [WARN] clearAutoSyncMarker left stale values: B=${getAutoSyncMarker(uuidBranchB)} C=${getAutoSyncMarker(uuidBranchC)}`);
                 }
+                // Phase 3 creates an on-disk artifact via listChunks probe.
+                // Phases 1/2/4 don't, but calling delete on a non-existent
+                // collection is a no-op — safer to call unconditionally.
+                try { await deleteContentCollection(syntheticCollectionId); } catch {}
+                try { deleteCollectionMeta(syntheticRegistryKey); } catch {}
+                try { deleteCollectionMeta(syntheticCollectionId); } catch {}
                 try { unregisterCollection(syntheticRegistryKey); } catch {}
                 try { unregisterCollection(syntheticCollectionId); } catch {}
-                console.log(`${TEST} Cleanup ✓ markers cleared, synthetic registration removed`);
+                console.log(`${TEST} Cleanup ✓ markers cleared, disk artifacts deleted, meta removed, synthetic registration unregistered`);
             } catch (cleanupErr) {
                 console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
             }
@@ -3186,6 +3204,197 @@ test('TEST 018 — shouldCollectionActivate priority chain (triggers / condition
                 try { unregisterCollection(registryKey); } catch {}
                 try { unregisterCollection(collectionId); } catch {}
                 console.log(`${TEST} Cleanup ✓ meta cleared, registration unregistered`);
+            } catch (cleanupErr) {
+                console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
+            }
+        }
+    });
+    assertPassed(logs);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  TEST 019 — WI / AutoSync refresh smoke: refresh paths don't mutate locks
+// ═══════════════════════════════════════════════════════════════════
+//
+//  Doc/collection_helper.md → "Manual vs auto-sync paths" calls out the
+//  load-bearing rule: `refreshWIStatus` and `refreshAutoSyncCheckbox`
+//  must NEVER mutate lock state. They are pure UI mirrors — they read
+//  collection state and update `prop('checked', …)` / status text only.
+//  The forbidden footgun is `.trigger('change')`, which would fire the
+//  user-facing change handlers (which DO remove locks). A refactor that
+//  innocently adds `.trigger('change')` to a refresh path would silently
+//  remove every active lock the next time the panel auto-syncs (after
+//  CHAT_CHANGED, after a vectorization completes, after the WI tab
+//  click). The 2026-05-17 regression was a related variant.
+//
+//  Smoke test rather than a comprehensive proof: builds one synthetic
+//  own-persona lorebook collection, locks it to the current chat, enables
+//  autoSync, then calls each refresh function multiple times back-to-back
+//  and asserts that the test collection's lock state, autoSync flag,
+//  enabled flag, AND the chat_lock_index reverse map are byte-identical
+//  before and after. The functions ARE allowed to update
+//  `settings.enabled_world_info` — that's their job — so that field is
+//  snapshotted and restored separately rather than asserted against.
+//
+//  Pure metadata + DOM read/write, runs in every environment. Phases:
+//    1. refreshWIStatus() — lock + autoSync + chat_lock_index unchanged.
+//    2. refreshAutoSyncCheckbox(settings) — same assertion.
+//    3. Idempotency — call both 3× in a row, state still unchanged.
+
+test('TEST 019 — WI / AutoSync refresh smoke: refresh paths do not mutate locks', async () => {
+    const logs = await runTestInPage(async () => {
+        const TEST = 'TEST 019 [RefreshSmoke]';
+        const base = '/scripts/extensions/third-party/VectFox/';
+        const { refreshWIStatus, refreshAutoSyncCheckbox } = await import(base + 'ui/ui-manager.js');
+        const {
+            setCollectionMeta,
+            setCollectionLock,
+            removeCollectionLock,
+            setCollectionAutoSync,
+            isCollectionAutoSyncEnabled,
+            isCollectionLockedToChat,
+            isCollectionEnabled,
+            deleteCollectionMeta,
+        } = await import(base + 'core/collection-metadata.js');
+        const { registerCollection, unregisterCollection } = await import(base + 'core/collection-loader.js');
+        const { buildRegistryKey } = await import(base + 'core/collection-ids.js');
+        const { extension_settings } = await import('/scripts/extensions.js');
+
+        const ctx = window.SillyTavern?.getContext?.() ?? window.getContext?.() ?? {};
+        const settings = extension_settings?.vectfox || {};
+        const currentChatId = ctx?.chatId ? String(ctx.chatId) : null;
+        if (!currentChatId) {
+            console.error(`${TEST} [FAIL] No active chat — open a chat first`);
+            return;
+        }
+
+        // Derive persona handle — must match the stamp condition so the
+        // synthetic lorebook flips isOwn=true and surfaces in
+        // refreshWIStatus's `ownLorebookEntries` filter. Same shape as
+        // TEST 013 uses for its EventBase synthesis.
+        const personaHandle = (ctx?.name1 || 'user')
+            .normalize('NFC')
+            .toLowerCase()
+            .replace(/[^\p{L}\p{N}]+/gu, '_')
+            .replace(/^_|_$/g, '')
+            .substring(0, 30) || 'user';
+
+        const backend = (settings.vector_backend || 'standard').toLowerCase();
+        const ts = Date.now();
+        // Handle embedded in the ID itself so the legacy substring fallback
+        // also recognizes ownership even if creatorHandle meta drifts.
+        const collectionId  = `vf_lorebook_${backend}_${personaHandle}_playwright_test_019_refresh_smoke_${ts}`;
+        const registryKey   = buildRegistryKey(collectionId, settings);
+
+        // Snapshot of fields refreshes MUST NOT touch. JSON.stringify gives
+        // us a stable byte-comparable form for arrays.
+        const snapshot = () => ({
+            // The forward lock arrays inside meta.
+            lockedToChatIds: JSON.stringify(
+                extension_settings?.vectfox?.collections?.[registryKey]?.lockedToChatIds || []
+            ),
+            lockedToCharacterIds: JSON.stringify(
+                extension_settings?.vectfox?.collections?.[registryKey]?.lockedToCharacterIds || []
+            ),
+            // The reverse-index entry for our chat (registryKeys locked to currentChatId).
+            chatLockIndex: JSON.stringify(
+                (extension_settings?.vectfox?.chat_lock_index?.[currentChatId] || [])
+                    .slice().sort()
+            ),
+            autoSync: isCollectionAutoSyncEnabled(registryKey),
+            enabled:  isCollectionEnabled(registryKey),
+            // Boolean lock-presence check via the canonical getter so we
+            // catch shape changes that bypass the raw-array peek above.
+            isLockedToChat: isCollectionLockedToChat(registryKey, currentChatId),
+        });
+
+        // Snapshot+restore enabled_world_info — refreshes ARE allowed to
+        // mutate this field (that's the whole point of refreshWIStatus's
+        // _setWIEnabled helper). Save the original so we don't leak a
+        // mutated user setting after the test.
+        const originalEnabledWI = settings.enabled_world_info;
+
+        try {
+            registerCollection(registryKey);
+            setCollectionMeta(registryKey, {
+                creatorHandle: personaHandle,
+                sourceName: 'PW Test 019 Lorebook',
+                contentType: 'lorebook',
+            });
+            setCollectionLock(registryKey, currentChatId);
+            setCollectionAutoSync(registryKey, true);
+
+            // Verify the baseline took — otherwise the snapshot comparison
+            // below would be comparing two "lock missing" states and pass
+            // trivially.
+            if (!isCollectionLockedToChat(registryKey, currentChatId)) {
+                console.error(`${TEST} [FAIL] Baseline: setCollectionLock didn't take, can't assert refresh hygiene.`);
+                return;
+            }
+            if (isCollectionAutoSyncEnabled(registryKey) !== true) {
+                console.error(`${TEST} [FAIL] Baseline: setCollectionAutoSync(true) didn't take, can't assert refresh hygiene.`);
+                return;
+            }
+
+            const before = snapshot();
+            console.log(`${TEST} Baseline snapshot: ${JSON.stringify(before)}`);
+
+            const compare = (after, label) => {
+                const drift = [];
+                if (after.lockedToChatIds      !== before.lockedToChatIds)      drift.push(`lockedToChatIds:    ${before.lockedToChatIds} → ${after.lockedToChatIds}`);
+                if (after.lockedToCharacterIds !== before.lockedToCharacterIds) drift.push(`lockedToCharacterIds: ${before.lockedToCharacterIds} → ${after.lockedToCharacterIds}`);
+                if (after.chatLockIndex        !== before.chatLockIndex)        drift.push(`chat_lock_index[${currentChatId}]: ${before.chatLockIndex} → ${after.chatLockIndex}`);
+                if (after.autoSync             !== before.autoSync)             drift.push(`autoSync: ${before.autoSync} → ${after.autoSync}`);
+                if (after.enabled              !== before.enabled)              drift.push(`enabled: ${before.enabled} → ${after.enabled}`);
+                if (after.isLockedToChat       !== before.isLockedToChat)       drift.push(`isLockedToChat: ${before.isLockedToChat} → ${after.isLockedToChat}`);
+                if (drift.length) {
+                    console.error(`${TEST} [FAIL] ${label} mutated forbidden state:\n  - ${drift.join('\n  - ')}`);
+                    return false;
+                }
+                return true;
+            };
+
+            // ═══ Phase 1 — refreshWIStatus ═══
+            console.log(`${TEST} Phase 1: refreshWIStatus() should not mutate locks/autoSync/enabled for any collection`);
+            await refreshWIStatus();
+            const afterWI = snapshot();
+            if (!compare(afterWI, 'refreshWIStatus')) return;
+            console.log(`${TEST} Phase 1 ✓ refreshWIStatus is pure UI mirror — no lock state mutated`);
+
+            // ═══ Phase 2 — refreshAutoSyncCheckbox ═══
+            console.log(`${TEST} Phase 2: refreshAutoSyncCheckbox(settings) should not mutate locks/autoSync/enabled for any collection`);
+            await refreshAutoSyncCheckbox(settings);
+            const afterAS = snapshot();
+            if (!compare(afterAS, 'refreshAutoSyncCheckbox')) return;
+            console.log(`${TEST} Phase 2 ✓ refreshAutoSyncCheckbox is pure UI mirror — no lock state mutated`);
+
+            // ═══ Phase 3 — idempotency (3× back-to-back) ═══
+            console.log(`${TEST} Phase 3: 3× back-to-back calls of both refreshes — state still unchanged at the end`);
+            for (let i = 0; i < 3; i++) {
+                await refreshWIStatus();
+                await refreshAutoSyncCheckbox(settings);
+            }
+            const afterRepeat = snapshot();
+            if (!compare(afterRepeat, 'idempotency loop (3×)')) return;
+            console.log(`${TEST} Phase 3 ✓ 3× idempotency: state byte-identical after 6 total refresh calls`);
+
+            console.log(`${TEST} [PASS] WI & AutoSync refresh paths are pure UI mirrors — locks, character locks, chat_lock_index, autoSync, and enabled flags are all unchanged after refresh calls. The .trigger('change') footgun is not present.`);
+        } finally {
+            try {
+                try { removeCollectionLock(registryKey, currentChatId); } catch {}
+                try { setCollectionAutoSync(registryKey, false); } catch {}
+                try { deleteCollectionMeta(registryKey); } catch {}
+                try { unregisterCollection(registryKey); } catch {}
+                try { unregisterCollection(collectionId); } catch {}
+                // Restore enabled_world_info — refreshWIStatus may have
+                // toggled it based on our test collection's activation.
+                if (extension_settings?.vectfox && originalEnabledWI !== undefined) {
+                    if (extension_settings.vectfox.enabled_world_info !== originalEnabledWI) {
+                        extension_settings.vectfox.enabled_world_info = originalEnabledWI;
+                        console.log(`${TEST} Restored settings.enabled_world_info to ${originalEnabledWI}`);
+                    }
+                }
+                console.log(`${TEST} Cleanup ✓ lock removed, autoSync cleared, meta deleted, registration unregistered, enabled_world_info restored`);
             } catch (cleanupErr) {
                 console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`);
             }

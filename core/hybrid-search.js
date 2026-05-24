@@ -198,7 +198,7 @@ async function clientSideHybridSearch(backend, collectionId, searchText, topK, s
             const mod = await import('./corpus-stats.js');
             corpusStats = await mod.getCorpusStats(collectionId, settings);
             if (!corpusStats && debugLog) {
-                console.warn(`[HybridSearch] Corpus-IDF disabled for ${collectionId}: getCorpusStats returned null. Falling back to local-IDF BM25.`);
+                console.warn(`[HybridSearch] Corpus-IDF disabled for ${collectionId}: getCorpusStats returned null (plugin unavailable or /chunks/list failed). Falling back to local-IDF BM25.`);
             }
         } catch (err) {
             console.warn(`[HybridSearch] Corpus-IDF unavailable for ${collectionId}, falling back to local-IDF BM25. Reason: ${err?.message || err}`);

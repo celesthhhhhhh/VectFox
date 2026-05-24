@@ -18,7 +18,7 @@ The two paths never see each other's content. There is no overlap in collection 
 
 - `vectfox_eventbase_*` → **always** skipped by the standard pipeline (EventBase pipeline owns them exclusively)
 - `vectfox_archiveevent_*` → **always** skipped by the standard pipeline (EventBase pipeline owns them exclusively)
-- `vectfox_chat_*` → **always** skipped by the standard pipeline (legacy chunk-based chat collections; no longer created since the EventBase toggle was removed, but pre-existing ones are excluded unconditionally)
+- `vectfox_chat_*` — **no longer minted.** The `VECTFOX_CHAT` prefix constant was removed by the 2026-04 cleanup (`plans/executed/delete-dead-chunk-chat-and-temporal-decay.md`), so no code path creates these. The 2026-05 cleanup (`plans/remove-chunk-chat.md`) deleted the last preview-only consumer (`prepareChatContent`). No production user has `vf_chat_*` data — the product shipped EventBase-only for chat. `gatherCollectionsToQuery` has no explicit `vf_chat_*` exclusion (the prefix constant doesn't exist to check against), but the absence is moot.
 
 ### Archive Chat History — Two content paths
 

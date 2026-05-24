@@ -2256,6 +2256,22 @@ async function previewChunks() {
         return;
     }
 
+    // EventBase is the exclusive chat pipeline — chat content is processed
+    // by LLM event extraction at vectorize time, not chunked synchronously,
+    // so there's nothing meaningful to preview. Mirrors the production gate
+    // at startVectorization() so chat never reaches the chunk-prepare path.
+    if (currentContentType === 'chat') {
+        $('.vectfox-cv-preview-section').show();
+        $('#vectfox_cv_preview_content').html(
+            '<div class="vectfox-cv-info">' +
+            'Chat content is processed by EventBase (LLM event extraction) ' +
+            'rather than chunked. Click <strong>Vectorize</strong> to run extraction — ' +
+            'there is no synchronous chunk preview for chat.' +
+            '</div>'
+        );
+        return;
+    }
+
     // Show preview section
     $('.vectfox-cv-preview-section').show();
     const container = $('#vectfox_cv_preview_content');

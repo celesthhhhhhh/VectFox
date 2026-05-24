@@ -330,25 +330,9 @@ export function cleanText(text) {
     return result;
 }
 
-/**
- * Cleans an array of messages
- * @param {Array<object>} messages - Messages with .mes or .text property
- * @returns {Array<object>} Messages with cleaned text
- */
-export function cleanMessages(messages) {
-    if (!Array.isArray(messages)) return messages;
-
-    return messages.map(msg => {
-        const cleaned = { ...msg };
-        if (cleaned.mes) {
-            cleaned.mes = cleanText(cleaned.mes);
-        }
-        if (cleaned.text) {
-            cleaned.text = cleanText(cleaned.text);
-        }
-        return cleaned;
-    });
-}
+// cleanMessages removed 2026-05-24 — its only consumer was prepareChatContent
+// in content-vectorization.js, which is itself gone. EventBase's per-message
+// cleaning happens inline in eventbase-extractor.js via cleanText() directly.
 
 // ============================================================================
 // CUSTOM PATTERN MANAGEMENT

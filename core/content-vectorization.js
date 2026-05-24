@@ -26,7 +26,7 @@ import {
     getBackendFromCollectionId,
 } from './collection-ids.js';
 import { extractLorebookKeywords, extractTextKeywords, extractChatKeywords, extractBM25Keywords, EXTRACTION_LEVELS, DEFAULT_EXTRACTION_LEVEL, DEFAULT_BASE_WEIGHT } from './keyword-boost.js';
-import { cleanText, cleanContentOrNull, cleanMessages } from './text-cleaning.js';
+import { cleanText, cleanContentOrNull } from './text-cleaning.js';
 import { prepareLorebookContent } from './lorebook-content-preparer.js';
 import { progressTracker } from '../ui/progress-tracker.js';
 import { extension_settings, getContext } from '../../../../extensions.js';
@@ -486,8 +486,12 @@ async function prepareContent(contentType, rawContent, settings, startFromMessag
         case 'character':
             return prepareCharacterContent(rawContent, settings);
 
-        case 'chat':
-            return prepareChatContent(rawContent, settings, startFromMessage);
+        // 'chat' case removed 2026-05-24 — chat history is exclusively
+        // processed by EventBase (LLM event extraction), not chunked.
+        // The production gates in ui/content-vectorizer.js intercept chat
+        // before any code path can reach this dispatcher with that type.
+        // The defensive tripwire in generateCollectionId() below still
+        // throws if someone bypasses both gates manually.
 
         case 'url':
             return prepareUrlContent(rawContent, settings);
@@ -562,75 +566,13 @@ function prepareCharacterContent(rawContent, settings) {
     return { text: combined, type: 'combined', character: character };
 }
 
-/**
- * Prepares chat content for chunking
- * Maps to the unified chunking strategies in chunking.js
- */
-function prepareChatContent(rawContent, settings, startFromMessage = 1) {
-    const messages = rawContent.messages || rawContent.content;
-
-    if (!Array.isArray(messages)) {
-        return { text: cleanText(String(messages)), type: 'text' };
-    }
-
-    // Filter out system messages and empty messages
-    let validMessages = messages.filter(m => m.mes && !m.is_system);
-
-    // Apply start-from slice (1-based: startFromMessage=1 means all, =2000 means skip first 1999)
-    if (startFromMessage > 1) {
-        const sliceIdx = Math.min(startFromMessage - 1, validMessages.length);
-        console.log(`VectFox: Start-from message ${startFromMessage} — skipping first ${sliceIdx} messages, ${validMessages.length - sliceIdx} remaining`);
-        validMessages = validMessages.slice(sliceIdx);
-    }
-
-    // Apply text cleaning to messages
-    const cleanedMessages = cleanMessages(validMessages);
-
-    // Normalize messages to have consistent properties for chunking.js
-    const normalizedMessages = cleanedMessages.map((m, idx) => ({
-        text: m.mes,
-        mes: m.mes,
-        is_user: m.is_user,
-        name: m.name,
-        index: idx,
-        id: m.send_date || m.id || idx,
-    }));
-
-    // For per_message strategy - return array of messages for chunking.js
-    if (settings.strategy === 'per_message') {
-        return {
-            text: normalizedMessages,
-            type: 'messages',
-            messages: validMessages,
-        };
-    }
-
-    // For conversation_turns strategy - return array for chunking.js to pair
-    if (settings.strategy === 'conversation_turns') {
-        return {
-            text: normalizedMessages,
-            type: 'messages',
-            messages: validMessages,
-        };
-    }
-
-    // For message_batch strategy - return array for chunking.js to batch
-    if (settings.strategy === 'message_batch') {
-        return {
-            text: normalizedMessages,
-            type: 'messages',
-            messages: validMessages,
-        };
-    }
-
-    // For adaptive or other text strategies - combine into single text
-    const combined = cleanedMessages.map(m => {
-        const speaker = m.is_user ? 'User' : (m.name || 'Character');
-        return `[${speaker}]: ${m.mes}`;
-    }).join('\n\n');
-
-    return { text: combined, type: 'combined', messages: cleanedMessages };
-}
+// prepareChatContent removed 2026-05-24 — chat history is exclusively
+// processed by EventBase (see eventbase-workflow.js::runEventBaseIngestion).
+// All previous chunking strategies (per_message / conversation_turns /
+// message_batch / adaptive) are unreachable from production code paths.
+// The dispatcher case above is gone; the defensive tripwire in
+// generateCollectionId() further down still throws if anyone bypasses
+// both gates by modifying source manually.
 
 /**
  * Prepares URL/webpage content

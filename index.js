@@ -52,12 +52,12 @@ const defaultSettings = {
     qdrant_host: 'localhost',
     qdrant_port: 6333,
     qdrant_url: '',
-    qdrant_api_key: '',
+    qdrant_api_key: '', // Legacy plaintext slot. Post-2026-05-24 H-1 phase 2: new saves go to ST secret_state slot 'qdrant_api_key'; migrateLegacyApiKeys() moves existing plaintext on first load and clears this field. Reader: core/api-keys.js::getQdrantApiKey
     qdrant_use_cloud: false,
     qdrant_multitenancy: false, // Use single collection with content_type field instead of separate collections
     ollama_alt_endpoint_url: '',
     ollama_use_alt_endpoint: false,
-    ollama_api_key: '',
+    ollama_api_key: '', // Legacy plaintext slot. Post-2026-05-24 H-1 phase 2: new saves go to ST secret_state slot 'ollama_api_key'; migrateLegacyApiKeys() moves existing plaintext on first load and clears this field. Reader: core/api-keys.js::getOllamaApiKey
     vllm_alt_endpoint_url: '',
     vllm_use_alt_endpoint: false,
     rate_limit_calls: 60,
@@ -69,12 +69,12 @@ const defaultSettings = {
     openai_model: 'text-embedding-ada-002',
     electronhub_model: 'text-embedding-3-small',
     openrouter_model: 'openai/text-embedding-3-large',
-    openrouter_api_key: '', // Stored here so the Choose button can send auth; also written to ST secrets for actual embedding calls
+    openrouter_api_key: '', // Legacy plaintext slot. Post-2026-05-24 H-1 phase 2: writes go to ST secret_state slot SECRET_KEYS.OPENROUTER (ST's shared OpenRouter slot — same key ST itself uses for chat completion). migrateLegacyApiKeys() moves existing plaintext to SECRET_KEYS.OPENROUTER on first load (only if that slot is empty — won't clobber an existing ST-side value) and always clears this field. Reader: core/api-keys.js::getEmbeddingOpenRouterKey
     cohere_model: 'embed-english-v3.0',
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
     vllm_model: '',
-    vllm_api_key: '', // Stored here since custom keys aren't returned by ST's readSecretState()
+    vllm_api_key: '', // Legacy plaintext slot. Post-2026-05-24 H-1 phase 2: new saves go to ST secret_state slot 'vllm_api_key' (embedding side; SEPARATE from 'summarize_vllm_api_key' for summarization). migrateLegacyApiKeys() moves existing plaintext on first load and clears this field. Reader: core/api-keys.js::getVllmApiKey. The previous "custom keys aren't returned by readSecretState()" comment was a defensive assumption; verify on your install via DevTools `Object.keys(secret_state)` if you suspect the migration isn't round-tripping.
     webllm_model: '',
     google_model: 'text-embedding-005',
     bananabread_rerank: false,

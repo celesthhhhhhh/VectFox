@@ -18,10 +18,17 @@ import {
     getSummarizeVllmKey,
     getAgenticOpenRouterKey,
     getAgenticVllmKey,
+    getEmbeddingOpenRouterKey,
+    getQdrantApiKey,
+    getOllamaApiKey,
+    getVllmApiKey,
     SUMMARIZE_OPENROUTER_SECRET_SLOT,
     SUMMARIZE_VLLM_SECRET_SLOT,
     AGENTIC_OPENROUTER_SECRET_SLOT,
     AGENTIC_VLLM_SECRET_SLOT,
+    QDRANT_API_KEY_SECRET_SLOT,
+    OLLAMA_API_KEY_SECRET_SLOT,
+    VLLM_API_KEY_SECRET_SLOT,
 } from '../core/api-keys.js';
 import { getWebLlmProvider as getSharedWebLlmProvider } from '../providers/webllm.js';
 import { openVisualizer } from './chunk-visualizer.js';
@@ -2617,13 +2624,40 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    $('#VectFox_qdrant_api_key')
-        .val(settings.qdrant_api_key || '')
-        .on('input', function() {
-            settings.qdrant_api_key = String($(this).val());
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-        });
+    // Qdrant API key — stored in ST secret_state (H-1 phase 2 — 2026-05-24).
+    // Converted from the per-keystroke `on('input')` save pattern to the
+    // masked-paste pattern (same as OpenRouter/vLLM keys): user pastes,
+    // we writeSecret on blur (`change`), clear the input, show masked
+    // placeholder. Per-keystroke writes to ST secrets would hammer the
+    // disk; one write per key entry is enough.
+    const updateQdrantKeyDisplay = () => {
+        const savedKey = getQdrantApiKey(settings);
+        if (savedKey) {
+            const masked = savedKey.length > 4
+                ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
+                : '*'.repeat(savedKey.length);
+            $('#VectFox_qdrant_api_key').attr('placeholder', `Key saved: ${masked}`);
+        } else {
+            $('#VectFox_qdrant_api_key').attr('placeholder', 'Your Qdrant Cloud API key');
+        }
+    };
+    updateQdrantKeyDisplay();
+    $('#VectFox_qdrant_api_key').on('change', async function() {
+        const value = String($(this).val()).trim();
+        if (value) {
+            try {
+                await writeSecret(QDRANT_API_KEY_SECRET_SLOT, value);
+                await readSecretState();
+                toastr.success('Qdrant API key saved (ST secrets)');
+            } catch (err) {
+                console.error('[VectFox] writeSecret(QDRANT_API_KEY_SECRET_SLOT) failed:', err);
+                toastr.error('Failed to save Qdrant key — see console');
+                return;
+            }
+            $(this).val('');
+            updateQdrantKeyDisplay();
+        }
+    });
 
     // Qdrant multitenancy toggle
     $('#VectFox_qdrant_multitenancy')
@@ -3298,20 +3332,35 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // Ollama API key
-    $('#VectFox_ollama_api_key')
-        .val(settings.ollama_api_key ? '••••••••' : '')
-        .attr('placeholder', settings.ollama_api_key ? '••••••••' : 'Leave blank for local deployments')
-        .on('change', function() {
-            const value = String($(this).val()).trim();
-            if (value && value !== '••••••••') {
-                settings.ollama_api_key = value;
-                Object.assign(extension_settings.vectfox, settings);
-                saveSettingsDebounced();
-                $(this).val('••••••••').attr('placeholder', '••••••••');
-                toastr.success('Ollama API key saved');
+    // Ollama API key — stored in ST secret_state (H-1 phase 2 — 2026-05-24)
+    const updateOllamaKeyDisplay = () => {
+        const savedKey = getOllamaApiKey(settings);
+        if (savedKey) {
+            const masked = savedKey.length > 4
+                ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
+                : '*'.repeat(savedKey.length);
+            $('#VectFox_ollama_api_key').attr('placeholder', `Key saved: ${masked}`);
+        } else {
+            $('#VectFox_ollama_api_key').attr('placeholder', 'Leave blank for local deployments');
+        }
+    };
+    updateOllamaKeyDisplay();
+    $('#VectFox_ollama_api_key').on('change', async function() {
+        const value = String($(this).val()).trim();
+        if (value) {
+            try {
+                await writeSecret(OLLAMA_API_KEY_SECRET_SLOT, value);
+                await readSecretState();
+                toastr.success('Ollama API key saved (ST secrets)');
+            } catch (err) {
+                console.error('[VectFox] writeSecret(OLLAMA_API_KEY_SECRET_SLOT) failed:', err);
+                toastr.error('Failed to save Ollama key — see console');
+                return;
             }
-        });
+            $(this).val('');
+            updateOllamaKeyDisplay();
+        }
+    });
 
     // vLLM alternative endpoint
     $('#VectFox_vllm_use_alt_endpoint')
@@ -3655,20 +3704,36 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // vLLM API key (stored in extension settings, not ST secrets)
-    $('#VectFox_vllm_api_key')
-        .val(settings.vllm_api_key ? '••••••••' : '')
-        .attr('placeholder', settings.vllm_api_key ? '••••••••' : 'Leave blank for local / no-auth deployments')
-        .on('change', function() {
-            const value = String($(this).val()).trim();
-            if (value && value !== '••••••••') {
-                settings.vllm_api_key = value;
-                Object.assign(extension_settings.vectfox, settings);
-                saveSettingsDebounced();
-                $(this).val('••••••••').attr('placeholder', '••••••••');
-                toastr.success('vLLM API key saved');
+    // vLLM API key (embedding side) — stored in ST secret_state (H-1 phase 2 — 2026-05-24)
+    // Distinct from the SUMMARIZE vLLM key (separate dedicated slot).
+    const updateVllmKeyDisplay = () => {
+        const savedKey = getVllmApiKey(settings);
+        if (savedKey) {
+            const masked = savedKey.length > 4
+                ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
+                : '*'.repeat(savedKey.length);
+            $('#VectFox_vllm_api_key').attr('placeholder', `Key saved: ${masked}`);
+        } else {
+            $('#VectFox_vllm_api_key').attr('placeholder', 'Leave blank for local / no-auth deployments');
+        }
+    };
+    updateVllmKeyDisplay();
+    $('#VectFox_vllm_api_key').on('change', async function() {
+        const value = String($(this).val()).trim();
+        if (value) {
+            try {
+                await writeSecret(VLLM_API_KEY_SECRET_SLOT, value);
+                await readSecretState();
+                toastr.success('vLLM API key saved (ST secrets)');
+            } catch (err) {
+                console.error('[VectFox] writeSecret(VLLM_API_KEY_SECRET_SLOT) failed:', err);
+                toastr.error('Failed to save vLLM key — see console');
+                return;
             }
-        });
+            $(this).val('');
+            updateVllmKeyDisplay();
+        }
+    });
 
     // Google model
     $('#VectFox_google_model')
@@ -3702,7 +3767,12 @@ function bindSettingsEvents(settings, callbacks) {
         try {
             if (!_openrouterModelCache) {
                 const headers = { 'Content-Type': 'application/json' };
-                const apiKey = settings.openrouter_api_key;
+                // Reads from secret_state[SECRET_KEYS.OPENROUTER] (canonical)
+                // with legacy-plaintext fallback. Post H-1 phase 2 fix —
+                // the embedding write path no longer dual-stores to
+                // settings.openrouter_api_key, so reading from settings
+                // directly here would silently lose auth for fresh saves.
+                const apiKey = getEmbeddingOpenRouterKey(settings);
                 if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
                 // Embedding models use output_modalities=embeddings — not in the standard list
                 const [embResp, allResp] = await Promise.all([

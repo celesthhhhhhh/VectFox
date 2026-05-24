@@ -59,6 +59,20 @@ export const SUMMARIZE_VLLM_SECRET_SLOT = 'summarize_vllm_api_key';
 export const AGENTIC_OPENROUTER_SECRET_SLOT = 'agentic_retrieval_openrouter_api_key';
 export const AGENTIC_VLLM_SECRET_SLOT = 'agentic_retrieval_vllm_api_key';
 
+// Embedding-side keys (H-1 phase 2 — 2026-05-24). These are the keys the
+// embedding section's UI inputs save into, used by core-vector-api.js for
+// embedding generation and backends/qdrant.js for Qdrant Cloud auth.
+//
+// Note on OpenRouter: the embedding OpenRouter key uses ST core's
+// SECRET_KEYS.OPENROUTER slot (NOT a new VectFox-specific one) because
+// that's shared with ST itself — if the user changes their OpenRouter
+// key in ST's own settings, our embedding picks it up. Intentional.
+// So there's no NEW constant here for embedding OpenRouter; it's just
+// SECRET_KEYS.OPENROUTER imported from ST.
+export const QDRANT_API_KEY_SECRET_SLOT = 'qdrant_api_key';
+export const OLLAMA_API_KEY_SECRET_SLOT = 'ollama_api_key';
+export const VLLM_API_KEY_SECRET_SLOT = 'vllm_api_key';
+
 /**
  * Extract the actual key value from a `secret_state[slot]` entry.
  *
@@ -170,23 +184,124 @@ export function getAgenticVllmKey(settings) {
     return '';
 }
 
+// ─── Embedding-side key resolvers (H-1 phase 2 — 2026-05-24) ────────────
+
+/**
+ * Resolve the OpenRouter key used by the EMBEDDING section (Choose
+ * Models button + actual embedding API calls).
+ *
+ * Reads from ST core's shared OpenRouter slot — same key ST itself uses
+ * for chat completion. The legacy plaintext settings.openrouter_api_key
+ * fallback covers users who saved before the H-1 migration drained that
+ * field.
+ *
+ * Distinct from getSummarizeOpenRouterKey, which uses a VectFox-specific
+ * slot for summarization paths. A user CAN configure different keys for
+ * embedding vs summarization (different rate-limit tiers, separate
+ * accounts) by setting them separately in the UI; only the summarize
+ * side falls back to the embedding key when its own slot is empty.
+ *
+ * @param {object} [settings] - extension_settings.vectfox (for legacy fallback)
+ * @returns {string} key value or empty string
+ */
+export function getEmbeddingOpenRouterKey(settings) {
+    const fromSecrets = _readSecretValue(SECRET_KEYS.OPENROUTER);
+    if (fromSecrets) return fromSecrets;
+    if (settings?.openrouter_api_key) {
+        return settings.openrouter_api_key.trim();
+    }
+    return '';
+}
+
+/**
+ * Resolve the Qdrant API key (used for Qdrant Cloud auth at
+ * backends/qdrant.js::initialize).
+ *
+ * Returns empty string when not set — caller at qdrant.js historically
+ * uses `apiKey || null` to convert, so empty string is a safe sentinel.
+ *
+ * @param {object} [settings] - extension_settings.vectfox
+ * @returns {string} key value or empty string
+ */
+export function getQdrantApiKey(settings) {
+    const dedicated = _readSecretValue(QDRANT_API_KEY_SECRET_SLOT);
+    if (dedicated) return dedicated;
+    if (settings?.qdrant_api_key) {
+        return settings.qdrant_api_key.trim();
+    }
+    return '';
+}
+
+/**
+ * Resolve the Ollama API key (rarely needed — Ollama is typically local
+ * and unauthenticated, but the field exists for hosted-Ollama setups).
+ *
+ * @param {object} [settings] - extension_settings.vectfox
+ * @returns {string} key value or empty string
+ */
+export function getOllamaApiKey(settings) {
+    const dedicated = _readSecretValue(OLLAMA_API_KEY_SECRET_SLOT);
+    if (dedicated) return dedicated;
+    if (settings?.ollama_api_key) {
+        return settings.ollama_api_key.trim();
+    }
+    return '';
+}
+
+/**
+ * Resolve the vLLM API key used by the EMBEDDING section.
+ *
+ * Distinct from getSummarizeVllmKey (separate slot). Settings UI for
+ * embedding-side vLLM is at #VectFox_vllm_api_key; summarization-side
+ * vLLM is at #VectFox_summarize_vllm_apikey.
+ *
+ * @param {object} [settings] - extension_settings.vectfox
+ * @returns {string} key value or empty string
+ */
+export function getVllmApiKey(settings) {
+    const dedicated = _readSecretValue(VLLM_API_KEY_SECRET_SLOT);
+    if (dedicated) return dedicated;
+    if (settings?.vllm_api_key) {
+        return settings.vllm_api_key.trim();
+    }
+    return '';
+}
+
 /**
  * One-shot migration: copy any plaintext `*_api_key` values from
  * extension_settings.vectfox into ST's secret_state, then clear them
  * from settings.json so the plaintext copy stops persisting.
  *
- * Migrates four slots:
- *   - summarize_openrouter_api_key
- *   - summarize_vllm_api_key
- *   - agentic_retrieval_openrouter_api_key (AgentMode override)
- *   - agentic_retrieval_vllm_api_key (AgentMode override)
+ * Migrates eight slots (post phase-2 expansion 2026-05-24):
+ *   Summarize/AgentMode (phase 1):
+ *     - summarize_openrouter_api_key
+ *     - summarize_vllm_api_key
+ *     - agentic_retrieval_openrouter_api_key (AgentMode override)
+ *     - agentic_retrieval_vllm_api_key (AgentMode override)
+ *   Embedding-side (phase 2):
+ *     - openrouter_api_key → SECRET_KEYS.OPENROUTER (ST shared slot)
+ *     - qdrant_api_key → custom slot 'qdrant_api_key'
+ *     - ollama_api_key → custom slot 'ollama_api_key'
+ *     - vllm_api_key → custom slot 'vllm_api_key'
+ *
+ * Note on openrouter_api_key (embedding): the destination slot is
+ * SECRET_KEYS.OPENROUTER — the SAME slot ST itself uses. If the user
+ * already had that slot populated via ST's own UI or via the embedding
+ * section's pre-fix writeSecret call, the migration's destination is
+ * "already set". To avoid overwriting a more-canonical value, we ONLY
+ * write the legacy plaintext to SECRET_KEYS.OPENROUTER when that slot
+ * is currently empty. Either way, the legacy plaintext is cleared from
+ * settings.json afterwards.
+ *
+ * BananaBread is INTENTIONALLY excluded — the provider has been
+ * unselectable from the UI since day one (entry commented out in
+ * EMBEDDING_PROVIDERS at providers.js:31), so no shipped user can ever
+ * have a bananabread_api_key set in production. Leaving the existing
+ * dual-storage code alive as zombie matches the "deprecated provider"
+ * scope. See plans/review-fix.md §H-1 phase-2 for the full reasoning.
  *
  * Called once during index.js init. Idempotent — subsequent calls see
  * empty settings fields and do nothing.
- *
- * Does NOT migrate ST core's SECRET_KEYS.OPENROUTER (the embedding key) —
- * that slot was already correctly stored by the embedding section's
- * existing writeSecret() flow.
  *
  * @returns {Promise<{migrated: number, slots: string[]}>}
  */
@@ -194,13 +309,15 @@ export async function migrateLegacyApiKeys() {
     const vf = extension_settings?.vectfox;
     if (!vf) return { migrated: 0, slots: [] };
 
-    // Pairs of (legacy plaintext field on extension_settings.vectfox,
-    // dedicated secret_state slot name).
+    // Standard migration pairs: (legacy plaintext field, dedicated slot name).
     const MIGRATIONS = [
         ['summarize_openrouter_api_key', SUMMARIZE_OPENROUTER_SECRET_SLOT],
         ['summarize_vllm_api_key',       SUMMARIZE_VLLM_SECRET_SLOT],
         ['agentic_retrieval_openrouter_api_key', AGENTIC_OPENROUTER_SECRET_SLOT],
         ['agentic_retrieval_vllm_api_key',       AGENTIC_VLLM_SECRET_SLOT],
+        ['qdrant_api_key', QDRANT_API_KEY_SECRET_SLOT],
+        ['ollama_api_key', OLLAMA_API_KEY_SECRET_SLOT],
+        ['vllm_api_key',   VLLM_API_KEY_SECRET_SLOT],
     ];
 
     const moved = [];
@@ -214,6 +331,24 @@ export async function migrateLegacyApiKeys() {
         } catch (err) {
             console.warn(`[VectFox] Failed to migrate ${slot}:`, err?.message || err);
         }
+    }
+
+    // Special-case migration for embedding openrouter_api_key → SECRET_KEYS.OPENROUTER.
+    // The destination slot is shared with ST; only write if it's currently empty
+    // (don't clobber a value the user set through ST's own UI or via our pre-fix
+    // writeSecret call). The legacy plaintext is always cleared regardless.
+    const legacyOR = vf.openrouter_api_key;
+    if (typeof legacyOR === 'string' && legacyOR.trim().length > 0) {
+        const existingInSlot = _readSecretValue(SECRET_KEYS.OPENROUTER);
+        if (!existingInSlot) {
+            try {
+                await writeSecret(SECRET_KEYS.OPENROUTER, legacyOR.trim());
+                moved.push(SECRET_KEYS.OPENROUTER);
+            } catch (err) {
+                console.warn(`[VectFox] Failed to migrate openrouter_api_key → SECRET_KEYS.OPENROUTER:`, err?.message || err);
+            }
+        }
+        vf.openrouter_api_key = '';
     }
 
     if (moved.length > 0) {

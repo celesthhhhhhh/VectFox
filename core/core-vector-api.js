@@ -26,6 +26,7 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { extension_settings, modules } from '../../../../extensions.js';
 import { secret_state } from '../../../../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
+import { getOllamaApiKey, getVllmApiKey } from './api-keys.js';
 import { oai_settings } from '../../../../openai.js';
 import { isWebLlmSupported } from '../../../shared.js';
 import { getWebLlmProvider } from '../providers/webllm.js';
@@ -220,7 +221,10 @@ export function getVectorsRequestBody(args = {}, settings) {
             body.model = settings.ollama_model;
             body.apiUrl = settings.ollama_use_alt_endpoint ? settings.ollama_alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
             body.keep = !!settings.ollama_keep;
-            if (settings.ollama_api_key) body.apiKey = settings.ollama_api_key;
+            {
+                const ollamaKey = getOllamaApiKey(settings);
+                if (ollamaKey) body.apiKey = ollamaKey;
+            }
             break;
         case 'vllm':
             body.apiUrl = (settings.vllm_use_alt_endpoint ? settings.vllm_alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.VLLM])
@@ -228,7 +232,10 @@ export function getVectorsRequestBody(args = {}, settings) {
                 .replace(/\/v1\/embeddings$/, '')
                 .replace(/\/embeddings$/, '');
             body.model = settings.vllm_model;
-            if (settings.vllm_api_key) body.apiKey = settings.vllm_api_key;
+            {
+                const vllmKey = getVllmApiKey(settings);
+                if (vllmKey) body.apiKey = vllmKey;
+            }
             break;
         // case 'extras': body.extrasUrl = extension_settings.apiUrl; body.extrasKey = extension_settings.apiKey; break;
         // case 'electronhub': body.model = settings.electronhub_model; break;

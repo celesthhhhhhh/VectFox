@@ -33,6 +33,7 @@ import { VectorBackend } from './backend-interface.js';
 import { getModelFromSettings } from '../core/providers.js';
 import { VECTOR_LIST_LIMIT } from '../core/constants.js';
 import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
+import { getQdrantApiKey, getOllamaApiKey } from '../core/api-keys.js';
 
 const BACKEND_TYPE = 'qdrant';
 
@@ -65,7 +66,10 @@ function getPluginProviderParams(settings) {
                 ? settings.ollama_alt_endpoint_url
                 : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
             params.keep = !!settings.ollama_keep;
-            if (settings.ollama_api_key) params.apiKey = settings.ollama_api_key;
+            {
+                const ollamaKey = getOllamaApiKey(settings);
+                if (ollamaKey) params.apiKey = ollamaKey;
+            }
             break;
         case 'vllm':
             params.apiUrl = (settings.vllm_use_alt_endpoint
@@ -109,7 +113,7 @@ export class QdrantBackend extends VectorBackend {
             // Cloud mode: use URL and API key
             config = {
                 url: settings.qdrant_url || null,
-                apiKey: settings.qdrant_api_key || null,
+                apiKey: getQdrantApiKey(settings) || null,
                 // Explicitly clear local settings to prevent conflicts
                 host: null,
                 port: null,

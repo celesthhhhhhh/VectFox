@@ -15,7 +15,7 @@
  * ============================================================================
  */
 
-import { getOpenRouterApiKey, getVllmApiKey } from './api-keys.js';
+import { getOpenRouterApiKey, getCustomApiKey } from './api-keys.js';
 import { getDefaultSummarizePrompt } from './prompts-i18n.js';
 import { getRequestHeaders } from '../../../../../script.js';
 
@@ -96,7 +96,10 @@ export function getSummarizationConfigFingerprint(settings = {}) {
 
     if (provider === 'vllm') {
         const url = (settings?.summarize_vllm_url || '').trim();
-        const key = getVllmApiKey(settings);
+        // Key now lives in SECRET_KEYS.CUSTOM (masked client-side). Fingerprint
+        // uses the masked-value length + boundary chars — still deterministic for
+        // detecting key-rotation, never logs the secret.
+        const key = getCustomApiKey(settings);
         const keySig = key ? `${key.length}:${key.slice(0, 2)}:${key.slice(-2)}` : 'missing';
         return `vllm|${url}|${keySig}`;
     }
@@ -275,23 +278,41 @@ export function buildVllmChatCompletionsUrl(baseUrl) {
 }
 
 async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS, timeoutMs = DEFAULT_TIMEOUT_MS) {
+    // Routes through ST's chat-completions proxy with `chat_completion_source:
+    // 'custom'` — ST's server reads the real key from SECRET_KEYS.CUSTOM and
+    // forwards to settings.summarize_vllm_url. Same pattern as _callOpenRouter
+    // above. The function name is kept for compat with the provider-dispatch
+    // switch; the wire is no longer a direct fetch to vLLM.
     const baseUrl = (settings?.summarize_vllm_url || '').trim();
     if (!baseUrl) {
         throw new SummarizationFatalError(
-            'vLLM summarization URL not configured.',
+            'vLLM URL not configured.',
             'vllm',
             'missing_url'
         );
     }
 
-    const headers = { 'Content-Type': 'application/json' };
-    const apiKey = getVllmApiKey(settings);
-    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    // Presence-only check on the masked key (same caveat as _callOpenRouter:
+    // _readSecretValue returns the masked form). Real key lives server-side.
+    const apiKey = getCustomApiKey(settings);
+    if (!apiKey) {
+        throw new SummarizationFatalError(
+            'vLLM / Custom OpenAI-compatible API key not configured. Enter it in Summarize Before Store settings.',
+            'vllm',
+            'missing_api_key'
+        );
+    }
 
-    const response = await fetch(buildVllmChatCompletionsUrl(baseUrl), {
+    const body = {
+        ..._buildBody(prompt, model, maxTokens),
+        chat_completion_source: 'custom',
+        custom_url: baseUrl,
+    };
+
+    const response = await fetch('/api/backends/chat-completions/generate', {
         method: 'POST',
-        headers,
-        body: JSON.stringify(_buildBody(prompt, model, maxTokens)),
+        headers: getRequestHeaders(),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
     });
 
@@ -299,7 +320,7 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
         const errText = await response.text().catch(() => response.statusText);
         if (response.status === 401 || response.status === 403) {
             throw new SummarizationFatalError(
-                `vLLM authentication failed (${response.status}). Check your API key.`,
+                `vLLM authentication failed (${response.status}). Check your API key in Summarize Before Store settings.`,
                 'vllm',
                 'invalid_api_key'
             );
@@ -311,7 +332,5 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
     const summary = _extractReply(data);
     if (!summary) throw new Error('vLLM returned empty summary');
 
-    // don't remove 
-    //console.log(`[VectFox Summarizer] vLLM: ${prompt.length} chars prompt → ${summary.length} chars summary`);
     return summary;
 }

@@ -26,10 +26,10 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { extension_settings, modules } from '../../../../extensions.js';
 import { secret_state } from '../../../../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
-// One vLLM key for embedding + summarize + agentic — getVllmApiKey reads
-// the canonical settings.vllm_api_key. getOllamaApiKey reads its
-// canonical settings.ollama_api_key. Both plaintext per personal-use scope.
-import { getOllamaApiKey, getVllmApiKey } from './api-keys.js';
+// Embedding-side helpers. The vLLM embedding path no longer needs a client-
+// side apiKey value — ST's vector handler reads SECRET_KEYS.VLLM server-side.
+// Ollama still uses plaintext via getOllamaApiKey (no ST proxy for that).
+import { getOllamaApiKey } from './api-keys.js';
 import { oai_settings } from '../../../../openai.js';
 import { isWebLlmSupported } from '../../../shared.js';
 import { getWebLlmProvider } from '../providers/webllm.js';
@@ -235,10 +235,9 @@ export function getVectorsRequestBody(args = {}, settings) {
                 .replace(/\/v1\/embeddings$/, '')
                 .replace(/\/embeddings$/, '');
             body.model = settings.vllm_model;
-            {
-                const vllmKey = getVllmApiKey(settings);
-                if (vllmKey) body.apiKey = vllmKey;
-            }
+            // No apiKey passed: ST's vLLM embedding handler reads
+            // SECRET_KEYS.VLLM server-side. See backends/standard.js for the
+            // full rationale.
             break;
         // case 'extras': body.extrasUrl = extension_settings.apiUrl; body.extrasKey = extension_settings.apiKey; break;
         // case 'electronhub': body.model = settings.electronhub_model; break;

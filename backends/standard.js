@@ -74,7 +74,12 @@ function getProviderSpecificParams(settings, isQuery = false) {
             params.apiUrl = settings.use_alt_endpoint
                 ? settings.alt_endpoint_url
                 : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
-            if (settings.vllm_api_key) params.apiKey = settings.vllm_api_key;
+            // No apiKey passed: ST's vLLM embedding handler
+            // (src/vectors/vllm-vectors.js) reads SECRET_KEYS.VLLM server-side
+            // via setAdditionalHeadersByType — anything we set on params.apiKey
+            // is silently ignored. User configures the embedding key via ST's
+            // Text Completion → vLLM UI; chat key (separate slot) lives in
+            // SECRET_KEYS.CUSTOM after the 2026-05-26 migration.
             break;
 
         case 'bananabread':

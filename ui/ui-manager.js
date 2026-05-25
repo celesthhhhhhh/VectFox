@@ -15,7 +15,7 @@ import { extension_settings, openThirdPartyExtensionMenu, getContext } from '../
 import { writeSecret, SECRET_KEYS, secret_state, readSecretState } from '../../../../secrets.js';
 import {
     getOpenRouterApiKey,
-    getVllmApiKey,
+    getCustomApiKey,
     getQdrantApiKey,
     getOllamaApiKey,
 } from '../core/api-keys.js';
@@ -2209,10 +2209,19 @@ function bindSettingsEvents(settings, callbacks) {
                     toastr.error('Set the vLLM Base URL first.', 'vLLM not configured');
                     return;
                 }
-                const headers = {};
-                const apiKey = getVllmApiKey(settings);
-                if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-                const resp = await fetch(`${baseUrl}/v1/models`, { method: 'GET', headers });
+                // Route through ST's chat-completions /status endpoint, which
+                // fetches ${apiUrl}/models server-side using SECRET_KEYS.CUSTOM.
+                // Direct browser fetch with Bearer would 401 here because the
+                // key now lives in a masked secret slot (post-2026-05-26
+                // migration). Same proxy pattern as _callVLLM.
+                const resp = await fetch('/api/backends/chat-completions/status', {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({
+                        chat_completion_source: 'custom',
+                        custom_url: baseUrl,
+                    }),
+                });
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const data = await resp.json();
                 models = (data?.data || []).map(m => ({ id: m.id, label: m.id }));
@@ -2260,37 +2269,67 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // vLLM API key (summarize input) — writes to canonical settings.vllm_api_key
-    // 2026-05-25 architecture pivot: ONE vLLM key shared across
-    // embedding/summarize/agentic (no ST shared SECRET_KEYS slot for vLLM,
-    // and custom slots don't round-trip). All three UI inputs read/write
-    // the same settings.vllm_api_key plaintext field.
+    // vLLM API key (summarize input) — writes to SECRET_KEYS.CUSTOM
+    // 2026-05-26 architecture pivot: ONE vLLM key shared across
+    // summarize/agentic chat paths, stored in ST's well-known
+    // SECRET_KEYS.CUSTOM slot (same slot ST's own Chat Completion →
+    // Custom (OpenAI-compatible) source uses). Real key lives server-side;
+    // client only sees a masked placeholder. Chat-side calls route through
+    // ST's /api/backends/chat-completions/generate proxy with
+    // `chat_completion_source: 'custom'` — see core/api-keys.js for the
+    // full rationale and the migration history.
+    //
+    // Embedding side reads SECRET_KEYS.VLLM (separate ST slot) — user
+    // configures that key in ST's Text Completion → vLLM UI directly,
+    // not through VectFox. The two slots are intentionally separate so
+    // chat and embedding endpoints can use different credentials if the
+    // user wants.
     //
     // Cross-input refresh: each display function also listens for the
     // `vectfox:vllm-key-changed` custom event, so saving the key in any
-    // of the three inputs updates all three placeholders. Without this
-    // the sibling inputs would keep showing the previous key's mask until
-    // the page reloads.
+    // of the three inputs updates all three placeholders.
     const updateSummarizeVllmKeyDisplay = () => {
-        const savedKey = getVllmApiKey(settings);
+        const savedKey = getCustomApiKey(settings);
         if (savedKey) {
             const masked = savedKey.length > 4
                 ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
                 : '*'.repeat(savedKey.length);
             $('#VectFox_summarize_vllm_apikey').attr('placeholder', `Key saved: ${masked} (shared with Embedding + AgentMode)`);
         } else {
-            $('#VectFox_summarize_vllm_apikey').attr('placeholder', 'Paste vLLM key (shared with Embedding + AgentMode)');
+            $('#VectFox_summarize_vllm_apikey').attr('placeholder', 'Paste vLLM / Custom OpenAI-compatible key (shared with Embedding + AgentMode)');
         }
     };
     updateSummarizeVllmKeyDisplay();
     $(document).on('vectfox:vllm-key-changed', updateSummarizeVllmKeyDisplay);
-    $('#VectFox_summarize_vllm_apikey').on('change', function() {
+    $('#VectFox_summarize_vllm_apikey').on('change', async function() {
         const value = String($(this).val()).trim();
         if (value) {
-            settings.vllm_api_key = value;
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-            toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+            // Dual-write: CUSTOM (chat-side proxy) + VLLM (embedding-side
+            // proxy). One key, both slots. Either failure is non-fatal — toast
+            // the user which side didn't land so they can manually re-enter
+            // via ST's UI if needed.
+            const errors = [];
+            try {
+                await writeSecret(SECRET_KEYS.CUSTOM, value);
+            } catch (err) {
+                console.error('[VectFox] writeSecret(SECRET_KEYS.CUSTOM) failed:', err);
+                errors.push('chat-side (CUSTOM)');
+            }
+            try {
+                await writeSecret(SECRET_KEYS.VLLM, value);
+            } catch (err) {
+                console.error('[VectFox] writeSecret(SECRET_KEYS.VLLM) failed:', err);
+                errors.push('embedding-side (VLLM)');
+            }
+            await readSecretState();
+            if (errors.length === 0) {
+                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+            } else if (errors.length === 2) {
+                toastr.error('Failed to save vLLM key to either slot — see console');
+                return;
+            } else {
+                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
+            }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');
         }
@@ -2415,29 +2454,50 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // AgentMode vLLM input — writes to settings.vllm_api_key plaintext
-    // (same shared field as Embedding + Summarize inputs). Per the
-    // 2026-05-25 architecture pivot: ONE vLLM key everywhere.
+    // AgentMode vLLM input — writes to SECRET_KEYS.CUSTOM (shared with
+    // Summarize input). Same architecture as the Summarize input above:
+    // chat-side routes through ST's chat-completions proxy with
+    // `chat_completion_source: 'custom'`; embedding-side reads
+    // SECRET_KEYS.VLLM (ST's Text Completion vLLM slot) separately.
     const updateAgenticVllmKeyDisplay = () => {
-        const savedKey = getVllmApiKey(settings);
+        const savedKey = getCustomApiKey(settings);
         if (savedKey) {
             const masked = savedKey.length > 4
                 ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
                 : '*'.repeat(savedKey.length);
             $('#VectFox_agentic_vllm_apikey').attr('placeholder', `Key saved: ${masked} (shared with Embedding + Summarize)`);
         } else {
-            $('#VectFox_agentic_vllm_apikey').attr('placeholder', 'Paste vLLM key (shared with Embedding + Summarize)');
+            $('#VectFox_agentic_vllm_apikey').attr('placeholder', 'Paste vLLM / Custom OpenAI-compatible key (shared with Embedding + Summarize)');
         }
     };
     updateAgenticVllmKeyDisplay();
     $(document).on('vectfox:vllm-key-changed', updateAgenticVllmKeyDisplay);
-    $('#VectFox_agentic_vllm_apikey').on('change', function() {
+    $('#VectFox_agentic_vllm_apikey').on('change', async function() {
         const value = String($(this).val()).trim();
         if (value) {
-            settings.vllm_api_key = value;
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-            toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+            // Dual-write: same pattern as the summarize input above.
+            const errors = [];
+            try {
+                await writeSecret(SECRET_KEYS.CUSTOM, value);
+            } catch (err) {
+                console.error('[VectFox] writeSecret(SECRET_KEYS.CUSTOM) failed:', err);
+                errors.push('chat-side (CUSTOM)');
+            }
+            try {
+                await writeSecret(SECRET_KEYS.VLLM, value);
+            } catch (err) {
+                console.error('[VectFox] writeSecret(SECRET_KEYS.VLLM) failed:', err);
+                errors.push('embedding-side (VLLM)');
+            }
+            await readSecretState();
+            if (errors.length === 0) {
+                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+            } else if (errors.length === 2) {
+                toastr.error('Failed to save vLLM key to either slot — see console');
+                return;
+            } else {
+                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
+            }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');
         }
@@ -3725,11 +3785,12 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // vLLM API key (embedding input) — plaintext in settings.vllm_api_key
-    // Same shared field as Summarize + AgentMode vLLM inputs. One key
-    // across all three uses. Per personal/LAN deployment scope.
+    // vLLM API key (embedding input) — dual-write to SECRET_KEYS.CUSTOM
+    // (chat-side proxy) + SECRET_KEYS.VLLM (embedding-side proxy). Same
+    // pattern as the Summarize and AgentMode inputs above. One shared key,
+    // both ST slots. See core/api-keys.js header for the full rationale.
     const updateVllmKeyDisplay = () => {
-        const savedKey = getVllmApiKey(settings);
+        const savedKey = getCustomApiKey(settings);
         if (savedKey) {
             const masked = savedKey.length > 4
                 ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
@@ -3741,13 +3802,31 @@ function bindSettingsEvents(settings, callbacks) {
     };
     updateVllmKeyDisplay();
     $(document).on('vectfox:vllm-key-changed', updateVllmKeyDisplay);
-    $('#VectFox_vllm_api_key').on('change', function() {
+    $('#VectFox_vllm_api_key').on('change', async function() {
         const value = String($(this).val()).trim();
         if (value) {
-            settings.vllm_api_key = value;
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-            toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+            const errors = [];
+            try {
+                await writeSecret(SECRET_KEYS.CUSTOM, value);
+            } catch (err) {
+                console.error('[VectFox] writeSecret(SECRET_KEYS.CUSTOM) failed:', err);
+                errors.push('chat-side (CUSTOM)');
+            }
+            try {
+                await writeSecret(SECRET_KEYS.VLLM, value);
+            } catch (err) {
+                console.error('[VectFox] writeSecret(SECRET_KEYS.VLLM) failed:', err);
+                errors.push('embedding-side (VLLM)');
+            }
+            await readSecretState();
+            if (errors.length === 0) {
+                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+            } else if (errors.length === 2) {
+                toastr.error('Failed to save vLLM key to either slot — see console');
+                return;
+            } else {
+                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
+            }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');
         }

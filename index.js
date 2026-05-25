@@ -79,11 +79,13 @@ const defaultSettings = {
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
     vllm_model: '',
-    // vLLM key: lives in `settings.vllm_api_key` (plaintext) only when the
-    // user actually has a value — written by migrateLegacyApiKeys() during
-    // consolidation, or by UI handlers via writeApiKey-style helpers. Not in
-    // defaults for the same Object.assign-loop reason as openrouter above.
-    // Reader: core/api-keys.js::getVllmApiKey handles missing field gracefully.
+    // vLLM key: stored in ST's SECRET_KEYS.CUSTOM (chat-side, via
+    // chat_completion_source: 'custom' proxy) AND SECRET_KEYS.VLLM
+    // (embedding-side, via ST's vector handler). Dual-write from VectFox UI
+    // preserves the "one shared key" UX. NO plaintext field in settings.json
+    // post-2026-05-26. Migration drains any legacy `vllm_api_key` plaintext
+    // into both slots on first load. Reader: core/api-keys.js::getCustomApiKey
+    // (presence/masked-value indicator only; real key lives server-side).
     webllm_model: '',
     google_model: 'text-embedding-005',
     bananabread_rerank: false,
@@ -141,10 +143,12 @@ const defaultSettings = {
     // Summarization before vectorization
     summarize_provider: 'openrouter', // 'openrouter', 'vllm'
     // summarize_openrouter_api_key and summarize_vllm_api_key are NOT in
-    // defaults — they're legacy fields drained by migrateLegacyApiKeys() into
-    // SECRET_KEYS.OPENROUTER / settings.vllm_api_key respectively. Keeping them
-    // here would cause the same Object.assign re-introduction loop documented
-    // above on the embedding-side keys. Readers: core/api-keys.js helpers.
+    // defaults — they're legacy plaintext fields drained by
+    // migrateLegacyApiKeys() into SECRET_KEYS.OPENROUTER and
+    // SECRET_KEYS.CUSTOM (chat-side) + SECRET_KEYS.VLLM (embedding-side)
+    // respectively. Keeping them here would cause the same Object.assign
+    // re-introduction loop documented above on the embedding-side keys.
+    // Readers: core/api-keys.js helpers.
     summarize_model: '',              // Model ID for summarization (e.g. 'google/gemini-flash-1.5-8b')
     summarize_vllm_url: '',           // vLLM base URL for summarization (e.g. 'http://localhost:8000')
     summarize_prompt: '',             // Custom prompt template (empty = use built-in default)
@@ -261,8 +265,9 @@ const defaultSettings = {
     agentic_retrieval_model: '',                       // '' → inherit summarize_model
     // agentic_retrieval_openrouter_api_key and agentic_retrieval_vllm_api_key
     // are NOT in defaults — same Object.assign re-introduction reason as the
-    // other legacy *_api_key slots above. Migration drains them into the
-    // canonical SECRET_KEYS.OPENROUTER / settings.vllm_api_key slots.
+    // other legacy *_api_key slots above. Migration drains them into
+    // SECRET_KEYS.OPENROUTER and SECRET_KEYS.CUSTOM + SECRET_KEYS.VLLM
+    // (dual-write for vLLM, see embedding/chat split in api-keys.js header).
     agentic_retrieval_vllm_url: '',                    // '' → inherit summarize_vllm_url
     agentic_retrieval_chat_depth: 3,                   // # of past chat turns sent to planner (slider 1-10)
     agentic_retrieval_candidates_to_show: 12,          // Pre-search slice shown to planner (slider 5-20)

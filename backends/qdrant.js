@@ -78,7 +78,9 @@ function getPluginProviderParams(settings) {
                 ?.replace(/\/$/, '')
                 .replace(/\/v1\/embeddings$/, '')
                 .replace(/\/embeddings$/, '');
-            if (settings.vllm_api_key) params.apiKey = settings.vllm_api_key;
+            // No apiKey passed: ST's vLLM embedding handler reads
+            // SECRET_KEYS.VLLM server-side via setAdditionalHeadersByType.
+            // Same rationale as backends/standard.js — see comment there.
             break;
         // case 'llamacpp': params.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]; break;
         // case 'koboldcpp': params.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP]; break;

@@ -42,14 +42,36 @@
  *     (Embedding / LLM Summarization / AgentMode) write to the same slot
  *     via `writeSecret`, so setting the key in any of them is shared.
  *
- *   - vLLM (one key for embedding + summarize + agent):
- *     Stored as plaintext in `settings.vllm_api_key`. There's no ST
- *     well-known slot for vLLM (`SECRET_KEYS` has no VLLM entry), and
- *     custom slots don't work. Plaintext in settings.json is justified
- *     by the personal-use / LAN-only scope (see Doc/dev_helper.md §15).
+ *   - vLLM-style "Custom OpenAI-compatible" (one key for embedding +
+ *     summarize + agent):
+ *     Stored in ST's `SECRET_KEYS.CUSTOM` slot (`api_key_custom`). Same
+ *     masking behavior as OpenRouter — getCustomApiKey() returns the
+ *     masked string for presence-check only. Chat-side requests route
+ *     through `/api/backends/chat-completions/generate` with
+ *     `chat_completion_source: 'custom'` and `custom_url:
+ *     settings.vllm_url` in the body — ST's server reads the real key
+ *     via `readSecret(SECRET_KEYS.CUSTOM)` and forwards to the
+ *     user-specified endpoint. Embedding side relies on
+ *     `SECRET_KEYS.VLLM` (ST's dedicated vLLM Text Completion slot) via
+ *     ST's `/api/vector/insert` server-side header injection; the user
+ *     configures that key via ST's Text Completion → vLLM UI, NOT
+ *     through VectFox.
+ *
+ *     Pre-2026-05-26 the key lived in plaintext `settings.vllm_api_key`.
+ *     The header comment in this file used to claim no ST vLLM slot
+ *     existed and plaintext was justified by LAN scope — both wrong.
+ *     `SECRET_KEYS.VLLM` (`'api_key_vllm'`) exists at ST:secrets.js:22
+ *     but is non-EXPORTABLE (masked client-side), so we use the proxy
+ *     pattern same as OpenRouter. The migration drains the legacy
+ *     plaintext value into `SECRET_KEYS.CUSTOM` (don't-clobber) on
+ *     first load post-upgrade.
  *
  *   - qdrant_api_key, ollama_api_key:
- *     Stay as plaintext in settings.json. Same scope justification.
+ *     Stay as plaintext in settings.json. Same LAN-scope justification —
+ *     but actually verified this time: both are reads-only fields where
+ *     the client passes the value through to its respective backend; no
+ *     ST proxy involvement. Migration to secret_state would require
+ *     refactoring every read site to go through ST's proxy. Out of scope.
  *
  *   - bananabread_api_key:
  *     Untouched — the provider has been unselectable since day one
@@ -64,8 +86,10 @@
  *     UI). Always deletes the three legacy fields from settings.json.
  *   - Consolidates the three legacy vLLM slots
  *     (`summarize_vllm_api_key`, `agentic_retrieval_vllm_api_key`,
- *     `vllm_api_key`) into a single `vllm_api_key` plaintext field. The
- *     first non-empty value wins.
+ *     `vllm_api_key`) by draining the first non-empty value into
+ *     `SECRET_KEYS.CUSTOM` (don't-clobber) and deleting all three legacy
+ *     plaintext fields. After migration, the chat-side code paths read
+ *     the key server-side via ST's chat-completions proxy.
  *   - Idempotent: empty fields = no-op. Wrapped in try/catch — failures
  *     are non-fatal and don't lock users out of their keys.
  *
@@ -134,20 +158,30 @@ export function getOpenRouterApiKey(settings) {
 }
 
 /**
- * Resolve the vLLM API key. ONE key shared across embedding, summarize,
- * and agentic-retrieval paths.
+ * Resolve the Custom OpenAI-compatible API key — the slot VectFox uses
+ * for vLLM-style endpoints post-2026-05-26. RETURNS A MASKED VALUE,
+ * not the real key — same as `getOpenRouterApiKey`. Use for presence
+ * checks and placeholder masking only; chat-side calls route through
+ * ST's `/api/backends/chat-completions/generate` proxy with
+ * `chat_completion_source: 'custom'` where the server reads the real
+ * key via `readSecret(SECRET_KEYS.CUSTOM)`.
  *
- * Reads `settings.vllm_api_key` (plaintext in settings.json). No ST
- * `SECRET_KEYS` slot exists for vLLM; custom slots don't round-trip;
- * plaintext is justified by the personal/LAN deployment scope.
- *
- * @param {object} [settings] - extension_settings.vectfox
- * @returns {string} key value or empty string
+ * @param {object} [settings] - kept for signature compat; not read.
+ * @returns {string} masked value (presence indicator) or empty string
  */
-export function getVllmApiKey(settings) {
-    const v = settings?.vllm_api_key;
-    return (typeof v === 'string') ? v.trim() : '';
+export function getCustomApiKey(settings) {
+    return _readSecretValue(SECRET_KEYS.CUSTOM);
 }
+
+/**
+ * @deprecated Use {@link getCustomApiKey}. Kept as an alias for the
+ * transition period; both readers point at the same `SECRET_KEYS.CUSTOM`
+ * slot. Pre-2026-05-26 callers expected plaintext from
+ * `settings.vllm_api_key` — that field is migrated and deleted on first
+ * load post-upgrade. Remove this alias once all call sites are confirmed
+ * migrated.
+ */
+export const getVllmApiKey = getCustomApiKey;
 
 /**
  * Resolve the Qdrant API key. Plaintext storage.
@@ -238,11 +272,18 @@ export async function migrateLegacyApiKeys() {
         }
     }
 
-    // ─── vLLM consolidation ───
-    // First pick a winning value from any of the three legacy slots, then
-    // write to the canonical `vllm_api_key` plaintext field and drop the
-    // other two. If `vllm_api_key` itself wins, we still rewrite it to
-    // ensure it's the only field present.
+    // ─── vLLM → SECRET_KEYS.CUSTOM drain ───
+    // Pre-2026-05-26: VectFox stored the vLLM-style key plaintext in
+    // `settings.vllm_api_key` and 2 sibling legacy fields. The chat-side
+    // code did direct fetches with `Authorization: Bearer ${key}`.
+    // Post-refactor: chat-side routes through ST's chat-completions proxy
+    // with `chat_completion_source: 'custom'`, which reads the key from
+    // `SECRET_KEYS.CUSTOM` server-side. Drain the legacy plaintext value
+    // into that slot (first non-empty wins) and delete all three legacy
+    // plaintext fields. Don't-clobber rule: if the slot is already non-
+    // empty, leave it alone — user may have configured their main chat to
+    // use Custom OpenAI-compatible with a different value and we'd silently
+    // hijack it.
     const vllmLegacy = [
         'summarize_vllm_api_key',
         'agentic_retrieval_vllm_api_key',
@@ -260,10 +301,42 @@ export async function migrateLegacyApiKeys() {
         mutated = true;
     }
     if (vllmValue) {
-        vf.vllm_api_key = vllmValue;
-        moves.push(`vLLM → consolidated into settings.vllm_api_key (plaintext, single source)`);
-    }
+        // Dual-write: chat-side proxy reads SECRET_KEYS.CUSTOM; embedding-side
+        // proxy reads SECRET_KEYS.VLLM. Writing to both preserves the "one
+        // shared key" UX promise from pre-2026-05-26 while moving storage out
+        // of plaintext. Each write is don't-clobber so existing ST main-chat
+        // configs (Custom source) or existing ST vLLM Text Completion configs
+        // are left alone — users with intentional per-slot values keep them.
+        const existingCustom = _readSecretValue(SECRET_KEYS.CUSTOM);
+        if (!existingCustom) {
+            try {
+                await writeSecret(SECRET_KEYS.CUSTOM, vllmValue);
+                moves.push(`vLLM → wrote to SECRET_KEYS.CUSTOM (was empty)`);
+            } catch (err) {
+                console.warn('[VectFox migrate] writeSecret(SECRET_KEYS.CUSTOM) failed:', err?.message || err);
+                moves.push(`vLLM → writeSecret(SECRET_KEYS.CUSTOM) FAILED, chat-side key not migrated — re-enter via VectFox UI`);
+            }
+        } else {
+            const msg = `vLLM → SECRET_KEYS.CUSTOM already has a value (likely from ST main-chat config) — kept that one for chat-side. To override, clear ST's Custom OpenAI-compatible key and re-enter via VectFox UI.`;
+            console.warn(`[VectFox migrate] ${msg}`);
+            moves.push(msg);
+        }
 
+        const existingVllm = _readSecretValue(SECRET_KEYS.VLLM);
+        if (!existingVllm) {
+            try {
+                await writeSecret(SECRET_KEYS.VLLM, vllmValue);
+                moves.push(`vLLM → wrote to SECRET_KEYS.VLLM (was empty, used by embedding path)`);
+            } catch (err) {
+                console.warn('[VectFox migrate] writeSecret(SECRET_KEYS.VLLM) failed:', err?.message || err);
+                moves.push(`vLLM → writeSecret(SECRET_KEYS.VLLM) FAILED, embedding-side key not migrated — configure via ST's Text Completion → vLLM UI`);
+            }
+        } else {
+            const msg = `vLLM → SECRET_KEYS.VLLM already has a value (from ST Text Completion → vLLM config) — kept that one for embedding-side.`;
+            console.warn(`[VectFox migrate] ${msg}`);
+            moves.push(msg);
+        }
+    }
     if (mutated) {
         // saveSettingsDebounced flushes our deletions/consolidations to
         // settings.json. Without this, the in-memory changes don't reach
@@ -273,7 +346,7 @@ export async function migrateLegacyApiKeys() {
 
     if (moves.length > 0) {
         console.log(`[VectFox migrate] Migration complete:\n  - ${moves.join('\n  - ')}`);
-        // Refresh in-memory secret_state if we wrote OpenRouter
+        // Refresh in-memory secret_state if we wrote OpenRouter or CUSTOM
         try { await readSecretState(); } catch {}
     } else {
         console.log('[VectFox migrate] No legacy API-key fields found — nothing to migrate');

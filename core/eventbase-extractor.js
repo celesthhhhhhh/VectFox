@@ -11,8 +11,7 @@
  * ============================================================================
  */
 
-import { getOpenRouterApiKey, getVllmApiKey } from './api-keys.js';
-import { buildVllmChatCompletionsUrl } from './summarizer.js';
+import { getOpenRouterApiKey, getCustomApiKey } from './api-keys.js';
 import { getRequestHeaders } from '../../../../../script.js';
 import {
     EVENT_TYPES,
@@ -362,6 +361,9 @@ async function _callOpenRouter(prompt, settings, windowIndex) {
 }
 
 async function _callVLLM(prompt, settings, windowIndex) {
+    // Routes through ST's chat-completions proxy with `chat_completion_source:
+    // 'custom'` — server reads key from SECRET_KEYS.CUSTOM, forwards to
+    // settings.summarize_vllm_url. Same pattern as summarizer.js::_callVLLM.
     const baseUrl = (settings.summarize_vllm_url || '').trim();
     if (!baseUrl) {
         throw new EventBaseFatalError(
@@ -378,18 +380,28 @@ async function _callVLLM(prompt, settings, windowIndex) {
         );
     }
 
+    const apiKey = getCustomApiKey(settings);
+    if (!apiKey) {
+        throw new EventBaseFatalError(
+            'EventBase: vLLM / Custom OpenAI-compatible API key not configured. Enter it in Core → LLM Summarization settings.',
+            'missing_api_key',
+        );
+    }
+
     const maxTokens = settings.eventbase_max_tokens || DEFAULT_MAX_TOKENS;
     const temperature = settings.eventbase_temperature ?? DEFAULT_TEMPERATURE;
     const timeoutMs = settings.eventbase_timeout_ms || DEFAULT_TIMEOUT_MS;
 
-    const headers = { 'Content-Type': 'application/json' };
-    const apiKey = getVllmApiKey(settings);
-    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    const body = {
+        ..._buildBody(prompt, model, maxTokens, temperature),
+        chat_completion_source: 'custom',
+        custom_url: baseUrl,
+    };
 
-    const response = await fetch(buildVllmChatCompletionsUrl(baseUrl), {
+    const response = await fetch('/api/backends/chat-completions/generate', {
         method: 'POST',
-        headers,
-        body: JSON.stringify(_buildBody(prompt, model, maxTokens, temperature)),
+        headers: getRequestHeaders(),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
     });
 
@@ -397,7 +409,7 @@ async function _callVLLM(prompt, settings, windowIndex) {
         const errText = await response.text().catch(() => response.statusText);
         if (response.status === 401 || response.status === 403) {
             throw new EventBaseFatalError(
-                `EventBase: vLLM authentication failed (${response.status}). Check your API key.`,
+                `EventBase: vLLM authentication failed (${response.status}). Check your API key in Core → LLM Summarization settings.`,
                 'invalid_api_key',
             );
         }

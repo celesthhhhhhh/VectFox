@@ -23,8 +23,7 @@ import { getContext } from '../../../../extensions.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { queryCollection } from './core-vector-api.js';
 import { buildPlannerUserMessage, getAgenticPlannerPrompt } from './prompts-i18n.js';
-import { getOpenRouterApiKey, getVllmApiKey } from './api-keys.js';
-import { buildVllmChatCompletionsUrl } from './summarizer.js';
+import { getOpenRouterApiKey, getCustomApiKey } from './api-keys.js';
 import { getRequestHeaders } from '../../../../../script.js';
 
 // ============================================================================
@@ -301,8 +300,13 @@ export function _resolveAgenticLLMConfig(settings = {}) {
         if (!vllmUrl) {
             return { ok: false, reason: 'missing_vllm_url' };
         }
-        // Single shared vLLM key (settings.vllm_api_key plaintext).
-        const apiKey = getVllmApiKey(settings);
+        // Key lives in SECRET_KEYS.CUSTOM (masked client-side). getCustomApiKey
+        // returns the masked presence indicator; real key is read server-side
+        // by ST's chat-completions proxy. Same shared slot as summarize/agent.
+        const apiKey = getCustomApiKey(settings);
+        if (!apiKey) {
+            return { ok: false, reason: 'missing_vllm_api_key' };
+        }
         return { ok: true, provider, model, vllmUrl, apiKey };
     }
 
@@ -335,10 +339,14 @@ async function _callPlanner({ systemPrompt, userMessage, llmCfg, timeoutMs }) {
         headers = getRequestHeaders();
         requestBody = { chat_completion_source: 'openrouter', ...body };
     } else if (llmCfg.provider === 'vllm') {
-        endpoint = buildVllmChatCompletionsUrl(llmCfg.vllmUrl);
-        headers = { 'Content-Type': 'application/json' };
-        if (llmCfg.apiKey) headers['Authorization'] = `Bearer ${llmCfg.apiKey}`;
-        requestBody = body;
+        // Route through ST's chat-completions proxy with `chat_completion_source:
+        // 'custom'`. ST reads the real key server-side from SECRET_KEYS.CUSTOM
+        // and forwards to llmCfg.vllmUrl. llmCfg.apiKey here is the MASKED
+        // presence value — never sent over the wire. Same pattern as the
+        // openrouter branch above.
+        endpoint = '/api/backends/chat-completions/generate';
+        headers = getRequestHeaders();
+        requestBody = { chat_completion_source: 'custom', custom_url: llmCfg.vllmUrl, ...body };
     } else {
         throw new Error(`Unknown provider: ${llmCfg.provider}`);
     }

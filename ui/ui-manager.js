@@ -54,12 +54,6 @@ export function renderSettings(containerId, settings, callbacks) {
         extension_settings.vectfox = {};
     }
 
-    // Forward-declared so the vector-backend change handler can call it; the
-    // real implementation is assigned later when the EventBase weight inputs
-    // are wired up. The optional-call `?.()` at the call site guards against
-    // any backend-change event that fires before assignment.
-    let _refreshCosineWeightAvailability = null;
-
     const html = `
         <div id="VectFox_settings">
             <div class="inline-drawer">
@@ -2068,6 +2062,12 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
  * @param {object} callbacks - Callback functions
  */
 function bindSettingsEvents(settings, callbacks) {
+    // Forward-declared so the vector-backend change handler can call it; the
+    // real implementation is assigned later when the EventBase weight inputs
+    // are wired up. The optional-call `?.()` at the call site guards against
+    // any backend-change event that fires before assignment.
+    let _refreshCosineWeightAvailability = null;
+
     // Auto-sync enable/disable - now per-collection instead of global
     // Initial state is set by refreshAutoSyncCheckbox() after chat loads
     $('#VectFox_autosync_enabled')

@@ -309,6 +309,27 @@ export async function migrateLegacyApiKeys() {
         return { summary: 'not-initialized' };
     }
 
+    // ─── Diagnostic snapshot: what's in vf at migration start? ───
+    // Helps debug the "settings.json has plaintext keys but migration says
+    // nothing to migrate" scenario — if a field shows up here but isn't
+    // listed in the post-migration "deleted" log, something is filtering it
+    // out before migration runs (defaults merge, etc.).
+    const apiKeyFieldsBefore = Object.keys(vf).filter(k => k.includes('api_key'));
+    console.log(`[VectFox migrate] START. vf has ${apiKeyFieldsBefore.length} *api_key* field(s):`, apiKeyFieldsBefore);
+    if (apiKeyFieldsBefore.length > 0) {
+        // Show length only (never log the actual key value)
+        console.log(`[VectFox migrate] *api_key* field details:`, apiKeyFieldsBefore.map(k => {
+            const v = vf[k];
+            return {
+                field: k,
+                hasOwnProperty: Object.prototype.hasOwnProperty.call(vf, k),
+                type: typeof v,
+                length: typeof v === 'string' ? v.length : null,
+                isEmpty: typeof v === 'string' && v.trim().length === 0,
+            };
+        }));
+    }
+
     let mutated = false;
     const moves = []; // human-readable log entries
 
@@ -518,13 +539,21 @@ export async function migrateLegacyApiKeys() {
     }
 
     if (mutated) {
+        console.log(`[VectFox migrate] mutated=true → calling await saveSettings() (synchronous)`);
         // Synchronous save (NOT debounced) — see index.js eventbase migration
         // comment for the full rationale. Short version: if user reloads
         // before the debounce flushes, settings.json keeps the stale legacy
         // fields even though extension_settings.vectfox is clean in memory.
         // Confirmed scenario 2026-05-26.
         await saveSettings();
+        console.log(`[VectFox migrate] saveSettings() returned. Disk should be in sync with memory now.`);
+    } else {
+        console.log(`[VectFox migrate] mutated=false → skipping saveSettings(). If settings.json has stale fields, they will NOT be cleared by this migration run (in-memory state was already clean).`);
     }
+
+    // Diagnostic: what's left in vf after migration?
+    const apiKeyFieldsAfter = Object.keys(vf).filter(k => k.includes('api_key'));
+    console.log(`[VectFox migrate] END. vf has ${apiKeyFieldsAfter.length} *api_key* field(s) remaining:`, apiKeyFieldsAfter);
 
     if (moves.length > 0) {
         console.log(`[VectFox migrate] Migration complete:\n  - ${moves.join('\n  - ')}`);

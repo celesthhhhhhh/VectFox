@@ -330,28 +330,54 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         const extractPhaseEndedAt = performance.now();
         console.log(`[EventBase concurrency] Batch extract phase complete: ${(extractPhaseEndedAt - batchStartedAt).toFixed(0)}ms wall (${batch.length} window(s))`);
 
-        // Insert sequentially — Cloudflare/nginx HTTP/2 fan-out can merge concurrent
-        // POST bodies into a single mangled request when many windows finish together.
-        // LLM extraction above stays parallel; only the vectra writes are serialized.
-        let insertCount = 0;
-        let insertTotalMs = 0;
+        // Coalesce all events from this batch's windows into ONE insertEvents
+        // call. The Similharity plugin (similharity/index.js::insertVectors)
+        // batches embedding requests: when N items arrive together, it calls
+        // OpenRouter ONCE with all texts and gets N vectors back. Before this
+        // change we paid for one ~9s embedding round-trip PER WINDOW (so
+        // 8 windows = 8×9s = 72s); now the whole batch shares one round-trip.
+        //
+        // The old "insert sequentially because Cloudflare/nginx HTTP/2 fan-out
+        // can merge concurrent POST bodies" guard targeted hosted-proxy setups
+        // — it doesn't apply here (local ST + local plugin + local Qdrant),
+        // and we're no longer firing concurrent POSTs anyway: we're firing
+        // ONE bigger POST.
+        //
+        // Atomicity tradeoff: per-batch instead of per-window. If the batched
+        // embed/insert fails, no windows in this batch get marked extracted,
+        // and the next run re-extracts all of them. Extract is cheap (~6s for
+        // 8 windows) so this is acceptable.
+        const allEvents = [];
+        const hashesToMark = [];
         for (const r of batchResults) {
             if (r.status !== 'fulfilled' || r.value?.skipped) continue;
             const { events: winEvents, sourceHashes: winHashes } = r.value;
             if (!winHashes) continue; // extraction failed — do not mark
-            if (abortSignal?.aborted) break;
             if (winEvents?.length > 0) {
-                const insertStart = performance.now();
-                await insertEvents(winEvents, settings, abortSignal, collectionId);
-                insertTotalMs += performance.now() - insertStart;
-                insertCount++;
+                allEvents.push(...winEvents);
             }
-            markWindowExtracted(winHashes, uuid);
+            hashesToMark.push(winHashes);
         }
+
+        let insertWallMs = 0;
+        if (!abortSignal?.aborted && allEvents.length > 0) {
+            const insertStart = performance.now();
+            await insertEvents(allEvents, settings, abortSignal, collectionId);
+            insertWallMs = performance.now() - insertStart;
+        }
+        // Mark windows only after the batched insert succeeded (or there was
+        // nothing to insert — in which case we still mark zero-event windows
+        // so we don't re-extract them next run).
+        if (!abortSignal?.aborted) {
+            for (const winHashes of hashesToMark) {
+                markWindowExtracted(winHashes, uuid);
+            }
+        }
+
         const batchEndedAt = performance.now();
         const insertPhaseMs = batchEndedAt - extractPhaseEndedAt;
         const extractPhaseMs = extractPhaseEndedAt - batchStartedAt;
-        console.log(`[EventBase concurrency] Batch DONE: total=${(batchEndedAt - batchStartedAt).toFixed(0)}ms (extract=${extractPhaseMs.toFixed(0)}ms parallel, insert=${insertPhaseMs.toFixed(0)}ms serialized across ${insertCount} write(s), avg ${insertCount ? (insertTotalMs / insertCount).toFixed(0) : 0}ms/insert)`);
+        console.log(`[EventBase concurrency] Batch DONE: total=${(batchEndedAt - batchStartedAt).toFixed(0)}ms (extract=${extractPhaseMs.toFixed(0)}ms parallel, insert=${insertPhaseMs.toFixed(0)}ms — 1 batched POST with ${allEvents.length} event(s))`);
 
         // Tally results, watch for fatal errors
         for (const result of batchResults) {

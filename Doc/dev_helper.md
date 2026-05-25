@@ -828,3 +828,41 @@ EventBase-only users (the typical case) hit gate 1 and short-circuit — debug l
 **Bucket 2 — `tests/backend-manager.test.js`, `tests/hybrid-search.test.js`, `tests/world-info-integration.test.js`**
 
 Vitest tries to resolve ST relative paths (e.g. `../../../../extensions.js`) that live outside the project root, causing module-load failures. Fix options: (a) add `resolve.alias` entries in `vitest.config.js` pointing to stub files, or (b) extract tested logic into ST-free modules the way `lorebook-content-preparer.js` was extracted for the `content-vectorization` tests.
+
+---
+
+### 16.3 BananaBread provider — partial cleanup, deeper code paths remain
+
+**Status**: Partially cleaned up 2026-05-26 during the plaintext-API-key audit response. **Full removal deferred** — needs its own deliberate cleanup pass.
+
+**What was cleaned up**:
+- API key input handler removed from [ui/ui-manager.js](../ui/ui-manager.js) (was bound to `#VectFox_bananabread_apikey` — a selector that matched no HTML element; doubly-dead since the provider was also unselectable)
+- `bananabread_api_key: ''` removed from `defaultSettings` in [index.js](../index.js)
+- Migration drain added in [core/api-keys.js::migrateLegacyApiKeys](../core/api-keys.js) — deletes any leftover plaintext `settings.bananabread_api_key` from `settings.json` on first load post-upgrade (no destination; the key was never meaningfully used)
+
+**What's intentionally left in place** (~300 LOC of code that's unreachable from the UI but still present in the codebase):
+
+| Location | Code |
+|---|---|
+| [core/providers.js:31](../core/providers.js#L31) | `// bananabread: { name: 'BananaBread', ... }` — commented out; provider doesn't appear in the Embedding dropdown |
+| [ui/ui-manager.js](../ui/ui-manager.js) | `#VectFox_bananabread_rerank` checkbox handler — still bound; setting persists but never fires the rerank because `settings.source` can't be set to `'bananabread'` via the UI |
+| [core/chat-vectorization.js:261-306, 1425-1432](../core/chat-vectorization.js#L261) | `rerankWithBananaBread()` + STAGE 5 dispatch (gated on `source === 'bananabread' && bananabread_rerank`) |
+| [core/core-vector-api.js:415-499](../core/core-vector-api.js#L415) | `createBananaBreadEmbeddings()` (~85 LOC) |
+| [core/core-vector-api.js:629, 845, 1023](../core/core-vector-api.js#L629) | `'bananabread'` in `clientSideEmbeddingSources` arrays (3 places) |
+| [backends/standard.js:85-95](../backends/standard.js#L85) | `case 'bananabread':` in provider switch (reads `secret_state['bananabread_api_key']`, which is now never populated) |
+| [diagnostics/index.js:161-164](../diagnostics/index.js#L161) | `checkBananaBreadConnection` runs unconditionally as part of diagnostics (skips when `source !== 'bananabread'`) |
+| [diagnostics/infrastructure.js:38-43, 674-687, 868-938](../diagnostics/infrastructure.js#L868) | Full BananaBread connection check + API key check (~80 LOC) |
+| [diagnostics/production-tests.js:149-154](../diagnostics/production-tests.js#L149) | BananaBread-specific test branch |
+| [Doc/hybrid-backend-comparison.adoc:175-432](hybrid-backend-comparison.adoc#L175) | Architecture docs explaining BananaBread reranking |
+
+**Why the rest was left**:
+- The user-facing "is there plaintext API key in settings.json" complaint is fully addressed by the partial cleanup. Removing the API key input + the default field + the migration drain completes that goal.
+- Full removal is ~300 LOC across 8+ files with non-trivial coordination (must also strip BananaBread references from the `clientSideEmbeddingSources` arrays, the diagnostics module, and the docs). This deserves its own focused commit + plan doc rather than being bundled into an API-key audit pass.
+- All remaining `settings.bananabread_api_key` reads in the deeper code paths are defensively guarded with `if (settings.bananabread_api_key)` truthy checks. They handle the missing field gracefully — no runtime errors expected from the partial state.
+
+**Tripwire** — if a future user is somehow stuck on a years-old VectFox build that had `source: 'bananabread'` in their `settings.json`:
+- ST itself can't restore the provider (it's commented out)
+- The deeper code paths would briefly fire but find no key (migration deleted it) → BananaBread auth fails → embedding errors surface
+- They'd need to manually edit `settings.json` to change `source` to a supported value, OR pick a different provider from the dropdown which writes a valid value
+
+**To finish**: open a separate plan in `plans/remove-bananabread-provider.md` and do the ~300 LOC sweep when there's appetite. Targets: strip `'bananabread'` from `clientSideEmbeddingSources` arrays first (kills the bulk of the reranking and embedding paths), then walk back through diagnostics + backend cases + the docs section + the rerank checkbox handler. No urgency — the partial state is stable and audit-defensible.

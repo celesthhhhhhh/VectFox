@@ -17,7 +17,6 @@ import {
     getOpenRouterApiKey,
     getCustomApiKey,
     getQdrantApiKey,
-    getOllamaApiKey,
     fetchQdrantApiKeyPresence,
 } from '../core/api-keys.js';
 import { getWebLlmProvider as getSharedWebLlmProvider } from '../providers/webllm.js';
@@ -206,10 +205,6 @@ export function renderSettings(containerId, settings, callbacks) {
                                             <span>Keep Model in Memory</span>
                                         </label>
                                         <small class="VectFox_hint">Enter the model name from your Ollama installation</small>
-                                        <label for="VectFox_ollama_api_key" style="margin-top: 8px;">
-                                            <small>API Key <span style="opacity:0.6;">(optional — for remote/proxied Ollama endpoints)</span>:</small>
-                                        </label>
-                                        <input type="password" id="VectFox_ollama_api_key" class="vectfox-input" placeholder="Leave blank for local deployments" autocomplete="off" />
                                     </div>
 
                                     <!-- vLLM Settings -->
@@ -3442,32 +3437,15 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // Ollama API key — plaintext in settings.ollama_api_key
-    // 2026-05-25: reverted from custom-slot approach (doesn't round-trip).
-    // Plaintext per personal/LAN deployment scope.
-    const updateOllamaKeyDisplay = () => {
-        const savedKey = getOllamaApiKey(settings);
-        if (savedKey) {
-            const masked = savedKey.length > 4
-                ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
-                : '*'.repeat(savedKey.length);
-            $('#VectFox_ollama_api_key').attr('placeholder', `Key saved: ${masked}`);
-        } else {
-            $('#VectFox_ollama_api_key').attr('placeholder', 'Leave blank for local deployments');
-        }
-    };
-    updateOllamaKeyDisplay();
-    $('#VectFox_ollama_api_key').on('change', function() {
-        const value = String($(this).val()).trim();
-        if (value) {
-            settings.ollama_api_key = value;
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-            toastr.success('Ollama API key saved');
-            $(this).val('');
-            updateOllamaKeyDisplay();
-        }
-    });
+    // Ollama API key input removed 2026-05-26: ST itself has no SECRET_KEYS.OLLAMA
+    // slot and no getOllamaHeaders function in additional-headers.js. Calls to
+    // setAdditionalHeadersByType(headers, TEXTGEN_TYPES.OLLAMA, ...) inside
+    // ST's ollama-vectors.js are silent no-ops — ST never sends an Authorization
+    // header to Ollama. VectFox's old plaintext settings.ollama_api_key was
+    // therefore dead code on both sides. Field is dropped entirely; migration
+    // deletes any leftover plaintext from settings.json (see api-keys.js).
+    // Users who need authed Ollama (rare — Ollama is typically LAN no-auth)
+    // should configure auth at their reverse proxy.
 
     // vLLM alternative endpoint
     $('#VectFox_vllm_use_alt_endpoint')
@@ -3762,39 +3740,14 @@ function bindSettingsEvents(settings, callbacks) {
 
     // ── End EventBase settings ───────────────────────────────────────────────
 
-    // BananaBread API key
-    // Note: We store in extension settings because custom keys aren't returned by ST's readSecretState()
-    const updateBananaBreadKeyDisplay = () => {
-        const savedKey = settings.bananabread_api_key;
-        if (savedKey) {
-            // Mask the key for display (show last 4 chars)
-            const masked = savedKey.length > 4
-                ? '*'.repeat(Math.min(savedKey.length - 4, 8)) + savedKey.slice(-4)
-                : '*'.repeat(savedKey.length);
-            $('#VectFox_bananabread_apikey').attr('placeholder', `Key saved: ${masked}`);
-        } else {
-            $('#VectFox_bananabread_apikey').attr('placeholder', 'Paste key here to save...');
-        }
-    };
-    updateBananaBreadKeyDisplay();
-
-    $('#VectFox_bananabread_apikey')
-        .on('change', async function() {
-            const value = String($(this).val()).trim();
-            if (value) {
-                // Store in extension settings (primary storage for this key)
-                settings.bananabread_api_key = value;
-                Object.assign(extension_settings.vectfox, settings);
-                saveSettingsDebounced();
-
-                // Also write to ST secrets for potential future compatibility
-                await writeSecret('bananabread_api_key', value);
-
-                toastr.success('BananaBread API key saved');
-                $(this).val('');
-                updateBananaBreadKeyDisplay();
-            }
-        });
+    // BananaBread API key input removed 2026-05-26: the BananaBread provider
+    // is commented out in providers.js (unselectable from the Embedding
+    // dropdown) AND the #VectFox_bananabread_apikey HTML element doesn't
+    // exist anywhere in the template — this handler was bound to a selector
+    // that matched nothing. Doubly-dead code. The deeper BananaBread paths
+    // (rerank, embeddings, diagnostics, backend switch) remain in the
+    // codebase as unresolved work; see Doc/dev_helper.md "Unresolved code"
+    // section for the rationale.
 
     // OpenAI model
     $('#VectFox_openai_model')

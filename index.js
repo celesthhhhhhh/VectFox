@@ -64,7 +64,10 @@ const defaultSettings = {
     qdrant_multitenancy: false, // Use single collection with content_type field instead of separate collections
     ollama_alt_endpoint_url: '',
     ollama_use_alt_endpoint: false,
-    ollama_api_key: '', // Legacy plaintext slot. Post-2026-05-24 H-1 phase 2: new saves go to ST secret_state slot 'ollama_api_key'; migrateLegacyApiKeys() moves existing plaintext on first load and clears this field. Reader: core/api-keys.js::getOllamaApiKey
+    // ollama_api_key removed 2026-05-26: ST has no SECRET_KEYS.OLLAMA and no
+    // ollama auth path in additional-headers.js — the field was dead code on
+    // both sides. Migration in core/api-keys.js drains-and-deletes any
+    // leftover plaintext from settings.json on first load post-upgrade.
     vllm_alt_endpoint_url: '',
     vllm_use_alt_endpoint: false,
     rate_limit_calls: 60,
@@ -96,7 +99,14 @@ const defaultSettings = {
     webllm_model: '',
     google_model: 'text-embedding-005',
     bananabread_rerank: false,
-    bananabread_api_key: '', // Stored here since custom keys aren't returned by ST's readSecretState()
+    // bananabread_api_key removed from defaults 2026-05-26 — the BananaBread
+    // provider is unselectable (commented out in providers.js) and the API
+    // key input handler had no matching HTML element. The deeper bananabread
+    // code paths still reference settings.bananabread_api_key defensively
+    // via `if (settings.bananabread_api_key) ...` guards; they handle the
+    // missing field gracefully. Migration drains-and-deletes any leftover
+    // plaintext from settings.json on first load. See Doc/dev_helper.md
+    // "Unresolved code" section for the full BananaBread state.
 
     // Chat vectorization
     enabled_chats: true,

@@ -79,12 +79,15 @@
  *     Migration drains any legacy `settings.qdrant_api_key` plaintext into
  *     the slot on first load and deletes the plaintext field.
  *
- *   - ollama_api_key:
- *     Stay as plaintext in settings.json. Ollama is local-only in practice
- *     (LAN/personal scope), and there's no ST proxy for the embedding path
- *     that ollama uses, so the masking problem would break it. Migration
- *     to secret_state would require refactoring every read site. Out of
- *     scope until someone demonstrates a real attack surface here.
+ *   - Ollama:
+ *     No API key field, period. ST itself has no SECRET_KEYS.OLLAMA and
+ *     no getOllamaHeaders — ST's ollama vector path never sends an
+ *     Authorization header. VectFox previously had an ollama_api_key
+ *     plaintext field, but it was dead code (ST silently ignored anything
+ *     passed through it). Field removed 2026-05-26; migration drains any
+ *     leftover plaintext from settings.json on first reload post-upgrade.
+ *     Users who need authed Ollama (rare — Ollama is typically LAN
+ *     no-auth) should configure auth at their reverse proxy layer.
  *
  *   - bananabread_api_key:
  *     Untouched — the provider has been unselectable since day one
@@ -251,15 +254,14 @@ export async function fetchQdrantApiKeyPresence() {
     }
 }
 
-/**
- * Resolve the Ollama API key. Plaintext storage.
- * @param {object} [settings] - extension_settings.vectfox
- * @returns {string} key value or empty string
- */
-export function getOllamaApiKey(settings) {
-    const v = settings?.ollama_api_key;
-    return (typeof v === 'string') ? v.trim() : '';
-}
+// getOllamaApiKey was removed 2026-05-26: ST has no SECRET_KEYS.OLLAMA slot
+// and no getOllamaHeaders branch in additional-headers.js. ST's vector handler
+// calls setAdditionalHeadersByType(headers, TEXTGEN_TYPES.OLLAMA, ...) which is
+// a silent no-op for ollama — no Authorization header is ever sent. VectFox's
+// ollama_api_key field was dead code on both sides. The plaintext field is
+// drained-and-deleted by migrateLegacyApiKeys() below (no destination —
+// nothing to migrate to since ST itself doesn't authenticate ollama). If a
+// user needs auth for a proxied ollama endpoint, configure it at the proxy.
 
 // ─── One-shot legacy field migration ────────────────────────────────────
 
@@ -281,7 +283,19 @@ export function getOllamaApiKey(settings) {
  *   - Picks the first non-empty value, stores it in `vllm_api_key` plaintext.
  *   - Deletes the other two from `extension_settings.vectfox`.
  *
- * qdrant_api_key, ollama_api_key, bananabread_api_key: left untouched.
+ * qdrant_api_key: drained to secret_state custom slot 'api_key_qdrant'
+ * (gated on Similharity plugin probe — see Qdrant drain block below).
+ *
+ * ollama_api_key: drained-and-deleted from settings.json (no destination —
+ * ST itself doesn't authenticate ollama; field was dead code on both sides).
+ *
+ * bananabread_api_key: drained-and-deleted from settings.json on first
+ * load 2026-05-26+. The BananaBread provider is unselectable from the
+ * Embedding dropdown (commented out in providers.js) AND the API key
+ * input handler in ui-manager.js was bound to a selector that matched
+ * no HTML element. The deeper BananaBread code paths (rerank, embeddings,
+ * diagnostics) remain as unresolved code — see Doc/dev_helper.md
+ * "Unresolved code" section.
  *
  * Idempotent: on subsequent runs the legacy fields are already absent
  * and the function is a no-op.
@@ -465,6 +479,42 @@ export async function migrateLegacyApiKeys() {
                 moves.push(`Qdrant → removed empty plaintext qdrant_api_key from settings.json`);
             }
         }
+    }
+
+    // ─── Ollama plaintext drain (no destination — ST has no ollama auth) ───
+    // ST has no SECRET_KEYS.OLLAMA and no getOllamaHeaders branch in
+    // additional-headers.js. ST's ollama-vectors.js calls
+    // setAdditionalHeadersByType(headers, TEXTGEN_TYPES.OLLAMA, ...) which
+    // is a silent no-op for ollama — no Authorization header is ever sent
+    // to the upstream Ollama endpoint. So whatever VectFox previously
+    // stored in settings.ollama_api_key was dead weight on BOTH sides.
+    // Migration just deletes the field. No probe gate needed — there's
+    // nothing to write anywhere.
+    if (Object.prototype.hasOwnProperty.call(vf, 'ollama_api_key')) {
+        const hadValue = typeof vf.ollama_api_key === 'string' && vf.ollama_api_key.trim().length > 0;
+        delete vf.ollama_api_key;
+        mutated = true;
+        moves.push(hadValue
+            ? `Ollama → removed plaintext ollama_api_key from settings.json (ST does not authenticate ollama; field was a no-op)`
+            : `Ollama → removed empty plaintext ollama_api_key from settings.json`);
+    }
+
+    // ─── BananaBread plaintext drain (no destination — input was zombie) ───
+    // The BananaBread provider is unselectable (commented out in providers.js)
+    // and the API key input handler in ui-manager.js was bound to a HTML
+    // element that didn't exist — doubly-dead. settings.bananabread_api_key
+    // could only have a real value on installs that ran a pre-2025 build
+    // when BananaBread was still selectable. Drain-and-delete on sight. The
+    // deeper bananabread code paths read this field defensively with
+    // `if (settings.bananabread_api_key)` truthy guards, so they tolerate
+    // the missing field gracefully.
+    if (Object.prototype.hasOwnProperty.call(vf, 'bananabread_api_key')) {
+        const hadValue = typeof vf.bananabread_api_key === 'string' && vf.bananabread_api_key.trim().length > 0;
+        delete vf.bananabread_api_key;
+        mutated = true;
+        moves.push(hadValue
+            ? `BananaBread → removed plaintext bananabread_api_key from settings.json (provider unselectable + input element was dead — see Doc/dev_helper.md)`
+            : `BananaBread → removed empty plaintext bananabread_api_key from settings.json`);
     }
 
     if (mutated) {

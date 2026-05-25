@@ -26,10 +26,11 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { extension_settings, modules } from '../../../../extensions.js';
 import { secret_state } from '../../../../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
-// Embedding-side helpers. The vLLM embedding path no longer needs a client-
-// side apiKey value — ST's vector handler reads SECRET_KEYS.VLLM server-side.
-// Ollama still uses plaintext via getOllamaApiKey (no ST proxy for that).
-import { getOllamaApiKey } from './api-keys.js';
+// Embedding-side: no key helpers needed here. vLLM, Ollama, and other
+// "local-or-self-hosted" providers either resolve keys server-side via ST
+// (vLLM → SECRET_KEYS.VLLM) or send no auth at all (Ollama — ST has no
+// auth path for it). Cloud providers like OpenRouter route through ST's
+// chat-completions proxy from elsewhere, not through this file.
 import { oai_settings } from '../../../../openai.js';
 import { isWebLlmSupported } from '../../../shared.js';
 import { getWebLlmProvider } from '../providers/webllm.js';
@@ -224,10 +225,8 @@ export function getVectorsRequestBody(args = {}, settings) {
             body.model = settings.ollama_model;
             body.apiUrl = settings.ollama_use_alt_endpoint ? settings.ollama_alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
             body.keep = !!settings.ollama_keep;
-            {
-                const ollamaKey = getOllamaApiKey(settings);
-                if (ollamaKey) body.apiKey = ollamaKey;
-            }
+            // No apiKey: ST has no ollama auth path. See backends/qdrant.js for
+            // the full rationale.
             break;
         case 'vllm':
             body.apiUrl = (settings.vllm_use_alt_endpoint ? settings.vllm_alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.VLLM])

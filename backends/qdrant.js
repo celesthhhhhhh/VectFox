@@ -33,7 +33,7 @@ import { VectorBackend } from './backend-interface.js';
 import { getModelFromSettings } from '../core/providers.js';
 import { VECTOR_LIST_LIMIT } from '../core/constants.js';
 import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
-import { getQdrantApiKey, getOllamaApiKey } from '../core/api-keys.js';
+import { getQdrantApiKey } from '../core/api-keys.js';
 
 const BACKEND_TYPE = 'qdrant';
 
@@ -66,10 +66,9 @@ function getPluginProviderParams(settings) {
                 ? settings.ollama_alt_endpoint_url
                 : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
             params.keep = !!settings.ollama_keep;
-            {
-                const ollamaKey = getOllamaApiKey(settings);
-                if (ollamaKey) params.apiKey = ollamaKey;
-            }
+            // No apiKey: ST has no ollama auth path. The setAdditionalHeadersByType
+            // call in ST's ollama-vectors.js is a no-op for ollama. The previous
+            // params.apiKey = getOllamaApiKey(...) line was dead code on both sides.
             break;
         case 'vllm':
             params.apiUrl = (settings.vllm_use_alt_endpoint

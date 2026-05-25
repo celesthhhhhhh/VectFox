@@ -96,6 +96,7 @@ let browserState = {
     scope: "all", // 'all', 'character', 'chat'
     collectionType: "all", // 'all', 'chat', 'file', 'lorebook'
     searchQuery: "",
+    onlyActiveForChat: false, // when true, only show collections active for the current chat (matches the 🔒 badge)
   },
   settings: null,
   // Bulk operations state
@@ -275,12 +276,19 @@ function createBrowserModal() {
                             </label>
                         </div>
 
-                        <!-- Search Box -->
-                        <div class="vectfox-search-box">
+                        <!-- Search Box + Active-only toggle -->
+                        <div class="vectfox-search-box" style="display:flex; gap:8px; align-items:center;">
                             <input type="text"
                                    id="vectfox_collection_search"
                                    placeholder="Search collections..."
-                                   autocomplete="off">
+                                   autocomplete="off"
+                                   style="flex:1;">
+                            <label id="vectfox_only_active_toggle_label"
+                                   title="Show only collections active for the current chat (the ones with the 🔒 badge)"
+                                   style="display:flex; gap:6px; align-items:center; white-space:nowrap; cursor:pointer; font-size:0.85em;">
+                                <input type="checkbox" id="vectfox_only_active_toggle">
+                                🔒 Active here only
+                            </label>
                         </div>
 
                         <!-- Collections List -->
@@ -500,6 +508,15 @@ function bindBrowserEvents() {
   $("#vectfox_collection_search").on("input", function (e) {
     e.stopPropagation();
     browserState.filters.searchQuery = $(this).val().toLowerCase();
+    renderCollections();
+  });
+
+  // "Active here only" toggle — filters down to the collections that currently
+  // carry the 🔒 badge for the current chat. Uses the canonical isActiveById
+  // lookup built from getCollectionListing inside renderCollections().
+  $("#vectfox_only_active_toggle").on("change", function (e) {
+    e.stopPropagation();
+    browserState.filters.onlyActiveForChat = $(this).prop("checked");
     renderCollections();
   });
 
@@ -844,9 +861,21 @@ async function refreshCollections(withScan = false) {
 export function renderCollections() {
   const container = $("#vectfox_collections_list");
 
+  // Build lock-state lookup once — same canonical source of truth used by the
+  // card renderer (entry.isActive comes from getCollectionListing internally
+  // calling isCollectionActiveForContext, keyed by registry-key form). Built
+  // BEFORE the filter pass so "Active here only" can consult it without
+  // re-computing per card. See Doc/collection_helper.md:54.
+  const isActiveById = new Map();
+  for (const entry of getCollectionListing(browserState.settings)) {
+    isActiveById.set(entry.collectionId, entry.isActive);
+    isActiveById.set(entry.registryKey, entry.isActive);
+  }
+
     // Apply filters
     let filtered = browserState.collections.filter(c => {
         const scopeFilter = browserState.filters.scope;
+        const lookupKey = c.registryKey || c.id;
 
         // Scope filter:
         // - 'all' => no filter
@@ -855,12 +884,19 @@ export function renderCollections() {
         if (scopeFilter !== 'all') {
             // Lock counts are keyed by registry-key form ("backend:id") — same key
             // setCollectionLock writes to.
-            const lookupKey = c.registryKey || c.id;
             if (scopeFilter === 'chat') {
                 if (getCollectionLockCount(lookupKey) <= 0) return false;
             } else if (scopeFilter === 'character') {
                 if (getCollectionCharacterLockCount(lookupKey) <= 0) return false;
             }
+        }
+
+        // "Active here only" toggle — keeps just the collections that carry the
+        // 🔒 badge for the current chat (chat-lock match OR character-lock match
+        // for the active character). Uses the pre-built isActiveById lookup so
+        // we stay aligned with the badge's source of truth.
+        if (browserState.filters.onlyActiveForChat) {
+            if (!isActiveById.get(lookupKey)) return false;
         }
 
     // Type filter - map filter categories to actual collection types
@@ -901,14 +937,8 @@ export function renderCollections() {
     return;
   }
 
-  // Build lock-state lookup once from the listing (single source of truth for
-  // ownership AND isActive). Card rendering reads from this instead of calling
-  // isCollectionActiveForContext per card.
-  const isActiveById = new Map();
-  for (const entry of getCollectionListing(browserState.settings)) {
-    isActiveById.set(entry.collectionId, entry.isActive);
-    isActiveById.set(entry.registryKey, entry.isActive);
-  }
+  // isActiveById was built at the top of this function for the filter pass —
+  // reused here by the card renderer (entry.isActive lookups, no per-card calls).
 
   // Render collection cards
   const cardsHtml = filtered.map((c) => renderCollectionCard(c, isActiveById)).join("");

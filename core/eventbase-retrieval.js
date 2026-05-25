@@ -17,6 +17,7 @@ import { queryCollection } from './core-vector-api.js';
 import { getBackendForCollection, getBackend } from '../backends/backend-manager.js';
 import { parseRegistryKey } from './collection-ids.js';
 import { parseEmbedText } from './eventbase-schema.js';
+import { checkPluginAvailable } from './collection-loader.js';
 
 // ---------------------------------------------------------------------------
 // Default re-rank weights (tuned for long-form SillyTavern RP)
@@ -345,14 +346,31 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
     );
     const compareMode = useNativeRerank && settings.eventbase_compare_rerank === true && debugLog;
 
+    // Detect "no vector scoring" state — Standard backend without the Similharity
+    // plugin returns score=0 from the native /api/vector/query path (see
+    // backends/standard.js:438). Coerce cosine to 0 so _normalizeWeights
+    // redistributes its share onto importance/persist/recency, instead of
+    // leaving it as dead weight that silently caps the effective scoring budget.
+    // The user's saved cosine value is preserved and takes effect again the
+    // moment the plugin is installed or they switch to a backend with real
+    // vector scores. The UI mirrors this state by greying out the cosine input.
+    const activeBackend = settings.vector_backend || 'standard';
+    const cosineInactive = activeBackend === 'standard' && !(await checkPluginAvailable());
+    const effectiveCosine = cosineInactive
+        ? 0
+        : (settings.eventbase_rerank_w_cosine ?? DEFAULT_WEIGHTS.cosine);
+
     // Build re-rank params once — values are constant across the per-(collection,
     // queryText) calls in this retrieve invocation.
     const rerankWeights = _normalizeWeights({
-        cosine: settings.eventbase_rerank_w_cosine ?? DEFAULT_WEIGHTS.cosine,
+        cosine: effectiveCosine,
         importance: settings.eventbase_rerank_w_importance ?? DEFAULT_WEIGHTS.importance,
         persist: settings.eventbase_rerank_w_persist ?? DEFAULT_WEIGHTS.persist,
         recency: settings.eventbase_rerank_w_recency ?? DEFAULT_WEIGHTS.recency,
     });
+    if (cosineInactive && debugLog) {
+        console.log(`[EventBase] Cosine weight coerced to 0 (Standard backend, plugin unavailable). Effective weights:`, rerankWeights);
+    }
     const halfLife = !chatLength || chatLength === 0 ? 40 : Math.max(40, chatLength * 0.20);
     const dedupDepthForFilter = settings.deduplication_depth ?? 0;
     const visibleThresholdForFilter = dedupDepthForFilter > 0 ? chatLength - dedupDepthForFilter : -1;

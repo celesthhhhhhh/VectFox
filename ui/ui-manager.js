@@ -29,7 +29,7 @@ import { openTextCleaningManager } from './text-cleaning-manager.js';
 import { progressTracker } from './progress-tracker.js';
 import { resetBackendHealth } from '../backends/backend-manager.js';
 import { getHealthIndicatorHtml, getHealthModalHtml, initializeHealthDashboard, refreshIndicator as refreshHealthIndicator } from './health-dashboard.js';
-import { doesChatHaveVectors, getCollectionRegistry, getCollectionListing } from '../core/collection-loader.js';
+import { doesChatHaveVectors, getCollectionRegistry, getCollectionListing, checkPluginAvailable } from '../core/collection-loader.js';
 import { getCollectionMeta } from '../core/collection-metadata.js';
 import { parseRegistryKey } from '../core/collection-ids.js';
 import { getModelField } from '../core/providers.js';
@@ -53,6 +53,12 @@ export function renderSettings(containerId, settings, callbacks) {
     if (!extension_settings.vectfox) {
         extension_settings.vectfox = {};
     }
+
+    // Forward-declared so the vector-backend change handler can call it; the
+    // real implementation is assigned later when the EventBase weight inputs
+    // are wired up. The optional-call `?.()` at the call site guards against
+    // any backend-change event that fires before assignment.
+    let _refreshCosineWeightAvailability = null;
 
     const html = `
         <div id="VectFox_settings">
@@ -939,9 +945,12 @@ export function renderSettings(containerId, settings, callbacks) {
                             <!-- Re-rank weights -->
                             <p style="margin: 12px 0 4px; font-size:0.85em; font-weight:600;">Re-rank Weights</p>
                             <small class="VectFox_hint">Weights are normalized to sum to 1.0 on save. Defaults are tuned for long-form SillyTavern RP.</small>
+                            <small id="VectFox_eventbase_cosine_plugin_warning" class="VectFox_hint" style="display:none; color:#c08a3a; margin-top:4px;">
+                                ⚠ Cosine weight inactive — native Standard backend without the Similharity plugin returns no vector scores. Its share is auto-redistributed to Importance / Persist / Recency at query time.
+                            </small>
 
                             <div class="vectfox-rerank-weights" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
-                                <div class="vectfox-form-group">
+                                <div class="vectfox-form-group" id="VectFox_eventbase_cosine_group">
                                     <label class="vectfox-label">Cosine (semantic)</label>
                                     <input type="number" id="VectFox_eventbase_rerank_w_cosine" class="vectfox-input" min="0" max="1" step="0.05" style="width:80px;" />
                                 </div>
@@ -2555,6 +2564,9 @@ function bindSettingsEvents(settings, callbacks) {
             console.log(`VectFox: Vector backend changed to ${settings.vector_backend}`);
             // Reset health cache so new backend gets properly initialized
             resetBackendHealth();
+            // Refresh Cosine weight availability — backend switch may have
+            // moved us into or out of the "no vector scoring" state.
+            _refreshCosineWeightAvailability?.();
         });
 
     // Qdrant cloud toggle
@@ -3566,6 +3578,27 @@ function bindSettingsEvents(settings, callbacks) {
                 }
             });
     });
+
+    // Grey out the Cosine weight input when vector scoring is unavailable
+    // (Standard backend without the Similharity plugin always returns score=0
+    // from the native /api/vector/query path — see backends/standard.js:438).
+    // The saved value is preserved so it takes effect again when the plugin
+    // is installed or the user switches to a backend with real vector scores.
+    // The retrieval pipeline coerces cosine→0 in the same condition so the
+    // remaining 3 weights renormalize to a full 1.0 — see eventbase-retrieval.js.
+    _refreshCosineWeightAvailability = async function() {
+        const $input = $('#VectFox_eventbase_rerank_w_cosine');
+        const $group = $('#VectFox_eventbase_cosine_group');
+        const $warn  = $('#VectFox_eventbase_cosine_plugin_warning');
+        if ($input.length === 0) return;
+        const backend = settings.vector_backend || 'standard';
+        const pluginUp = await checkPluginAvailable();
+        const inactive = backend === 'standard' && !pluginUp;
+        $input.prop('disabled', inactive);
+        $group.css('opacity', inactive ? 0.5 : 1);
+        $warn.toggle(inactive);
+    };
+    _refreshCosineWeightAvailability();
 
     $('#VectFox_eventbase_reset_weights').on('click', function() {
         settings.eventbase_rerank_w_cosine    = 0.55;

@@ -48,7 +48,7 @@ export const BUILTIN_PATTERNS = {
     strip_hidden_divs: {
         id: 'strip_hidden_divs',
         name: 'Strip Hidden Divs',
-        pattern: '<div[^>]*style="[^"]*display:\\s*none[^"]*"[^>]*>[\\s\\S]*?(?:</div>|$)',
+        pattern: '<div[^>]*style="[^"]*display:\\s*none[^"]*"[^>]*>[\\s\\S]*?</div>',
         replacement: '',
         flags: 'gi',
         builtin: true,

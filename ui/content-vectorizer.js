@@ -29,6 +29,7 @@ import { saveSettingsDebounced } from '../../../../../script.js';
 import { getChatUUID } from '../core/chat-vectorization.js';
 import { validateLLMConfig } from '../core/summarizer.js';
 import { getOpenRouterApiKey } from '../core/api-keys.js';
+import StringUtils from '../utils/string-utils.js';
 import { resolveEffectiveSettings } from '../core/content-vectorization.js';
 import { renderCollections } from './database-browser.js';
 import { buildArchiveEventCollectionId } from '../core/collection-ids.js';
@@ -2322,7 +2323,7 @@ async function previewChunks() {
                     return `
                     <div class="vectfox-cv-preview-chunk">
                         <span class="vectfox-cv-preview-num">#${i + 1}</span>
-                        <span class="vectfox-cv-preview-text">${escapeHtml(chunkText.substring(0, 150))}${chunkText.length > 150 ? '...' : ''}</span>
+                        <span class="vectfox-cv-preview-text">${StringUtils.escapeHtml(chunkText.substring(0, 150))}${chunkText.length > 150 ? '...' : ''}</span>
                         <span class="vectfox-cv-preview-size">${chunkText.length} chars</span>
                     </div>
                 `}).join('')}
@@ -2843,15 +2844,6 @@ async function startVectorization() {
         activeVectorizeAbortController = null;
         updateVectorizeButtonState(false);
     }
-}
-
-/**
- * Escapes HTML entities
- */
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // ============================================================================

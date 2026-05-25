@@ -169,11 +169,12 @@ const defaultSettings = {
     cjk_tokenizer_mode: CJK_TOKENIZER_MODES.intl, // intl | jieba | jieba_tw | tiny_segmenter
 
     // EventBase workflow
-    eventbase_provider: 'openrouter',             // 'openrouter' | 'vllm'
-    eventbase_model: '',                          // Model ID (e.g. 'google/gemini-flash-1.5-8b')
-    eventbase_openrouter_api_key: '',             // API key (falls back to summarize key then ST secrets)
-    eventbase_vllm_url: '',                       // vLLM base URL
-    eventbase_vllm_api_key: '',                   // vLLM API key
+    // Legacy fields (eventbase_provider, eventbase_model, eventbase_openrouter_api_key,
+    // eventbase_vllm_url, eventbase_vllm_api_key) were unified into the Core
+    // `summarize_*` keys. The init block below copies any leftover values from
+    // those fields into `summarize_*` then deletes them, so they no longer
+    // need defaults here. Pre-existing installs that already had values move
+    // forward cleanly; new installs never see the fields at all.
     eventbase_temperature: 0.2,
     eventbase_max_tokens: 2048,
     eventbase_timeout_ms: 60000,
@@ -423,15 +424,37 @@ jQuery(async () => {
         console.log(`VectFox: Migrated ${migrationResult.migrated} old collection enabled keys`);
     }
 
-    // Migrate legacy EventBase LLM overrides → unified Core summarize settings
+    // Migrate legacy EventBase LLM overrides → unified Core summarize settings.
+    // Copy any non-empty legacy value into the corresponding summarize_* field
+    // (only if summarize_* is still empty — never clobber), then DELETE the
+    // legacy field unconditionally. Previous version copied but left the
+    // legacy keys behind as stale empty strings in settings.json.
     const _ebs = extension_settings.vectfox;
-    if (!_ebs.summarize_model && _ebs.eventbase_model) _ebs.summarize_model = _ebs.eventbase_model;
-    if (!_ebs.summarize_provider && _ebs.eventbase_provider) _ebs.summarize_provider = _ebs.eventbase_provider;
-    if (!_ebs.summarize_openrouter_api_key && _ebs.eventbase_openrouter_api_key) {
-        _ebs.summarize_openrouter_api_key = _ebs.eventbase_openrouter_api_key;
+    const _ebLegacyMap = [
+        ['eventbase_model', 'summarize_model'],
+        ['eventbase_provider', 'summarize_provider'],
+        ['eventbase_openrouter_api_key', 'summarize_openrouter_api_key'],
+        ['eventbase_vllm_url', 'summarize_vllm_url'],
+        ['eventbase_vllm_api_key', 'summarize_vllm_api_key'],
+    ];
+    let _ebMutated = false;
+    for (const [legacy, canonical] of _ebLegacyMap) {
+        if (!Object.prototype.hasOwnProperty.call(_ebs, legacy)) continue;
+        const v = _ebs[legacy];
+        if (!_ebs[canonical] && typeof v === 'string' && v.trim().length > 0) {
+            _ebs[canonical] = v;
+        }
+        delete _ebs[legacy];
+        _ebMutated = true;
     }
-    if (!_ebs.summarize_vllm_url && _ebs.eventbase_vllm_url) _ebs.summarize_vllm_url = _ebs.eventbase_vllm_url;
-    if (!_ebs.summarize_vllm_api_key && _ebs.eventbase_vllm_api_key) _ebs.summarize_vllm_api_key = _ebs.eventbase_vllm_api_key;
+    if (_ebMutated) {
+        // Persist the deletions even if migrateLegacyApiKeys below has nothing
+        // to do — without this, the legacy keys would re-appear on the next
+        // unrelated save because the in-memory object stays clean but settings.json
+        // still has the stale entries.
+        const { saveSettingsDebounced } = await import('../../../../script.js');
+        saveSettingsDebounced();
+    }
 
     // H-1 one-shot migration (2026-05-24): move plaintext *_api_key values
     // from settings.json to ST secret_state. Runs AFTER the eventbase →

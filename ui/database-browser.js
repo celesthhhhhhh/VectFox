@@ -63,6 +63,7 @@ import {
 } from "../core/conditional-activation.js";
 import { world_names, loadWorldInfo } from "../../../../world-info.js";
 import { icons } from "./icons.js";
+import StringUtils from "../utils/string-utils.js";
 import { openVisualizer } from "./chunk-visualizer.js";
 import { queryCollection } from "../core/core-vector-api.js";
 import {
@@ -1183,18 +1184,6 @@ function formatBytes(bytes) {
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-}
-
-/**
- * Escapes HTML special characters to prevent XSS
- * @param {string} text Text to escape
- * @returns {string} Escaped text
- */
-function escapeHtml(text) {
-  if (!text) return "";
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 /**
@@ -2963,9 +2952,9 @@ function renderKeywordTags() {
   let html = displayKeywords.map(kw => {
     const isActive = currentFilter.includes(kw.text);
     return `<span class="vectfox-keyword-tag ${isActive ? 'active' : ''}"
-                  data-keyword="${escapeHtml(kw.text)}"
+                  data-keyword="${StringUtils.escapeHtml(kw.text)}"
                   title="${kw.count} occurrence(s)">
-              ${escapeHtml(kw.text)} <small>(${kw.count})</small>
+              ${StringUtils.escapeHtml(kw.text)} <small>(${kw.count})</small>
             </span>`;
   }).join('');
 
@@ -3178,8 +3167,8 @@ function renderSearchResults(results, query, originalResults = null) {
 
   if (totalResults === 0) {
     const filterMsg = wasFiltered
-      ? `<p>No results match keyword filter: "${escapeHtml(browserState.keywordFilter)}"</p><small>${originalTotal} result(s) found before filtering</small>`
-      : `<p>No results found for "${escapeHtml(query)}"</p><small>Try adjusting the score threshold or search in more collections</small>`;
+      ? `<p>No results match keyword filter: "${StringUtils.escapeHtml(browserState.keywordFilter)}"</p><small>${originalTotal} result(s) found before filtering</small>`
+      : `<p>No results found for "${StringUtils.escapeHtml(query)}"</p><small>Try adjusting the score threshold or search in more collections</small>`;
 
     $("#vectfox_search_results").html(`
             <div class="vectfox-search-empty">
@@ -3212,7 +3201,7 @@ function renderSearchResults(results, query, originalResults = null) {
     html += `
             <div class="vectfox-search-collection">
                 <div class="vectfox-search-collection-header">
-                    ${icons.folder(16)} ${escapeHtml(collectionName)}
+                    ${icons.folder(16)} ${StringUtils.escapeHtml(collectionName)}
                     <span class="vectfox-search-count">${collectionResults.hashes.length} result(s)</span>
                 </div>
                 <div class="vectfox-search-collection-results">
@@ -3248,7 +3237,7 @@ function renderSearchResults(results, query, originalResults = null) {
       if (chunkKeywords.length > 0) {
         const keywordTags = chunkKeywords.slice(0, 5).map(kw => {
           const text = typeof kw === 'object' ? kw.text : kw;
-          return `<span class="vectfox-result-keyword">${escapeHtml(text)}</span>`;
+          return `<span class="vectfox-result-keyword">${StringUtils.escapeHtml(text)}</span>`;
         }).join('');
         const moreCount = chunkKeywords.length > 5 ? `<span class="vectfox-result-keyword-more">+${chunkKeywords.length - 5}</span>` : '';
         keywordsHtml = `<div class="vectfox-result-keywords">${keywordTags}${moreCount}</div>`;
@@ -3258,7 +3247,7 @@ function renderSearchResults(results, query, originalResults = null) {
                 <div class="vectfox-search-result" data-collection="${collectionId}" data-hash="${collectionResults.hashes[i]}">
                     ${scoreDisplay}
                     <div class="vectfox-search-result-content">
-                        <div class="vectfox-search-result-text">${escapeHtml(preview)}</div>
+                        <div class="vectfox-search-result-text">${StringUtils.escapeHtml(preview)}</div>
                         ${keywordsHtml}
                     </div>
                 </div>
@@ -3327,7 +3316,7 @@ function renderBulkList() {
                     <input type="checkbox" ${isSelected ? "checked" : ""} data-key="${uniqueKey}">
                 </label>
                 <div class="vectfox-bulk-item-info">
-                    <span class="vectfox-bulk-item-name">${escapeHtml(collection.name || collection.id)}</span>
+                    <span class="vectfox-bulk-item-name">${StringUtils.escapeHtml(collection.name || collection.id)}</span>
                     <span class="vectfox-bulk-item-meta">
                         ${collection.chunkCount || 0} chunks •
                         ${collection.enabled ? `${icons.toggleRight(12)} Enabled` : `${icons.toggleLeft(12)} Disabled`}

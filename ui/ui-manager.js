@@ -1723,7 +1723,7 @@ export async function refreshAutoSyncCheckbox(settings) {
     const { getChatAutoSyncStatus } = await import('../core/eventbase-workflow.js');
     const { isCollectionAutoSyncEnabled, isCollectionLockedToChat } = await import('../core/collection-metadata.js');
 
-    const status = getChatAutoSyncStatus(settings);
+    const status = await getChatAutoSyncStatus(settings);
     const chatId = getCurrentChatId();
 
     const LED = {
@@ -1758,12 +1758,16 @@ export async function refreshAutoSyncCheckbox(settings) {
     $hint.hide();
 
     // Helper to format the "chat: N msgs · vectorization: M msgs" tail.
-    // Both numbers come from getChatAutoSyncStatus; the marker reflects
-    // "how far the EventBase has been extracted to" (max source_window_end + 1
-    // when collection has events, or chat length at enable time when empty).
+    // Prefer vectorizationTip (live max(source_window_end)+1 — kept current by
+    // the ingestion loop) over markerValue (frozen enable-time stake, lies as
+    // new windows extract). Falls back to markerValue when the tip cache is
+    // empty AND the probe returned no events (e.g. brand-new collection).
+    const vectorizedCount = (typeof status.vectorizationTip === 'number')
+        ? status.vectorizationTip
+        : (typeof status.markerValue === 'number' ? status.markerValue : null);
     const counts = (typeof status.chatMessageCount === 'number')
         ? `<div style="margin-top:4px;font-size:0.85em;opacity:0.8;">chat: ${status.chatMessageCount} msgs` +
-          (typeof status.markerValue === 'number' ? ` · vectorization: ${status.markerValue} msgs` : '') +
+          (vectorizedCount !== null ? ` · vectorization: ${vectorizedCount} msgs` : '') +
           `</div>`
         : '';
 
@@ -2073,7 +2077,7 @@ function bindSettingsEvents(settings, callbacks) {
 
             const { getChatAutoSyncStatus } = await import('../core/eventbase-workflow.js');
             const { setCollectionAutoSync, setCollectionLock, removeCollectionLock } = await import('../core/collection-metadata.js');
-            const status = getChatAutoSyncStatus(settings);
+            const status = await getChatAutoSyncStatus(settings);
             const chatId = getCurrentChatId();
 
             if (status.state === 'no-chat') {

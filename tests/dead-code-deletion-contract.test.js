@@ -143,7 +143,7 @@ describe('Live code remains intact (regression guard)', () => {
 
         it('getChatAutoSyncStatus is exported', () => {
             expect(readRel('core/eventbase-workflow.js'))
-                .toMatch(/export\s+function\s+getChatAutoSyncStatus/);
+                .toMatch(/export\s+(?:async\s+)?function\s+getChatAutoSyncStatus/);
         });
 
         it('eventbase retrieval module exists with retrieveEvents', () => {

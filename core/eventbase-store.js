@@ -29,6 +29,73 @@ export { buildEventBaseCollectionId };
 // Built lazily on first access per chat UUID.
 const _windowCacheSet = new Map(); // chatUUID → Set<fingerprint>
 
+// In-memory cache for the "vectorization tip" — the index one past the last
+// message that has any extracted event window covering it (== max(source_window_end)+1).
+// Used by the Auto-Sync UI to show "vectorization: N msgs" honestly. The
+// auto-sync START marker (eventbase_autosync_start_marker) only records where
+// auto-sync was first enabled, so it lies as new windows extract after enable.
+// This cache is the truth source for the UI.
+//
+// Lifecycle:
+//   - written by the ingestion loop after each successful markWindowExtracted
+//   - probed once per (chat, session) on cache-miss via ensureVectorizationTip
+//   - cleared by clearVectorizationTip (parity with clearAutoSyncMarker)
+//   - NOT persisted; recomputed from Qdrant payloads on next probe after reload
+const _vectorizationTipByUuid = new Map(); // chatUUID → number (tip)
+
+/** Sync getter — returns cached tip or undefined (caller falls back to marker). */
+export function getVectorizationTip(chatUUID) {
+    return chatUUID ? _vectorizationTipByUuid.get(chatUUID) : undefined;
+}
+
+/** Sync setter — monotonic max so out-of-order calls don't regress the tip. */
+export function setVectorizationTip(chatUUID, tip) {
+    if (!chatUUID || typeof tip !== 'number' || !Number.isFinite(tip)) return;
+    const current = _vectorizationTipByUuid.get(chatUUID) ?? -1;
+    if (tip > current) _vectorizationTipByUuid.set(chatUUID, tip);
+}
+
+/** Clear the cached tip (e.g. when the user clears EventBase for this chat). */
+export function clearVectorizationTip(chatUUID) {
+    if (chatUUID) _vectorizationTipByUuid.delete(chatUUID);
+}
+
+/**
+ * Async cache-miss reader. On hit, returns the cached tip immediately.
+ * On miss, probes the backend via listChunks ONCE, populates the cache, and
+ * returns the value. Same shape as stampAutoSyncMarker's existing scan, so
+ * cost per cold chat is the same as the existing marker-stamp flow.
+ *
+ * @param {string} chatUUID
+ * @param {string} collectionId  - Bare or registry-key form; passed straight to listChunks.
+ * @param {object} settings
+ * @returns {Promise<number|null>}  Tip, or null if the collection has no events yet.
+ */
+export async function ensureVectorizationTip(chatUUID, collectionId, settings) {
+    if (!chatUUID) return null;
+    const cached = _vectorizationTipByUuid.get(chatUUID);
+    if (typeof cached === 'number') return cached;
+    if (!collectionId) return null;
+    try {
+        const { getBackend } = await import('../backends/backend-manager.js');
+        const backendInstance = await getBackend(settings);
+        const result = await backendInstance.listChunks(collectionId, settings, { limit: 10000 });
+        const items = Array.isArray(result?.items) ? result.items : [];
+        let maxEnd = -1;
+        for (const it of items) {
+            const end = it?.metadata?.source_window_end;
+            if (typeof end === 'number' && end > maxEnd) maxEnd = end;
+        }
+        if (maxEnd < 0) return null;
+        const tip = maxEnd + 1;
+        _vectorizationTipByUuid.set(chatUUID, tip);
+        return tip;
+    } catch (err) {
+        console.warn(`[EventBase VectorizationTip] probe failed for ${collectionId} — falling back to marker:`, err?.message || err);
+        return null;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Insert
 // ---------------------------------------------------------------------------

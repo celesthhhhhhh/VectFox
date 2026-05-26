@@ -430,19 +430,21 @@ User scenario the marker makes safe:
 
 **Key-form parity is load-bearing.** Four sites read or write the per-collection autoSync flag: `refreshAutoSyncCheckbox` (UI mirror), `getChatAutoSyncStatus` (state evaluator), the change handler (writer), and `synchronizeChat` (the engine that actually fires extraction). All four must use the **registry-key form** (`backend:id`) — built via `buildRegistryKey(collectionId, settings)` or pulled from `entry.registryKey`. The 2026-05-17 regression where the popup never fired and extraction never ran was a single site (`synchronizeChat`) reading with the bare collection ID while everyone else wrote with the registry key. The flag was saved correctly; the reader looked in the wrong bucket and saw `undefined`.
 
-State evaluator: **`getChatAutoSyncStatus(settings)`** in `core/eventbase-workflow.js`. Pure in-memory — no backend probe. Returns one of:
+State evaluator: **`async getChatAutoSyncStatus(settings)`** in `core/eventbase-workflow.js`. Mostly in-memory; performs at most ONE backend probe per (chat, session) for the vectorization-tip cache (see below). Returns one of:
 
 ```
 { state: 'no-chat' }
 { state: 'no-collection' }
 { state: 'vectorization-ahead', collectionId, registryKey, chatMessageCount, markerValue }
-{ state: 'partial',          collectionId, registryKey, chatMessageCount, markerValue? }
-{ state: 'fully-vectorized', collectionId, registryKey, chatMessageCount, markerValue? }
+{ state: 'partial',          collectionId, registryKey, chatMessageCount, markerValue?, vectorizationTip? }
+{ state: 'fully-vectorized', collectionId, registryKey, chatMessageCount, markerValue?, vectorizationTip? }
 ```
 
 Match logic: walks the registry, picks the first eventbase entry whose ID matches the current chat's UUID via `buildChatSearchPatterns` + `matchesPatterns` (substring on UUID). This handles legacy ID formats and character renames — the UUID is the stable identifier.
 
 "Fully vectorized" is determined by `isChatFullyVectorized(messages, settings, chatUUID)`, which checks whether the last possible window for the current message count is already in `eventbase_extracted_windows[uuid]`. No DB query, just an O(1) Set lookup.
+
+**Vectorization tip cache (`vectorizationTip`)** — added 2026-05-26 to fix a UI lie. The auto-sync **start marker** (`eventbase_autosync_start_marker[uuid]`) is stamped ONCE when auto-sync is enabled and never updated as new windows extract. The UI used to display the marker as "vectorization: N msgs," which froze at enable-time and drifted from reality. The tip cache lives in `core/eventbase-store.js` as `_vectorizationTipByUuid: Map<uuid, number>` and represents `max(source_window_end) + 1` for the chat. The ingestion loop calls `setVectorizationTip(uuid, win.end + 1)` after every successful `markWindowExtracted`, keeping the cache current with zero per-tick cost. On cache miss (first read after page reload), `ensureVectorizationTip()` fires one `listChunks` probe to backfill from Qdrant. UI prefers `vectorizationTip` over `markerValue` for the "vectorization: N msgs" display.
 
 **`vectorization-ahead` state** — distinct branch (added 2026-05-24) covering the case where the per-chat auto-sync marker (`extension_settings.vectfox.eventbase_autosync_start_marker[uuid]`) is past the current chat's message count. Usual cause: user bound a chat vectorization that was extracted from a longer version of the same chat (or deleted messages after vectorizing). The marker filter inside `runEventBaseIngestion` rejects every window in that case — extraction is frozen until the chat catches up to the marker. The UI surfaces this as a distinct, informative state instead of the misleading "Locked — will sync on next trigger" message that previously fired and never produced any work. **Intentional non-fix**: no marker clamp / re-stamp / clear. The chat-shrinkage case is rare and user-induced; auto-correcting silently would hide a likely user error (binding the wrong vectorization). UI clarity beats silent recovery.
 

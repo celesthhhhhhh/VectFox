@@ -19,7 +19,7 @@ import { queryCollection } from './core-vector-api.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { EventBaseFatalError, EventBaseExtractionError } from './eventbase-schema.js';
 import { extractEvents } from './eventbase-extractor.js';
-import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearWindowCacheForChat, buildEventBaseCollectionId, isLastWindowExtracted } from './eventbase-store.js';
+import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearWindowCacheForChat, buildEventBaseCollectionId, isLastWindowExtracted, setVectorizationTip, ensureVectorizationTip } from './eventbase-store.js';
 import { getSavedHashes } from './core-vector-api.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { retrieveEventsWithAgent } from './agentic-retrieval.js';
@@ -329,7 +329,9 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                 }
 
                 // Carry sourceHashes for sequential insertion below.
-                return { skipped: false, events: toStore, sourceHashes };
+                // windowEnd lets the post-batch loop bump the vectorization-tip
+                // cache (used by the Auto-Sync UI to display real progress).
+                return { skipped: false, events: toStore, sourceHashes, windowEnd: win.end };
             }),
         );
 
@@ -357,14 +359,16 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         // 8 windows) so this is acceptable.
         const allEvents = [];
         const hashesToMark = [];
+        const endsExtracted = []; // for the vectorization-tip cache bump
         for (const r of batchResults) {
             if (r.status !== 'fulfilled' || r.value?.skipped) continue;
-            const { events: winEvents, sourceHashes: winHashes } = r.value;
+            const { events: winEvents, sourceHashes: winHashes, windowEnd } = r.value;
             if (!winHashes) continue; // extraction failed — do not mark
             if (winEvents?.length > 0) {
                 allEvents.push(...winEvents);
             }
             hashesToMark.push(winHashes);
+            if (typeof windowEnd === 'number') endsExtracted.push(windowEnd);
         }
 
         let insertWallMs = 0;
@@ -379,6 +383,13 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         if (!abortSignal?.aborted) {
             for (const winHashes of hashesToMark) {
                 markWindowExtracted(winHashes, uuid);
+            }
+            // Bump the vectorization-tip cache to reflect the new high-water mark.
+            // Tip = max(source_window_end) + 1; the UI displays this so users see
+            // real sync progress rather than the frozen start marker. setter is
+            // monotonic max, so out-of-order calls don't regress the tip.
+            for (const end of endsExtracted) {
+                setVectorizationTip(uuid, end + 1);
             }
         }
 
@@ -838,7 +849,7 @@ export function isChatFullyVectorized(messages, settings, chatUUID) {
  * @param {object} settings - extension_settings.vectfox
  * @returns {object}
  */
-export function getChatAutoSyncStatus(settings) {
+export async function getChatAutoSyncStatus(settings) {
     const chatId = getCurrentChatId();
     if (!chatId) return { state: 'no-chat' };
 
@@ -887,11 +898,19 @@ export function getChatAutoSyncStatus(settings) {
     }
 
     const fullyVectorized = isChatFullyVectorized(messages, settings, uuid);
+
+    // Cache-first read; one-time probe on cold cache populates from Qdrant.
+    // After first session-warmup, the ingestion loop keeps this up-to-date
+    // via setVectorizationTip after each window. See eventbase-store.js for
+    // the cache lifecycle docs.
+    const vectorizationTip = await ensureVectorizationTip(uuid, match.collectionId, settings);
+
     return {
         state: fullyVectorized ? 'fully-vectorized' : 'partial',
         collectionId: match.collectionId,
         registryKey: match.registryKey,
         chatMessageCount,
         markerValue: typeof markerValue === 'number' ? markerValue : undefined,
+        vectorizationTip: typeof vectorizationTip === 'number' ? vectorizationTip : undefined,
     };
 }

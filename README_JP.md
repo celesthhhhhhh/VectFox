@@ -397,7 +397,7 @@ SillyTavern を再起動します。
 3. エンベディングプロバイダーを選びます (Transformers, vLLM, Ollama, OpenRouter, etc.).。
    - 💡 **おすすめ：** **OpenRouter** 経由で `qwen/qwen3-embedding-8b` を使ってください。非常に安価で、多言語対応に優れ（CJK・ラテン双方とも優秀）、VectFox が想定するコーパス規模に対して高品質な密ベクトルを生成します。
 4. 要約 LLM を選びます（OpenRouter または vLLM）—— ベクトル化中の EventBase 抽出で使われます。
-   - 💡 **OpenRouter のおすすめモデル：** 最も安価な軽量抽出には `openai/gpt-4o-mini`、xAI/Grok を使いたい場合は `x-ai/grok-4.3` を使用してください。OpenRouter が古いモデル ID（例：`x-ai/grok-4.1-fast`）に対して 404 や非推奨エラーを返す場合、その ID は避けてください。モデルの提供状況は時間とともに変わるため、長時間の取り込みを実行する前に OpenRouter 上で正確なモデル ID を確認してください。**Agent Mode の LLM**（AgentMode タブで別途設定）にも同じ推奨が当てはまります —— AgentMode のモデル欄を空欄のままにしておくと、この要約器設定が継承されます。
+   - 💡 **OpenRouter のおすすめモデル：** 安価で高速な抽出パスには `openai/gpt-4o-mini` または `google/gemini-3.1-flash-lite` を使用してください——どちらもコストと取り込みのレイテンシを低く保てます。より高い抽出品質が必要で追加のコストを許容できる場合は、`x-ai/grok-4.3` がより強力ですが高価な選択肢です。OpenRouter が古いモデル ID（例：`x-ai/grok-4.1-fast`）に対して 404 や非推奨エラーを返す場合、その ID は避けてください。モデルの提供状況は時間とともに変わるため、長時間の取り込みを実行する前に OpenRouter 上で正確なモデル ID を確認してください。**Agent Mode の LLM**（AgentMode タブで別途設定）にも同じ推奨が当てはまります —— AgentMode のモデル欄を空欄のままにしておくと、この要約器設定が継承されます。
 5. クラウドプロバイダー（OpenRouter / vLLM ）を使う場合は、API キーを設定します。
 6. **Keyword Extraction** で、あなたのストーリーの言語を選びます。
 7. ほとんどの設定はデフォルトのままで大丈夫ですが、必要に応じて自由に調整してください。

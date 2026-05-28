@@ -119,4 +119,28 @@ describe('getModelConfigErrorMessage', () => {
             enforceStatusGate: false,
         })).toBeNull();
     });
+
+    it('catches OpenRouter\'s HTTP-200 "Not Found" body but NOT a genuinely empty reply', () => {
+        // Real-world: OpenRouter via ST's proxy returns 200 + {"message":"Not Found"}
+        // for a retired/unknown model. We must catch the error text...
+        expect(getModelConfigErrorMessage({
+            contextLabel: 'EventBase',
+            provider: 'OpenRouter',
+            model: 'x-ai/grok-4.1-fast',
+            status: 200,
+            responseText: '{"message":"Not Found"}',
+            enforceStatusGate: false,
+        })).toContain('x-ai/grok-4.1-fast');
+
+        // ...but a genuinely empty 200 (no content, no error) must stay a per-window
+        // skip, never a hard stop — we can't fail just because the body was empty.
+        expect(getModelConfigErrorMessage({
+            contextLabel: 'EventBase',
+            provider: 'OpenRouter',
+            model: 'openai/gpt-4o-mini',
+            status: 200,
+            responseText: '{"choices":[]}',
+            enforceStatusGate: false,
+        })).toBeNull();
+    });
 });

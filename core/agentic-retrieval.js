@@ -386,6 +386,23 @@ async function _callPlanner({ systemPrompt, userMessage, llmCfg, timeoutMs }) {
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content;
     if (!content) {
+        // OpenRouter via ST's proxy can return HTTP 200 with an error body (e.g.
+        // {"message":"Not Found"} for a retired model) instead of a 4xx. Surface that
+        // as a model-config error; a genuinely empty 200 stays the generic error below.
+        const bodyText = data?.error ? JSON.stringify(data.error) : JSON.stringify(data || {});
+        const modelConfigError = getModelConfigErrorMessage({
+            contextLabel: 'Agent Mode',
+            provider: llmCfg.provider,
+            model: llmCfg.model,
+            status: response.status,
+            responseText: bodyText,
+            enforceStatusGate: false,
+        });
+        if (modelConfigError) {
+            const err = new Error(modelConfigError);
+            err.code = 'invalid_model_config';
+            throw err;
+        }
         throw new Error('LLM returned empty content');
     }
 

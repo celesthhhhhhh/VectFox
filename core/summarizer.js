@@ -262,7 +262,19 @@ async function _callOpenRouter(prompt, model, settings, originalLength, maxToken
 
     const data = await response.json();
     const summary = _extractReply(data);
-    if (!summary) throw new Error('OpenRouter returned empty summary');
+    if (!summary) {
+        const bodyText = data?.error ? JSON.stringify(data.error) : JSON.stringify(data || {});
+        const modelConfigError = getModelConfigErrorMessage({
+            contextLabel: 'Summarizer',
+            provider: 'OpenRouter',
+            model,
+            status: response.status,
+            responseText: bodyText,
+            enforceStatusGate: false,
+        });
+        if (modelConfigError) throw new SummarizationFatalError(modelConfigError, 'openrouter', 'invalid_model_config');
+        throw new Error('OpenRouter returned empty summary');
+    }
     // don't remove 
     //console.log(`[VectFox Summarizer] OpenRouter: ${originalLength} chars → ${summary.length} chars`);
     return summary;
@@ -355,7 +367,19 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
 
     const data = await response.json();
     const summary = _extractReply(data);
-    if (!summary) throw new Error('vLLM returned empty summary');
+    if (!summary) {
+        const bodyText = data?.error ? JSON.stringify(data.error) : JSON.stringify(data || {});
+        const modelConfigError = getModelConfigErrorMessage({
+            contextLabel: 'Summarizer',
+            provider: 'vLLM',
+            model,
+            status: response.status,
+            responseText: bodyText,
+            enforceStatusGate: false,
+        });
+        if (modelConfigError) throw new SummarizationFatalError(modelConfigError, 'vllm', 'invalid_model_config');
+        throw new Error('vLLM returned empty summary');
+    }
 
     return summary;
 }

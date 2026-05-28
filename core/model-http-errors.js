@@ -1,9 +1,13 @@
 const MODEL_CONFIG_STATUSES = new Set([400, 404]);
-// Match only phrases that point at a wrong/retired/unavailable model. We must NOT
-// match the bare word "model": context-length-exceeded and content-policy 400s also
-// say "model" (e.g. "this model's maximum context length…"), and those are per-window
+// Match phrases that point at a wrong/retired/unavailable model. We must NOT match
+// the bare word "model": context-length-exceeded and content-policy 400s also say
+// "model" (e.g. "this model's maximum context length…"), and those are per-window
 // failures that should be skipped, not promoted to a run-aborting fatal error.
-const MODEL_CONFIG_ERROR_RE = /(deprecated|no endpoints?|no allowed providers?|model[_ ]not[_ ]found|no such model|unknown model|invalid model|not a valid model|does not exist|doesn't exist)/i;
+// "not found" IS included on purpose: OpenRouter via ST's proxy returns HTTP 200
+// with body {"message":"Not Found"} for an invalid model — the real-world signal we
+// must catch. A genuine routing 404 also matches, but that's a config problem worth
+// surfacing too, so the broadness is acceptable (context-length/policy don't say it).
+const MODEL_CONFIG_ERROR_RE = /(deprecated|no endpoints?|no allowed providers?|not found|not_found|no such model|unknown model|invalid model|not a valid model|does not exist|doesn't exist)/i;
 
 function _upstreamSnippet(text) {
     return String(text || '')

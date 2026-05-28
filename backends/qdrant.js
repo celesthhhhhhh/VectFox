@@ -52,6 +52,15 @@ function _warnDimensionMismatch(errorBody) {
     }
 }
 
+// A query request embeds the search text server-side BEFORE touching Qdrant.
+// Qdrant on LAN answers in <50ms, so a slow/504 response almost always means the
+// embedding provider is the bottleneck — not Qdrant. This note is appended to
+// query-failure logs so the embedding step is never misattributed to Qdrant.
+function _embedTimeoutHint(settings) {
+    const source = settings?.source || 'transformers';
+    return `NOTE: this request embeds server-side via '${source}' before querying Qdrant. Qdrant on LAN answers in <50ms, so a timeout/504 here points to the embedding provider ('${source}'), NOT Qdrant.`;
+}
+
 // NOTE: `vectfox_main` is kept verbatim for on-disk compatibility
 // with existing user Qdrant data. Do not rebrand. See plans/vectfox-rename-plan.md §1.5.
 const MULTITENANCY_COLLECTION = 'vectfox_main';
@@ -444,6 +453,7 @@ export class QdrantBackend extends VectorBackend {
             threshold: 0.0,
             source: settings.source || 'transformers',
             model: getModelFromSettings(settings),
+            eventbaseDebug: !!settings.eventbase_debug_qdrant_backend,
             ...getPluginProviderParams(settings),
         };
 
@@ -466,18 +476,32 @@ export class QdrantBackend extends VectorBackend {
             };
         }
 
-        const response = await fetch('/api/plugins/similharity/chunks/query', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(body),
-        });
+        const tNetStart = performance.now();
+        let response;
+        try {
+            response = await fetch('/api/plugins/similharity/chunks/query', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify(body),
+            });
+        } catch (error) {
+            const failMs = (performance.now() - tNetStart).toFixed(1);
+            console.warn(`[Qdrant timing] queryCollection FAILED after ${failMs}ms (exception): ${error.message}. ${_embedTimeoutHint(settings)}`);
+            throw error;
+        }
 
         if (!response.ok) {
             const errorBody = await response.text().catch(() => 'No response body');
+            const failMs = (performance.now() - tNetStart).toFixed(1);
+            console.warn(`[Qdrant timing] queryCollection FAILED after ${failMs}ms (HTTP ${response.status}). ${_embedTimeoutHint(settings)} Server said: ${errorBody.slice(0, 300)}`);
             throw new Error(`[Qdrant] Failed to query collection ${collectionId}: ${response.status} ${response.statusText} - ${errorBody}`);
         }
 
         const data = await response.json();
+        if (settings.eventbase_debug_logging) {
+            const totalMs = (performance.now() - tNetStart).toFixed(1);
+            console.log(`[Qdrant timing] queryCollection total=${totalMs}ms (incl. server-side embed via '${settings.source || 'transformers'}'), results=${data.results?.length || 0}`);
+        }
 
         // Format results to match expected output
         const hashes = data.results.map(r => r.hash);
@@ -907,10 +931,10 @@ export class QdrantBackend extends VectorBackend {
                 _warnDimensionMismatch(errorBody);
                 return { hashes: [], metadata: [] };
             }
-            console.warn(`[Qdrant timing] FAILED after ${failMs}ms (HTTP ${response.status}), falling back to vector-only. Server said: ${errorBody.slice(0, 500)}`);
+            console.warn(`[Qdrant timing] hybridQuery FAILED after ${failMs}ms (HTTP ${response.status}), falling back to vector-only. ${_embedTimeoutHint(settings)} Server said: ${errorBody.slice(0, 500)}`);
         } catch (error) {
             const failMs = (performance.now() - tNetStart).toFixed(1);
-            console.warn(`[Qdrant timing] FAILED after ${failMs}ms (exception):`, error.message);
+            console.warn(`[Qdrant timing] hybridQuery FAILED after ${failMs}ms (exception): ${error.message}. ${_embedTimeoutHint(settings)}`);
         }
 
         return this.queryCollection(collectionId, searchText, topK, settings);
@@ -1046,10 +1070,10 @@ export class QdrantBackend extends VectorBackend {
                 _warnDimensionMismatch(errorBody);
                 return { hashes: [], metadata: [] };
             }
-            console.warn(`[Qdrant timing] hybrid+rerank FAILED after ${failMs}ms (HTTP ${response.status}), falling back to hybridQuery. Server said: ${errorBody.slice(0, 500)}`);
+            console.warn(`[Qdrant timing] hybrid+rerank FAILED after ${failMs}ms (HTTP ${response.status}), falling back to hybridQuery. ${_embedTimeoutHint(settings)} Server said: ${errorBody.slice(0, 500)}`);
         } catch (error) {
             const failMs = (performance.now() - tNetStart).toFixed(1);
-            console.warn(`[Qdrant timing] hybrid+rerank FAILED after ${failMs}ms (exception):`, error.message);
+            console.warn(`[Qdrant timing] hybrid+rerank FAILED after ${failMs}ms (exception): ${error.message}. ${_embedTimeoutHint(settings)}`);
         }
 
         // Fallback: regular hybridQuery (no server-side rerank). The caller

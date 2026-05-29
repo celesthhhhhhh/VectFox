@@ -473,6 +473,10 @@ const _EXTRACTION_LANG_INTL =
 `1. LANGUAGE — MANDATORY:
    - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in English.
    - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - CONCEPTS examples for this language (see full rules in OUTPUT SCHEMA below):
+       GOOD: "sacrifice", "trust", "obligation", "isolation", "redemption", "the cost of victory"
+       BAD:  "Mayla" (character), "tavern" (location), "sword" (item),
+             "combat" (action), "leveling up" (mechanic)
    - Violating this rule makes the output invalid.
 
 `;
@@ -482,6 +486,11 @@ const _EXTRACTION_LANG_JIEBA =
    - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in Simplified Chinese (简体中文).
    - DO NOT convert to Traditional Chinese.
    - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - CONCEPTS 范例（完整规则见下方 OUTPUT SCHEMA）：
+       好的概念：「赎身」、「失踪的父亲」、「信仰」、「情感依附」、「亲情」、「孤独」、「背叛」
+       不要放：「梅拉」(人名)、「酒馆」(地点)、「魔导石」(物品)、
+                「战斗」(动作)、「升级」(机制)、「食腐蟹」(怪物名)、
+                「属性点分配」(游戏机制)
    - Violating this rule makes the output invalid.
 
 `;
@@ -491,6 +500,11 @@ const _EXTRACTION_LANG_JIEBA_TW =
    - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in Traditional Chinese (繁體中文).
    - DO NOT convert to Simplified Chinese.
    - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - CONCEPTS 範例（完整規則見下方 OUTPUT SCHEMA）：
+       好的概念：「贖身」、「失蹤的父親」、「信仰」、「情感依附」、「親情」、「孤獨」、「背叛」
+       不要放：「梅拉」(人名)、「酒館」(地點)、「魔導石」(物品)、
+                「戰鬥」(動作)、「升級」(機制)、「食腐蟹」(怪物名)、
+                「屬性點分配」(遊戲機制)
    - Violating this rule makes the output invalid.
 
 `;
@@ -499,6 +513,11 @@ const _EXTRACTION_LANG_TINY_SEGMENTER =
 `1. LANGUAGE — MANDATORY:
    - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in Japanese (日本語).
    - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - CONCEPTS 例（詳しいルールは下の OUTPUT SCHEMA を参照）：
+       良い概念：「誓い」、「罪悪感」、「信頼」、「孤独」、「親子の絆」、「贖罪」、「裏切り」
+       不可：「メイラ」(人名)、「酒場」(場所)、「剣」(アイテム)、
+              「戦闘」(動作)、「レベルアップ」(ゲーム機構)、
+              「食腐蟹」(モンスター名)、「ステータス振り分け」(機構)
    - Violating this rule makes the output invalid.
 
 `;
@@ -507,6 +526,11 @@ const _EXTRACTION_LANG_KOREAN =
 `1. LANGUAGE — MANDATORY:
    - All string fields (summary, cause, result, characters, locations, factions, items, concepts, keywords, open_threads) MUST be in Korean (한국어).
    - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - CONCEPTS 예시 (전체 규칙은 아래 OUTPUT SCHEMA 참조):
+       좋은 개념: "맹세", "부녀의 정", "신뢰", "고독", "속죄", "배신", "희생"
+       나쁨: "메이라" (인명), "주막" (장소), "검" (아이템),
+             "전투" (행동), "레벨업" (게임 메커닉),
+             "식부해" (몬스터 이름), "능력치 분배" (게임 메커닉)
    - Violating this rule makes the output invalid.
 
 `;
@@ -517,6 +541,13 @@ const _EXTRACTION_LANG_OTHERS =
    - Do NOT default to English unless the excerpt is in English.
    - If the excerpt mixes languages, follow the dominant language of each individual field's source content.
    - Proper nouns: preserve exact form from the excerpt — DO NOT translate, romanize, or transliterate names.
+   - CONCEPTS examples (English shown — translate the SHAPE into the detected language):
+       GOOD (abstract themes that recur): "sacrifice", "trust", "obligation",
+             "isolation", "redemption", "the cost of victory"
+       BAD  (entity / action / mechanic — belong in OTHER fields):
+             a character name → characters, a location → locations,
+             an item → items, a specific battle → keywords / summary,
+             "leveling up" → keywords (it's a game mechanic, not a theme)
    - Violating this rule makes the output invalid.
 
 `;
@@ -594,7 +625,32 @@ Each event object MUST have these fields:
 - factions: array of strings, EXACT ORIGINAL SCRIPT
 - DateTime: ISO 8601 string (e.g., "2024-01-01T12:00:00Z") representing when the event occurred in the story timeline, if it can be determined from the excerpt; otherwise omit or set to null.
 - items: array of strings, EXACT ORIGINAL SCRIPT
-- concepts: array of strings, SAME LANGUAGE AS EXCERPT
+- concepts: array of 2-5 strings, SAME LANGUAGE AS EXCERPT.
+  Concepts are ABSTRACT THEMES — the answer to "what is this event ABOUT,
+  beyond what literally happened?". They are NOT a second copy of keywords,
+  and they are NOT a place for entity names.
+
+  RULES — apply ALL THREE before adding a term to concepts:
+    (a) NOT-ENTITY:    Must NOT be a character, location, item, faction,
+                       monster, organization, or game stat/mechanic. Those
+                       go in their own fields. If you can point to it on a
+                       map, hold it in your hand, or look it up in a rules
+                       book, it is not a concept.
+    (b) NOT-ACTION:    Must NOT be a specific verb or event. A single combat,
+                       a level-up, a trade, a quest hand-in are NOT concepts.
+                       The IDEA behind them ("the cost of victory", "trust
+                       building", "betrayal of loyalty") IS a concept.
+    (c) GENERALIZES:   Must be broad enough to apply to multiple events
+                       across the story (themes recur). If the term only
+                       fits this one specific event, it is a keyword,
+                       not a concept.
+
+  Language-specific GOOD / BAD examples appear in Rule 1 above. Refer to
+  those — do NOT use examples from a different language than the excerpt.
+
+  Self-check before returning: for each concept you wrote, ask "could this
+  be a recurring theme across multiple events in this story?". If no,
+  move it to keywords or remove it. Fewer good concepts beats more weak ones.
 - keywords: array of 8-15 strings, SAME LANGUAGE AS EXCERPT. Search aids used by a keyword retrieval engine — be GENEROUS and INCLUSIVE. Include every distinctive term that a future query about this event might use: key actions/verbs, distinctive objects/items, emotional or thematic tags, unique concepts, and any rare/specific noun that isn't generic filler. DO NOT pad with generic words. Quality matters but err on the side of MORE rather than fewer — sparse keywords cause retrieval misses. CRITICAL: keywords MUST be in the same language as the excerpt (see Rule 1). NEVER output a different language in this field.
 - open_threads: array of strings, SAME LANGUAGE AS EXCERPT (unresolved questions/promises)
 - should_persist: boolean (false for ephemeral moments unlikely to matter later)
@@ -616,25 +672,25 @@ const _EXTRACTION_EXAMPLES_INTL =
 
 const _EXTRACTION_EXAMPLES_JIEBA =
 `One event (Simplified Chinese excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"师傅承诺帮梅拉寻找失踪的父亲暗影之翼。","cause":"梅拉在房间中央哭着请求帮助。","result":"寻找暗影之翼成为队伍的核心目标。","characters":["梅拉","师父"],"locations":["星月绿洲顶楼公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失踪的父亲"],"keywords":["暗影之翼","寻找父亲","承诺","哭泣","请求","失踪","核心目标","队伍任务","誓言","亲情"],"open_threads":["确定暗影之翼是生是死"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"师傅承诺帮梅拉寻找失踪的父亲暗影之翼。","cause":"梅拉在房间中央哭着请求帮助。","result":"寻找暗影之翼成为队伍的核心目标。","characters":["梅拉","师父"],"locations":["星月绿洲顶楼公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失踪的父亲","承诺","亲情"],"keywords":["暗影之翼","寻找父亲","承诺","哭泣","请求","失踪","核心目标","队伍任务","誓言","亲情"],"open_threads":["确定暗影之翼是生是死"],"should_persist":true}]
 
 `;
 
 const _EXTRACTION_EXAMPLES_JIEBA_TW =
 `One event (Traditional Chinese excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"師傅承諾幫梅拉尋找失蹤的父親暗影之翼。","cause":"梅拉在房間中央哭著請求幫助。","result":"尋找暗影之翼成為隊伍的核心目標。","characters":["梅拉","師父"],"locations":["星月綠洲頂樓公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失蹤的父親"],"keywords":["暗影之翼","尋找父親","承諾","哭泣","請求","失蹤","核心目標","隊伍任務","誓言","親情"],"open_threads":["確定暗影之翼是生是死"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"師傅承諾幫梅拉尋找失蹤的父親暗影之翼。","cause":"梅拉在房間中央哭著請求幫助。","result":"尋找暗影之翼成為隊伍的核心目標。","characters":["梅拉","師父"],"locations":["星月綠洲頂樓公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失蹤的父親","承諾","親情"],"keywords":["暗影之翼","尋找父親","承諾","哭泣","請求","失蹤","核心目標","隊伍任務","誓言","親情"],"open_threads":["確定暗影之翼是生是死"],"should_persist":true}]
 
 `;
 
 const _EXTRACTION_EXAMPLES_TINY_SEGMENTER =
 `One event (Japanese excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"師匠はメイラの行方不明の父・影の翼を見つけることを約束した。","cause":"メイラが部屋の中央で泣きながら助けを求めた。","result":"影の翼の捜索がパーティーの中心目標となった。","characters":["メイラ","師匠"],"locations":["星月オアシス最上階アパート"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["行方不明の父"],"keywords":["影の翼","父の捜索","約束","泣く","懇願","行方不明","中心目標","パーティーの任務","誓い","親子の絆"],"open_threads":["影の翼の生死を確認する"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"師匠はメイラの行方不明の父・影の翼を見つけることを約束した。","cause":"メイラが部屋の中央で泣きながら助けを求めた。","result":"影の翼の捜索がパーティーの中心目標となった。","characters":["メイラ","師匠"],"locations":["星月オアシス最上階アパート"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["行方不明の父","誓い","親子の絆"],"keywords":["影の翼","父の捜索","約束","泣く","懇願","行方不明","中心目標","パーティーの任務","誓い","親子の絆"],"open_threads":["影の翼の生死を確認する"],"should_persist":true}]
 
 `;
 
 const _EXTRACTION_EXAMPLES_KOREAN =
 `One event (Korean excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"스승은 메이라의 실종된 아버지 그림자의 날개를 찾아주기로 약속했다.","cause":"메이라가 방 한가운데서 울며 도움을 청했다.","result":"그림자의 날개를 찾는 것이 파티의 핵심 목표가 되었다.","characters":["메이라","스승"],"locations":["성월 오아시스 옥상 아파트"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["실종된 아버지"],"keywords":["그림자의 날개","아버지 찾기","약속","울음","간청","실종","핵심 목표","파티 임무","맹세","부녀의 정"],"open_threads":["그림자의 날개의 생사 확인"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"스승은 메이라의 실종된 아버지 그림자의 날개를 찾아주기로 약속했다.","cause":"메이라가 방 한가운데서 울며 도움을 청했다.","result":"그림자의 날개를 찾는 것이 파티의 핵심 목표가 되었다.","characters":["메이라","스승"],"locations":["성월 오아시스 옥상 아파트"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["실종된 아버지","약속","부녀의 정"],"keywords":["그림자의 날개","아버지 찾기","약속","울음","간청","실종","핵심 목표","파티 임무","맹세","부녀의 정"],"open_threads":["그림자의 날개의 생사 확인"],"should_persist":true}]
 
 `;
 

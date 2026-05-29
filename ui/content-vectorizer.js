@@ -2705,6 +2705,26 @@ async function _runEventBaseBackfill({ resetCaches = false } = {}) {
             console.log('[EventBase] Ingestion stopped by user');
             return;
         }
+        // Insert failed after 3 retries — surface the underlying Qdrant error in a
+        // popup so the user can see WHY (rate-limit / disk full / collection
+        // schema mismatch / etc). A toast is too short for the multi-line errors
+        // Qdrant tends to return; a popup gives the user something to copy and
+        // share when reporting the problem. See plans/eventbase-extract-insert-pipeline.md §3.4.
+        if (e?.code === 'insert_failed_max_retries') {
+            console.error('[EventBase] Insert failed after 3 retries:', e);
+            await callGenericPopup(
+                `<div style="text-align: left;">
+                    <p><strong>Vectorization stopped — database insert failed</strong></p>
+                    <p>VectFox tried 3 times to write a batch of events to the vector store and the database rejected every attempt. Your collection is consistent (no partial writes), and the next run will pick up where this one stopped.</p>
+                    <p>Underlying error:</p>
+                    <pre style="white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">${StringUtils.escapeHtml(e.message)}</pre>
+                </div>`,
+                POPUP_TYPE.TEXT,
+                '',
+                { okButton: 'Close' },
+            );
+            return;
+        }
         console.error('[EventBase] Backfill failed:', e);
         toastr.error('EventBase ingestion failed: ' + e.message, 'VectFox');
     } finally {

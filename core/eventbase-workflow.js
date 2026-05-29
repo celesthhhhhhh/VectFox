@@ -263,34 +263,61 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             console.log(`[EventBase] Fast-forward: skipped ${fastForwardSkipped} already-extracted window(s), starting at window ${fastForwardSkipped}`);
         }
     }
-    let windowIdx = fastForwardSkipped;
+    // -----------------------------------------------------------------------
+    // Pipelined extract/insert loop (see plans/eventbase-extract-insert-pipeline.md).
+    //
+    // Today's serial barrier was: dispatch 8 extracts → await all → await insert
+    // → next 8. The slow tail of the extract phase + the insert phase were
+    // additive, leaving the LLM lane idle while Qdrant wrote.
+    //
+    // The coordinator below runs ONE extract and ONE insert concurrently, with
+    // a single-slot queue between them. Steady-state cycle becomes
+    // max(extract_phase, insert_phase) instead of extract+insert. Per the
+    // user's reference run (10.8s extract, 5.8s insert), ~35% wall-time win.
+    //
+    // Three helpers, three responsibilities:
+    //   _runOneExtractBatch  — the existing per-window extract logic, moved
+    //                          intact into a function so the coordinator can
+    //                          call it as a black box.
+    //   _insertWithRetry     — wraps insertEvents with up to 3 attempts +
+    //                          exponential-ish backoff. Per user spec: insert
+    //                          failures after 3 retries are fatal — surface
+    //                          Qdrant's error to the user and bubble.
+    //   _finalizeBatch       — the existing insert + mark + tip + progress
+    //                          logic, moved intact. Calls _insertWithRetry.
+    //                          State-mutation order preserved (insert →
+    //                          markWindowExtracted → setVectorizationTip →
+    //                          progress) so "no corrupted state" invariant
+    //                          holds even if the user clicks Stop mid-pipeline.
+    //
+    // The coordinator drives 4 state variables: nextBatchFirstIdx (cursor),
+    // pendingExtract (Promise|null), pendingInsert (Promise|null),
+    // queuedResult (ExtractResult|null). The single-slot queue means at most
+    // ONE batch is extracted-but-not-inserted at any time — deeper queue
+    // would not help (slow stage gates throughput) and only adds memory +
+    // complicates abort.
+    // -----------------------------------------------------------------------
 
-    while (windowIdx < windows.length) {
-        if (abortSignal?.aborted) {
-            progressTracker.complete(false, 'Stopped by user');
-            return { eventsExtracted, windowsProcessed, windowsSkipped };
-        }
-
-        const batch = windows.slice(windowIdx, windowIdx + CONCURRENCY);
-        windowIdx += batch.length;
-
-        // Concurrency diagnostics — proves whether N parallel LLM calls actually
-        // fire together vs. queueing somewhere. Per-window dispatch/finish
-        // timestamps let you see if window K starts at t=0 alongside K+1..K+N-1
-        // (true parallel) or only after K-1 returns (serial). Also separates
-        // the LLM-extract phase from the serialized Qdrant-insert phase so you
-        // can see which one dominates wall time.
+    /**
+     * Per-batch extractor — moved verbatim from the original loop. Runs N
+     * windows in parallel via Promise.allSettled, builds the {events, hashes,
+     * ends} packet the finalizer needs. Throws EventBaseFatalError only when
+     * the underlying LLM call surfaces one (auth/config errors).
+     *
+     * @param {object[]} windowsSlice
+     * @param {number}   batchFirstIdx  Absolute index of this batch's first window
+     * @returns {Promise<object>} ExtractResult
+     */
+    async function _runOneExtractBatch(windowsSlice, batchFirstIdx) {
         const batchStartedAt = performance.now();
-        const batchFirstIdx = windowIdx - batch.length;
-        const batchLastIdx = windowIdx - 1;
+        const batchLastIdx = batchFirstIdx + windowsSlice.length - 1;
         if (debugLog) {
-            console.log(`[EventBase concurrency] Dispatching batch: windows ${batchFirstIdx}-${batchLastIdx} (size=${batch.length}, CONCURRENCY=${CONCURRENCY}) at t=${batchStartedAt.toFixed(1)}ms`);
+            console.log(`[EventBase concurrency] Dispatching batch: windows ${batchFirstIdx}-${batchLastIdx} (size=${windowsSlice.length}, CONCURRENCY=${CONCURRENCY}) at t=${batchStartedAt.toFixed(1)}ms`);
         }
 
-        // Process batch in parallel
         const batchResults = await Promise.allSettled(
-            batch.map(async (win, batchOffset) => {
-                const wIdx = windowIdx - batch.length + batchOffset;
+            windowsSlice.map(async (win, batchOffset) => {
+                const wIdx = batchFirstIdx + batchOffset;
                 const winStartedAt = performance.now();
                 if (debugLog) {
                     console.log(`[EventBase concurrency] Window ${wIdx}: dispatched at +${(winStartedAt - batchStartedAt).toFixed(1)}ms`);
@@ -359,38 +386,20 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                     console.log(`[EventBase] Window ${wIdx}: dropped ${annotated.length - toStore.length} event(s) below minImportance=${minImportanceStore}`);
                 }
 
-                // Carry sourceHashes for sequential insertion below.
-                // windowEnd lets the post-batch loop bump the vectorization-tip
-                // cache (used by the Auto-Sync UI to display real progress).
                 return { skipped: false, events: toStore, sourceHashes, windowEnd: win.end };
             }),
         );
 
         const extractPhaseEndedAt = performance.now();
         if (debugLog) {
-            console.log(`[EventBase concurrency] Batch extract phase complete: ${(extractPhaseEndedAt - batchStartedAt).toFixed(0)}ms wall (${batch.length} window(s))`);
+            console.log(`[EventBase concurrency] Batch extract phase complete: ${(extractPhaseEndedAt - batchStartedAt).toFixed(0)}ms wall (${windowsSlice.length} window(s))`);
         }
 
-        // Coalesce all events from this batch's windows into ONE insertEvents
-        // call. The Similharity plugin (similharity/index.js::insertVectors)
-        // batches embedding requests: when N items arrive together, it calls
-        // OpenRouter ONCE with all texts and gets N vectors back. Before this
-        // change we paid for one ~9s embedding round-trip PER WINDOW (so
-        // 8 windows = 8×9s = 72s); now the whole batch shares one round-trip.
-        //
-        // The old "insert sequentially because Cloudflare/nginx HTTP/2 fan-out
-        // can merge concurrent POST bodies" guard targeted hosted-proxy setups
-        // — it doesn't apply here (local ST + local plugin + local Qdrant),
-        // and we're no longer firing concurrent POSTs anyway: we're firing
-        // ONE bigger POST.
-        //
-        // Atomicity tradeoff: per-batch instead of per-window. If the batched
-        // embed/insert fails, no windows in this batch get marked extracted,
-        // and the next run re-extracts all of them. Extract is cheap (~6s for
-        // 8 windows) so this is acceptable.
+        // Reduce per-window results into the {events, hashes, ends} packet the
+        // finalizer needs to write. Same coalescing as the original loop.
         const allEvents = [];
         const hashesToMark = [];
-        const endsExtracted = []; // for the vectorization-tip cache bump
+        const endsExtracted = [];
         for (const r of batchResults) {
             if (r.status !== 'fulfilled' || r.value?.skipped) continue;
             const { events: winEvents, sourceHashes: winHashes, windowEnd } = r.value;
@@ -402,23 +411,75 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             if (typeof windowEnd === 'number') endsExtracted.push(windowEnd);
         }
 
-        let insertWallMs = 0;
-        if (!abortSignal?.aborted && allEvents.length > 0) {
-            const insertStart = performance.now();
-            await insertEvents(allEvents, settings, abortSignal, collectionId);
-            insertWallMs = performance.now() - insertStart;
+        return {
+            batchFirstIdx,
+            batchLastIdx,
+            batchResults,
+            allEvents,
+            hashesToMark,
+            endsExtracted,
+            batchStartedAt,
+            extractPhaseEndedAt,
+        };
+    }
+
+    /**
+     * Wraps insertEvents with up to 3 attempts. Backoff between attempts is
+     * short (500ms / 1000ms) — these retries exist for transient Qdrant
+     * hiccups, not for sustained outages. On exhaustion, throws an
+     * EventBaseFatalError tagged "insert_failed_max_retries" so the UI can
+     * popup the underlying Qdrant message (which is what the user actually
+     * needs to debug). Pre-flight abort check before each attempt avoids
+     * pointless retries when the user already pressed Stop.
+     */
+    async function _insertWithRetry(events, batchFirstIdx) {
+        let lastErr;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            if (abortSignal?.aborted) {
+                const err = new Error('Aborted before insert attempt');
+                err.name = 'AbortError';
+                throw err;
+            }
+            try {
+                await insertEvents(events, settings, abortSignal, collectionId);
+                return; // success
+            } catch (err) {
+                if (err?.name === 'AbortError' || abortSignal?.aborted) throw err;
+                lastErr = err;
+                console.warn(`[EventBase] Insert batch starting at window ${batchFirstIdx} attempt ${attempt}/3 failed: ${err?.message || err}`);
+                if (attempt < 3) {
+                    await new Promise(r => setTimeout(r, Math.min(2000, 500 * attempt)));
+                }
+            }
         }
-        // Mark windows only after the batched insert succeeded (or there was
-        // nothing to insert — in which case we still mark zero-event windows
-        // so we don't re-extract them next run).
+        throw new EventBaseFatalError(
+            `EventBase: insert failed after 3 retries — ${lastErr?.message || lastErr}`,
+            'insert_failed_max_retries',
+        );
+    }
+
+    /**
+     * Per-batch finalizer — calls _insertWithRetry, then marks windows
+     * extracted + bumps tip + updates progress, IN THAT ORDER. The order is
+     * the "no corrupted state" invariant: we never mark a window as covered
+     * before its events are durable in Qdrant.
+     *
+     * Returns a tally the coordinator merges into the run totals. Fatal
+     * insert errors bubble (Promise.race in the coordinator surfaces them).
+     */
+    async function _finalizeBatch(extractResult) {
+        const { batchFirstIdx, batchResults, allEvents, hashesToMark, endsExtracted, batchStartedAt, extractPhaseEndedAt } = extractResult;
+
+        if (!abortSignal?.aborted && allEvents.length > 0) {
+            await _insertWithRetry(allEvents, batchFirstIdx);
+        }
+        // Mark windows only after insert succeeded (or there was nothing to
+        // insert — in which case we still mark zero-event windows so we don't
+        // re-extract them next run). Same rule as the pre-pipeline loop.
         if (!abortSignal?.aborted) {
             for (const winHashes of hashesToMark) {
                 markWindowExtracted(winHashes, uuid);
             }
-            // Bump the vectorization-tip cache to reflect the new high-water mark.
-            // Tip = max(source_window_end) + 1; the UI displays this so users see
-            // real sync progress rather than the frozen start marker. setter is
-            // monotonic max, so out-of-order calls don't regress the tip.
             for (const end of endsExtracted) {
                 setVectorizationTip(uuid, end + 1);
             }
@@ -431,34 +492,44 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             console.log(`[EventBase concurrency] Batch DONE: total=${(batchEndedAt - batchStartedAt).toFixed(0)}ms (extract=${extractPhaseMs.toFixed(0)}ms parallel, insert=${insertPhaseMs.toFixed(0)}ms — 1 batched POST with ${allEvents.length} event(s))`);
         }
 
-        // Tally results, watch for fatal errors
+        // Tally results, watch for fatal LLM errors (extract-side fatals
+        // arrive as rejected promises in batchResults).
+        const tally = { eventsAdded: 0, windowsProcessed: 0, windowsSkipped: 0, fatalError: null };
         for (const result of batchResults) {
             if (result.status === 'rejected') {
                 const err = result.reason;
                 if (err instanceof EventBaseFatalError) {
-                    progressTracker.complete(false, `EventBase fatal error: ${err.message}`);
-                    throw err; // bubble up to caller
+                    tally.fatalError = err;
+                    return tally; // coordinator handles the fatal
                 }
                 if (debugVectorizing || debugLog) {
                     console.warn('[EventBase] Batch window error:', err?.message || err);
                 }
             } else {
                 if (result.value?.skipped) {
-                    windowsSkipped++;
+                    tally.windowsSkipped++;
                 } else {
-                    windowsProcessed++;
-                    const extractedThisBatch = result.value?.events?.length || 0;
-                    eventsExtracted += extractedThisBatch;
-                    
-                    // Update display with running event count (shown in "Chunks" stat)
-                    progressTracker.updateChunks(eventsExtracted);
+                    tally.windowsProcessed++;
+                    tally.eventsAdded += (result.value?.events?.length || 0);
                 }
             }
         }
 
-        // Update progress with current window number and running event count
+        return tally;
+    }
+
+    /**
+     * Update progress display for one finalized batch. Called by the
+     * coordinator after each insert resolves — matches the user's "show
+     * stored, not extracted" preference (decision #2 in the design chat).
+     * The `batchLastIdx + 1` value is the next window to process; passing it
+     * to updateProgress keeps the progress bar advancing at the rhythm of
+     * inserts, not extracts.
+     */
+    function _updateProgressAfterFinalize(extractResult) {
         if (totalLegacyChunks > 0) {
-            const coveredMessages = Math.min(messages.length, (windowIdx * step) + windowOverlap);
+            const advancedWindowIdx = extractResult.batchLastIdx + 1;
+            const coveredMessages = Math.min(messages.length, (advancedWindowIdx * step) + windowOverlap);
             const processedLegacyChunks = _estimateProcessedLegacyChunks({
                 coveredMessages,
                 totalMessages: messages.length,
@@ -469,10 +540,133 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             progressTracker.updateEmbeddingProgress(processedLegacyChunks, totalLegacyChunks);
         }
 
+        progressTracker.updateChunks(eventsExtracted);
         progressTracker.updateProgress(
-            windowIdx,
-            `${eventsExtracted} event(s) found, processing windows...`
+            extractResult.batchLastIdx + 1,
+            `${eventsExtracted} event(s) found, processing windows...`,
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // Coordinator — single-slot pipelined loop.
+    // -----------------------------------------------------------------------
+    let nextBatchFirstIdx = fastForwardSkipped;
+    let pendingExtract = null;  // Promise<ExtractResult> | null
+    let pendingInsert  = null;  // Promise<Tally> | null
+    let queuedResult   = null;  // ExtractResult waiting for insert slot | null
+    // Race-wrapper promises tagged with kind so Promise.race can tell which
+    // side finished. They wrap pendingExtract / pendingInsert respectively;
+    // a winner.kind === 'extract' result discharges pendingExtract, and
+    // 'insert' discharges pendingInsert.
+    let extractKey = null;
+    let insertKey  = null;
+
+    while (true) {
+        if (abortSignal?.aborted) {
+            // Per design: drain in-flight insert so what landed in Qdrant is
+            // accompanied by its mark+tip writes. Discard any in-flight
+            // extract (its events were never inserted). Discard queuedResult
+            // (same reason). On the next run, those windows re-extract from
+            // a clean state.
+            if (pendingInsert) {
+                try { await pendingInsert; } catch (_) { /* swallow — we're stopping */ }
+            }
+            if (pendingExtract) {
+                try { await pendingExtract; } catch (_) { /* swallow */ }
+            }
+            progressTracker.complete(false, 'Stopped by user');
+            return { eventsExtracted, windowsProcessed, windowsSkipped };
+        }
+
+        // Decide what can start this iteration.
+        // Single-slot invariant: if queuedResult is non-null, do NOT start a
+        // new extract — that would buffer two batches behind the in-flight
+        // insert. Wait for the insert to clear first.
+        const canStartExtract = !pendingExtract && queuedResult === null && nextBatchFirstIdx < windows.length;
+        const canStartInsert  = !pendingInsert  && queuedResult !== null;
+
+        if (canStartExtract) {
+            const slice = windows.slice(nextBatchFirstIdx, nextBatchFirstIdx + CONCURRENCY);
+            const sliceFirstIdx = nextBatchFirstIdx;
+            nextBatchFirstIdx += slice.length;
+            pendingExtract = _runOneExtractBatch(slice, sliceFirstIdx);
+            extractKey = pendingExtract.then(
+                r => ({ kind: 'extract', result: r }),
+                e => ({ kind: 'extract', error: e }),
+            );
+        }
+
+        if (canStartInsert) {
+            const toInsert = queuedResult;
+            queuedResult = null;
+            pendingInsert = _finalizeBatch(toInsert);
+            insertKey = pendingInsert.then(
+                t => ({ kind: 'insert', tally: t, extractResult: toInsert }),
+                e => ({ kind: 'insert', error: e, extractResult: toInsert }),
+            );
+        }
+
+        // Terminal state: nothing pending, nothing queued, no more windows.
+        if (!pendingExtract && !pendingInsert) break;
+
+        // Race whichever is in flight.
+        const inFlight = [];
+        if (pendingExtract) inFlight.push(extractKey);
+        if (pendingInsert)  inFlight.push(insertKey);
+
+        const winner = await Promise.race(inFlight);
+
+        if (winner.kind === 'extract') {
+            pendingExtract = null;
+            extractKey = null;
+            if (winner.error) {
+                // Extract-side fatal (auth/config). Drain any in-flight insert
+                // — that data is already on the wire, we must not tear it
+                // down. Then surface the fatal.
+                if (pendingInsert) {
+                    try { await pendingInsert; } catch (_) { /* secondary */ }
+                }
+                progressTracker.complete(false, `EventBase fatal error: ${winner.error.message}`);
+                throw winner.error;
+            }
+            queuedResult = winner.result;
+        } else {
+            // insert-side resolution
+            pendingInsert = null;
+            insertKey = null;
+            if (winner.error) {
+                // _insertWithRetry threw — either max-retries fatal (already
+                // an EventBaseFatalError) or an AbortError. Drain in-flight
+                // extract before surfacing.
+                if (pendingExtract) {
+                    try { await pendingExtract; } catch (_) { /* swallow */ }
+                }
+                if (winner.error?.name === 'AbortError') {
+                    progressTracker.complete(false, 'Stopped by user');
+                    return { eventsExtracted, windowsProcessed, windowsSkipped };
+                }
+                // Surface the Qdrant error to the user. EventBaseFatalError
+                // is caught at the UI layer and turned into a popup.
+                const errMsg = winner.error?.message || String(winner.error);
+                progressTracker.complete(false, `Stopped — ${errMsg}`);
+                throw winner.error;
+            }
+            // Insert succeeded — fold tally and update progress.
+            const tally = winner.tally;
+            if (tally.fatalError) {
+                // Extract-side fatal that came through batchResults rather
+                // than as a rejected promise. Same handling as above.
+                if (pendingExtract) {
+                    try { await pendingExtract; } catch (_) { /* swallow */ }
+                }
+                progressTracker.complete(false, `EventBase fatal error: ${tally.fatalError.message}`);
+                throw tally.fatalError;
+            }
+            eventsExtracted  += tally.eventsAdded;
+            windowsProcessed += tally.windowsProcessed;
+            windowsSkipped   += tally.windowsSkipped;
+            _updateProgressAfterFinalize(winner.extractResult);
+        }
     }
 
     progressTracker.complete(true, `EventBase: extracted ${eventsExtracted} event(s) from ${windowsProcessed} window(s)`);

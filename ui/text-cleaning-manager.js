@@ -83,16 +83,7 @@ export function openTextCleaningManager() {
                             <span class="vectfox-tcm-hint">Used when preset is "Custom"</span>
                         </div>
                         <div class="vectfox-tcm-patterns-grid" id="VectFox_tcm_builtin_patterns">
-                            ${Object.values(BUILTIN_PATTERNS).map(p => `
-                                <label class="vectfox-tcm-pattern-item" title="${StringUtils.escapeHtml(p.pattern)}">
-                                    <input type="checkbox" data-id="${p.id}"
-                                           ${settings.enabledBuiltins?.includes(p.id) ? 'checked' : ''}>
-                                    <div class="vectfox-tcm-pattern-info">
-                                        <span class="vectfox-tcm-pattern-name">${p.name}</span>
-                                        <code class="vectfox-tcm-pattern-regex">${StringUtils.escapeHtml(p.pattern.substring(0, 40))}${p.pattern.length > 40 ? '...' : ''}</code>
-                                    </div>
-                                </label>
-                            `).join('')}
+                            ${renderBuiltinPatterns(settings)}
                         </div>
                     </div>
 
@@ -170,6 +161,39 @@ function getPresetDescription(presetId) {
         custom: 'Uses your selected built-in and custom patterns',
     };
     return descriptions[presetId] || '';
+}
+
+/**
+ * Renders the built-in patterns grid.
+ *
+ * The checked set depends on the active preset:
+ *   - 'custom' (or none): reflects the user's saved enabledBuiltins, editable.
+ *   - a real preset: reflects that preset's patterns and is locked (disabled),
+ *     because getActivePatterns() ignores enabledBuiltins unless preset is
+ *     'custom'. Showing editable boxes that don't drive cleaning was the
+ *     "checkboxes never change" bug.
+ *
+ * @param {object} settings - cleaning settings (uses selectedPreset + enabledBuiltins)
+ * @returns {string} HTML for the grid's inner labels
+ */
+function renderBuiltinPatterns(settings) {
+    const preset = settings.selectedPreset;
+    const isCustom = !preset || preset === 'custom';
+    const activeIds = isCustom
+        ? (settings.enabledBuiltins || [])
+        : (CLEANING_PRESETS[preset]?.patterns || []);
+
+    return Object.values(BUILTIN_PATTERNS).map(p => `
+        <label class="vectfox-tcm-pattern-item${isCustom ? '' : ' vectfox-tcm-pattern-locked'}" title="${StringUtils.escapeHtml(p.pattern)}">
+            <input type="checkbox" data-id="${p.id}"
+                   ${activeIds.includes(p.id) ? 'checked' : ''}
+                   ${isCustom ? '' : 'disabled'}>
+            <div class="vectfox-tcm-pattern-info">
+                <span class="vectfox-tcm-pattern-name">${p.name}</span>
+                <code class="vectfox-tcm-pattern-regex">${StringUtils.escapeHtml(p.pattern.substring(0, 40))}${p.pattern.length > 40 ? '...' : ''}</code>
+            </div>
+        </label>
+    `).join('');
 }
 
 /**
@@ -269,6 +293,13 @@ function bindEvents() {
     $('#VectFox_tcm_preset').on('change', function() {
         const presetId = $(this).val();
         $('#VectFox_tcm_preset_desc').text(getPresetDescription(presetId));
+        // Re-render the built-in grid so it reflects the selected preset (locked)
+        // or the user's saved Custom selection (editable). Use the dropdown's
+        // current value, not the saved one — the user hasn't saved yet.
+        const settings = getCleaningSettings();
+        $('#VectFox_tcm_builtin_patterns').html(
+            renderBuiltinPatterns({ ...settings, selectedPreset: presetId }),
+        );
     });
 
     // Add custom pattern
@@ -315,11 +346,9 @@ function bindEvents() {
                         $('#VectFox_tcm_preset').val(settings.selectedPreset);
                         $('#VectFox_tcm_preset_desc').text(getPresetDescription(settings.selectedPreset));
 
-                        // Update built-in pattern checkboxes
-                        $('#VectFox_tcm_builtin_patterns input').each(function() {
-                            const id = $(this).data('id');
-                            $(this).prop('checked', settings.enabledBuiltins?.includes(id));
-                        });
+                        // Re-render built-in grid to match the imported preset
+                        // (locked) or Custom selection (editable).
+                        $('#VectFox_tcm_builtin_patterns').html(renderBuiltinPatterns(settings));
                     } else {
                         toastr.success(`Imported ${result.count} patterns`, 'VectFox');
                     }
@@ -353,12 +382,19 @@ function bindEvents() {
 
         const settings = getCleaningSettings();
 
-        // Gather current UI state
+        // Gather current UI state. In Custom mode the grid is the source of
+        // truth; when a preset is active the grid is locked and mirrors the
+        // preset, so preserve the user's saved Custom selection instead.
         const currentPreset = $('#VectFox_tcm_preset').val();
-        const enabledBuiltins = [];
-        $('#VectFox_tcm_builtin_patterns input:checked').each(function() {
-            enabledBuiltins.push($(this).data('id'));
-        });
+        let enabledBuiltins;
+        if (currentPreset === 'custom') {
+            enabledBuiltins = [];
+            $('#VectFox_tcm_builtin_patterns input:checked').each(function() {
+                enabledBuiltins.push($(this).data('id'));
+            });
+        } else {
+            enabledBuiltins = settings.enabledBuiltins || [];
+        }
 
         const template = {
             name: templateName,
@@ -436,11 +472,16 @@ function bindEvents() {
         // Get selected preset
         settings.selectedPreset = $('#VectFox_tcm_preset').val();
 
-        // Get enabled built-ins
-        settings.enabledBuiltins = [];
-        $('#VectFox_tcm_builtin_patterns input:checked').each(function() {
-            settings.enabledBuiltins.push($(this).data('id'));
-        });
+        // Only sync enabledBuiltins from the grid in Custom mode. When a preset
+        // is active the grid is locked and merely mirrors the preset, so writing
+        // it back would clobber the user's saved Custom selection (disabled
+        // checkboxes still report :checked).
+        if (settings.selectedPreset === 'custom') {
+            settings.enabledBuiltins = [];
+            $('#VectFox_tcm_builtin_patterns input:checked').each(function() {
+                settings.enabledBuiltins.push($(this).data('id'));
+            });
+        }
 
         // Validate and get custom pattern updates
         let hasInvalidPattern = false;

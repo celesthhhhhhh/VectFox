@@ -773,64 +773,46 @@ export function applyBM25Scoring(results, query, options = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// CJK word segmentation via Intl.Segmenter (browser-native, zero dependencies)
+// Script-aware word segmentation via Intl.Segmenter (browser-native, zero dependencies)
 // Falls back to bigram tokenization if the API is unavailable.
 //
-// LANGUAGE SUPPORT:
-//   Currently active:  Chinese (zh) — CJK Unified Ideographs
-//                      Korean  (ko) — Hangul syllable blocks (Intl.Segmenter)
-//   Prepared for:      Japanese (ja) — add Hiragana/Katakana to _CJK_SPAN_RE and
-//                        call _getSegmenter(span) which already auto-detects kana
+// LANGUAGE SUPPORT: To add a new script, add its Unicode range(s) to _CJK_SPAN_RE
+// and a [/range/, 'locale'] entry to SCRIPT_LOCALE_MAP below.
 // ---------------------------------------------------------------------------
 
-/** Matches Chinese Han + Japanese Kana + Korean Hangul spans. */
-const _CJK_SPAN_RE = /[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF]+/g;
+/** Matches script spans that require segmentation (no inter-word spaces). */
+const _CJK_SPAN_RE = /[一-鿿㐀-䶿豈-﫿぀-ゟ゠-ヿ가-힯฀-๿຀-໿က-႟ក-៿]+/g;
 
-/** Kana presence → Japanese locale. */
-const _KANA_RE = /[\u3040-\u309F\u30A0-\u30FF]/;
+/** Kana presence — used by Jieba/TinySegmenter routing in extractCJKTokens. */
+const _KANA_RE = /[぀-ゟ゠-ヿ]/;
 
-/** Hangul presence → Korean locale. */
-const _HANGUL_RE = /[\uAC00-\uD7AF]/;
+/** Maps Unicode range to BCP-47 locale for Intl.Segmenter. Add new scripts here. */
+const SCRIPT_LOCALE_MAP = [
+    [/[぀-ゟ゠-ヿ]/, 'ja'],  // Japanese Kana
+    [/[가-힯]/, 'ko'],                  // Korean Hangul
+    [/[฀-๿]/, 'th'],                  // Thai
+    [/[຀-໿]/, 'lo'],                  // Lao
+    [/[က-႟]/, 'my'],                  // Myanmar
+    [/[ក-៿]/, 'km'],                  // Khmer
+    [/[一-鿿㐀-䶿豈-﫿]/, 'zh'],  // CJK Han (default)
+];
 
-let _zhSegmenter;
-function _getZhSegmenter() {
-    if (_zhSegmenter === undefined) {
-        try { _zhSegmenter = new Intl.Segmenter('zh', { granularity: 'word' }); }
-        catch (e) { _zhSegmenter = null; }
-    }
-    return _zhSegmenter;
-}
-
-// Placeholder for future Japanese support — wired into _getSegmenter() already.
-let _jaSegmenter;
-function _getJaSegmenter() {
-    if (_jaSegmenter === undefined) {
-        try { _jaSegmenter = new Intl.Segmenter('ja', { granularity: 'word' }); }
-        catch (e) { _jaSegmenter = null; }
-    }
-    return _jaSegmenter;
-}
-
-let _koSegmenter;
-function _getKoSegmenter() {
-    if (_koSegmenter === undefined) {
-        try { _koSegmenter = new Intl.Segmenter('ko', { granularity: 'word' }); }
-        catch (e) { _koSegmenter = null; }
-    }
-    return _koSegmenter;
-}
+const _segmenterCache = new Map();
 
 /**
  * Return the best available Intl.Segmenter for the given span.
- * Kana characters signal Japanese; Hangul signals Korean; otherwise assume Chinese.
- * Add new locale branches here as languages are enabled.
+ * Detects script by Unicode range and maps to the appropriate BCP-47 locale.
+ * To add a new language, add one entry to SCRIPT_LOCALE_MAP — no other changes needed.
  * @param {string} span
  * @returns {Intl.Segmenter|null}
  */
 function _getSegmenter(span) {
-    if (_KANA_RE.test(span)) return _getJaSegmenter();
-    if (_HANGUL_RE.test(span)) return _getKoSegmenter();
-    return _getZhSegmenter();
+    const locale = SCRIPT_LOCALE_MAP.find(([re]) => re.test(span))?.[1] ?? 'und';
+    if (!_segmenterCache.has(locale)) {
+        try { _segmenterCache.set(locale, new Intl.Segmenter(locale, { granularity: 'word' })); }
+        catch (_) { _segmenterCache.set(locale, null); }
+    }
+    return _segmenterCache.get(locale);
 }
 
 /**
@@ -954,10 +936,9 @@ function _segmentWithTinySegmenter(span) {
  * splitting known compound words. Falls back to overlapping bigrams when the
  * Segmenter API is unavailable (older environments / SillyTavern).
  *
- * Currently handles Chinese. To add Japanese support:
- *   1. Extend _CJK_SPAN_RE to include \u3040-\u309F (Hiragana) and \u30A0-\u30FF (Katakana)
- *   2. _getSegmenter() already routes kana-containing spans to _getJaSegmenter()
- *   That's it — no other changes needed.
+ * Handles all scripts in _CJK_SPAN_RE (CJK, Kana, Hangul, Thai, Lao, Myanmar,
+ * Khmer). _getSegmenter() routes each span to the right locale via SCRIPT_LOCALE_MAP.
+ * To add a new language: add its range to _CJK_SPAN_RE and an entry to SCRIPT_LOCALE_MAP.
  *
  * @param {string} text
  * @returns {string[]}

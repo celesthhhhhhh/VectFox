@@ -2,10 +2,24 @@
 
 import { DEFAULT_STOP_WORD_SET as STOP_WORDS } from './stop-words.js';
 
-// Matches CJK ideographs + Kana + Hangul spans. Used with .match() for all-hits extraction.
-const _CJK_SPAN_RE = /[㐀-鿿豈-﫿぀-ヿ가-힯]+/g;
-// Non-global variant for single-token test (avoids stateful lastIndex with .test()).
-const _CJK_CHAR_RE = /[㐀-鿿豈-﫿぀-ヿ가-힯]/;
+// Matches script spans requiring segmentation (no inter-word spaces).
+const _CJK_SPAN_RE = /[㐀-鿿豈-﫿぀-ヿ가-힯฀-໿က-႟ក-៿]+/g;
+// Non-global variant for isCJKToken() (avoids stateful lastIndex with .test()).
+const _CJK_CHAR_RE = /[㐀-鿿豈-﫿぀-ヿ가-힯฀-໿က-႟ក-៿]/;
+
+// Maps Unicode range to BCP-47 locale for Intl.Segmenter. Add new scripts here.
+const _SCRIPT_LOCALE_MAP = [
+    [/[぀-ゟ゠-ヿ]/, 'ja'],  // Japanese Kana
+    [/[가-힯]/, 'ko'],                // Korean Hangul
+    [/[฀-๿]/, 'th'],                // Thai
+    [/[຀-໿]/, 'lo'],                // Lao
+    [/[က-႟]/, 'my'],                // Myanmar
+    [/[ក-៿]/, 'km'],                // Khmer
+    [/[㐀-鿿豈-﫿]/, 'zh'],  // CJK Han
+];
+function _localeForSpan(span) {
+    return _SCRIPT_LOCALE_MAP.find(([re]) => re.test(span))?.[1] ?? 'und';
+}
 
 export const RETRIEVAL_KEYWORD_LEVELS = {
     minimal: { label: 'Minimal — 30 keywords', maxKeywords: 30 },
@@ -39,7 +53,7 @@ export function extractQueryKeywords(searchText, maxKeywords = 50) {
 
             if (typeof Intl !== 'undefined' && Intl.Segmenter) {
                 try {
-                    const seg = new Intl.Segmenter('zh', { granularity: 'word' });
+                    const seg = new Intl.Segmenter(_localeForSpan(span), { granularity: 'word' });
                     const segs = Array.from(seg.segment(span));
                     const multiChar = segs.filter(s => s.isWordLike && s.segment.length >= 2);
                     if (multiChar.length > 0) {

@@ -55,6 +55,19 @@ function syncStartFromMessageFromUI() {
     $('#vectfox_cv_startfrom').val(startFromMessage);
 }
 
+/**
+ * Returns true if this chat has any cached extraction state (window fingerprints
+ * OR a vectorization tip). Used to decide whether the Vectorize button should
+ * confirm before resetting. No state → fresh chat → no prompt needed.
+ */
+async function _hasPriorExtractionState(chatUUID) {
+    if (!chatUUID) return false;
+    const arr = extension_settings?.vectfox?.eventbase_extracted_windows?.[chatUUID];
+    if (Array.isArray(arr) && arr.length > 0) return true;
+    const { getVectorizationTip } = await import('../core/eventbase-store.js');
+    return typeof getVectorizationTip(chatUUID) === 'number';
+}
+
 function updateVectorizeButtonState(running) {
     const btn = $('#vectfox_cv_vectorize');
     const cancelBtn = $('#vectfox_cv_cancel');
@@ -2542,12 +2555,12 @@ async function startContinueVectorization() {
  * Runs EventBase ingestion for the current chat (live) or an uploaded archive file.
  * Called by startVectorization / continueVectorization for all chat content types.
  */
-async function _runEventBaseBackfill() {
+async function _runEventBaseBackfill({ resetCaches = false } = {}) {
     if (isVectorizing) return;
 
     syncStartFromMessageFromUI();
 
-    console.log('[EventBase] _runEventBaseBackfill: starting...');
+    console.log(`[EventBase] _runEventBaseBackfill: starting... (resetCaches=${resetCaches})`);
 
     isVectorizing = true;
     activeVectorizeAbortController = new AbortController();
@@ -2560,6 +2573,19 @@ async function _runEventBaseBackfill() {
         const context = getContext();
         const settings = extension_settings.vectfox || {};
         const source = getSourceData();
+
+        // Vectorize button = fresh start. Drop BOTH "already-extracted" caches for
+        // this chat so ingestion re-runs from the chosen Start-From message instead
+        // of fast-forwarding. Clears the stale-tip trap: a tip left over from a
+        // previously-deleted collection makes the tip-based fast-forward skip every
+        // window → "0 events extracted". Continue passes resetCaches=false to keep
+        // the caches and only backfill new messages.
+        const maybeResetCaches = async (uuid) => {
+            if (!resetCaches || !uuid) return;
+            const { clearExtractionCachesForChat } = await import('../core/eventbase-store.js');
+            clearExtractionCachesForChat(uuid);
+            console.log(`[EventBase] Vectorize reset: cleared extraction caches for ${uuid}`);
+        };
 
         let messages, chatUUID, collectionIdOverride = null; // only used by archive route
 
@@ -2582,6 +2608,7 @@ async function _runEventBaseBackfill() {
                 archiveUUID: source.archiveUUID,
                 backend: settings.vector_backend,
             });
+            await maybeResetCaches(chatUUID);
             console.log(`[EventBase] Archive upload route — collection: ${collectionIdOverride}, messages: ${messages.length}`);
 
             const parallelWindows = parseInt($('#vectfox_cv_parallel_windows').val()) || 1;
@@ -2611,6 +2638,7 @@ async function _runEventBaseBackfill() {
             }
 
             chatUUID = getChatUUID();
+            await maybeResetCaches(chatUUID);
 
             // Window-size-change warning. The window fingerprint dedup cache is
             // window-size-dependent (see eventbase-store.js#windowFingerprint), so
@@ -2724,9 +2752,30 @@ async function startVectorization() {
         return;
     }
 
-    // EventBase is the exclusive path for chat — always redirect through EventBase ingestion pipeline
+    // EventBase is the exclusive path for chat — always redirect through EventBase ingestion pipeline.
+    // The Vectorize button is the "fresh start" action: it resets the extraction caches so ingestion
+    // re-runs from the chosen Start-From message. Confirm first when prior extraction state exists,
+    // since the reset re-extracts (LLM cost) what may already be vectorized — use Continue to backfill
+    // without resetting. No prompt on a never-vectorized chat (nothing to reset).
     if (currentContentType === 'chat' && (source.type === 'current' || source.type === 'file')) {
-        return _runEventBaseBackfill();
+        const resetUUID = source.type === 'file' ? source.archiveUUID : getChatUUID();
+        if (await _hasPriorExtractionState(resetUUID)) {
+            const proceed = await callGenericPopup(
+                `<div style="text-align: left;">
+                    <p><strong>Re-vectorize from scratch?</strong></p>
+                    <p>This resets the extraction progress for this chat and re-extracts from message ${startFromMessage || 1} onward. Existing events are not deleted, so you may get overlapping-coverage events.</p>
+                    <p style="margin-top: 10px;">To add only new messages without re-extracting, use <strong>Continue</strong> instead.</p>
+                </div>`,
+                POPUP_TYPE.CONFIRM,
+                '',
+                { okButton: 'Reset & Vectorize', cancelButton: 'Cancel' },
+            );
+            if (!proceed) {
+                toastr.info('Vectorize cancelled', 'VectFox');
+                return;
+            }
+        }
+        return _runEventBaseBackfill({ resetCaches: true });
     }
 
     // Check if vectors already exist for this content (chat specifically)

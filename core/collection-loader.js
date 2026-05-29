@@ -298,9 +298,12 @@ export async function deleteCollection(collectionId, settings, registryKey = nul
     // The UUID is always the last underscore-separated segment of the collection ID.
     if (collectionId.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE)) {
         try {
-            const { clearWindowCacheForChat } = await import('./eventbase-store.js');
+            const { clearExtractionCachesForChat } = await import('./eventbase-store.js');
             const chatUUID = collectionId.split('_').pop();
-            if (chatUUID) clearWindowCacheForChat(chatUUID);
+            // Drop both window + tip caches together. Leaving the tip stale makes the
+            // next re-vectorize fast-forward past every window (tip says "already at
+            // message N") and extract 0 events.
+            if (chatUUID) clearExtractionCachesForChat(chatUUID);
         } catch {
             // Best-effort — don't fail the whole delete if this breaks.
         }

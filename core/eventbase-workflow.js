@@ -19,7 +19,7 @@ import { queryCollection } from './core-vector-api.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { EventBaseFatalError, EventBaseExtractionError } from './eventbase-schema.js';
 import { extractEvents } from './eventbase-extractor.js';
-import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearWindowCacheForChat, buildEventBaseCollectionId, isLastWindowExtracted, setVectorizationTip, ensureVectorizationTip } from './eventbase-store.js';
+import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearExtractionCachesForChat, buildEventBaseCollectionId, isLastWindowExtracted, setVectorizationTip, ensureVectorizationTip } from './eventbase-store.js';
 import { getSavedHashes } from './core-vector-api.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { retrieveEventsWithAgent } from './agentic-retrieval.js';
@@ -108,8 +108,13 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         try {
             const existingHashes = collectionId ? await getSavedHashes(collectionId, settings) : [];
             if (!existingHashes?.length) {
-                if (debugLog) console.log('[EventBase] Collection is empty but cache has entries — resetting window cache');
-                clearWindowCacheForChat(uuid);
+                if (debugLog) console.log('[EventBase] Collection is empty but cache has entries — resetting extraction caches');
+                // Clear both window + tip caches. Dropping only the window cache left
+                // the tip-based fast-forward reading a stale tip (e.g. 2382 from a
+                // deleted collection) and skipping every window — the "0 events,
+                // N skipped" re-vectorize bug. ensureVectorizationTip only re-probes
+                // the backend on a cache MISS, so the tip has to be evicted here too.
+                clearExtractionCachesForChat(uuid);
             }
         } catch {
             // Non-fatal — proceed without resetting.

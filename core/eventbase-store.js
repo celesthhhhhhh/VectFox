@@ -444,6 +444,31 @@ export function clearWindowCacheForChat(chatUUID) {
 }
 
 /**
+ * Drops BOTH "already-extracted" caches for a chat — the persisted window
+ * fingerprint Set and the in-memory vectorization tip. These are two
+ * representations of the same fact ("how far this chat is already extracted"),
+ * so they must always be cleared together: clearing one but not the other was
+ * the stale-tip bug where re-vectorizing a deleted collection fast-forwarded
+ * past every window and extracted 0 events.
+ *
+ * Use this anywhere a chat's extraction state is invalidated wholesale:
+ *   - the EventBase collection is deleted (collection-loader.js)
+ *   - the backend is found empty but a local cache lingers (eventbase-workflow.js)
+ *   - the user hits Vectorize for a fresh start (content-vectorizer.js)
+ *
+ * Does NOT touch the auto-sync marker — that's a separate concept (where
+ * auto-sync should resume), intentionally preserved across these resets.
+ *
+ * @param {string} [chatUUID] - defaults to the current chat
+ */
+export function clearExtractionCachesForChat(chatUUID) {
+    const uuid = chatUUID || getChatUUID();
+    if (!uuid) return;
+    clearWindowCacheForChat(uuid);
+    clearVectorizationTip(uuid);
+}
+
+/**
  * Quick-exit check: returns true if the LAST complete window in the message list
  * is already extracted. When true, all prior windows are also done (windows are
  * always processed in-order from the tail). Avoids building O(n) window objects.

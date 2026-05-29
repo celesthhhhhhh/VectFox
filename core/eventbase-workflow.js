@@ -578,14 +578,30 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             return { eventsExtracted, windowsProcessed, windowsSkipped };
         }
 
-        // Decide what can start this iteration.
-        // Single-slot invariant: if queuedResult is non-null, do NOT start a
-        // new extract — that would buffer two batches behind the in-flight
-        // insert. Wait for the insert to clear first.
-        const canStartExtract = !pendingExtract && queuedResult === null && nextBatchFirstIdx < windows.length;
-        const canStartInsert  = !pendingInsert  && queuedResult !== null;
+        // Decide what can start this iteration. Order is load-bearing:
+        // start the insert FIRST so queuedResult clears, then start the
+        // extract against the updated state. Doing extract first would let
+        // queuedResult block the new extract in the same tick that the
+        // insert was about to consume it — which was the bug the first
+        // pipeline iteration shipped with: extract N+1 always waited a
+        // full extra cycle for the in-flight insert to finish, instead of
+        // running alongside it. Net effect: serial barrier reappeared and
+        // wall time matched pre-pipeline.
+        if (!pendingInsert && queuedResult !== null) {
+            const toInsert = queuedResult;
+            queuedResult = null;
+            pendingInsert = _finalizeBatch(toInsert);
+            insertKey = pendingInsert.then(
+                t => ({ kind: 'insert', tally: t, extractResult: toInsert }),
+                e => ({ kind: 'insert', error: e, extractResult: toInsert }),
+            );
+        }
 
-        if (canStartExtract) {
+        // Single-slot invariant: queuedResult is now guaranteed to be null
+        // (either it always was, or we just consumed it). So the only
+        // remaining gates on extract are "no extract in flight" + "more
+        // windows to process". This is what unlocks the actual overlap.
+        if (!pendingExtract && nextBatchFirstIdx < windows.length) {
             const slice = windows.slice(nextBatchFirstIdx, nextBatchFirstIdx + CONCURRENCY);
             const sliceFirstIdx = nextBatchFirstIdx;
             nextBatchFirstIdx += slice.length;
@@ -593,16 +609,6 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             extractKey = pendingExtract.then(
                 r => ({ kind: 'extract', result: r }),
                 e => ({ kind: 'extract', error: e }),
-            );
-        }
-
-        if (canStartInsert) {
-            const toInsert = queuedResult;
-            queuedResult = null;
-            pendingInsert = _finalizeBatch(toInsert);
-            insertKey = pendingInsert.then(
-                t => ({ kind: 'insert', tally: t, extractResult: toInsert }),
-                e => ({ kind: 'insert', error: e, extractResult: toInsert }),
             );
         }
 

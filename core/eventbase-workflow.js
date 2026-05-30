@@ -654,18 +654,31 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             );
         }
 
-        // Single-slot invariant: queuedResult is now guaranteed to be null
-        // (either it always was, or we just consumed it). So the only
-        // remaining gates on extract are "no extract in flight" + "more
-        // windows to process". This is what unlocks the actual overlap.
-        //
-        // When disablePipeline is true, ALSO block the new extract on
-        // pendingInsert. That forces the serial barrier: the next batch's
-        // LLM calls don't dispatch until the prior batch's insert + mark +
-        // tip have fully landed. Used purely as a diagnostic A/B to isolate
-        // whether pipelining is the cause of an observed problem.
+        // Single-slot invariant — three gates on starting a new extract:
+        //   (a) !pendingExtract        — no extract currently running
+        //   (b) queuedResult === null  — no PRIOR extract result waiting to be
+        //                                 inserted. Without this gate, when
+        //                                 insert is much slower than extract,
+        //                                 each new extract silently overwrites
+        //                                 the previously-queued extract result
+        //                                 in the race resolver (queuedResult =
+        //                                 winner.result), and those events are
+        //                                 lost. Symptoms: ~50% recall vs serial
+        //                                 mode, no errors logged, pipeline
+        //                                 dispatches batches unboundedly while
+        //                                 inserts stack up. See 2026-05-30
+        //                                 investigation in conversation logs.
+        //   (c) !insertBarrier         — pipelined opt-out (serial mode)
+        //                                 additionally blocks on in-flight
+        //                                 insert. Used purely as a diagnostic
+        //                                 fallback now that (b) is correct.
+        // The first if (insert-start) above will consume queuedResult if it can.
+        // So if queuedResult is still non-null here, it means insert IS in
+        // flight — we MUST NOT start a new extract because there's nowhere to
+        // put its result. Correct single-slot behavior: at most one extract
+        // + one insert in flight + one queued result.
         const insertBarrier = disablePipeline && pendingInsert !== null;
-        if (!pendingExtract && !insertBarrier && nextBatchFirstIdx < windows.length) {
+        if (!pendingExtract && queuedResult === null && !insertBarrier && nextBatchFirstIdx < windows.length) {
             const slice = windows.slice(nextBatchFirstIdx, nextBatchFirstIdx + CONCURRENCY);
             const sliceFirstIdx = nextBatchFirstIdx;
             nextBatchFirstIdx += slice.length;

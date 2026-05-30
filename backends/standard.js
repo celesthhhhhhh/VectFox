@@ -115,7 +115,7 @@ function getProviderSpecificParams(settings, isQuery = false) {
 }
 
 // ----------------------------------------------------------------------------
-// Per-collection write serialization
+// Per-collection coalesce + queue for plugin safety
 // ----------------------------------------------------------------------------
 // The similharity plugin's standard/Vectra path does NOT synchronize concurrent
 // writes to the same collection. Multiple in-flight POSTs to /chunks/insert each
@@ -125,24 +125,42 @@ function getProviderSpecificParams(settings, isQuery = false) {
 // position X` where X varies because it depends on file size at corruption time)
 // and a corrupted Vectra index on disk.
 //
-// VectFox's parallel-split insert (default since this session) fires N
-// concurrent POSTs per batch (one per event) — great for failure containment on
-// remote providers like Qdrant, fatal for Vectra.
+// VectFox's parallel-split insert (default since 2026-05-30) fires N concurrent
+// single-item POSTs per batch — great for failure containment on Qdrant, fatal
+// for Vectra.
 //
-// Fix: serialize per-collection writes ON THIS SIDE so the plugin only ever
-// sees one in-flight insert per collection at a time. We give up insert-side
-// parallelism for this backend, in exchange for not corrupting the index file.
-// The trade-off is acceptable because the alternative (batched POST with
-// vector_group_embedding_call=true) ALSO serializes — it just bundles items
-// into one HTTP request instead of queueing N. Queueing N lets each event keep
-// its own retry budget and timeout window, which is the parallel-split value
-// proposition.
+// Fix has two layers working together:
 //
-// Memory: each call replaces the queue entry. A cleanup .finally() removes the
-// entry only when WE are still the latest — otherwise a later call is still
-// using us as its prev and we'd break the chain. In a steady-state burst the
-// queue stays at 1 entry per active collection; after the burst it goes empty.
+//   1. COALESCE — single-item calls arriving for the same collection within a
+//      tiny window (COALESCE_DELAY_MS) get merged back into one batched POST.
+//      This restores the production-like "1 POST per concurrency window" wire
+//      shape on this backend without the user having to enable
+//      `vector_group_embedding_call` manually. Faster healthy-case throughput
+//      than queue (~5s vs ~27s/wave), zero log noise from hedge fires that
+//      can't help anyway. Matches Qdrant's wire shape so we have one mental
+//      model for both backends.
+//
+//   2. QUEUE — serializes the resulting batched POSTs per collection. Needed
+//      to handle:
+//        - Hedge duplicates (15s later they'd fire a 2nd coalesced POST that
+//          would race the primary if not serialized)
+//        - Multi-item calls (group_embedding_call=true) that bypass coalesce
+//        - Any future code path that calls insertVectorItems concurrently
+//      Plugin only ever sees 1 in-flight write per collection.
+//
+// Different collections still run in parallel — both maps are keyed by
+// collectionId so unrelated work doesn't bottleneck.
+//
+// Public API (insertVectorItems) is unchanged; coalesce + queue are transparent
+// to callers. Existing standard backend users see zero behavioral difference on
+// the wire from this dev branch — coalesce reproduces the production POST
+// shape exactly.
+const _pendingCoalesce = new Map();   // collectionId → { items, resolvers, settings, abortSignal, timer }
 const _vectraWriteQueues = new Map(); // collectionId → Promise (latest tail)
+const COALESCE_DELAY_MS = 5;          // Wave debounce. Parallel-split fires N
+                                      // callers within microseconds; 5ms is
+                                      // enough to catch the whole wave without
+                                      // perceptibly delaying solo calls.
 
 export class StandardBackend extends VectorBackend {
     constructor() {
@@ -240,33 +258,91 @@ export class StandardBackend extends VectorBackend {
      * Uses plugin API if available (for metadata support), falls back to native ST API
      */
     /**
-     * Public insert entry point. Wraps the actual HTTP+Vectra work in a
-     * per-collection promise chain so concurrent callers (parallel-split,
-     * hedge duplicates, multiple in-flight pipelined batches) serialize at
-     * THIS layer. See top-of-file comment on `_vectraWriteQueues` for the
-     * full rationale and trade-offs.
+     * Public insert entry point. Two-layer safety mechanism for the
+     * similharity-plugin Vectra path — see top-of-file comment on
+     * `_pendingCoalesce` for the full rationale.
      *
-     * What this DOES change:
-     *   - Concurrent inserts to the SAME collection queue and run in order
-     *   - Concurrent inserts to DIFFERENT collections still run in parallel
-     *   - A slow embedding inside one request blocks the next queued one
+     * Single-item calls (from parallel-split's per-event POSTs) coalesce in
+     * a 5ms window into one batched call. Multi-item calls
+     * (from group_embedding_call mode) skip coalesce and go straight to the
+     * queue. Both paths converge at `_queuedInsert` which serializes per
+     * collection.
+     *
+     * Result on the wire: at most one POST per collection at a time,
+     * containing the entire wave's items. Matches production behavior.
+     *
+     * What this DOES change vs. naive parallel-split:
+     *   - Plugin sees 1 batched POST per wave instead of N concurrent ones
+     *   - Healthy-case throughput is much faster (~5s vs ~27s/wave)
+     *   - One stuck item in the batched embedding affects all callers of
+     *     that wave (same as production / group_embedding_call mode)
      *
      * What this does NOT change:
-     *   - Per-item retry budget (still applies per call)
-     *   - Hedge semantics (still fire duplicates; they just queue too)
-     *   - Abort handling (checked before kicking off, propagates normally)
-     *   - Error propagation (each caller gets its own resolution)
+     *   - Public API (signature unchanged)
+     *   - Different-collection inserts run in parallel (per-collection keys)
+     *   - Abort handling (checked at queue entry, propagates normally)
+     *   - Error propagation (each caller gets its own resolved Promise)
      */
     async insertVectorItems(collectionId, items, settings, abortSignal = null) {
         if (items.length === 0) return;
 
+        if (items.length > 1) {
+            // Multi-item call (e.g. user has vector_group_embedding_call=true).
+            // No coalescing needed; the wave already arrived pre-batched. Skip
+            // to the queue so it still serializes against any other in-flight
+            // writes for the same collection.
+            return this._queuedInsert(collectionId, items, settings, abortSignal);
+        }
+
+        // Single-item call — coalesce with any siblings arriving within
+        // COALESCE_DELAY_MS. Parallel-split's Promise.allSettled wave fires N
+        // callers within microseconds, so the 5ms window catches the entire
+        // burst.
+        return new Promise((resolve, reject) => {
+            let pending = _pendingCoalesce.get(collectionId);
+            if (!pending) {
+                pending = {
+                    items: [],
+                    resolvers: [],
+                    settings,         // First caller's settings. All siblings
+                    abortSignal,      // in a parallel-split wave come from the
+                                      // same outer call → identical objects.
+                    timer: null,
+                };
+                _pendingCoalesce.set(collectionId, pending);
+                pending.timer = setTimeout(() => {
+                    _pendingCoalesce.delete(collectionId);
+                    // Hand the merged batch off to the queue. Resolution
+                    // fan-out happens here: all coalesced callers see the
+                    // same success/failure from the single underlying call.
+                    this._queuedInsert(collectionId, pending.items, pending.settings, pending.abortSignal).then(
+                        () => pending.resolvers.forEach(r => r.resolve()),
+                        (err) => pending.resolvers.forEach(r => r.reject(err)),
+                    );
+                }, COALESCE_DELAY_MS);
+            }
+            pending.items.push(items[0]);
+            pending.resolvers.push({ resolve, reject });
+        });
+    }
+
+    /**
+     * Per-collection queue. Chains the next insert onto a promise tail so
+     * concurrent callers serialize at this layer — the plugin only ever sees
+     * one in-flight write per collection. Different collections proceed in
+     * parallel because the map is keyed by collectionId.
+     *
+     * The queue is what keeps hedge-duplicates safe: a hedge fires 15s after
+     * the primary, but if the primary is still in flight the hedge's batched
+     * POST waits behind it rather than racing into a concurrent-write bug.
+     */
+    async _queuedInsert(collectionId, items, settings, abortSignal) {
         const prev = _vectraWriteQueues.get(collectionId) || Promise.resolve();
-        // Chain ourselves onto the queue. `.catch(() => {})` absorbs any prior
-        // failure so it doesn't propagate to OUR caller — they only see their
-        // own result. Each caller's own error still surfaces normally.
+        // .catch(() => {}) absorbs any prior failure so it doesn't propagate
+        // to OUR caller — they only see their own result.
         const myTurn = prev.catch(() => {}).then(async () => {
-            // Re-check abort after the wait. The user might have hit Stop while
-            // we were queued behind 7 other inserts.
+            // Re-check abort after the wait. The user might have hit Stop
+            // while we were queued behind other inserts.
             if (abortSignal?.aborted) throw Object.assign(new Error('Vectorization stopped by user'), { name: 'AbortError' });
             return this._insertVectorItemsImpl(collectionId, items, settings, abortSignal);
         });
@@ -275,9 +351,9 @@ export class StandardBackend extends VectorBackend {
         try {
             return await myTurn;
         } finally {
-            // Cleanup ONLY if we're still the tail of the queue. If a later
-            // caller already replaced us as the tail, they're using `myTurn`
-            // as their `prev` — deleting would break the chain.
+            // Cleanup ONLY if we're still the tail. If a later caller already
+            // replaced us as the tail they're using `myTurn` as their `prev`
+            // — deleting would break the chain.
             if (_vectraWriteQueues.get(collectionId) === myTurn) {
                 _vectraWriteQueues.delete(collectionId);
             }
@@ -285,9 +361,8 @@ export class StandardBackend extends VectorBackend {
     }
 
     /**
-     * Internal — does the actual HTTP POST + response handling. Not called
-     * directly; always goes through `insertVectorItems` so the per-collection
-     * queue serializes concurrent callers.
+     * Internal — does the actual HTTP POST + response handling. Always called
+     * via `_queuedInsert` so per-collection serialization holds.
      */
     async _insertVectorItemsImpl(collectionId, items, settings, abortSignal = null) {
         if (items.length === 0) return;

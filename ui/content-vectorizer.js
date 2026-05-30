@@ -2685,6 +2685,22 @@ async function _runEventBaseBackfill({ resetCaches = false } = {}) {
                     toastr.info('Continue cancelled', 'VectFox');
                     return;
                 }
+                // Stamp the new window size NOW, not at run-end. The workflow's
+                // own setLastUsedWindowSize at the end of runEventBaseIngestion
+                // only fires when the run completes AND windowsProcessed > 0 —
+                // if the run dies partway (plugin error, abort, network failure)
+                // the stamp never lands and this popup fires again on every
+                // subsequent Continue, even though the user already explicitly
+                // acknowledged the cost. Stamping at the Proceed click ties the
+                // mark to user intent, not to run success. The workflow's
+                // end-of-run stamp is still useful for non-popup paths (no-op
+                // here since it'd just write the same value).
+                // See 2026-05-30 bug report — user clicked Proceed multiple
+                // times because intermediate runs failed without updating the
+                // stamp.
+                const { setLastUsedWindowSize } = await import('../core/eventbase-store.js');
+                setLastUsedWindowSize(chatUUID, sizeCheck.newSize);
+                console.log(`[EventBase] Window-size-change Proceed: stamped lastUsedWindowSize=${sizeCheck.newSize} for ${chatUUID} (user intent locked in regardless of run outcome)`);
                 // Single shared entry point for "user said yes to fresh re-extraction".
                 // Clears local caches + returns { skipTipFallback: true } to propagate.
                 freshExtractionOpts = await prepareForFreshExtraction(chatUUID);

@@ -3610,13 +3610,17 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // Group embedding-call toggle (default unchecked = parallel-split per event).
-    // Checked = legacy batched POST. Affects only non-local, non-rate-limited
-    // providers (Ollama already uses batch=1 per item; rate-limit forces serial).
-    $('#VectFox_eventbase_group_embedding_call')
-        .prop('checked', !!settings.eventbase_group_embedding_call)
+    // Group embedding-call toggle (default unchecked = parallel-split per item).
+    // Checked = legacy batched POST. Path-agnostic — affects both EventBase ingestion
+    // and document vectorization via the shared insertVectorItems entry point.
+    // UI lives in EventBase tab for now since chunk path isn't actively configured;
+    // the setting key (`vector_group_embedding_call`) reflects the broader scope.
+    // Skipped automatically for local providers (Ollama uses batch=1 per item;
+    // rate-limit forces serial via dynamicRateLimiter).
+    $('#VectFox_vector_group_embedding_call')
+        .prop('checked', !!settings.vector_group_embedding_call)
         .on('change', function() {
-            settings.eventbase_group_embedding_call = $(this).prop('checked');
+            settings.vector_group_embedding_call = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

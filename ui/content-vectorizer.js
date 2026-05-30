@@ -2582,9 +2582,13 @@ async function _runEventBaseBackfill({ resetCaches = false } = {}) {
         // the caches and only backfill new messages.
         const maybeResetCaches = async (uuid) => {
             if (!resetCaches || !uuid) return;
-            const { clearExtractionCachesForChat } = await import('../core/eventbase-store.js');
-            clearExtractionCachesForChat(uuid);
-            console.log(`[EventBase] Vectorize reset: cleared extraction caches for ${uuid}`);
+            // Routes through prepareForFreshExtraction (single source of truth for
+            // "user wants fresh re-extraction"). The returned { skipTipFallback: true }
+            // is also threaded into vectorizeAll / runEventBaseIngestion below via the
+            // `resetCaches` truthiness — keeping both legs of the dual-mechanism fix
+            // (clear caches + bypass Qdrant tip fallback) coordinated through one call.
+            const { prepareForFreshExtraction } = await import('../core/eventbase-store.js');
+            await prepareForFreshExtraction(uuid);
         };
 
         let messages, chatUUID, collectionIdOverride = null; // only used by archive route
@@ -2650,16 +2654,21 @@ async function _runEventBaseBackfill({ resetCaches = false } = {}) {
             // changing window size silently invalidates every cached fingerprint
             // and triggers full re-extraction with duplicate-coverage events.
             // Warn the user before they unknowingly pay that cost.
-            const { getLastUsedWindowSize } = await import('../core/eventbase-store.js');
-            const lastSize = getLastUsedWindowSize(chatUUID);
-            const currentWindowSize = Math.max(2, settings.eventbase_window_size || 6);
-            if (typeof lastSize === 'number' && lastSize !== currentWindowSize) {
+            //
+            // The two checks below (`checkWindowSizeChanged` and `prepareForFreshExtraction`)
+            // are the single source of truth for "did size change?" and "prep for fresh
+            // re-extraction" — DO NOT inline these. Two bugs on 2026-05-30 came from
+            // popups inlining incompatible versions of this logic.
+            const { checkWindowSizeChanged, prepareForFreshExtraction } = await import('../core/eventbase-store.js');
+            const sizeCheck = checkWindowSizeChanged(chatUUID, Math.max(2, settings.eventbase_window_size || 6));
+            let freshExtractionOpts = null;
+            if (sizeCheck.changed) {
                 const estimatedWindows = Math.max(0, Math.floor(
-                    context.chat.filter(m => m.mes && m.mes.trim().length > 0).length / currentWindowSize
+                    context.chat.filter(m => m.mes && m.mes.trim().length > 0).length / sizeCheck.newSize
                 ));
                 const proceed = await callGenericPopup(
                     `<div style="text-align: left;">
-                        <p><strong>Window size changed</strong> since the last extraction on this chat (was <strong>${lastSize}</strong>, now <strong>${currentWindowSize}</strong>).</p>
+                        <p><strong>Window size changed</strong> since the last extraction on this chat (was <strong>${sizeCheck.oldSize}</strong>, now <strong>${sizeCheck.newSize}</strong>).</p>
                         <p>The dedup cache is window-size-dependent, so Continue will re-extract from message ${startFromMessage || 1} at the new window size.</p>
                         <p style="margin-top: 10px;">Estimated cost: <strong>~${estimatedWindows} LLM calls</strong>. Existing events will not be deleted, so the collection will contain overlapping-coverage events at both sizes.</p>
                         <p style="margin-top: 10px;">Proceed anyway?</p>
@@ -2667,7 +2676,7 @@ async function _runEventBaseBackfill({ resetCaches = false } = {}) {
                     POPUP_TYPE.CONFIRM,
                     '',
                     {
-                        okButton: `Proceed (re-extract at window=${currentWindowSize})`,
+                        okButton: `Proceed (re-extract at window=${sizeCheck.newSize})`,
                         cancelButton: 'Cancel',
                     },
                 );
@@ -2676,6 +2685,9 @@ async function _runEventBaseBackfill({ resetCaches = false } = {}) {
                     toastr.info('Continue cancelled', 'VectFox');
                     return;
                 }
+                // Single shared entry point for "user said yes to fresh re-extraction".
+                // Clears local caches + returns { skipTipFallback: true } to propagate.
+                freshExtractionOpts = await prepareForFreshExtraction(chatUUID);
             }
 
             const legacyStrategy = currentSettings.strategy || 'per_message';
@@ -2697,11 +2709,15 @@ async function _runEventBaseBackfill({ resetCaches = false } = {}) {
                     batchSize: legacyBatchSize,
                     totalChunks: legacyTotalChunks,
                 },
-                // When the caller cleared the caches (Reset & Vectorize popup), also
-                // bypass the tip-based fallback inside runEventBaseIngestion. Otherwise
-                // it re-derives the tip from Qdrant contents and silently fast-forwards.
-                // See 2026-05-30 bug report.
-                skipTipFallback: resetCaches,
+                // Bypass the tip-based fallback inside runEventBaseIngestion when EITHER:
+                // (a) the caller cleared the caches via Reset & Vectorize popup
+                //     (resetCaches=true → maybeResetCaches at top of function already ran), OR
+                // (b) the user proceeded through the window-size-change popup above
+                //     (prepareForFreshExtraction returned { skipTipFallback: true }).
+                // In both cases the user explicitly asked for re-extraction and the
+                // Qdrant-side tip would silently fast-forward past everything. See
+                // 2026-05-30 bug reports.
+                skipTipFallback: resetCaches || !!freshExtractionOpts?.skipTipFallback,
             });
 
             if (!activeVectorizeAbortController?.signal?.aborted) {

@@ -19,7 +19,7 @@ import { queryCollection } from './core-vector-api.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { EventBaseFatalError, EventBaseExtractionError } from './eventbase-schema.js';
 import { extractEvents } from './eventbase-extractor.js';
-import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearExtractionCachesForChat, buildEventBaseCollectionId, isLastWindowExtracted, setVectorizationTip, ensureVectorizationTip } from './eventbase-store.js';
+import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearExtractionCachesForChat, buildEventBaseCollectionId, isLastWindowExtracted, setVectorizationTip, ensureVectorizationTip, shouldUseTipFallback } from './eventbase-store.js';
 import { getSavedHashes } from './core-vector-api.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { retrieveEventsWithAgent } from './agentic-retrieval.js';
@@ -260,23 +260,25 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         if (!isDone) break;
         fastForwardSkipped++;
     }
-    // Tip-based fallback: if the fingerprint cache gave 0 skips (cache is empty or stale),
-    // probe Qdrant for the highest source_window_end stored in the collection and use that
-    // as a fast-forward boundary. This handles the case where the local fingerprint cache
-    // was lost (e.g. page reload after re-importing an exported Qdrant collection).
-    // Retroactively marks the skipped windows so future runs use the normal cache path.
+    // Tip-based fallback: if the fingerprint cache gave 0 skips (cache empty/stale)
+    // and a collection exists, probe Qdrant for the highest source_window_end stored
+    // and use that as a fast-forward boundary. Handles the case where the local
+    // fingerprint cache was lost (page reload after re-importing an exported Qdrant
+    // collection).
     //
-    // BYPASSED when skipTipFallback=true — caller explicitly requested a from-scratch
-    // re-extraction (Reset & Vectorize popup). Without this guard the fallback would
-    // re-derive the tip from Qdrant contents and silently fast-forward past everything
-    // the user wanted re-extracted, producing the "0 events, X skipped" surprise. See
-    // 2026-05-30 bug report.
-    if (skipTipFallback && fastForwardSkipped === 0 && collectionId) {
-        if (debugLog) {
-            console.log('[EventBase] skipTipFallback=true — bypassing tip-based fast-forward (caller requested fresh re-extraction)');
-        }
+    // The decision rule lives in shouldUseTipFallback() — DO NOT inline the condition
+    // here. Two bugs on 2026-05-30 (Reset & Vectorize, window-size-change popups) came
+    // from callers inlining incompatible "should I bypass the fallback?" logic. Now
+    // there's one source of truth in eventbase-store.js.
+    const useTipFallback = shouldUseTipFallback({
+        skipTipFallback,
+        fastForwardSkipped,
+        hasCollection: !!collectionId,
+    });
+    if (!useTipFallback && skipTipFallback && debugLog) {
+        console.log('[EventBase] shouldUseTipFallback=false — caller explicitly opted out (skipTipFallback=true)');
     }
-    if (!skipTipFallback && fastForwardSkipped === 0 && collectionId) {
+    if (useTipFallback) {
         try {
             const tip = await ensureVectorizationTip(uuid, collectionId, settings);
             if (typeof tip === 'number' && tip > 0) {

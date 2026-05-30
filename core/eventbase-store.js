@@ -424,6 +424,91 @@ export function setLastUsedWindowSize(chatUUID, windowSize) {
 }
 
 // ---------------------------------------------------------------------------
+// Re-extraction coordination helpers
+// ---------------------------------------------------------------------------
+// Two bugs on 2026-05-30 (Reset & Vectorize popup, window-size-change popup)
+// came from the same root cause: callers inlined their own "should I re-extract?"
+// and "should the workflow fall back to Qdrant?" logic, and they got the
+// combination subtly wrong — local cache cleared but the Qdrant-side tip fallback
+// still fired → silent "0 events, X skipped" runs.
+//
+// These three helpers are the single source of truth for:
+//   1. "Did the window size change since last extraction?"        → checkWindowSizeChanged()
+//   2. "Should the workflow apply its Qdrant-side tip fallback?"  → shouldUseTipFallback()
+//   3. "User asked for fresh extraction — prep the chat state"    → prepareForFreshExtraction()
+//
+// Any new code that touches these concerns MUST use these helpers — do not
+// inline the logic. If a check needs new behavior, extend the helper, don't
+// fork it at a call site.
+
+/**
+ * UI helper. Detect whether the current window size differs from the last
+ * successfully-used one for this chat. Single source of truth — callers MUST NOT
+ * inline `getLastUsedWindowSize(...) !== currentSize`; use this helper instead so
+ * any future refinement (e.g. tolerance, schema migration) applies uniformly.
+ *
+ * @param {string} chatUUID
+ * @param {number} currentSize - The window size the next run would use
+ * @returns {{ changed: boolean, oldSize: number|undefined, newSize: number }}
+ */
+export function checkWindowSizeChanged(chatUUID, currentSize) {
+    const oldSize = getLastUsedWindowSize(chatUUID);
+    const changed = typeof oldSize === 'number' && oldSize !== currentSize;
+    return { changed, oldSize, newSize: currentSize };
+}
+
+/**
+ * Workflow helper. Decide whether `runEventBaseIngestion` should perform its
+ * Qdrant-side tip-derived fast-forward. Pure function — caller passes the
+ * current state, gets a yes/no.
+ *
+ * The fallback fires ONLY when ALL of:
+ *   - Caller did NOT explicitly opt out (skipTipFallback === false)
+ *   - The local cache gave zero skips (fastForwardSkipped === 0)
+ *   - A collection exists to probe (hasCollection === true)
+ *
+ * Centralizing this rule was the structural fix for the two 2026-05-30 bugs:
+ * before, the rule was inlined at the workflow site and the two UI popups
+ * couldn't see it, so they forgot to set skipTipFallback. Now any future
+ * change to the condition lives here in one place.
+ *
+ * @param {{ skipTipFallback: boolean, fastForwardSkipped: number, hasCollection: boolean }} state
+ * @returns {boolean}
+ */
+export function shouldUseTipFallback({ skipTipFallback, fastForwardSkipped, hasCollection }) {
+    if (skipTipFallback) return false;
+    if (fastForwardSkipped > 0) return false;
+    if (!hasCollection) return false;
+    return true;
+}
+
+/**
+ * UI helper. Prepare a chat for an explicitly user-requested fresh re-extraction.
+ *
+ * Does TWO things, both required:
+ *   1. Clears the local extraction caches (window fingerprint cache + tip)
+ *   2. Returns options block to spread into vectorizeAll / runEventBaseIngestion
+ *      so the workflow's Qdrant-side tip fallback ALSO skips this run
+ *
+ * Without step 2 the workflow re-derives the tip from existing Qdrant points and
+ * silently fast-forwards past everything — the "0 events, X skipped" surprise.
+ * Without step 1 the local fingerprints linger as dead-but-harmless entries.
+ *
+ * Call this whenever a popup promises "re-extract from message 1" — Reset &
+ * Vectorize, Window-size-change Proceed, etc. If a third trigger is ever added,
+ * route it through this helper too.
+ *
+ * @param {string} chatUUID
+ * @returns {Promise<{ skipTipFallback: true }>}
+ */
+export async function prepareForFreshExtraction(chatUUID) {
+    if (!chatUUID) return { skipTipFallback: true };
+    clearExtractionCachesForChat(chatUUID);
+    console.log(`[EventBase] prepareForFreshExtraction: caches cleared for ${chatUUID} (skipTipFallback will be propagated)`);
+    return { skipTipFallback: true };
+}
+
+// ---------------------------------------------------------------------------
 // Window-fingerprint cache (in-session dedup of identical extraction windows)
 // ---------------------------------------------------------------------------
 

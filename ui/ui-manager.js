@@ -913,6 +913,14 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <input type="number" id="VectFox_eventbase_timeout_ms" class="vectfox-input" min="5000" max="300000" step="1000" style="width:130px;" />
                             </div>
 
+                            <div class="vectfox-form-group">
+                                <label class="checkbox_label" for="VectFox_eventbase_disable_pipeline">
+                                    <input type="checkbox" id="VectFox_eventbase_disable_pipeline" />
+                                    <span>Serial extract→insert (recommended)</span>
+                                </label>
+                                <small class="VectFox_hint">Checked: each batch finishes embedding before the next batch starts extracting (well-tested). Uncheck to overlap extract and insert for ~35% faster throughput — experimental.</small>
+                            </div>
+
                             <hr style="margin: 16px 0; opacity:0.2;" />
 
                             <!-- Retrieval settings -->
@@ -3577,6 +3585,19 @@ function bindSettingsEvents(settings, callbacks) {
         .prop('checked', !!settings.eventbase_raw_llm_debug)
         .on('change', function() {
             settings.eventbase_raw_llm_debug = $(this).prop('checked');
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // Serial / pipelined toggle. Checkbox CHECKED == disable_pipeline == serial.
+    // Default to checked when the setting is unset (matches the read-site
+    // semantics in eventbase-workflow.js: `... !== false` means anything except
+    // explicit `false` is serial). Existing users who never touched this stay
+    // on serial mode after the UI ships.
+    $('#VectFox_eventbase_disable_pipeline')
+        .prop('checked', settings.eventbase_disable_pipeline ?? true)
+        .on('change', function() {
+            settings.eventbase_disable_pipeline = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

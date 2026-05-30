@@ -107,6 +107,31 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <label for="VectFox_vector_backend">
                                     <small>Vector Backend</small>
                                 </label>
+                                <!--
+                                    ⚠️ MAINTAINERS: when the user selects "standard", we MUST force two settings
+                                    OFF because the similharity plugin's standard-backend code path cannot handle
+                                    high HTTP concurrency:
+                                      1. vector_hedge_after_ms → 0          (hedge OFF)
+                                      2. eventbase_disable_pipeline → true  (serial extract→insert ON)
+                                    The change handler at the bottom of this file (search "Vector backend selection")
+                                    enforces both, toasts the user, and explains why.
+
+                                    The plugin breaks under our hedge + parallel-split combo: parallel-split fires
+                                    N concurrent POSTs (1 per event), hedge fires up to 3 more duplicates per stuck
+                                    POST. At concurrency=8 windows × ~10 events × 4 attempts = potentially 320
+                                    simultaneous HTTP connections to /api/plugins/similharity/chunks/insert. The
+                                    plugin's HTTP/2 response handling corrupts under that load and returns 500s
+                                    with 2.1MB truncated-JSON bodies (observed 2026-05-30; same byte offset every
+                                    time → consistent buffer-multiplexing bug, not random).
+
+                                    Production at concurrency=8 worked because production was serial extract→insert
+                                    and batched embedding (one POST per batch instead of one per event). The new
+                                    parallel-split + hedge combo is incompatible with the plugin and must stay off
+                                    for standard backend until the plugin is fixed upstream.
+
+                                    Qdrant backend uses a different plugin endpoint (/qdrant/...) with different
+                                    code paths and is NOT affected — hedge + parallel-split are fine there.
+                                -->
                                 <select id="VectFox_vector_backend" class="vectfox-select">
                                     <option value="standard">Standard (ST's Vectra - file-based)</option>
                                     <option value="qdrant">Qdrant (production vector search)</option>
@@ -2675,6 +2700,41 @@ function bindSettingsEvents(settings, callbacks) {
                 $('#VectFox_qdrant_settings').show();
             } else {
                 $('#VectFox_qdrant_settings').hide();
+            }
+
+            // Standard backend (ST's Vectra via similharity plugin) cannot
+            // tolerate high HTTP concurrency — the plugin's response handling
+            // corrupts under concurrent load (observed 2026-05-30: 2.1MB
+            // truncated-JSON 500s under parallel-split + hedge). Force the
+            // safe settings whenever the user switches TO standard:
+            //   - hedge OFF (no duplicate requests)
+            //   - serial extract→insert (no pipelined coordinator)
+            // The user can still manually flip these back on after if they
+            // want to experiment — we just don't make it the default.
+            // Switching to other backends does NOT reset these — the user's
+            // prior preference is preserved.
+            if (settings.vector_backend === 'standard') {
+                let toastMessages = [];
+                if ((Number(settings.vector_hedge_after_ms) || 0) > 0) {
+                    settings.vector_hedge_after_ms = 0;
+                    $('#VectFox_vector_hedge_enabled').prop('checked', false);
+                    toastMessages.push('hedge OFF');
+                }
+                if (settings.eventbase_disable_pipeline !== true) {
+                    settings.eventbase_disable_pipeline = true;
+                    $('#VectFox_eventbase_disable_pipeline').prop('checked', true);
+                    toastMessages.push('serial extract→insert ON');
+                }
+                if (toastMessages.length) {
+                    try {
+                        toastr.info(
+                            `Standard backend selected — forced ${toastMessages.join(', ')} (similharity plugin can't handle high concurrent load)`,
+                            'VectFox',
+                            { timeOut: 6000 },
+                        );
+                    } catch (_) {}
+                    console.log(`VectFox: Standard backend safe-settings applied — ${toastMessages.join(', ')}`);
+                }
             }
 
             applyBackendHybridDefaults(settings.vector_backend);

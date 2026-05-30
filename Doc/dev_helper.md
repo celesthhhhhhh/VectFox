@@ -273,7 +273,19 @@ After 4 fresh-connection attempts in 60s with no success, throws an error with `
 | Outer `_insertWithRetry` (pipelined mode) | Catches anything except AbortError AND hedge-fatal. Hedge-fatal escapes the 3-attempt outer retry budget. |
 | Inner `AsyncUtils.retry` | `shouldRetry` returns false for hedge-fatal. Otherwise retries on TimeoutError + the keyword set in `RETRY_CONFIG.shouldRetry`. |
 | Hedge (`callWithHedge`) | Primary at t=0, hedge at t=15s, 30s, 45s. Hard fatal cutoff at t=60s. |
+| Parallel-split wave composite | If ANY individual failure is `isHedgeFatal=true`, the composite Error inherits the flag — outer retry short-circuits instead of burning ~12min/wave on a wave certain to fail again. |
 | Backend `insertVectorItems` (similharity → ST → provider → Qdrant) | One call per hedge invocation. |
+
+### Backend-specific safety wiring (Vector Backend dropdown)
+
+The **Standard backend** (ST's Vectra via similharity plugin) cannot tolerate high HTTP concurrency — the plugin's response handling corrupts under concurrent load. Observed 2026-05-30: 12 simultaneous parallel-split POSTs + hedge produced 2.1 MB truncated-JSON 500s from the plugin (`[similharity] chunks/insert error: SyntaxError: Unexpected non-whitespace character after JSON at position 2140978`). Likely HTTP/2 response-buffer multiplexing under concurrent load.
+
+To prevent users from running into this, the Vector Backend `<select>` change handler in `ui/ui-manager.js` automatically forces safe settings when the user selects `standard`:
+
+- `vector_hedge_after_ms` → 0 (hedge OFF)
+- `eventbase_disable_pipeline` → true (serial extract→insert ON)
+
+A toast informs the user what changed. Power users can still manually re-enable after if they want to experiment — we don't disable the checkboxes. Switching AWAY from standard does NOT touch these settings — the user's preference for hedge/pipelined is preserved across backend swaps.
 
 ### Key files
 

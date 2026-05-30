@@ -902,9 +902,24 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
                     const failed = results.filter(r => r.status === 'rejected');
                     if (failed.length > 0) {
                         const sample = failed[0].reason;
-                        throw new Error(
+                        // Hedge-fatal propagation: if ANY of the wave's failures hit hedge-fatal
+                        // (4 fresh-connection attempts in 60s with no success), the upstream is
+                        // genuinely broken for our payload. Propagating isHedgeFatal lets the
+                        // OUTER _insertWithRetry short-circuit and avoid burning 12+ minutes
+                        // per retry × N retries on a wave that's certain to fail again the
+                        // same way. Without this, the composite Error would hide the flag and
+                        // the outer retry would re-run the whole 12-batch hedged wave 3 times
+                        // (~36 minutes). Observed 2026-05-30 with similharity plugin 2.1MB
+                        // truncated-JSON 500s under parallel-split + hedge concurrent load.
+                        const anyHedgeFatal = failed.some(f => f.reason?.isHedgeFatal === true);
+                        const composite = new Error(
                             `VectFox: ${failed.length}/${slice.length} parallel inserts in wave failed — first failure: ${sample?.name || 'Error'}: ${sample?.message || sample}`,
                         );
+                        if (anyHedgeFatal) {
+                            composite.name = 'HedgeFatalError';
+                            composite.isHedgeFatal = true;
+                        }
+                        throw composite;
                     }
                     if (onProgress) {
                         onProgress(Math.min(wave + slice.length, items.length), items.length);

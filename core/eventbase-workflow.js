@@ -99,34 +99,22 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
 
     const CONCURRENCY = Math.min(8, Math.max(1, parallelWindows));
 
-    // Coordinator mode: serial (default) vs pipelined (opt-in).
+    // Coordinator mode: pipelined (default) vs serial (opt-in via "Serial
+    // extract→insert" checkbox in the EventBase tab).
     //
-    // - DEFAULT: serial — extract → finalize (insert + mark + tip) → next
-    //   extract. No overlap between phases. This is the known-good path:
-    //   data integrity is provable (each batch completes before the next
-    //   starts) and extraction quality is uncompromised.
+    // - DEFAULT: pipelined — batch N's insert overlaps batch N+1's extract.
+    //   ~35% faster wall time. Trade-off observed in 2026-05-30 A/B (96
+    //   windows on Gemini Flash): pipelined produced ~44% fewer events per
+    //   window than serial (0.98 vs 1.74). Hypothesis: pipelined mode
+    //   contends for the provider's per-key concurrency budget and silently
+    //   degrades extract response quality on bursty cloud APIs.
     //
-    //   Why absence of the key = serial: a 2026-05-30 A/B (96 windows on
-    //   Gemini Flash) showed serial mode producing ~78% more events per
-    //   window than pipelined (1.74 vs 0.98). Hypothesis: pipelined mode
-    //   overlaps batch N's embedding call with batch N+1's extract calls,
-    //   contending for OpenRouter per-key concurrency budget and silently
-    //   degrading response quality. The hypothesis isn't proven yet, but
-    //   "known-good is the default until the unproven path is proven safe"
-    //   is the correct posture.
-    //
-    // - PIPELINED opt-in (set in devtools):
-    //     SillyTavern.getContext().extensionSettings.vectfox.eventbase_disable_pipeline = false
-    //   This re-enables the overlapping coordinator. ~35% faster wall time;
-    //   probably lower extraction recall on chats with rich content. Useful
-    //   for users who care more about speed than recall (e.g. backfilling
-    //   short or low-density chats).
-    //
-    // The flag will be revisited once either (a) the contention hypothesis
-    // is conclusively proven/disproven via a larger-N A/B, or (b) the
-    // embedding-vs-extract contention inside _finalizeBatch is restructured
-    // so pipelining no longer degrades quality.
-    const disablePipeline = settings?.eventbase_disable_pipeline !== false;
+    // - SERIAL opt-in (checkbox): each batch finishes embedding before the
+    //   next batch starts extracting. Safer on slower vector DB backends
+    //   and higher event-yield on bursty cloud APIs. Anything except
+    //   explicit `false` is treated as the new pipelined default; only an
+    //   explicit `true` enables serial mode.
+    const disablePipeline = settings?.eventbase_disable_pipeline === true;
 
     if (!messages?.length) return { eventsExtracted: 0, windowsProcessed: 0, windowsSkipped: 0 };
 

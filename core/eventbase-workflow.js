@@ -99,16 +99,34 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
 
     const CONCURRENCY = Math.min(8, Math.max(1, parallelWindows));
 
-    // Diagnostic toggle: when true, the coordinator collapses back to the
-    // pre-pipeline serial barrier — extract → finalize (insert + mark + tip)
-    // → next extract, with NO concurrency between phases. The pipelined path
-    // (default) still exists and runs when this is false. Set via:
-    //   extension_settings.vectfox.eventbase_disable_pipeline = true
-    // The toggle exists ONLY to answer "did pipelining cause $bug?" by giving
-    // a clean A/B run. There is no UI surface — flip it from devtools, run,
-    // compare. If pipelining is the culprit, the serial run will not show
-    // the symptom. If the symptom persists, pipelining is exonerated.
-    const disablePipeline = settings?.eventbase_disable_pipeline === true;
+    // Coordinator mode: serial (default) vs pipelined (opt-in).
+    //
+    // - DEFAULT: serial — extract → finalize (insert + mark + tip) → next
+    //   extract. No overlap between phases. This is the known-good path:
+    //   data integrity is provable (each batch completes before the next
+    //   starts) and extraction quality is uncompromised.
+    //
+    //   Why absence of the key = serial: a 2026-05-30 A/B (96 windows on
+    //   Gemini Flash) showed serial mode producing ~78% more events per
+    //   window than pipelined (1.74 vs 0.98). Hypothesis: pipelined mode
+    //   overlaps batch N's embedding call with batch N+1's extract calls,
+    //   contending for OpenRouter per-key concurrency budget and silently
+    //   degrading response quality. The hypothesis isn't proven yet, but
+    //   "known-good is the default until the unproven path is proven safe"
+    //   is the correct posture.
+    //
+    // - PIPELINED opt-in (set in devtools):
+    //     SillyTavern.getContext().extensionSettings.vectfox.eventbase_disable_pipeline = false
+    //   This re-enables the overlapping coordinator. ~35% faster wall time;
+    //   probably lower extraction recall on chats with rich content. Useful
+    //   for users who care more about speed than recall (e.g. backfilling
+    //   short or low-density chats).
+    //
+    // The flag will be revisited once either (a) the contention hypothesis
+    // is conclusively proven/disproven via a larger-N A/B, or (b) the
+    // embedding-vs-extract contention inside _finalizeBatch is restructured
+    // so pipelining no longer degrades quality.
+    const disablePipeline = settings?.eventbase_disable_pipeline !== false;
 
     if (!messages?.length) return { eventsExtracted: 0, windowsProcessed: 0, windowsSkipped: 0 };
 
@@ -453,13 +471,41 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             }
             try {
                 await insertEvents(events, settings, abortSignal, collectionId);
+                // If we got here after a retry, signal recovery to the user so the
+                // earlier toast ("retrying...") gets a closing parenthesis.
+                if (attempt > 1) {
+                    try { toastr.success(`Insert recovered on attempt ${attempt}/3`, 'VectFox', { timeOut: 4000 }); } catch (_) {}
+                }
                 return; // success
             } catch (err) {
                 if (err?.name === 'AbortError' || abortSignal?.aborted) throw err;
                 lastErr = err;
                 console.warn(`[EventBase] Insert batch starting at window ${batchFirstIdx} attempt ${attempt}/3 failed: ${err?.message || err}`);
                 if (attempt < 3) {
-                    await new Promise(r => setTimeout(r, Math.min(2000, 500 * attempt)));
+                    // Backoff bumped from 500/1000ms to 5s/10s. The shorter delays
+                    // were too aggressive for the common failure mode we hit in
+                    // practice: Qdrant under transient load returning truncated
+                    // JSON. 5-10s gives the server time to settle instead of
+                    // pounding it again immediately. See Doc/log.txt 2026-05-30
+                    // 01:18:34 incident — Similharity threw "Unexpected end of
+                    // JSON input" which is a truncated-response symptom.
+                    const backoffMs = attempt === 1 ? 5000 : 10000;
+                    // Visibility: tell the user this is a retry, not a hang.
+                    // Without this signal, retry attempts look identical to a
+                    // stall and users press Stop unnecessarily (which throws
+                    // away an in-flight retry that probably would have worked).
+                    try {
+                        toastr.warning(
+                            `Insert failed (attempt ${attempt}/3), retrying in ${backoffMs/1000}s. Server said: ${(err?.message || '').slice(0, 120)}`,
+                            'VectFox — retrying',
+                            { timeOut: backoffMs + 500 },
+                        );
+                    } catch (_) {}
+                    progressTracker.updateProgress(
+                        nextBatchFirstIdx,
+                        `Insert retry ${attempt}/3 — waiting ${backoffMs/1000}s...`,
+                    );
+                    await new Promise(r => setTimeout(r, backoffMs));
                 }
             }
         }

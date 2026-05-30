@@ -26,6 +26,7 @@ import { retrieveEventsWithAgent } from './agentic-retrieval.js';
 import { formatEventsForInjectionDetailed } from './eventbase-injection.js';
 import { isCollectionEnabled, isCollectionLockedToChat, setCollectionLock, setCollectionMeta } from './collection-metadata.js';
 import { progressTracker } from '../ui/progress-tracker.js';
+import { log } from './log.js';
 
 /** Extension prompt tag for EventBase (distinct from legacy chunks tag) */
 const EVENTBASE_PROMPT_TAG = `${EXTENSION_PROMPT_TAG}_eventbase`;
@@ -126,7 +127,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         try {
             const existingHashes = collectionId ? await getSavedHashes(collectionId, settings) : [];
             if (!existingHashes?.length) {
-                if (debugLog) console.log('[EventBase] Collection is empty but cache has entries — resetting extraction caches');
+                log.lifecycle('[EventBase] Collection is empty but cache has entries — resetting extraction caches');
                 // Clear both window + tip caches. Dropping only the window cache left
                 // the tip-based fast-forward reading a stale tip (e.g. 2382 from a
                 // deleted collection) and skipping every window — the "0 events,
@@ -150,7 +151,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
     // Note: edits to messages deep in history bypass this check — acceptable limitation.
     const _msgHash = m => { const t = (m.mes || '').trim(); return m.hash ?? _djb2(`${m.name || ''}:${t}`); };
     if (isLastWindowExtracted(messages, windowSize, step, uuid, _msgHash)) {
-        if (debugLog) console.log(`[EventBase] Quick-exit: last window already extracted, nothing new`);
+        log.lifecycle(`[EventBase] Quick-exit: last window already extracted, nothing new`);
         return { eventsExtracted: 0, windowsProcessed: 0, windowsSkipped: 0 };
     }
 
@@ -342,17 +343,13 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
     async function _runOneExtractBatch(windowsSlice, batchFirstIdx) {
         const batchStartedAt = performance.now();
         const batchLastIdx = batchFirstIdx + windowsSlice.length - 1;
-        if (debugLog) {
-            console.log(`[EventBase concurrency] Dispatching batch: windows ${batchFirstIdx}-${batchLastIdx} (size=${windowsSlice.length}, CONCURRENCY=${CONCURRENCY}) at t=${batchStartedAt.toFixed(1)}ms`);
-        }
+        log.verbose(`[EventBase concurrency] Dispatching batch: windows ${batchFirstIdx}-${batchLastIdx} (size=${windowsSlice.length}, CONCURRENCY=${CONCURRENCY}) at t=${batchStartedAt.toFixed(1)}ms`);
 
         const batchResults = await Promise.allSettled(
             windowsSlice.map(async (win, batchOffset) => {
                 const wIdx = batchFirstIdx + batchOffset;
                 const winStartedAt = performance.now();
-                if (debugLog) {
-                    console.log(`[EventBase concurrency] Window ${wIdx}: dispatched at +${(winStartedAt - batchStartedAt).toFixed(1)}ms`);
-                }
+                log.verbose(`[EventBase concurrency] Window ${wIdx}: dispatched at +${(winStartedAt - batchStartedAt).toFixed(1)}ms`);
 
                 if (abortSignal?.aborted) return { skipped: true };
 
@@ -388,9 +385,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                         windowIndex: wIdx,
                     });
                     const extractMs = performance.now() - extractStart;
-                    if (debugLog) {
-                        console.log(`[EventBase concurrency] Window ${wIdx}: LLM extract done in ${extractMs.toFixed(0)}ms (finished at +${(performance.now() - batchStartedAt).toFixed(1)}ms from batch start)`);
-                    }
+                    log.verbose(`[EventBase concurrency] Window ${wIdx}: LLM extract done in ${extractMs.toFixed(0)}ms (finished at +${(performance.now() - batchStartedAt).toFixed(1)}ms from batch start)`);
                 } catch (err) {
                     // User/request cancellation is expected and should not be logged as a failure.
                     if (err?.name === 'AbortError' || abortSignal?.aborted) {
@@ -422,9 +417,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         );
 
         const extractPhaseEndedAt = performance.now();
-        if (debugLog) {
-            console.log(`[EventBase concurrency] Batch extract phase complete: ${(extractPhaseEndedAt - batchStartedAt).toFixed(0)}ms wall (${windowsSlice.length} window(s))`);
-        }
+        log.verbose(`[EventBase concurrency] Batch extract phase complete: ${(extractPhaseEndedAt - batchStartedAt).toFixed(0)}ms wall (${windowsSlice.length} window(s))`);
 
         // Reduce per-window results into the {events, hashes, ends} packet the
         // finalizer needs to write. Same coalescing as the original loop.
@@ -553,9 +546,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         const batchEndedAt = performance.now();
         const insertPhaseMs = batchEndedAt - extractPhaseEndedAt;
         const extractPhaseMs = extractPhaseEndedAt - batchStartedAt;
-        if (debugLog) {
-            console.log(`[EventBase concurrency] Batch DONE: total=${(batchEndedAt - batchStartedAt).toFixed(0)}ms (extract=${extractPhaseMs.toFixed(0)}ms parallel, insert=${insertPhaseMs.toFixed(0)}ms — 1 batched POST with ${allEvents.length} event(s))`);
-        }
+        log.lifecycle(`[EventBase concurrency] Batch DONE: total=${(batchEndedAt - batchStartedAt).toFixed(0)}ms (extract=${extractPhaseMs.toFixed(0)}ms parallel, insert=${insertPhaseMs.toFixed(0)}ms — 1 batched POST with ${allEvents.length} event(s))`);
 
         // Tally results, watch for fatal LLM errors (extract-side fatals
         // arrive as rejected promises in batchResults).

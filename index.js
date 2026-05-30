@@ -234,6 +234,26 @@ const defaultSettings = {
     eventbase_autosync_popup: true,               // Show popup toast when auto-sync extraction runs
     autosync_show_progress_modal: false,          // Show progress modal popup during auto-sync (default: silent)
     chat_lock_index: {},                          // Reverse index: chatId -> [collectionId, ...] for O(1) tab lookups
+    // ─── Logging (core/log.js) ──────────────────────────────────────────
+    // Verbosity dropdown — single noise floor for the whole pipeline.
+    // 'off' (default) | 'lifecycle' | 'verbose' | 'trace'. Errors/warnings
+    // always fire regardless. See plans/logging-levels-and-classification.md.
+    debug_verbosity: 'off',
+    // Orthogonal per-subsystem deep-dives, independent of debug_verbosity.
+    // Keys must match LOG_DOMAINS in core/log.js. All default off.
+    debug_domain: {
+        raw_llm: false,     // per-window raw LLM text + parser candidate dumps
+        qdrant: false,      // native hybrid keyword/fusion diagnostics
+        standard: false,    // similharity plugin internals
+        injection: false,   // Chunk Path: what got injected, where, why
+        agent: false,       // agent-mode planner / per-query hits
+        rerank: false,      // native vs JS re-rank comparison
+    },
+    // Legacy debug flags below are KEPT as settings keys (some non-log code
+    // still reads eventbase_compare_rerank etc.), but the pure log-gate flags
+    // (eventbase_debug_logging, debug_vectorizing_log, *_debug, ...) are no
+    // longer consulted for logging — core/log.js ignores them. No migration
+    // shim (user decision 2026-05-30).
     eventbase_debug_logging: false,
     eventbase_raw_llm_debug: false,              // Raw LLM reply + parser candidate logs (very noisy, per-window)
     vector_group_embedding_call: true,           // Path-agnostic insert toggle. true = legacy batched POST (1 POST per batch, cheaper, default — proven safe in production wire conditions when paired with hedge). false = parallel-split (1 POST per item, failure-contained, but N× the connection surface area which can amplify upstream routing stalls). Affects every call to insertVectorItems (EventBase ingestion AND content/document vectorization).

@@ -20,6 +20,7 @@ import { extension_settings, getContext } from '../../../../extensions.js';
 import { getChatUUID, buildEventBaseCollectionId, getRegistryBackend, COLLECTION_PREFIXES, parseRegistryKey } from './collection-ids.js';
 import { registerCollection, getCollectionRegistry } from './collection-loader.js';
 import { buildEmbedText } from './eventbase-schema.js';
+import { log } from './log.js';
 
 // Re-export so callers can import from here if needed
 export { buildEventBaseCollectionId };
@@ -116,8 +117,6 @@ export async function insertEvents(events, settings, abortSignal = null, collect
     const collectionId = collectionIdOverride || buildEventBaseCollectionId(chatUUID, settings?.vector_backend);
     if (!collectionId) throw new Error('EventBase: Cannot build collection ID — no active chat');
 
-    const debugLog = settings.eventbase_debug_logging;
-
     // Build embed texts for all events at once (for efficient batched embedding)
     const embedTexts = events.map(e => buildEmbedText(e));
 
@@ -128,12 +127,13 @@ export async function insertEvents(events, settings, abortSignal = null, collect
     // the bad apple. Logged BEFORE the call so the preceding console lines
     // tell us the exact payload that the next "FAILED after 120s" refers to.
     // Format: len + first 80 chars (enough to identify, short enough to scan).
-    if (debugLog) {
-        console.log(`[EventBase] Preparing embedding batch — ${embedTexts.length} item(s):`);
+    // Per-item → Trace. Guarded so the preview loop is skipped when off.
+    if (log.enabled('trace')) {
+        log.trace(`[EventBase] Preparing embedding batch — ${embedTexts.length} item(s):`);
         for (let i = 0; i < embedTexts.length; i++) {
             const t = embedTexts[i] || '';
             const preview = t.slice(0, 80).replace(/\s+/g, ' ');
-            console.log(`  [${i}] len=${t.length} eventId=${events[i]?.event_id || '(no-id)'} text="${preview}${t.length > 80 ? '...' : ''}"`);
+            log.trace(`  [${i}] len=${t.length} eventId=${events[i]?.event_id || '(no-id)'} text="${preview}${t.length > 80 ? '...' : ''}"`);
         }
     }
 
@@ -198,9 +198,7 @@ export async function insertEvents(events, settings, abortSignal = null, collect
         hashSeen.set(item.hash, evid);
     }
 
-    if (debugLog) {
-        console.log(`[EventBase] Inserting ${items.length} event(s) into collection "${collectionId}"`);
-    }
+    log.lifecycle(`[EventBase] Inserting ${items.length} event(s) into collection "${collectionId}"`);
 
     await insertVectorItems(collectionId, items, settings, null, abortSignal);
 
@@ -211,9 +209,7 @@ export async function insertEvents(events, settings, abortSignal = null, collect
     const registryKey = `${registryBackend}:${collectionId}`;
     registerCollection(registryKey);
 
-    if (debugLog) {
-        console.log(`[EventBase] Insert complete for collection "${collectionId}"`);
-    }
+    log.lifecycle(`[EventBase] Insert complete for collection "${collectionId}"`);
 }
 
 // ---------------------------------------------------------------------------

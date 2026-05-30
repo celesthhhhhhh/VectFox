@@ -10,11 +10,7 @@
  * ============================================================================
  */
 
-import { extension_settings } from '../../../../extensions.js';
-
-function isDebugVectorizingLogEnabled() {
-    return extension_settings?.vectfox?.debug_vectorizing_log === true;
-}
+import { log } from '../core/log.js';
 
 /**
  * Progress Tracker - Manages progress panel UI
@@ -193,10 +189,8 @@ export class ProgressTracker {
      * @param {number} totalChunksToEmbed - Total chunks to embed
      */
     updateEmbeddingProgress(embeddedChunks, totalChunksToEmbed) {
-        if (isDebugVectorizingLogEnabled()) {
-            console.log(`[ProgressTracker] updateEmbeddingProgress: ${embeddedChunks}/${totalChunksToEmbed}`);
-        }
-        
+        log.verbose(`[ProgressTracker] updateEmbeddingProgress: ${embeddedChunks}/${totalChunksToEmbed}`);
+
         // Track batch timing for speed calculation
         const previousEmbedded = this.stats.embeddedChunks || 0;
         const batchSize = embeddedChunks - previousEmbedded;
@@ -206,9 +200,7 @@ export class ProgressTracker {
             this.stats.lastBatchTime = now - this.stats.lastBatchStartTime;
             this.stats.lastBatchSize = batchSize;
             this.stats.lastBatchStartTime = now; // Reset for next batch
-            if (isDebugVectorizingLogEnabled()) {
-                console.log(`[ProgressTracker] Batch completed: ${batchSize} chunks in ${this.stats.lastBatchTime}ms`);
-            }
+            log.verbose(`[ProgressTracker] Batch completed: ${batchSize} chunks in ${this.stats.lastBatchTime}ms`);
         }
         
         this.stats.embeddedChunks = embeddedChunks;
@@ -413,9 +405,7 @@ export class ProgressTracker {
             percent = 100;
         } else if (this.stats.totalChunksToEmbed > 0 && this.stats.embeddedChunks >= 0) {
             percent = Math.round((this.stats.embeddedChunks / this.stats.totalChunksToEmbed) * 100);
-            if (isDebugVectorizingLogEnabled()) {
-                console.log(`[ProgressTracker] Progress bar: ${this.stats.embeddedChunks}/${this.stats.totalChunksToEmbed} = ${percent}%`);
-            }
+            log.trace(`[ProgressTracker] Progress bar: ${this.stats.embeddedChunks}/${this.stats.totalChunksToEmbed} = ${percent}%`);
         } else if (this.stats.totalItems > 0) {
             percent = Math.round((this.stats.processedItems / this.stats.totalItems) * 100);
         }
@@ -445,9 +435,7 @@ export class ProgressTracker {
                 // Show embedding progress: "45/100 (55 left)"
                 const remaining = this.stats.totalChunksToEmbed - this.stats.embeddedChunks;
                 const displayText = `${this.stats.embeddedChunks}/${this.stats.totalChunksToEmbed} (${remaining} left)`;
-                if (isDebugVectorizingLogEnabled()) {
-                    console.log(`[ProgressTracker] Updating chunks display with embedding progress: "${displayText}"`);
-                }
+                log.trace(`[ProgressTracker] Updating chunks display with embedding progress: "${displayText}"`);
                 els.chunks.textContent = displayText;
             } else if (this.stats.totalChunks > this.stats.processedItems && this.stats.processedItems > 0) {
                 // Messages are being split into multiple chunks

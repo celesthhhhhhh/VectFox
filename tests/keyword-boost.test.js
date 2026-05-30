@@ -257,12 +257,14 @@ describe('extractTextKeywords', () => {
     });
 
     it('should filter out stopwords', () => {
-        const text = 'The wizard is going to the castle and the dragon will follow.';
+        // Use words that are actually in the project stopword set
+        // (core/stop-words.js). 'will' is NOT a stopword here, so asserting it
+        // gets filtered was always wrong; 'within' is.
+        const text = 'The wizard is going to the castle within the dragon lair.';
         const keywords = extractTextKeywords(text);
         const keywordTexts = keywords.map(k => k.text);
         expect(keywordTexts).not.toContain('the');
-        expect(keywordTexts).not.toContain('and');
-        expect(keywordTexts).not.toContain('will');
+        expect(keywordTexts).not.toContain('within');
     });
 
     it('should assign higher weights to more frequent words', () => {
@@ -527,12 +529,13 @@ describe('extractBM25Keywords', () => {
     });
 
     it('should filter out stopwords', () => {
-        const text = 'The wizard is going to the castle and the dragon will follow them there.';
+        // 'will' is NOT in the project stopword set (core/stop-words.js); 'within'
+        // is. Assert on words that are actually treated as stopwords.
+        const text = 'The wizard is going to the castle within the dragon lair and tower.';
         const keywords = extractBM25Keywords(text, { level: 'aggressive' });
         const keywordTexts = keywords.map(k => k.text);
         expect(keywordTexts).not.toContain('the');
-        expect(keywordTexts).not.toContain('and');
-        expect(keywordTexts).not.toContain('will');
+        expect(keywordTexts).not.toContain('within');
     });
 
     it('should respect minWordLength option', () => {

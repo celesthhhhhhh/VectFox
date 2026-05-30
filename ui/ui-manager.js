@@ -868,17 +868,22 @@ export function renderSettings(containerId, settings, callbacks) {
                             </label>
                             <small class="VectFox_hint">Log [VectFox Injection Control] details to the browser console (useful for diagnosing retrieval/injection issues)</small>
 
-                            <label class="checkbox_label" for="VectFox_debug_vectorizing_log" style="margin-top: 12px;">
-                                <input type="checkbox" id="VectFox_debug_vectorizing_log" />
-                                <span>Debug Logging</span>
+                            <label class="checkbox_label" for="VectFox_debug_verbosity" style="margin-top: 12px; display:block;">
+                                <span>Console verbosity</span>
                             </label>
-                            <small class="VectFox_hint">Log [EventBase] details and vectorization progress diagnostics (ProgressTracker + batch/parsing logs) to the browser console.</small>
+                            <select id="VectFox_debug_verbosity" class="text_pole" style="width: 100%; margin-top: 4px;">
+                                <option value="off">Off — silence (default)</option>
+                                <option value="lifecycle">Lifecycle — major events only (~50 lines / 100 windows)</option>
+                                <option value="verbose">Verbose — + per-batch/window timing (~300 lines / 100 windows)</option>
+                                <option value="trace">Trace — + per-item detail (~700 lines / 100 windows)</option>
+                            </select>
+                            <small class="VectFox_hint">Single noise floor for all EventBase / vectorization / insert logging. Errors and warnings always log regardless. Replaces the old Debug Logging + Vectorizing toggles.</small>
 
-                            <label class="checkbox_label" for="VectFox_eventbase_raw_llm_debug" style="margin-top: 12px;">
-                                <input type="checkbox" id="VectFox_eventbase_raw_llm_debug" />
-                                <span>Raw LLM debug</span>
+                            <label class="checkbox_label" for="VectFox_debug_domain_raw_llm" style="margin-top: 12px;">
+                                <input type="checkbox" id="VectFox_debug_domain_raw_llm" />
+                                <span>Raw LLM reply (deep-dive)</span>
                             </label>
-                            <small class="VectFox_hint">Log the raw LLM reply and parser candidate-array diagnostics per window. Very noisy — use only when investigating extraction/parse problems. Independent of the main Debug Logging toggle so you can keep timing logs clean.</small>
+                            <small class="VectFox_hint">Log the raw LLM reply and parser candidate-array diagnostics per window. Very noisy — use only when investigating extraction/parse problems. Independent of the verbosity dropdown.</small>
 
                             <label class="checkbox_label" for="VectFox_eventbase_debug_qdrant_backend" style="margin-top: 12px;">
                                 <input type="checkbox" id="VectFox_eventbase_debug_qdrant_backend" />
@@ -3618,33 +3623,45 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // Debug injection logging toggle
+    // ─── Logging (core/log.js) ──────────────────────────────────────────
+    // Verbosity dropdown — single noise floor, drives all gated log.* calls
+    // (the 22 Phase-1 sites). Plus the raw_llm domain deep-dive, the one domain
+    // whose read site is migrated (eventbase-extractor.js). No backward-compat
+    // shim: the old verbosity gate flags are not read (user decision 2026-05-30).
+    // The remaining domain deep-dives (qdrant / standard / injection / rerank)
+    // ship in Phase 2 when their read sites migrate — until then their old
+    // checkboxes below (Injection / Qdrant / Compare re-rank) stay on the old
+    // flags so they keep working. See plans/logging-levels-and-classification.md.
+    const _ensureDebugDomain = () => {
+        if (!settings.debug_domain || typeof settings.debug_domain !== 'object') {
+            settings.debug_domain = {};
+        }
+        return settings.debug_domain;
+    };
+
+    $('#VectFox_debug_verbosity')
+        .val(settings.debug_verbosity || 'off')
+        .on('change', function() {
+            settings.debug_verbosity = $(this).val();
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // Raw LLM reply domain deep-dive → settings.debug_domain.raw_llm
+    $('#VectFox_debug_domain_raw_llm')
+        .prop('checked', _ensureDebugDomain().raw_llm === true)
+        .on('change', function() {
+            _ensureDebugDomain().raw_llm = $(this).prop('checked');
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // Chunk-path injection debug — still on the old flag (Phase 2 will fold it
+    // into debug_domain.injection once its read sites migrate).
     $('#VectFox_injection_debug_logging')
         .prop('checked', settings.injection_debug_logging || false)
         .on('change', function() {
             settings.injection_debug_logging = $(this).prop('checked');
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-        });
-
-    // Debug vectorizing log toggle
-    $('#VectFox_debug_vectorizing_log')
-        .prop('checked', (settings.debug_vectorizing_log || settings.eventbase_debug_logging) || false)
-        .on('change', function() {
-            const enabled = $(this).prop('checked');
-            // Merged control: one checkbox drives both EventBase and vectorizing logs.
-            settings.debug_vectorizing_log = enabled;
-            settings.eventbase_debug_logging = enabled;
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-        });
-
-    // Raw LLM debug toggle — separate from main Debug Logging so timing
-    // investigations aren't drowned in per-window parse dumps.
-    $('#VectFox_eventbase_raw_llm_debug')
-        .prop('checked', !!settings.eventbase_raw_llm_debug)
-        .on('change', function() {
-            settings.eventbase_raw_llm_debug = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

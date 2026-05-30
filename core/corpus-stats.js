@@ -30,6 +30,7 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
 import { tokenize } from './bm25-scorer.js';
 import { getModelFromSettings } from './providers.js';
+import { log } from './log.js';
 
 const _cache = new Map(); // collectionId -> { totalDocs, documentFrequencies, avgDocLength, builtAt }
 const _inflight = new Map(); // collectionId -> Promise (dedupe concurrent fetches)
@@ -115,7 +116,8 @@ async function _buildStats(collectionId, settings) {
     //                    can be the dominant cost on chat content
     //   4. df-map build → cheap (O(unique-tokens))
     //
-    // This logs even when eventbase_debug_logging is off — corpus-stats build
+    // This timing line stays an always-on console.log (not gated by the log
+    // helper) — corpus-stats build
     // happens at most once per session per collection, so the noise is minimal
     // and the timing data is critical for diagnosing slow first-queries.
     const _now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -192,10 +194,10 @@ async function _buildStats(collectionId, settings) {
  * Clear the cache. Pass a collectionId to clear just one collection, or omit
  * to clear everything. Call after re-indexing or major collection edits.
  *
- * Logs are gated on eventbase_debug_logging — the auto-invalidation path
- * fires on every insert/delete/purge and would otherwise spam the console.
- * Enable debug logging when manually force-refreshing in DevTools to confirm
- * the call did something.
+ * Logs are Trace level — the auto-invalidation path fires on every
+ * insert/delete/purge and would otherwise spam the console. Raise verbosity
+ * to Trace when manually force-refreshing in DevTools to confirm the call
+ * did something.
  */
 export function clearCorpusStatsCache(collectionId) {
     const sizeBefore = _cache.size;
@@ -207,11 +209,9 @@ export function clearCorpusStatsCache(collectionId) {
         _cache.clear();
         _inflight.clear();
     }
-    if (extension_settings?.vectfox?.eventbase_debug_logging) {
-        if (collectionId) {
-            console.log(`[CorpusStats] Manual clear: ${hadEntry ? 'removed' : 'no entry for'} "${collectionId}" (cache size: ${sizeBefore} → ${_cache.size})`);
-        } else {
-            console.log(`[CorpusStats] Manual clear: removed all ${sizeBefore} cached collection(s)`);
-        }
+    if (collectionId) {
+        log.trace(`[CorpusStats] Manual clear: ${hadEntry ? 'removed' : 'no entry for'} "${collectionId}" (cache size: ${sizeBefore} → ${_cache.size})`);
+    } else {
+        log.trace(`[CorpusStats] Manual clear: removed all ${sizeBefore} cached collection(s)`);
     }
 }

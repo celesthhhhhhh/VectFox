@@ -117,9 +117,12 @@ describe('Porter Stemmer', () => {
 describe('Tokenize', () => {
     describe('basic tokenization', () => {
         it('should split text into tokens', () => {
-            const tokens = tokenize('hello world test');
+            // Note: avoid stopwords here — 'world' is in the English stopword set
+            // (core/stop-words.js) and would be filtered out by tokenize(). Use
+            // content words so the split itself is what's under test.
+            const tokens = tokenize('hello dragon test');
             expect(tokens).toContain('hello');
-            expect(tokens).toContain('world');
+            expect(tokens).toContain('dragon');
             expect(tokens).toContain('test');
         });
 

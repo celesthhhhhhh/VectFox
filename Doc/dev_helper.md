@@ -1007,11 +1007,29 @@ EventBase-only users (the typical case) hit gate 1 and short-circuit — debug l
 
 ---
 
-### 16.2 ~~Pre-existing test failures~~ — RESOLVED 2026-05-26
+### 16.2 ~~Pre-existing test failures~~ — RESOLVED 2026-05-26 (+ stale-fixture follow-up RESOLVED 2026-05-30)
 
-**Status**: Fully resolved. `npm test` now shows **594 passed | 0 failed | 13 test files passed**.
+**Status**: Fully resolved. `npm test` now shows **602 passed | 0 failed | 14 test files passed**.
 
-Documented here for historical reference — the original problem and the fix had broader implications than just "make the tests pass."
+> **2026-05-30 follow-up:** A *new, unrelated* set of 3 failures appeared after the
+> 2026-05-26 fix below, introduced by the language-neutral / English-stopword
+> commits (`2c54c19 "fix stopwords for english"`, `45ad61d`, `5c14e47`). They were
+> **stale test fixtures**, not source bugs:
+> - [tests/bm25-scorer.test.js](../tests/bm25-scorer.test.js) "should split text into
+>   tokens" used `'hello world test'` and asserted `world` survives — but `world`
+>   is now an English stopword, so `tokenize()` correctly drops it. Fixed by
+>   swapping the fixture to a content word (`dragon`).
+> - [tests/keyword-boost.test.js](../tests/keyword-boost.test.js) (×2) asserted
+>   `extractTextKeywords`/`extractBM25Keywords` filter out `'will'` — but `'will'`
+>   is **not** in the project stopword set (only `willing` is), so that assertion
+>   was always wrong. Fixed by asserting on `'within'`, which the set actually
+>   contains. The `'the'`/`'and'` assertions still prove filtering works.
+>
+> Lesson reinforced: when a stopword test breaks, check whether the word is
+> actually in `core/stop-words.js` (the set is curated, not the full line-224
+> source list) before assuming a source regression.
+
+Documented here for historical reference — the original 2026-05-26 problem and the fix had broader implications than just "make the tests pass."
 
 #### Original state (before fix)
 

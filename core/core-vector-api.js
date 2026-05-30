@@ -49,6 +49,7 @@ import { getOverfetchAmount } from './keyword-boost.js';
 import { applyBM25Scoring, porterStemmer } from './bm25-scorer.js';
 import { hybridSearch } from './hybrid-search.js';
 import { extractQueryKeywords, RETRIEVAL_KEYWORD_LEVELS, isCJKToken } from './query-keyword-extractor.js';
+import { log } from './log.js';
 
 /**
  * Lazy + best-effort cache invalidation for the corpus-IDF stats.
@@ -63,9 +64,7 @@ async function _invalidateCorpusStats(collectionId, reason) {
     try {
         const mod = await import('./corpus-stats.js');
         mod.clearCorpusStatsCache(collectionId);
-        if (extension_settings?.vectfox?.eventbase_debug_logging) {
-            console.log(`[CorpusStats] Invalidated cache for ${collectionId} (${reason})`);
-        }
+        log.trace(`[CorpusStats] Invalidated cache for ${collectionId} (${reason})`);
     } catch (err) {
         // Silent — invalidation is best-effort. Stale stats are acceptable;
         // a stack trace mid-write is not.
@@ -216,11 +215,13 @@ async function callWithHedge(fn, thresholdMs, maxHedges, ctx) {
             fn().then(
                 (r) => {
                     if (settled) return; // someone else already won
-                    if (debugOn) {
+                    if (attemptIdx > 0) {
+                        // A hedge (not the primary) won — recovered-from anomaly.
                         const elapsed = ((performance.now() - start) / 1000).toFixed(1);
-                        console.log(
-                            `VectFox: hedge — ${label(attemptIdx)} WON for batch ${batchIdx}/${totalBatches} via ${provider} after ${elapsed}s`,
-                        );
+                        log.warn(`VectFox: hedge — ${label(attemptIdx)} WON for batch ${batchIdx}/${totalBatches} via ${provider} after ${elapsed}s`);
+                    } else {
+                        const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+                        log.lifecycle(`VectFox: hedge — primary WON for batch ${batchIdx}/${totalBatches} via ${provider} after ${elapsed}s`);
                     }
                     settle('ok', r);
                 },
@@ -819,7 +820,7 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
                 : ((!hasExplicitBatchSize && localGpuSources.has(settings.source)) ? 1 : configuredBatchSize);
             const batches = chunkArray(items, BATCH_SIZE);
 
-            console.log(`VectFox: Processing ${items.length} items in ${batches.length} batch(es) of up to ${BATCH_SIZE}${hasRateLimit ? ` with rate limit (Max ${settings.rate_limit_calls} calls / ${settings.rate_limit_interval}s)` : ''}${shouldParallelSplit ? ` [parallel-split: ${batches.length} concurrent POSTs in waves of up to 16]` : ''}`);
+            log.verbose(`VectFox: Processing ${items.length} items in ${batches.length} batch(es) of up to ${BATCH_SIZE}${hasRateLimit ? ` with rate limit (Max ${settings.rate_limit_calls} calls / ${settings.rate_limit_interval}s)` : ''}${shouldParallelSplit ? ` [parallel-split: ${batches.length} concurrent POSTs in waves of up to 16]` : ''}`);
 
             if (abortSignal?.aborted) throw Object.assign(new Error('Vectorization stopped by user'), { name: 'AbortError' });
 
@@ -836,8 +837,8 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
             );
             const hedgeAfterMs = hedgeEnabled ? rawHedgeAfterMs : 0;
 
-            if (hedgeEnabled && settings?.eventbase_debug_logging) {
-                console.log(`VectFox: hedge enabled — threshold ${hedgeAfterMs}ms, max ${HEDGE_MAX_COUNT} hedges, total budget ${((HEDGE_MAX_COUNT + 1) * hedgeAfterMs) / 1000}s per insert call`);
+            if (hedgeEnabled) {
+                log.lifecycle(`VectFox: hedge enabled — threshold ${hedgeAfterMs}ms, max ${HEDGE_MAX_COUNT} hedges, total budget ${((HEDGE_MAX_COUNT + 1) * hedgeAfterMs) / 1000}s per insert call`);
             }
 
             // Factored-out per-batch retry+log closure shared by serial and parallel paths.
@@ -850,11 +851,9 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
                     attemptCount++;
                     const attemptStart = performance.now();
                     const debugOn = !!settings?.eventbase_debug_logging;
-                    if (debugOn) {
-                        console.log(
-                            `VectFox: insert batch ${batchIdx}/${batches.length} attempt ${attemptCount}/${RETRY_CONFIG.maxAttempts} — POST ${batchItemCount} item(s) via ${settings.source}${hedgeEnabled ? ' [hedge armed]' : ''}`,
-                        );
-                    }
+                    log.verbose(
+                        `VectFox: insert batch ${batchIdx}/${batches.length} attempt ${attemptCount}/${RETRY_CONFIG.maxAttempts} — POST ${batchItemCount} item(s) via ${settings.source}${hedgeEnabled ? ' [hedge armed]' : ''}`,
+                    );
                     try {
                         if (abortSignal?.aborted) throw Object.assign(new Error('Vectorization stopped by user'), { name: 'AbortError' });
                         const insertCall = () => backend.insertVectorItems(collectionId, batch, settings, abortSignal);

@@ -24,6 +24,7 @@ import {
     EVENTBASE_SCHEMA_VERSION,
 } from './eventbase-schema.js';
 import { cleanText } from './text-cleaning.js';
+import { log } from './log.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -108,9 +109,9 @@ function _classifyEmptyReplyBody({ provider, model, status, data, settings }) {
     if (modelConfigError) {
         throw new EventBaseFatalError(modelConfigError, 'invalid_model_config');
     }
-    if (settings?.eventbase_debug_logging) {
-        console.warn(`[EventBase] ${provider} returned empty reply (HTTP ${status}) — raw body: ${bodyText.slice(0, 500)}`);
-    }
+    // Empty reply that isn't a fatal model-config error — unexpected but the
+    // window is skipped, not failed. Always-on warning.
+    log.warn(`[EventBase] ${provider} returned empty reply (HTTP ${status}) — raw body: ${bodyText.slice(0, 500)}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -123,13 +124,11 @@ function _classifyEmptyReplyBody({ provider, model, status, data, settings }) {
  * @param {string} raw
  * @returns {unknown[]}
  */
-function _parseJsonArray(raw, rawLlmDebug = false, windowIndex = -1, msgRange = '') {
+function _parseJsonArray(raw, windowIndex = -1, msgRange = '') {
     let text = (raw || '').trim();
     const rangeStr = msgRange ? ` ${msgRange}` : '';
 
-    if (rawLlmDebug) {
-        console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: raw length=${text.length}, preview:`, text.slice(0, 150));
-    }
+    log.domain('raw_llm', 'trace', `[EventBase] Parser window=${windowIndex}${rangeStr}: raw length=${text.length}, preview:`, text.slice(0, 150));
 
     // Strip code fences
     if (text.startsWith('```')) {
@@ -237,8 +236,8 @@ function _parseJsonArray(raw, rawLlmDebug = false, windowIndex = -1, msgRange = 
     }
 
     // Pick the first candidate that looks like event objects.
-    if (rawLlmDebug) {
-        console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: ${candidates.length} candidate array(s) found:`,
+    if (log.domainEnabled('raw_llm')) {
+        log.domain('raw_llm', 'trace', `[EventBase] Parser window=${windowIndex}${rangeStr}: ${candidates.length} candidate array(s) found:`,
             candidates.map((c, i) => {
                 const first = c[0];
                 const type = Array.isArray(first) ? 'array' : typeof first;
@@ -275,9 +274,9 @@ function _parseJsonArray(raw, rawLlmDebug = false, windowIndex = -1, msgRange = 
         );
     }
 
-    if (rawLlmDebug) {
+    if (log.domainEnabled('raw_llm')) {
         const chosenIdx = candidates.indexOf(chosen);
-        console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: chose candidate[${chosenIdx}] len=${chosen.length}`);
+        log.domain('raw_llm', 'trace', `[EventBase] Parser window=${windowIndex}${rangeStr}: chose candidate[${chosenIdx}] len=${chosen.length}`);
     }
 
     if (chosen.length > 0 && (typeof chosen[0] !== 'object' || Array.isArray(chosen[0]))) {
@@ -495,12 +494,8 @@ async function _callVLLM(prompt, settings, windowIndex) {
  * @returns {Promise<object[]>} Array of full EventRecord objects (ingestion fields attached)
  */
 export async function extractEvents({ messages, windowStart, windowEnd, settings, windowIndex = 0 }) {
-    const debugLog = settings.eventbase_debug_logging;
-    const debugVectorizing = settings.debug_vectorizing_log === true;
-    // Separate gate for very-noisy per-window LLM dumps (raw reply, parser
-    // candidate arrays, chosen candidate). Independent of debugLog so timing
-    // investigations aren't drowned in parse-content output.
-    const rawLlmDebug = settings.eventbase_raw_llm_debug === true;
+    // Logging routes through core/log.js. Per-window flow → Verbose; per-item
+    // parse detail → Trace; raw LLM/parser dumps → 'raw_llm' domain deep-dive.
 
     // Compact message-range tag appended to every log line so chunks in the DB browser
     // (which display "from Message #<windowEnd>") are searchable directly from the log.
@@ -515,7 +510,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     const excerptText = excerptLines.join('\n\n');
 
     if (!excerptText.trim()) {
-        if (debugLog) console.log('[EventBase] Skipping empty window');
+        log.verbose('[EventBase] Skipping empty window');
         return [];
     }
 
@@ -536,9 +531,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     const prompt = basePrompt;
     const provider = (settings.summarize_provider || 'openrouter').toLowerCase();
 
-    if (debugLog) {
-        console.log(`[EventBase] Extracting events — window=${windowIndex} ${msgRange}, provider=${provider}, messages=${messages.length}`);
-    }
+    log.verbose(`[EventBase] Extracting events — window=${windowIndex} ${msgRange}, provider=${provider}, messages=${messages.length}`);
 
     // Call provider
     let rawReply;
@@ -548,43 +541,39 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         rawReply = await _callOpenRouter(prompt, settings, windowIndex);
     }
 
-    if (rawLlmDebug) {
-        console.log(`[EventBase] Raw LLM reply (window=${windowIndex} ${msgRange}):`, rawReply.slice(0, 500));
-    }
+    log.domain('raw_llm', 'trace', `[EventBase] Raw LLM reply (window=${windowIndex} ${msgRange}):`, rawReply.slice(0, 500));
 
     // Parse JSON
     let rawArray;
     try {
-        rawArray = _parseJsonArray(rawReply, rawLlmDebug, windowIndex, msgRange);
+        rawArray = _parseJsonArray(rawReply, windowIndex, msgRange);
     } catch (parseErr) {
-        // Always log full raw reply on parse failure regardless of debugLog flag
-        console.warn(`[EventBase] Window ${windowIndex} ${msgRange}: parse failed. Full raw reply:\n${rawReply}`);
+        // Always log full raw reply on parse failure — this is a real failure.
+        log.warn(`[EventBase] Window ${windowIndex} ${msgRange}: parse failed. Full raw reply:\n${rawReply}`);
         throw new EventBaseExtractionError(
             `EventBase: JSON parse failed for window ${windowIndex} (${msgRange}): ${parseErr.message}`,
             windowIndex,
         );
     }
 
-    if (debugVectorizing) {
-        console.log(`[EventBase] Window ${windowIndex} ${msgRange}: parsed ${rawArray.length} event candidate(s)`);
-    }
+    log.verbose(`[EventBase] Window ${windowIndex} ${msgRange}: parsed ${rawArray.length} event candidate(s)`);
 
     // Empty array is valid (no events extracted)
     if (rawArray.length === 0) {
-        if (debugLog) console.log(`[EventBase] Window ${windowIndex} ${msgRange}: LLM returned no events (valid skip)`);
+        log.verbose(`[EventBase] Window ${windowIndex} ${msgRange}: LLM returned no events (valid skip)`);
         return [];
     }
 
-    if (debugLog) {
-        console.log(`[EventBase] Parsed array (window=${windowIndex} ${msgRange}): ${rawArray.length} items, types: [${rawArray.map(item => typeof item).join(', ')}]`);
+    if (log.enabled('trace')) {
+        log.trace(`[EventBase] Parsed array (window=${windowIndex} ${msgRange}): ${rawArray.length} items, types: [${rawArray.map(item => typeof item).join(', ')}]`);
         if (rawArray.length > 0 && typeof rawArray[0] !== 'object') {
-            console.log(`[EventBase] First item (non-object): ${JSON.stringify(rawArray[0]).slice(0, 100)}`);
+            log.trace(`[EventBase] First item (non-object): ${JSON.stringify(rawArray[0]).slice(0, 100)}`);
         }
     }
 
     // Enforce hard cap — sort by importance desc, then truncate
     if (rawArray.length > maxCount) {
-        console.warn(`[EventBase] Window ${windowIndex} ${msgRange}: LLM returned ${rawArray.length} events (> cap ${maxCount}), truncating by importance`);
+        log.warn(`[EventBase] Window ${windowIndex} ${msgRange}: LLM returned ${rawArray.length} events (> cap ${maxCount}), truncating by importance`);
         rawArray = rawArray
             .slice()
             .sort((a, b) => (Number(b.importance) || 0) - (Number(a.importance) || 0))
@@ -597,11 +586,11 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     for (let i = 0; i < rawArray.length; i++) {
         const { ok, errors, event } = validateEvent(rawArray[i]);
         if (!ok) {
-            console.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: validation failed — ${errors.join('; ')} — skipped`);
+            log.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: validation failed — ${errors.join('; ')} — skipped`);
             continue;
         }
         if (errors.length > 0) {
-            console.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: coercion warnings — ${errors.join('; ')}`);
+            log.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: coercion warnings — ${errors.join('; ')}`);
         }
 
         // Post-parse language sanity check (warn only — retained for visibility,
@@ -610,7 +599,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         const summaryScript = _detectScript(event.summary);
         if (excerptScript !== 'empty' && excerptScript !== 'mixed' && summaryScript !== 'empty' && summaryScript !== 'mixed') {
             if (excerptScript !== summaryScript) {
-                console.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: language mismatch (excerpt=${excerptScript}, summary=${summaryScript}) — kept`);
+                log.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: language mismatch (excerpt=${excerptScript}, summary=${summaryScript}) — kept`);
             }
         }
 
@@ -634,9 +623,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         });
     }
 
-    if (debugLog) {
-        console.log(`[EventBase] Window ${windowIndex} ${msgRange}: extracted ${validatedEvents.length} valid events`);
-    }
+    log.verbose(`[EventBase] Window ${windowIndex} ${msgRange}: extracted ${validatedEvents.length} valid events`);
 
     return validatedEvents;
 }

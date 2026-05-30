@@ -123,11 +123,11 @@ function _classifyEmptyReplyBody({ provider, model, status, data, settings }) {
  * @param {string} raw
  * @returns {unknown[]}
  */
-function _parseJsonArray(raw, debugLog = false, windowIndex = -1, msgRange = '') {
+function _parseJsonArray(raw, rawLlmDebug = false, windowIndex = -1, msgRange = '') {
     let text = (raw || '').trim();
     const rangeStr = msgRange ? ` ${msgRange}` : '';
 
-    if (debugLog) {
+    if (rawLlmDebug) {
         console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: raw length=${text.length}, preview:`, text.slice(0, 150));
     }
 
@@ -237,7 +237,7 @@ function _parseJsonArray(raw, debugLog = false, windowIndex = -1, msgRange = '')
     }
 
     // Pick the first candidate that looks like event objects.
-    if (debugLog) {
+    if (rawLlmDebug) {
         console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: ${candidates.length} candidate array(s) found:`,
             candidates.map((c, i) => {
                 const first = c[0];
@@ -275,7 +275,7 @@ function _parseJsonArray(raw, debugLog = false, windowIndex = -1, msgRange = '')
         );
     }
 
-    if (debugLog) {
+    if (rawLlmDebug) {
         const chosenIdx = candidates.indexOf(chosen);
         console.log(`[EventBase] Parser window=${windowIndex}${rangeStr}: chose candidate[${chosenIdx}] len=${chosen.length}`);
     }
@@ -497,6 +497,10 @@ async function _callVLLM(prompt, settings, windowIndex) {
 export async function extractEvents({ messages, windowStart, windowEnd, settings, windowIndex = 0 }) {
     const debugLog = settings.eventbase_debug_logging;
     const debugVectorizing = settings.debug_vectorizing_log === true;
+    // Separate gate for very-noisy per-window LLM dumps (raw reply, parser
+    // candidate arrays, chosen candidate). Independent of debugLog so timing
+    // investigations aren't drowned in parse-content output.
+    const rawLlmDebug = settings.eventbase_raw_llm_debug === true;
 
     // Compact message-range tag appended to every log line so chunks in the DB browser
     // (which display "from Message #<windowEnd>") are searchable directly from the log.
@@ -544,14 +548,14 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         rawReply = await _callOpenRouter(prompt, settings, windowIndex);
     }
 
-    if (debugLog) {
+    if (rawLlmDebug) {
         console.log(`[EventBase] Raw LLM reply (window=${windowIndex} ${msgRange}):`, rawReply.slice(0, 500));
     }
 
     // Parse JSON
     let rawArray;
     try {
-        rawArray = _parseJsonArray(rawReply, debugLog, windowIndex, msgRange);
+        rawArray = _parseJsonArray(rawReply, rawLlmDebug, windowIndex, msgRange);
     } catch (parseErr) {
         // Always log full raw reply on parse failure regardless of debugLog flag
         console.warn(`[EventBase] Window ${windowIndex} ${msgRange}: parse failed. Full raw reply:\n${rawReply}`);

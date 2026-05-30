@@ -235,6 +235,7 @@ const defaultSettings = {
     autosync_show_progress_modal: false,          // Show progress modal popup during auto-sync (default: silent)
     chat_lock_index: {},                          // Reverse index: chatId -> [collectionId, ...] for O(1) tab lookups
     eventbase_debug_logging: false,
+    eventbase_raw_llm_debug: false,              // Raw LLM reply + parser candidate logs (very noisy, per-window)
     eventbase_debug_qdrant_backend: false,
     debug_vectorizing_log: false,                // Verbose vectorization progress logs in console
     eventbase_custom_prompt: '',                  // Custom extraction prompt (empty = use built-in default)

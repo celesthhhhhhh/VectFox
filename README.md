@@ -491,6 +491,24 @@ Adding proper RBAC to Qdrant and per-user ACLs to the plugin is significant engi
 
 Note: SillyTavern itself does support per-user data isolation via `enableUserAccounts = true` — that isolates ST's own data (chats, settings, characters) per user, but does not extend to the shared Qdrant server.
 
+**I keep getting long timeouts or "500" errors while vectorizing. What can I do?**
+Try **unchecking "Group embedding calls"** (Core tab → Embedding section).
+
+By default VectFox packs a whole batch of text into **one** request to your embedding provider — faster and cheaper when everything is healthy. But if the provider, or the gateway in front of it (OpenRouter, a cloud relay, etc.), is having a bad moment, that single big request can hang or come back as a `500`, and the **entire batch fails together**.
+
+Unchecking the box switches VectFox to **one request per item**. Now if a single item lands on a stuck server worker, only that one item is affected and the rest go through. It's a bit more network chatter, but it routes *around* an unstable upstream instead of going down with it.
+
+> 💡 Leave it **checked** normally. The moment you start seeing batch-wide timeouts or `500`s, **uncheck it** as a quick rescue and re-run.
+
+**What does "Hedge slow embedding calls" do, and do I need it?**
+It's an automatic safety net for **stuck** embedding requests. It's **on by default (15 seconds)** and most people never need to touch it.
+
+The problem it solves: sometimes a request to a cloud embedding provider doesn't fail — it just **hangs**. The connection gets routed to a frozen worker and sits there doing nothing, often until SillyTavern finally gives up about 2 minutes later. That one stuck request can stall your whole vectorization run for no reason.
+
+Hedging fixes this. If a request hasn't answered within the time limit (15s), VectFox quietly fires a **second, identical request on a fresh connection** — without cancelling the first. Whichever one replies first wins; the loser is thrown away. The fresh connection usually gets routed to a *healthy* worker, so you recover in seconds instead of waiting out the full timeout. (Sending the same text twice is harmless — a duplicate just overwrites the same database entry with identical data.)
+
+> 💡 Leave it on — it only ever activates when something is already going wrong, and it makes flaky cloud providers far less painful. It's automatically skipped for **local** models (Ollama, Transformers, llama.cpp, KoboldCpp), where a second connection wouldn't change anything. Set it to `0` to disable.
+
 ---
 
 ## 🐛 Troubleshooting

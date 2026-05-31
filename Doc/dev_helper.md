@@ -279,6 +279,31 @@ Skipped automatically for local providers (Ollama already uses batch=1) and rate
 
 Gated to skip `localGpuSources` (Ollama / transformers / llama.cpp / KoboldCpp) regardless of the setting — a new connection to a local single-endpoint server wouldn't change routing. UI label intentionally drops the per-provider list to keep the hint short; the runtime gate is the authoritative behavior.
 
+**Where hedge fires (write path only).** There is exactly ONE `callWithHedge` call site: inside `insertVectorItems` ([core-vector-api.js:861](core/core-vector-api.js#L861)) — the embedding **write** path. Everything that ingests goes through it and inherits hedge for free:
+
+| Operation | Hedges? | Path |
+|---|---|---|
+| Manual **Vectorize Content** (chat → EventBase) | ✅ | `ui/content-vectorizer.js` → `runEventBaseIngestion` → `insertEvents` → `insertVectorItems` |
+| Manual **Vectorize Content** (chunks: lorebook / docs / URLs / wiki) | ✅ | `content-vectorization.js` → `insertVectorItems` |
+| **Auto-Sync** | ✅ | `synchronizeChat` → `runEventBaseIngestion({ isAutoSync: true })` → `insertEvents` → `insertVectorItems` |
+| **Retrieval / per-turn search** | ❌ | `queryCollection` → `getAdditionalArgs` (query-embed) + `backend.queryCollection`. No hedge wrapper anywhere on this path. |
+| **Agent Mode** | ❌ | `agentic-retrieval.js` only calls `queryCollection` / `retrieveEvents` — it never inserts, so it never reaches the hedge. |
+
+Note that **auto-sync is not a separate path** — it's the same `runEventBaseIngestion → insertVectorItems` chain as the manual button, just invoked with `isAutoSync: true`. It was originally built to rescue the manual Vectorize Content run, but auto-sync gets the same protection automatically, which is desirable: a stalled embedding write hurts equally whether the user clicked the button or an ST message event triggered it.
+
+**Why search and Agent Mode are deliberately NOT hedged:**
+
+1. **Read vs. write asymmetry in stall exposure.** Ingestion fires hundreds of embedding POSTs over minutes — the probability that *at least one* lands on a stuck upstream worker is high, and a single stall freezes the whole run until ST's ~120s timeout. A retrieval embeds **one** short query and returns in well under the 15s hedge threshold; the exposure window hedge is designed to catch barely exists on the read side.
+2. **The 15s threshold is longer than a healthy query.** Hedge only fires *after* 15s of silence. A normal query-embed + vector search completes in a fraction of that, so in practice hedge would almost never trigger on a search even if it were wired in — it'd be dead weight on the hot path.
+3. **A stalled search fails soft; a stalled ingest fails expensive.** If a retrieval embed genuinely hangs, the cost is one turn with degraded/no memory injection — annoying but self-correcting on the next message. A hung ingest wastes minutes of a long batch run and can leave the user staring at a frozen progress bar. Hedge's value is highest exactly where the blast radius is largest.
+4. **Idempotency only holds for writes.** Hedge's "fire a duplicate, race-first-wins, discard the loser" trick is safe because a duplicate **write** is a no-op (hash-deterministic Qdrant upsert overwrites the same point with identical data). A duplicate **query** isn't harmful, but it also buys nothing — you'd just pay for two embeds to shave time off a path that's already fast (see #2). Agent Mode compounds this: it already fans out 1–4 parallel queries, so adding per-query hedging would multiply planner-stage API cost for no latency win on an already-parallel, already-fast stage.
+
+**Read-path timeout (shipped 2026-05-31).** The read path is hardened with a plain per-turn timeout rather than the hedge race — the hedge machinery (4 attempts over 60s, hedge-fatal escape, Continue-to-resume) is tuned for long write batches and would be overkill for a one-shot read. `rearrangeChat()` (the generation interceptor in [`core/chat-vectorization.js`](core/chat-vectorization.js), wired to ST via `window.vectfox_rearrangeChat`) wraps BOTH per-turn retrieval calls — `runEventBaseRetrieval` (EventBase / chat memory) and `queryAndMergeCollections` → `queryActiveCollections` (chunk / lorebook / docs) — in `AsyncUtils.timeout(promise, RETRIEVAL_TIMEOUT_MS, …)`. `RETRIEVAL_TIMEOUT_MS = 15000` ([core/constants.js](core/constants.js)) matches the write-side hedge threshold for one consistent "too slow" number.
+
+It's a **soft** timeout (Promise.race): on expiry the turn proceeds and the message sends WITHOUT that memory source — both call sites wrap the await in try/catch (EventBase logs and continues; the chunk path sets `chunks = []` so downstream injects nothing). The orphaned `fetch` keeps running until ST's server-side timeout reaps it — there is no client `AbortSignal` on the read fetches (see the timeout table above), so this is a "stop waiting", not a "cancel the request". No retry: a stalled retrieval fails soft (one turn without memory, self-corrects next message), so a single bounded attempt is the right tradeoff.
+
+Agent Mode is covered by the same `rearrangeChat` outer bound (its fan-out `queryCollection` calls run inside that hook), and additionally bounds its planner LLM call separately via `AbortSignal.timeout(agentic_retrieval_timeout_ms)` ([agentic-retrieval.js](core/agentic-retrieval.js)) — that one IS a hard cancel because it's a fresh fetch the agent code owns directly.
+
 **Independence from Group setting.** Hedge wraps whatever payload is on the wire — 1 item or 50 items. With Group=ON, one hedge fire rescues the entire batch. With Group=OFF, hedge fires per-item independently. Both work; Group=ON has higher ROI per hedge fire.
 
 ### Hedge-fatal escape

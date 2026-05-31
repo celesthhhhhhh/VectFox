@@ -42,6 +42,20 @@ export const RATE_LIMIT_WINDOW_MS = 60000;
 /** API request timeout in ms (30 seconds) */
 export const API_TIMEOUT_MS = 30000;
 
+/**
+ * Per-turn retrieval timeout in ms (15 seconds). Bounds the read/search path
+ * during generation (rearrangeChat -> EventBase retrieval + chunk retrieval) so
+ * a hung embedding/query cannot freeze the whole conversation. On timeout the
+ * turn proceeds WITHOUT memory injection -- soft Promise.race via
+ * AsyncUtils.timeout; the orphaned fetch is reaped later by ST's server-side
+ * timeout (read fetches carry no client AbortSignal). Matches the write-side
+ * hedge threshold (vector_hedge_after_ms = 15000) for one consistent "too slow"
+ * number. Unlike the write path, reads are NOT hedged/retried -- a stalled
+ * retrieval fails soft (one turn without memory, self-corrects next message),
+ * so a single bounded attempt is the right tradeoff. See dev_helper.md sec 6.8.
+ */
+export const RETRIEVAL_TIMEOUT_MS = 15000;
+
 // =============================================================================
 // RETRY CONFIGURATION
 // =============================================================================

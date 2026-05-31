@@ -230,7 +230,7 @@ function createBrowserModal() {
                         <strong>Limited Discovery Mode</strong>
                         <span>Similharity plugin not detected. Only registered collections and current chat can be discovered.
                         Collections created outside VECTFOX won't appear here.
-                        <a href="https://github.com/Kritblade/VectFox/tree/Similharity-Plugin" target="_blank">Install the plugin</a> for full filesystem scanning.</span>
+                        <a href="https://github.com/KritBlade/VectFox/tree/Similharity-Plugin#step-2-install-plugin-via-git-recommended" target="_blank">Install the plugin</a> for full filesystem scanning.</span>
                     </div>
                 </div>
 

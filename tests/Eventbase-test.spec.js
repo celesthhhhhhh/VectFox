@@ -10,7 +10,7 @@
  *  * npm install -D @playwright/test
  * npx playwright install
  * 
- * # Run all 8 tests
+ * # Run all tests
 npm run test:e2e
 npm run test:e2e:no-log.
 npm run test:e2e -- --grep "TEST 008"
@@ -50,8 +50,8 @@ import { existsSync } from 'fs';
 // This override only affects THIS test file — it doesn't mutate the config
 // for any other suite.
 // ---------------------------------------------------------------------------
-//const TEST_TARGET_URL = null;
-const TEST_TARGET_URL = 'http://localhost:8000';
+const TEST_TARGET_URL = null;
+//const TEST_TARGET_URL = 'http://localhost:8000';
 
 if (TEST_TARGET_URL) {
     test.use({ baseURL: TEST_TARGET_URL });

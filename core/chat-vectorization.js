@@ -33,7 +33,8 @@ import { getChunkMetadata, getCollectionMeta } from './collection-metadata.js';
 import { createDebugData, setLastSearchDebug, addTrace, recordChunkFate } from '../ui/search-debug.js';
 import { Queue, LRUCache } from '../utils/data-structures.js';
 import { getRequestHeaders } from '../../../../../script.js';
-import { EXTENSION_PROMPT_TAG, HASH_CACHE_SIZE } from './constants.js';
+import { EXTENSION_PROMPT_TAG, HASH_CACHE_SIZE, RETRIEVAL_TIMEOUT_MS } from './constants.js';
+import AsyncUtils from '../utils/async-utils.js';
 // Import from collection-ids.js - single source of truth for collection ID operations
 import {
     getChatUUID,
@@ -1247,12 +1248,25 @@ export async function rearrangeChat(chat, settings, type, { dryRun = false, test
             const queryText = buildSearchQuery(chat, settings);
             if (queryText) {
                 const { runEventBaseRetrieval } = await import('./eventbase-workflow.js');
-                await runEventBaseRetrieval({
-                    chat,
-                    searchText: queryText,
-                    settings,
-                    chatUUID: getChatUUID(),
-                });
+                // Bound retrieval so a hung embedding/query can't freeze the turn.
+                // Soft timeout: on expiry the message proceeds WITHOUT EventBase
+                // injection; the orphaned request is reaped by ST's server-side
+                // timeout. Non-fatal — a thrown timeout/error must not break
+                // generation. See core/constants.js::RETRIEVAL_TIMEOUT_MS.
+                try {
+                    await AsyncUtils.timeout(
+                        runEventBaseRetrieval({
+                            chat,
+                            searchText: queryText,
+                            settings,
+                            chatUUID: getChatUUID(),
+                        }),
+                        RETRIEVAL_TIMEOUT_MS,
+                        'EventBase retrieval timed out',
+                    );
+                } catch (error) {
+                    console.error('VectFox EventBase: retrieval error (non-fatal, message sends without event memory):', error);
+                }
             } else {
                 // Empty query — clear any stale injection from a previous generation.
                 const { setExtensionPrompt } = await import('../../../../../script.js');
@@ -1367,7 +1381,21 @@ export async function rearrangeChat(chat, settings, type, { dryRun = false, test
             toastr.info(`Retrieving context from ${activeCollections.length} collection(s)...`, 'VectFox Retrieval');
         }
 
-        let chunks = await queryAndMergeCollections(activeCollections, queryText, settings, chat, debugData);
+        // Bound chunk retrieval the same way as EventBase above — a hung query
+        // must not freeze generation. On timeout/error we proceed with no chunks
+        // this turn (downstream handles an empty list = no injection).
+        // See core/constants.js::RETRIEVAL_TIMEOUT_MS.
+        let chunks;
+        try {
+            chunks = await AsyncUtils.timeout(
+                queryAndMergeCollections(activeCollections, queryText, settings, chat, debugData),
+                RETRIEVAL_TIMEOUT_MS,
+                'Chunk retrieval timed out',
+            );
+        } catch (error) {
+            console.error('VectFox: chunk retrieval error (non-fatal, message sends without chunk memory):', error);
+            chunks = [];
+        }
 
         if (activeCollections.length > 0 && settings.retrieval_popup_on_result) {
             toastr.success(`Retrieved ${chunks.length} result(s) from backend`, 'VectFox Retrieval');

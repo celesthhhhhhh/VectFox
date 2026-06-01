@@ -587,8 +587,47 @@
     }
 
     /* ========================================================================
-     * PROGRESS PANEL - float above all ST UI layers on mobile
+     * PROGRESS PANEL → full-screen modal on mobile.
+     * The floating bottom-sheet would not reliably surface above SillyTavern's
+     * UI on touch devices, so progress-tracker.js renders a .vectfox-modal here
+     * instead — the same proven full-screen pattern as the Text Cleaning modal.
+     * (The generic .vectfox-modal-content rule above already pins it to the full
+     * viewport; these rules give it a header/scroll-body flex layout.)
      * ======================================================================== */
+
+    .vectfox-progress-modal-content {
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+
+    .vectfox-progress-modal-content .vectfox-progress-header {
+        flex-shrink: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    .vectfox-progress-modal-content .vectfox-progress-body {
+        flex: 1 !important;
+        max-height: none !important;   /* override the bottom-sheet's 35vh cap */
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 16px !important;
+    }
+
+    /* Roomy, tappable header buttons */
+    .vectfox-progress-modal-content .vectfox-progress-close,
+    .vectfox-progress-modal-content .vectfox-progress-stop {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        touch-action: manipulation !important;
+    }
+
+    /* Two-up stats grid reads better on a full screen */
+    .vectfox-progress-modal-content .vectfox-progress-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
 
     /* ========================================================================
      * QUERY TESTER MODAL
@@ -769,7 +808,8 @@
  * ============================================================================ */
 
 @media (pointer: coarse) {
-    .vectfox-progress-panel {
+    .vectfox-progress-panel,
+    .vectfox-progress-modal {
         z-index: 2147483647 !important;
     }
 }

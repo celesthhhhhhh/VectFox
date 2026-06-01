@@ -18,6 +18,7 @@ import { log } from '../core/log.js';
 export class ProgressTracker {
     constructor() {
         this.panel = null;
+        this.isModal = false; // true on touch devices — panel renders as a full-screen modal
         this.isVisible = false;
         this.currentOperation = null;
         this.timeIntervalId = null;
@@ -296,74 +297,99 @@ export class ProgressTracker {
      * Create progress panel HTML
      */
     createPanel() {
-        const panelHTML = `
+        // Detect touch devices. On mobile the floating bottom-sheet panel proved
+        // unreliable (it would not surface above the ST UI), so mobile gets a
+        // full-screen modal instead — the same proven, always-visible pattern as the
+        // Text Cleaning modal. Desktop keeps the original floating corner panel,
+        // completely unchanged. Both layouts share identical inner element IDs so all
+        // of updateDisplay()'s cached element references work without any branching.
+        this.isModal = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+        const headerHTML = `
+            <div class="vectfox-progress-header">
+                <h3 id="VectFox_progress_title">VectFox Progress</h3>
+                <div class="vectfox-progress-actions">
+                    <button id="VectFox_progress_stop" class="vectfox-progress-stop" style="display: none;">
+                        <i class="fa-solid fa-stop"></i> Stop
+                    </button>
+                    <button id="VectFox_progress_close" class="vectfox-progress-close">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+            </div>`;
+
+        const bodyHTML = `
+            <div class="vectfox-progress-body">
+                <!-- Main Progress Bar -->
+                <div class="vectfox-progress-section">
+                    <div class="vectfox-progress-label">
+                        <span id="VectFox_progress_status">Initializing...</span>
+                        <span id="VectFox_progress_percent">0%</span>
+                    </div>
+                    <div class="vectfox-progress-bar-container">
+                        <div id="VectFox_progress_bar" class="vectfox-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Current Item Progress -->
+                <div id="VectFox_progress_current" class="vectfox-progress-current" style="display: none;">
+                    <span id="VectFox_progress_current_text">Processing...</span>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="vectfox-progress-stats">
+                    <div class="vectfox-progress-stat">
+                        <div id="VectFox_progress_stat_label" class="vectfox-progress-stat-label">Progress</div>
+                        <div id="VectFox_progress_processed" class="vectfox-progress-stat-value">0 / 0</div>
+                    </div>
+                    <div class="vectfox-progress-stat">
+                        <div class="vectfox-progress-stat-label">Chunks</div>
+                        <div id="VectFox_progress_chunks" class="vectfox-progress-stat-value">0</div>
+                    </div>
+                    <div class="vectfox-progress-stat">
+                        <div class="vectfox-progress-stat-label">Time</div>
+                        <div id="VectFox_progress_time" class="vectfox-progress-stat-value">0.0s</div>
+                    </div>
+                    <div class="vectfox-progress-stat">
+                        <div class="vectfox-progress-stat-label">Speed</div>
+                        <div id="VectFox_progress_speed" class="vectfox-progress-stat-value">0/s</div>
+                    </div>
+                </div>
+
+                <!-- Errors (hidden by default) -->
+                <div id="VectFox_progress_errors" class="vectfox-progress-errors" style="display: none;">
+                    <div class="vectfox-progress-errors-header">
+                        <i class="fa-solid fa-exclamation-triangle"></i>
+                        <span>Errors</span>
+                    </div>
+                    <div id="VectFox_progress_errors_list" class="vectfox-progress-errors-list"></div>
+                </div>
+            </div>`;
+
+        // Mobile: full-screen modal (mirrors the Text Cleaning modal). Desktop: the
+        // original floating panel. The outer element keeps the same id either way so
+        // the stale-element cleanup, this.panel lookup, and reopen() all stay generic.
+        const panelHTML = this.isModal
+            ? `
+            <div id="VectFox_progress_panel" class="vectfox-modal vectfox-progress-modal" style="display: none;">
+                <div class="vectfox-modal-overlay"></div>
+                <div class="vectfox-modal-content vectfox-progress-modal-content">
+                    ${headerHTML}
+                    ${bodyHTML}
+                </div>
+            </div>`
+            : `
             <div id="VectFox_progress_panel" class="vectfox-progress-panel">
-                <div class="vectfox-progress-header">
-                    <h3 id="VectFox_progress_title">VectFox Progress</h3>
-                    <div class="vectfox-progress-actions">
-                        <button id="VectFox_progress_stop" class="vectfox-progress-stop" style="display: none;">
-                            <i class="fa-solid fa-stop"></i> Stop
-                        </button>
-                        <button id="VectFox_progress_close" class="vectfox-progress-close">
-                            <i class="fa-solid fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="vectfox-progress-body">
-                    <!-- Main Progress Bar -->
-                    <div class="vectfox-progress-section">
-                        <div class="vectfox-progress-label">
-                            <span id="VectFox_progress_status">Initializing...</span>
-                            <span id="VectFox_progress_percent">0%</span>
-                        </div>
-                        <div class="vectfox-progress-bar-container">
-                            <div id="VectFox_progress_bar" class="vectfox-progress-bar" style="width: 0%"></div>
-                        </div>
-                    </div>
-
-                    <!-- Current Item Progress -->
-                    <div id="VectFox_progress_current" class="vectfox-progress-current" style="display: none;">
-                        <span id="VectFox_progress_current_text">Processing...</span>
-                    </div>
-
-                    <!-- Stats Grid -->
-                    <div class="vectfox-progress-stats">
-                        <div class="vectfox-progress-stat">
-                            <div id="VectFox_progress_stat_label" class="vectfox-progress-stat-label">Progress</div>
-                            <div id="VectFox_progress_processed" class="vectfox-progress-stat-value">0 / 0</div>
-                        </div>
-                        <div class="vectfox-progress-stat">
-                            <div class="vectfox-progress-stat-label">Chunks</div>
-                            <div id="VectFox_progress_chunks" class="vectfox-progress-stat-value">0</div>
-                        </div>
-                        <div class="vectfox-progress-stat">
-                            <div class="vectfox-progress-stat-label">Time</div>
-                            <div id="VectFox_progress_time" class="vectfox-progress-stat-value">0.0s</div>
-                        </div>
-                        <div class="vectfox-progress-stat">
-                            <div class="vectfox-progress-stat-label">Speed</div>
-                            <div id="VectFox_progress_speed" class="vectfox-progress-stat-value">0/s</div>
-                        </div>
-                    </div>
-
-                    <!-- Errors (hidden by default) -->
-                    <div id="VectFox_progress_errors" class="vectfox-progress-errors" style="display: none;">
-                        <div class="vectfox-progress-errors-header">
-                            <i class="fa-solid fa-exclamation-triangle"></i>
-                            <span>Errors</span>
-                        </div>
-                        <div id="VectFox_progress_errors_list" class="vectfox-progress-errors-list"></div>
-                    </div>
-                </div>
-            </div>
-        `;
+                ${headerHTML}
+                ${bodyHTML}
+            </div>`;
 
         // Remove any stale element left over from a previous session/hot-reload
         document.getElementById('VectFox_progress_panel')?.remove();
 
         // Insert panel into DOM
         const container = document.createElement('div');
-        container.innerHTML = panelHTML;
+        container.innerHTML = panelHTML.trim();
         document.body.appendChild(container.firstElementChild);
 
         this.panel = document.getElementById('VectFox_progress_panel');

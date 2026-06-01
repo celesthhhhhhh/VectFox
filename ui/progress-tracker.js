@@ -282,8 +282,6 @@ export class ProgressTracker {
      */
     reopen() {
         if (!this.panel) return false;
-        // Re-append to end of body to surface above any ST panel opened since last show()
-        document.body.appendChild(this.panel);
         this.panel.style.display = 'block';
         this.isVisible = true;
         this.refreshCancelButton();

@@ -590,10 +590,6 @@
      * PROGRESS PANEL - float above all ST UI layers on mobile
      * ======================================================================== */
 
-    .vectfox-progress-panel {
-        z-index: 2147483647 !important;
-    }
-
     /* ========================================================================
      * QUERY TESTER MODAL
      * ======================================================================== */
@@ -763,6 +759,18 @@
         max-height: none !important;
         border-right: 1px solid var(--SmartThemeBorderColor) !important;
         border-bottom: none !important;
+    }
+}
+
+/* ============================================================================
+ * TOUCH DEVICE: progress panel always on top regardless of viewport width
+ * Uses pointer: coarse instead of max-width to catch high-res phones (e.g.
+ * iPhone Pro Max whose CSS viewport can exceed 768px).
+ * ============================================================================ */
+
+@media (pointer: coarse) {
+    .vectfox-progress-panel {
+        z-index: 2147483647 !important;
     }
 }
 

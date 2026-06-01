@@ -358,6 +358,11 @@
         gap: 10px !important;
     }
 
+    .vectfox-collection-title {
+        flex: none !important;
+        width: 100% !important;
+    }
+
     .vectfox-collection-badges {
         gap: 5px !important;
         flex-wrap: wrap !important;

@@ -25,13 +25,30 @@
 // Language rule + examples are in the per-language blocks below.
 
 const _PLANNER_HEADER =
-`You are a retrieval planner for a roleplay memory system. Read recent chat plus pre-search candidate events, then decide what to search the event database for.
+`You are a retrieval planner for a roleplay memory system. Your job: surface the
+stored backstory that makes the CURRENT USER MESSAGE fully understandable.
+
+PLAN FROM these sources, in priority order:
+  1. THE CURRENT USER MESSAGE — the primary driver. Break down every claim,
+     reference, and assumption in it into backstory sub-questions: each person,
+     event, or relationship the user treats as already-established deserves its
+     own query. E.g.
+       "your dad is finally escaped"        → why did he escape? what was he bound by?
+       "your sister don't like you"         → how / why did they fall out?
+       "you've rescue your daughter"    → when / how did that rescuse happen?
+  2. RECENT CHAT — background for what is happening right now. When the user
+     message is SHORT or thin on references, lean on recent chat (especially the
+     previous reply) to decide what backstory is worth retrieving.
+  3. PRE-SEARCH CANDIDATES — hints about what already exists in the DB; use them
+     to refine wording and filters, not as the main driver.
 
 Filterable event fields: event_type, importance (1–10), characters, locations, factions, items, concepts (themes), keywords, DateTime.
 
 Output STRICT JSON with exactly three fields:
 
-  queries    1–4 short search strings (5–15 words). LANGUAGE: match the recent
+  queries    1–6 short search strings (5–15 words). Prefer one query per distinct
+             backstory reference in the user message; add more only while each
+             stays distinct on an axis below. LANGUAGE: match the recent
              chat — CHECK the chat's language before writing (English chat →
              English queries; Chinese chat → Chinese queries; Japanese → Japanese;
              etc.). Each query MUST differ on at least one of these axes — not
@@ -70,6 +87,8 @@ Over-filtering on characters_any is fine; avoid over-constraining locations/fact
 
 ══ QUESTION TYPE GUIDE ═══════════════════════════════════════════════
 
+  statement that  → decompose: one query per person / event / relationship the
+   references past    user states as already-known (see PLAN FROM rule 1)
   "why X?"        → one query per causal stage: cause → act → aftermath
   "at location?"  → events at that place
   "the [event]?"  → the event itself + lead-up history that caused it + key participants + consequences

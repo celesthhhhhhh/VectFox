@@ -1118,8 +1118,8 @@ export function renderSettings(containerId, settings, callbacks) {
                             </div>
 
                             <div class="vectfox-form-group">
-                                <label class="vectfox-label">Max planner queries: <span id="VectFox_agentic_max_queries_val">4</span></label>
-                                <input type="range" id="VectFox_agentic_max_queries" min="1" max="4" step="1" class="vectfox-range" />
+                                <label class="vectfox-label">Max planner queries: <span id="VectFox_agentic_max_queries_val">6</span></label>
+                                <input type="range" id="VectFox_agentic_max_queries" min="1" max="6" step="1" class="vectfox-range" />
                                 <small class="VectFox_hint">Hard ceiling on how many follow-up queries the planner can emit. Each query is one Qdrant call per live collection.</small>
                             </div>
 
@@ -2609,7 +2609,7 @@ function bindSettingsEvents(settings, callbacks) {
     };
     bindAgenticSlider('#VectFox_agentic_chat_depth', '#VectFox_agentic_chat_depth_val', 'agentic_retrieval_chat_depth', 3);
     bindAgenticSlider('#VectFox_agentic_candidates', '#VectFox_agentic_candidates_val', 'agentic_retrieval_candidates_to_show', 12);
-    bindAgenticSlider('#VectFox_agentic_max_queries', '#VectFox_agentic_max_queries_val', 'agentic_retrieval_max_queries', 4);
+    bindAgenticSlider('#VectFox_agentic_max_queries', '#VectFox_agentic_max_queries_val', 'agentic_retrieval_max_queries', 6);
 
     $('#VectFox_agentic_timeout')
         .val(Number(settings.agentic_retrieval_timeout_ms ?? 30000))

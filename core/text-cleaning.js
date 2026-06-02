@@ -340,6 +340,38 @@ export function cleanText(text) {
     return result;
 }
 
+/**
+ * Strip AI reasoning / planning blocks from a message so downstream consumers
+ * (currently the agentic retrieval planner) read narrative, not the model's
+ * chain-of-thought.
+ *
+ * Deliberately UNCONDITIONAL and independent of the user's vectorization
+ * cleaning config (getActivePatterns): reasoning must never steer retrieval
+ * planning, even when the user has cleaning set to "none" for vectorization,
+ * and the default `strip_thinking_tags` pattern only matches <thinking> — not
+ * the bare <think> tag ST actually emits, nor custom planning wrappers nested
+ * inside it (e.g. <konatan_planning~>).
+ *
+ * Handles <think> / <thinking> / <reasoning> (case-insensitive), both as paired
+ * blocks and as an unterminated leading block (opened but never closed, which
+ * ST treats as reasoning running to the end of the message).
+ *
+ * @param {string} text
+ * @returns {string} text with reasoning blocks removed
+ */
+export function stripReasoningBlocks(text) {
+    if (!text || typeof text !== 'string') return text;
+    let out = text
+        // Paired: <think>…</think>, <thinking>…</thinking>, <reasoning>…</reasoning>.
+        // \1 backref keeps open/close tags matched; [^>]* tolerates attributes.
+        .replace(/<(think|thinking|reasoning)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '');
+    // Unterminated leading block: a reasoning tag opens the message but is never
+    // closed → everything after it is reasoning. Anchored to start so a stray
+    // tag mid-narrative can't nuke the trailing story.
+    out = out.replace(/^\s*<(?:think|thinking|reasoning)\b[^>]*>[\s\S]*$/i, '');
+    return out.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 // cleanMessages removed 2026-05-24 — its only consumer was prepareChatContent
 // in content-vectorization.js, which is itself gone. EventBase's per-message
 // cleaning happens inline in eventbase-extractor.js via cleanText() directly.

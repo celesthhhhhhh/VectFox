@@ -23,6 +23,7 @@ import { getContext } from '../../../../extensions.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { queryCollection } from './core-vector-api.js';
 import { buildPlannerUserMessage, getAgenticPlannerPrompt } from './prompts-i18n.js';
+import { stripReasoningBlocks } from './text-cleaning.js';
 import { getOpenRouterApiKey, getCustomApiKey } from './api-keys.js';
 import { getModelConfigErrorMessage } from './model-http-errors.js';
 import { getRequestHeaders } from '../../../../../script.js';
@@ -163,7 +164,7 @@ export async function retrieveEventsWithAgent(params) {
     }
 
     // Validate planner output.
-    const maxQueries = Math.max(1, Math.min(4, settings.agentic_retrieval_max_queries || 4));
+    const maxQueries = Math.max(1, Math.min(6, settings.agentic_retrieval_max_queries || 6));
     const validatedQueries = _validateAndTrimQueries(plan?.queries, maxQueries);
     if (validatedQueries.length === 0) {
         if (agenticDebug) {
@@ -448,7 +449,11 @@ function _getRecentChatForPlanner(settings) {
         .slice(-depth)
         .map(m => ({
             speaker: m.is_user ? '{{user}}' : (m.name || '{{character}}'),
-            text: (m.mes || '').toString(),
+            // Strip the model's <think>/planning blocks so the planner reads the
+            // actual narrative reply, not the AI's chain-of-thought. Without this
+            // the reasoning (which names off-screen characters and meta plot lines)
+            // dominates the 600-char per-turn budget and steers the queries.
+            text: stripReasoningBlocks((m.mes || '').toString()),
         }));
 }
 

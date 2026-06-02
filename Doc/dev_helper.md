@@ -788,7 +788,7 @@ agentic_retrieval_vllm_url               ''          // '' → inherit summarize
 agentic_retrieval_vllm_api_key           ''          // '' → inherit summarize_vllm_api_key
 agentic_retrieval_chat_depth             5           // slider 3-15
 agentic_retrieval_candidates_to_show     12          // slider 5-20
-agentic_retrieval_max_queries            4           // slider 1-4
+agentic_retrieval_max_queries            6           // slider 1-6
 agentic_retrieval_timeout_ms             30000       // hard timeout for planner call (matches summarize default)
 agentic_retrieval_debug_logging          false       // separate from eventbase_debug_logging
 ```

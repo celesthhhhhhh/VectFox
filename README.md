@@ -305,7 +305,7 @@ A small planner LLM reads your recent chat plus the top pre-search candidates, t
 
 - **Provider/model inheritance** — leave blank in AgentMode tab to inherit from your summarizer config; override with a cheaper model (e.g. Haiku 4.5, GPT-4o-mini) to cut planner cost.
 - **Language-matching prompt** — planner emits queries in the chat language (Chinese, Japanese, Korean, Latin-script, English), preserving proper nouns. No cross-language pollution.
-- **Configurable sliders** — past chat turns sent to planner (1–10), candidates shown to planner (5–20), max queries (1–4), timeout (1–60s), debug logging.
+- **Configurable sliders** — past chat turns sent to planner (1–10), candidates shown to planner (5–20), max queries (1–6), timeout (1–60s), debug logging.
 - **Real cost** — ~$0.0002 per turn with a small fast model, ~2–5 seconds added latency. Disabled by default — opt in when long-form recall matters.
 
 See the **AgentMode** tab in settings, or the "How It Works → Agent Mode" section above for the full architecture.

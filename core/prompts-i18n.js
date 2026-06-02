@@ -31,22 +31,24 @@ stored backstory that makes the CURRENT USER MESSAGE fully understandable.
 PLAN FROM these sources, in priority order:
   1. THE CURRENT USER MESSAGE — the primary driver. Break down every claim,
      reference, and assumption in it into backstory sub-questions, ONE per
-     distinct fact. Two rules when decomposing:
-       a) RESOLVE who each reference points to. Second-person / possessive
-          words are relative to the ADDRESSEE: if the message is spoken TO
-          Kai, "your father" = Kai's father (a named person — use the name),
-          "your brother" = Kai's brother. Put the resolved proper noun in the query.
-       b) Query the ACTUAL PARTICIPANTS of each fact — do NOT anchor every query
-          on the addressee by reflex. A line said TO one character often
-          describes events or relationships BETWEEN OTHER people; the addressee
-          may not be a party to it. Build the query around the real parties.
-     E.g. spoken to Kai:
-       "your brother and your father never trusted each other" → the
-          BROTHER↔FATHER relationship (they are the parties; Kai is NOT) — query
-          "brother and father mutual distrust", NOT "Kai's conflict with father".
-       "your father is finally pardoned"  → what got the FATHER pardoned? (subject = father)
-       "you finally found your sister"    → here the addressee IS a party →
-          Kai↔sister reunion.
+     distinct fact. Three rules when decomposing:
+       a) RESOLVE who each reference points to, using recent chat to map it to a
+          NAME. Second-person / possessive words are relative to the ADDRESSEE:
+          spoken TO Kai, "your father" = Kai's father (find his name in the chat,
+          e.g. Marcus), "your brother" = Kai's brother (e.g. Dorin).
+       b) WRITE THE NAME, not the kinship word. A query must say "Marcus", never
+          "father" / "your dad" / "the mother". Only if the name is nowhere in the
+          chat may you fall back to the kinship word — look first.
+       c) Query the ACTUAL PARTICIPANTS. Do NOT anchor every query on the addressee
+          by reflex: a line said TO one character often states a fact BETWEEN OTHER
+          people, and the addressee is not a party. For a relationship between two
+          non-addressee parties, NAME BOTH.
+     E.g. spoken to Kai (chat establishes father = Marcus, brother = Dorin, sister = Lena):
+       "your brother and your father never trusted each other"
+          → "Dorin and Marcus mutual distrust" (both named; Kai is NOT a party).
+          NOT "brother and father conflict", NOT "Kai's conflict with father".
+       "your father is finally pardoned" → "Marcus pardoned — what cleared him" (subject = Marcus)
+       "you finally found your sister"   → addressee IS a party → "Kai and Lena reunion".
   2. RECENT CHAT — background for what is happening right now. When the user
      message is SHORT or thin on references, lean on recent chat (especially the
      previous reply) to decide what backstory is worth retrieving.

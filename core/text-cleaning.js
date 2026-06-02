@@ -352,23 +352,76 @@ export function cleanText(text) {
  * the bare <think> tag ST actually emits, nor custom planning wrappers nested
  * inside it (e.g. <konatan_planning~>).
  *
- * Handles <think> / <thinking> / <reasoning> (case-insensitive), both as paired
- * blocks and as an unterminated leading block (opened but never closed, which
- * ST treats as reasoning running to the end of the message).
+ * Handles three shapes, narrative-AFTER-reasoning preserved in all of them:
+ *   1. Paired standard blocks: <think>…</think>, <thinking>…, <reasoning>….
+ *   2. Paired custom "planning" wrappers, e.g. <konatan_planning~>…</konatan_planning~>
+ *      (model-injected planning scaffolds; tag names may contain ~ or -).
+ *   3. An unterminated <think> that is never closed with </think> — common when the
+ *      model only closes the inner planning wrapper. Here we strip the orphan TAG
+ *      itself (step 3), NOT everything to end-of-string: an earlier version stripped
+ *      <think>…$ and silently deleted the entire narrative reply, leaving the planner
+ *      with an empty turn (observed 2026-06-02).
  *
  * @param {string} text
  * @returns {string} text with reasoning blocks removed
  */
 export function stripReasoningBlocks(text) {
     if (!text || typeof text !== 'string') return text;
-    let out = text
-        // Paired: <think>…</think>, <thinking>…</thinking>, <reasoning>…</reasoning>.
-        // \1 backref keeps open/close tags matched; [^>]* tolerates attributes.
-        .replace(/<(think|thinking|reasoning)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '');
-    // Unterminated leading block: a reasoning tag opens the message but is never
-    // closed → everything after it is reasoning. Anchored to start so a stray
-    // tag mid-narrative can't nuke the trailing story.
-    out = out.replace(/^\s*<(?:think|thinking|reasoning)\b[^>]*>[\s\S]*$/i, '');
+    const stripped = text
+        // 1. Paired standard reasoning blocks. \1 keeps open/close matched.
+        .replace(/<(think|thinking|reasoning)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+        // 2. Paired custom planning wrappers (tag name contains "planning",
+        //    may carry ~ or - e.g. konatan_planning~). No \b — the name can end
+        //    in ~, which is not a word char, so \b would fail before '>'.
+        .replace(/<([A-Za-z][\w~-]*planning[\w~-]*)[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+        // 3. Remove orphan reasoning tags left behind (e.g. an unterminated
+        //    <think> whose inner planning block was just stripped). Tag-only —
+        //    never to EOS, so any narrative after the reasoning survives.
+        .replace(/<\/?(?:think|thinking|reasoning)\b[^>]*>/gi, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    // Empty-guard / loosen: if stripping wiped EVERYTHING, the reasoning block
+    // was malformed (e.g. an unterminated <think> with no inner close, wrapping
+    // the whole reply). An empty turn is useless to the planner — it's strictly
+    // better to hand back the raw reply than nothing. So fall back to the
+    // original text with only the bare tags peeled off (content kept).
+    if (stripped) return stripped;
+    return text
+        .replace(/<\/?[A-Za-z][\w~-]*[^>]*>/g, ' ')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+// Game-system blocks the model appends AFTER the narrative (MVU engine output).
+// <UpdateVariable> wraps <UpdateAnalysis> + <JSONPatch>; the inner two are also
+// listed so a standalone (un-wrapped) occurrence is still caught. <combat_log>
+// is empty most turns but pure noise to a retrieval planner. These overlap with
+// BUILTIN_PATTERNS (strip_mvu_update_variable / strip_mvu_combat_log) but those
+// are config-gated for vectorization; the planner strip must be unconditional,
+// and the builtins don't cover <UpdateAnalysis>/<JSONPatch> by name.
+const PLANNER_NOISE_TAGS = ['UpdateVariable', 'UpdateAnalysis', 'JSONPatch', 'combat_log'];
+
+/**
+ * Strip MVU game-system blocks (state-update JSON, combat logs) so the agentic
+ * planner reads only the narrative, never engine bookkeeping. Unconditional,
+ * like stripReasoningBlocks — independent of the vectorization cleaning config.
+ *
+ * Compose with stripReasoningBlocks to clean a chat turn for the planner:
+ *   stripGameSystemBlocks(stripReasoningBlocks(mes))
+ *
+ * @param {string} text
+ * @returns {string} text with game-system blocks removed
+ */
+export function stripGameSystemBlocks(text) {
+    if (!text || typeof text !== 'string') return text;
+    let out = text;
+    for (const tag of PLANNER_NOISE_TAGS) {
+        // \b after the name tolerates attributes; [\s\S]*? is non-greedy so
+        // sibling blocks of the same tag aren't swallowed together.
+        out = out.replace(new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?</${tag}\\s*>`, 'gi'), '');
+    }
     return out.replace(/\n{3,}/g, '\n\n').trim();
 }
 

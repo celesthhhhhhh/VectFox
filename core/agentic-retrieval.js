@@ -23,7 +23,7 @@ import { getContext } from '../../../../extensions.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { queryCollection } from './core-vector-api.js';
 import { buildPlannerUserMessage, getAgenticPlannerPrompt } from './prompts-i18n.js';
-import { stripReasoningBlocks } from './text-cleaning.js';
+import { stripReasoningBlocks, stripGameSystemBlocks } from './text-cleaning.js';
 import { getOpenRouterApiKey, getCustomApiKey } from './api-keys.js';
 import { getModelConfigErrorMessage } from './model-http-errors.js';
 import { getRequestHeaders } from '../../../../../script.js';
@@ -449,11 +449,12 @@ function _getRecentChatForPlanner(settings) {
         .slice(-depth)
         .map(m => ({
             speaker: m.is_user ? '{{user}}' : (m.name || '{{character}}'),
-            // Strip the model's <think>/planning blocks so the planner reads the
-            // actual narrative reply, not the AI's chain-of-thought. Without this
-            // the reasoning (which names off-screen characters and meta plot lines)
-            // dominates the 600-char per-turn budget and steers the queries.
-            text: stripReasoningBlocks((m.mes || '').toString()),
+            // Reduce each turn to narrative for the planner: drop the model's
+            // <think>/planning blocks (chain-of-thought that names off-screen
+            // characters and meta plot lines) and the MVU game-system blocks
+            // (<UpdateVariable>/<JSONPatch>/<combat_log> bookkeeping). Otherwise
+            // they dominate the 600-char per-turn budget and steer the queries.
+            text: stripGameSystemBlocks(stripReasoningBlocks((m.mes || '').toString())),
         }));
 }
 

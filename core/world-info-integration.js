@@ -12,7 +12,7 @@
 
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { queryCollection } from './core-vector-api.js';
-import { resolveBackendForCollection } from './collection-ids.js';
+import { resolveBackendForCollection, sanitizeNameSegment } from './collection-ids.js';
 import { getCollectionListing, getCollectionRegistry } from './collection-loader.js';
 import { getCollectionMeta, isCollectionEnabled, shouldCollectionActivate } from './collection-metadata.js';
 import { LOREBOOK_PROMPT_TAG } from './constants.js';
@@ -247,17 +247,6 @@ function deduplicateWithActiveEntries(semanticEntries, activeEntries) {
 // ============================================================================
 
 /**
- * Sanitize a lorebook name the same way the builder does, for registry-scan matching.
- */
-function _sanitizeLorebookName(name) {
-    return String(name || '')
-        .normalize('NFC')
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .substring(0, 50);
-}
-
-/**
  * Find the registry key for a lorebook by name. Scans the registry instead of trying to
  * rebuild the exact ID — collection IDs include backend + handle + timestamp segments,
  * none of which can be known ahead of time during a lookup. We match on the lorebook
@@ -268,7 +257,7 @@ function _sanitizeLorebookName(name) {
  * @returns {string|null} Full registry key (may include "backend:" prefix), or null if not found.
  */
 function _findLorebookRegistryEntry(lorebookName, settings) {
-    const sanitizedName = _sanitizeLorebookName(lorebookName);
+    const sanitizedName = sanitizeNameSegment(lorebookName, 50);
     if (!sanitizedName) return null;
     const lorebookPrefix = 'vf_lorebook_';
     const nameNeedle = `_${sanitizedName}_`;

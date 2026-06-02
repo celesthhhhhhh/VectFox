@@ -153,6 +153,57 @@ export function remapCollectionIdToBackend(collectionId, targetBackend) {
 }
 
 /**
+ * Replace the persona-handle segment in a collection ID so it matches a target handle.
+ *
+ * Mirror of {@link remapCollectionIdToBackend} for the segment that follows the
+ * optional backend in the unified shape:
+ *   vf_<type>_[<backend>_]<handle>_<name>_<timestamp>
+ *
+ * Used by the import path so a collection exported by one persona is re-homed under
+ * the importing persona. Without this, the imported ID keeps the source handle and
+ * the DB-browser persona filter hides it as foreign (see collection-loader.js
+ * `registerCollection` and database-browser.js `_filterCollectionsByCurrentPersona`).
+ *
+ * The handle is treated as a single underscore-delimited segment — the same parse
+ * convention used everywhere else (database-browser.js `_extractHandleFromCollectionId`).
+ * The authoritative ownership signal is the `creatorHandle` metadata stamp, which the
+ * import path sets explicitly; this remap only keeps the ID human-consistent.
+ *
+ * Returns the original ID unchanged when it doesn't match a known prefix, has no
+ * handle segment, or the handle already equals the target (no-op).
+ *
+ * @param {string} collectionId
+ * @param {string} targetHandle - persona handle (raw or sanitized; sanitized internally)
+ * @returns {string} remapped ID (or original on no-op / unknown format)
+ */
+export function remapCollectionIdToHandle(collectionId, targetHandle) {
+    const sanitizedTarget = sanitizeHandleId(targetHandle);
+
+    for (const prefix of Object.values(COLLECTION_PREFIXES)) {
+        if (!collectionId.startsWith(prefix)) continue;
+        let rest = collectionId.slice(prefix.length); // 'qdrant_critblade_char_uuid' or 'critblade_char_uuid'
+
+        // Skip the optional backend segment if present so we land on the handle.
+        let backendPart = '';
+        for (const b of KNOWN_BACKEND_LABELS) {
+            if (rest.startsWith(b + '_')) {
+                backendPart = b + '_';
+                rest = rest.slice(backendPart.length);
+                break;
+            }
+        }
+
+        const sepIdx = rest.indexOf('_');
+        if (sepIdx <= 0) return collectionId; // no handle segment (legacy / malformed)
+        const oldHandle = rest.slice(0, sepIdx);
+        return oldHandle === sanitizedTarget
+            ? collectionId // no-op
+            : prefix + backendPart + sanitizedTarget + rest.slice(oldHandle.length);
+    }
+    return collectionId; // unknown format — leave unchanged
+}
+
+/**
  * Returns the storage backend label used in registry keys.
  * The user-facing setting is 'standard' but the actual storage is Vectra,
  * so we normalise 'standard' → 'vectra' to match what the Similharity plugin
@@ -250,16 +301,60 @@ export function getChatUUID() {
 // ============================================================================
 
 /**
- * Sanitize a name segment for use in collection IDs (lowercase, alphanumeric + underscores).
- * NFC-normalizes first so decomposed combining marks (e.g. macOS NFD filenames, some
- * Vietnamese input) survive the \p{L} filter instead of being stripped.
+ * Canonical segment sanitizer for collection IDs — the single primitive every
+ * other sanitizer in the codebase is built on, so the rules can't drift.
+ *
+ * Always: NFC-normalize (so decomposed combining marks — macOS NFD filenames,
+ * some Vietnamese input — survive the \p{L} filter instead of being stripped),
+ * lowercase, collapse runs of non-alphanumerics to a single underscore, cap length.
+ *
+ * Options tune the two axes that legitimately vary between segment kinds:
+ *   - `trim`     strip leading/trailing underscores (handle/char segments do; raw
+ *                name segments historically don't, to preserve positional info).
+ *   - `fallback` value substituted when the input is empty AND when sanitizing
+ *                reduces it to empty (e.g. all-punctuation). '' = no fallback.
+ *
+ * @param {string} name
+ * @param {{ maxLen?: number, trim?: boolean, fallback?: string }} [opts]
+ * @returns {string}
  */
-function _sanitizeNameSegment(name, maxLength) {
-    return String(name || '')
+export function sanitizeIdSegment(name, { maxLen = 30, trim = false, fallback = '' } = {}) {
+    let s = String(name || fallback)
         .normalize('NFC')
         .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .substring(0, maxLength);
+        .replace(/[^\p{L}\p{N}]+/gu, '_');
+    if (trim) s = s.replace(/^_|_$/g, '');
+    return s.substring(0, maxLen) || fallback;
+}
+
+/**
+ * Sanitize a name segment for use in collection IDs (lowercase, alphanumeric +
+ * underscores, length-capped). No edge-trim and no fallback word — matches the
+ * positional name segment used by the lorebook/character/document builders and
+ * the registry-scan matchers in collection-loader / content-vectorization /
+ * world-info-integration.
+ *
+ * @param {string} name
+ * @param {number} maxLength
+ * @returns {string}
+ */
+export function sanitizeNameSegment(name, maxLength) {
+    return sanitizeIdSegment(name, { maxLen: maxLength, trim: false, fallback: '' });
+}
+
+/**
+ * Sanitize a persona name into the canonical handleId form used across collection IDs
+ * (NFC-normalized, lowercase, underscore-joined, edge-trimmed, capped at 30 chars,
+ * empty → 'user'). Single source of truth — the ID builders, `registerCollection`'s
+ * creatorHandle stamp, the DB-browser persona filter, the lock-ownership check in
+ * collection-metadata.js, and `remapCollectionIdToHandle` all derive the handle this
+ * way, so they must all route through here.
+ *
+ * @param {string} name - raw persona name (typically getContext().name1)
+ * @returns {string} sanitized handleId
+ */
+export function sanitizeHandleId(name) {
+    return sanitizeIdSegment(name, { maxLen: 30, trim: true, fallback: 'user' });
 }
 
 /**
@@ -267,13 +362,7 @@ function _sanitizeNameSegment(name, maxLength) {
  * archive builders so registerCollection's stamp check sees the handle in the collection name.
  */
 function _currentHandleId() {
-    const ctx = getContext();
-    return String(ctx?.name1 || 'user')
-        .normalize('NFC')
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 30) || 'user';
+    return sanitizeHandleId(getContext()?.name1);
 }
 
 /**
@@ -288,7 +377,7 @@ function _currentHandleId() {
  * @returns {string} Collection ID
  */
 export function buildLorebookCollectionId(lorebookName, backend, timestamp) {
-    const sanitizedName = _sanitizeNameSegment(lorebookName, 50);
+    const sanitizedName = sanitizeNameSegment(lorebookName, 50);
     const handle = _currentHandleId();
     const normalizedBackend = normalizeBackendForId(backend);
     const ts = timestamp || Date.now();
@@ -308,7 +397,7 @@ export function buildLorebookCollectionId(lorebookName, backend, timestamp) {
  * @returns {string} Collection ID
  */
 export function buildCharacterCollectionId(characterName, backend, timestamp) {
-    const sanitizedName = _sanitizeNameSegment(characterName, 50);
+    const sanitizedName = sanitizeNameSegment(characterName, 50);
     const handle = _currentHandleId();
     const normalizedBackend = normalizeBackendForId(backend);
     const ts = timestamp || Date.now();
@@ -328,7 +417,7 @@ export function buildCharacterCollectionId(characterName, backend, timestamp) {
  * @returns {string} Collection ID
  */
 export function buildDocumentCollectionId(documentName, backend, timestamp) {
-    const sanitizedName = _sanitizeNameSegment(documentName, 50);
+    const sanitizedName = sanitizeNameSegment(documentName, 50);
     const handle = _currentHandleId();
     const normalizedBackend = normalizeBackendForId(backend);
     const ts = timestamp || Date.now();
@@ -352,19 +441,9 @@ export function buildEventBaseCollectionId(chatUUID, backend) {
     if (!uuid) return null;
 
     const context = getContext();
-    const sanitizedHandle = (context?.name1 || 'user')
-        .normalize('NFC')
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 30) || 'user';
+    const sanitizedHandle = sanitizeHandleId(context?.name1);
 
-    const sanitizedChar = (context?.name2 || 'chat')
-        .normalize('NFC')
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 30) || 'chat';
+    const sanitizedChar = sanitizeIdSegment(context?.name2, { maxLen: 30, trim: true, fallback: 'chat' });
 
     const normalizedBackend = normalizeBackendForId(backend);
     if (normalizedBackend) {
@@ -391,19 +470,9 @@ export function buildArchiveEventCollectionId({ filenameCharName, archiveUUID, b
     if (!archiveUUID) return null;
 
     const context = getContext();
-    const sanitizedHandle = (context?.name1 || 'user')
-        .normalize('NFC')
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 30) || 'user';
+    const sanitizedHandle = sanitizeHandleId(context?.name1);
 
-    const sanitizedChar = (filenameCharName || 'archive')
-        .normalize('NFC')
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 30) || 'archive';
+    const sanitizedChar = sanitizeIdSegment(filenameCharName, { maxLen: 30, trim: true, fallback: 'archive' });
 
     const normalizedBackend = normalizeBackendForId(backend);
     if (normalizedBackend) {

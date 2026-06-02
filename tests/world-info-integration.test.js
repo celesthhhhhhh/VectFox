@@ -45,6 +45,8 @@ vi.mock('../core/collection-ids.js', () => ({
     })),
     buildLorebookCollectionId: vi.fn((name, scope) => `lorebook_${scope}_${name}`),
     resolveBackendForCollection: vi.fn((id) => ({ backend: 'standard', collectionId: id })),
+    sanitizeNameSegment: vi.fn((name, maxLen) =>
+        String(name || '').normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '_').substring(0, maxLen)),
 }));
 
 // Shared mutable state available to both mock factories and test bodies.

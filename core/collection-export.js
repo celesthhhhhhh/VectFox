@@ -17,7 +17,7 @@
  * ============================================================================
  */
 
-import { extension_settings } from '../../../../extensions.js';
+import { extension_settings, getContext } from '../../../../extensions.js';
 import { getRequestHeaders, saveSettingsDebounced } from '../../../../../script.js';
 import { getSavedHashes, insertVectorItems, purgeVectorIndex } from './core-vector-api.js';
 import {
@@ -33,7 +33,7 @@ import {
     registerCollection,
     getCollectionRegistry,
 } from './collection-loader.js';
-import { COLLECTION_PREFIXES, buildRegistryKey, parseCollectionId, normalizeBackendForId, remapCollectionIdToBackend } from './collection-ids.js';
+import { COLLECTION_PREFIXES, buildRegistryKey, parseCollectionId, normalizeBackendForId, remapCollectionIdToBackend, remapCollectionIdToHandle, sanitizeHandleId } from './collection-ids.js';
 import { getModelFromSettings } from './providers.js';
 import { encodeSparseVector } from './sparse-vector-encoder.js';
 import { progressTracker } from '../ui/progress-tracker.js';
@@ -630,14 +630,21 @@ export async function importCollection(exportData, settings, options = {}) {
         throw new Error('No collection ID specified');
     }
 
-    // Remap collection ID when the export's backend differs from the current backend.
-    // e.g. vf_eventbase_standard_rabbit_... → vf_eventbase_qdrant_rabbit_... when importing to qdrant.
+    // Re-home the imported collection onto the current setup by rewriting both
+    // identity segments of the ID to match local state:
+    //   backend — e.g. vf_eventbase_qdrant_critblade_... → vf_eventbase_standard_critblade_...
+    //   handle  — e.g. vf_eventbase_standard_critblade_... → vf_eventbase_standard_rabbit_...
+    // Without the handle rewrite the collection keeps the exporter's persona and the
+    // DB-browser persona filter hides it from the importing user (creatorHandle never
+    // matches). See remapCollectionIdToHandle + the creatorHandle stamp below.
     const targetBackendLabel = normalizeBackendForId(settings.vector_backend);
-    const collectionId = remapCollectionIdToBackend(sourceId, targetBackendLabel);
+    const targetHandle = sanitizeHandleId(getContext()?.name1);
+    const backendRemapped = remapCollectionIdToBackend(sourceId, targetBackendLabel);
+    const collectionId = remapCollectionIdToHandle(backendRemapped, targetHandle);
     const wasRemapped = collectionId !== sourceId;
     if (wasRemapped) {
         const srcLabel = normalizeBackendForId(exportData.embedding?.backend || '?');
-        log.lifecycle(`VectFox Import: remapped collection ID ${srcLabel} → ${targetBackendLabel}: "${sourceId}" → "${collectionId}"`);
+        log.lifecycle(`VectFox Import: remapped collection ID (backend ${srcLabel} → ${targetBackendLabel}, handle → ${targetHandle}): "${sourceId}" → "${collectionId}"`);
     }
 
     const chunks = exportData.chunks || [];
@@ -807,6 +814,10 @@ export async function importCollection(exportData, settings, options = {}) {
             createdAt: new Date().toISOString(),
             importedFrom: exportData.exportDate,
             importedAt: new Date().toISOString(),
+            // Re-home under the importing persona: the ID handle was rewritten above,
+            // but stamp creatorHandle explicitly too so ownership is authoritative and
+            // doesn't depend on registerCollection's name-parse heuristic.
+            creatorHandle: targetHandle,
             // Convert = unchecked: no character lock, auto-sync off.
             lockedToCharacterIds: [],
             autoSync: false,
@@ -946,10 +957,12 @@ async function importCollectionSilent(exportData, settings, options = {}) {
     // segment in the on-disk vectra folder name, breaking every other code
     // path that parses the backend out of the ID. Surfaced 2026-05-23.
     const targetBackendLabel = normalizeBackendForId(settings.vector_backend);
-    const collectionId = remapCollectionIdToBackend(sourceId, targetBackendLabel);
+    const targetHandle = sanitizeHandleId(getContext()?.name1);
+    const backendRemapped = remapCollectionIdToBackend(sourceId, targetBackendLabel);
+    const collectionId = remapCollectionIdToHandle(backendRemapped, targetHandle);
     if (collectionId !== sourceId) {
         const srcLabel = normalizeBackendForId(exportData.embedding?.backend || '?');
-        log.lifecycle(`VectFox Import (silent): remapped ${srcLabel} → ${targetBackendLabel}: "${sourceId}" → "${collectionId}"`);
+        log.lifecycle(`VectFox Import (silent): remapped (backend ${srcLabel} → ${targetBackendLabel}, handle → ${targetHandle}): "${sourceId}" → "${collectionId}"`);
     }
 
     const chunks = exportData.chunks || [];
@@ -1039,6 +1052,8 @@ async function importCollectionSilent(exportData, settings, options = {}) {
         createdAt: new Date().toISOString(),
         importedFrom: exportData.exportDate,
         importedAt: new Date().toISOString(),
+        // Re-home under the importing persona (matches importCollection).
+        creatorHandle: targetHandle,
         lockedToCharacterIds: [],
         autoSync: false,
     };

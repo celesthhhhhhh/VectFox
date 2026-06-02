@@ -37,6 +37,8 @@ import {
     COLLECTION_PREFIXES,
     getRegistryBackend,
     buildRegistryKey,
+    sanitizeHandleId,
+    sanitizeNameSegment,
 } from './collection-ids.js';
 
 // Plugin detection state
@@ -94,18 +96,11 @@ export function getCollectionRegistry() {
  * Registers a collection in the registry (idempotent)
  * @param {string} collectionId Collection identifier
  */
-/**
- * Sanitize a persona name into the handleId form used by collection-ID builders.
- * Must match buildEventBaseCollectionId / buildArchiveEventCollectionId.
- */
-export function sanitizeHandleId(name) {
-    return String(name || 'user')
-        .normalize('NFC')
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .replace(/^_|_$/g, '')
-        .substring(0, 30) || 'user';
-}
+// sanitizeHandleId is canonicalized in collection-ids.js (single source of truth for
+// the persona-handle form shared by the ID builders, the creatorHandle stamp below,
+// and remapCollectionIdToHandle). Re-exported here so existing importers
+// (ui/database-browser.js) keep resolving it from collection-loader.
+export { sanitizeHandleId };
 
 function _sanitizeHandleId(name) { return sanitizeHandleId(name); }
 
@@ -872,7 +867,7 @@ async function discoverViaFallback(settings) {
     for (const char of characters) {
         if (!char.name) continue;
 
-        const sanitizedName = char.name.normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '_').substring(0, 30);
+        const sanitizedName = sanitizeNameSegment(char.name, 30);
 
         // VECTFOX character collection format
         const charCollectionId = `${COLLECTION_PREFIXES.VECTFOX_CHARACTER}${sanitizedName}`;

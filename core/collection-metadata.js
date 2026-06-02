@@ -11,7 +11,7 @@
 
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../../script.js';
-import { parseRegistryKey, COLLECTION_PREFIXES, parseCollectionId } from './collection-ids.js';
+import { parseRegistryKey, COLLECTION_PREFIXES, parseCollectionId, sanitizeHandleId } from './collection-ids.js';
 import { log } from './log.js';
 
 // ============================================================================
@@ -807,7 +807,11 @@ function _isLockAuthorized(meta, collectionId, settings) {
         // Dynamic require to avoid circular import with collection-loader.js.
         // If the context modules aren't ready (early boot), allow the action.
         const ctx = (typeof getContext === 'function') ? getContext() : null;
-        currentHandle = String(ctx?.name1 || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '_');
+        // Must match the creatorHandle stamp exactly (sanitizeHandleId: NFC + edge-trim
+        // + 30-char cap). The old inline derivation skipped those, so owners with
+        // accented / long / punctuation-edged persona names failed this equality check
+        // and got locked out of their own collections.
+        currentHandle = sanitizeHandleId(ctx?.name1);
     } catch (_) {
         return true; // permissive when context unavailable
     }

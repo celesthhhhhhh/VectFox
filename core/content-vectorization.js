@@ -24,6 +24,7 @@ import {
     COLLECTION_PREFIXES,
     buildRegistryKey,
     getBackendFromCollectionId,
+    sanitizeNameSegment,
 } from './collection-ids.js';
 import { extractLorebookKeywords, extractTextKeywords, extractChatKeywords, extractBM25Keywords, EXTRACTION_LEVELS, DEFAULT_EXTRACTION_LEVEL, DEFAULT_BASE_WEIGHT } from './keyword-boost.js';
 import { cleanText, cleanContentOrNull } from './text-cleaning.js';
@@ -765,12 +766,7 @@ function generateCollectionId(contentType, source, settings) {
     const baseName = sourceName;
 
     // Sanitize name for use in ID — Unicode-aware so CJK / Cyrillic / etc. survive.
-    // NFC-normalize first so decomposed combining marks survive the \p{L} filter.
-    const sanitizedName = baseName
-        .normalize('NFC')
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, '_')
-        .substring(0, 50);
+    const sanitizedName = sanitizeNameSegment(baseName, 50);
 
     // Add scope prefix
     let scopePrefix = '';

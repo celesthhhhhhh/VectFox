@@ -229,6 +229,31 @@ async function _runOneLiveQuery({
 }
 
 /**
+ * Collapse events that are the SAME physical event (same event_id, or _hash
+ * fallback) to a single copy, keeping the highest-scoring instance.
+ *
+ * The agentic planner fans one user message into several queries, each of which
+ * can surface the same stored event. Those duplicates must be merged by identity
+ * BEFORE the similarity-dedup stage — otherwise its score-override escape hatch
+ * (high-score candidates survive dedup) lets identical events straight through,
+ * so the "final 10" can be just 2 unique events repeated (observed 2026-06-02).
+ *
+ * @param {object[]} events
+ * @returns {object[]} one entry per identity, highest .score retained
+ */
+function _dedupeByIdentity(events) {
+    const map = new Map();
+    for (const event of events) {
+        const key = event.event_id ?? event._hash ?? JSON.stringify(event);
+        const existing = map.get(key);
+        if (!existing || (event.score ?? -Infinity) > (existing.score ?? -Infinity)) {
+            map.set(key, event);
+        }
+    }
+    return [...map.values()];
+}
+
+/**
  * Compare-mode logger. Reports per (collection, queryText):
  *   - top-K overlap (by event_id, fallback hash)
  *   - symmetric difference with ranks in each list
@@ -441,26 +466,23 @@ export async function retrieveEvents({ searchText, keywordQuery, chatLength, set
 
         // Merge by event_id (or hash fallback) — keep the copy with the highest
         // cosine score so the re-ranker sees the best similarity signal per event.
-        const mergedMap = new Map();
-        for (const event of allResults.flat()) {
-            const key = event.event_id ?? event._hash ?? JSON.stringify(event);
-            const existing = mergedMap.get(key);
-            if (!existing || event.score > existing.score) {
-                mergedMap.set(key, event);
-            }
-        }
-        rawCandidates = [...mergedMap.values()];
+        rawCandidates = _dedupeByIdentity(allResults.flat());
 
         log.verbose(`[EventBase] Live query: ${liveCollectionIds.length} collection(s) × ${queryTexts.length} query/queries → ${rawCandidates.length} unique events`);
     }
 
-    // Merge in events pre-queried from archive event collections (VectFox_archiveevent_*).
-    const allCandidates = additionalCandidates?.length
-        ? [...rawCandidates, ...additionalCandidates]
-        : rawCandidates;
-
+    // Merge in caller-supplied candidates: archive events (VectFox_archiveevent_*)
+    // and the agentic planner's per-query fanout. The fanout can surface the SAME
+    // event from multiple queries, so dedupe the combined set by identity (keeping
+    // the highest score) — otherwise identical events reach similarity-dedup as
+    // separate candidates and the score-override escape hatch lets them through.
+    let allCandidates;
     if (additionalCandidates?.length) {
-        log.verbose(`[EventBase] Merged ${additionalCandidates.length} archive event(s) into ${rawCandidates.length} live candidates`);
+        const combinedLen = rawCandidates.length + additionalCandidates.length;
+        allCandidates = _dedupeByIdentity([...rawCandidates, ...additionalCandidates]);
+        log.verbose(`[EventBase] Merged ${additionalCandidates.length} additional candidate(s) with ${rawCandidates.length} live → ${allCandidates.length} unique by identity (from ${combinedLen})`);
+    } else {
+        allCandidates = rawCandidates;
     }
 
     // 3. Filter by minimum importance — server already filtered _rerankApplied

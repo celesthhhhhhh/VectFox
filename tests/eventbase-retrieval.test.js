@@ -171,6 +171,32 @@ describe('retrieveEvents', () => {
         expect(Array.isArray(events)).toBe(true);
     });
 
+    it('collapses duplicate events (same identity) from agentic fan-out into one', async () => {
+        // The agentic planner surfaces the SAME stored event from several queries.
+        // Five identical copies (event_id evt_1, score 0.89) + one distinct event
+        // arrive via additionalCandidates. Without identity-dedup the similarity
+        // score-override escape hatch (0.89 >= 0.75) lets the duplicates through and
+        // the "final" list is mostly one event repeated (observed 2026-06-02).
+        const candidates = [
+            makeEvent(1), makeEvent(1), makeEvent(1), makeEvent(1), makeEvent(1),
+            makeEvent(2),
+        ];
+
+        const { events } = await retrieveEvents({
+            searchText: 'recap',
+            keywordQuery: 'recap',
+            chatLength: 100,
+            settings: baseSettings,
+            liveCollectionIds: [],
+            additionalCandidates: candidates,
+            skipLiveQuery: true,
+        });
+
+        const ids = events.map(e => e.event_id);
+        expect(ids.length).toBe(new Set(ids).size);                 // no repeated identity
+        expect(ids.filter(id => id === 'evt_1').length).toBe(1);    // the duplicated event appears once
+    });
+
     it('filters out events below minimum importance', async () => {
         const metadata = [
             makeEvent(1, { importance: 9 }),

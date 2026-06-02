@@ -331,6 +331,18 @@ VectFox tokenizes and indexes any language — the BM25/keyword half is fully la
 
 - CJK tokenizer mode is **locked per Qdrant collection** at upsert — switching modes shows a warning modal
 
+### 🛡️ Resilient vectorization — built to finish, no matter what
+
+Long stories on bad connections are where naive vectorizers die: one stalled embedding call, one flaky timeout, and a 2,000-message ingest is wrecked halfway through. VectFox is built so vectorization **always makes forward progress and always recovers** — three independent safety nets, each containing a different failure mode.
+
+- **Request hedging** — when an embedding call goes quiet past a threshold (15s by default), VectFox fires a *duplicate* request on a fresh connection instead of waiting. Up to 3 hedges race the original; first to answer wins, stragglers are dropped. A single stuck SiliconFlow worker or a bad OpenRouter routing decision no longer freezes the whole run — a new connection simply routes around it. (Skipped for local GPU endpoints, where a new connection lands on the same server anyway.)
+
+- **Parallel-split embedding** — instead of one giant batched POST where a *single* stuck item hangs everything (we measured 555-second monster batches), VectFox splits the batch into one-item requests fired in concurrent waves of up to 16. The blast radius of any bad item is exactly one item: it retries in isolation while everything else sails through.
+
+- **Pipelined extract → insert with overlap** — batch N's vector insert overlaps batch N+1's LLM extraction, so the pipeline never idles on a single slow phase (~35% faster wall-clock on long chats). Overlapping extraction windows capture events that straddle a window boundary, and a fingerprint cache that survives Chrome restarts lets a half-finished run resume exactly where it stopped instead of starting over.
+
+Together these compound: the worse the environment — longer story, flakier connection, slower provider — the harder they work. Vectorization recovers and completes rather than stalling out.
+
 ### 🔍 Native sparse-vector hybrid search (Qdrant)
 
 A3 path described above — server-side RRF with globally-accurate BM25 IDF. Single round-trip per query.

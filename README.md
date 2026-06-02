@@ -12,7 +12,7 @@
 
 ## 🎯 What is VectFox?
 
-Built on the excellent VectHare foundation, VectFox is a **high-performance long-term memory system for SillyTavern**. It goes well beyond a language-extended fork — all intelligent retrieval logic runs server-side inside a real vector database (Qdrant), a structured event-based approach replaces raw chunk summarization for dramatically more accurate recall, and queries return in under 3 seconds even at 2,000+ messages. Natively multilingual: English, Japanese, Korean, Traditional Chinese, and Simplified Chinese.
+Built on the excellent VectHare foundation, VectFox is a **high-performance long-term memory system for SillyTavern**. It goes well beyond a language-extended fork — all intelligent retrieval logic runs server-side inside a real vector database (Qdrant), a structured event-based approach replaces raw chunk summarization for dramatically more accurate recall, and queries return in under 3 seconds even at 2,000+ messages. Works with virtually any language out of the box, with extra stop-word tuning for English, Japanese, Korean, Traditional Chinese, and Simplified Chinese.
 
 I branched the original VectHare to handle the massive scale of my personal [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) projects, which feature:
 

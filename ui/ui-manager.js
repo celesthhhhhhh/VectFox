@@ -1129,6 +1129,12 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <small class="VectFox_hint">Hard timeout for the planner call. Default <b>30000 ms (30s)</b>. On timeout, agent mode falls back to pre-search only. Increase if your planner model is slow (large models / free-tier providers often take 10-20s on a 1500-token prompt).</small>
                             </div>
 
+                            <div class="vectfox-form-group">
+                                <label for="VectFox_agentic_query_timeout"><small>Per-query Timeout (ms)</small></label>
+                                <input type="number" id="VectFox_agentic_query_timeout" class="vectfox-input" min="1000" max="60000" step="1000" />
+                                <small class="VectFox_hint">Hard timeout for each parallel fanout query. Default <b>10000 ms (10s)</b>. Queries run in parallel, so the turn waits on the slowest one — this drops a straggling query (e.g. an embedding-provider latency spike) so a single slow call can't stall retrieval. The remaining queries still count.</small>
+                            </div>
+
                             <!-- Apply planner filters (Phase 1.5) -->
                             <div class="vectfox-form-group">
                                 <label class="checkbox_label" for="VectFox_agentic_filters_enabled">
@@ -2616,6 +2622,15 @@ function bindSettingsEvents(settings, callbacks) {
         .on('change input', function() {
             const v = Number($(this).val());
             settings.agentic_retrieval_timeout_ms = Math.max(1000, Math.min(60000, v || 30000));
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    $('#VectFox_agentic_query_timeout')
+        .val(Number(settings.agentic_retrieval_query_timeout_ms ?? 10000))
+        .on('change input', function() {
+            const v = Number($(this).val());
+            settings.agentic_retrieval_query_timeout_ms = Math.max(1000, Math.min(60000, v || 10000));
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

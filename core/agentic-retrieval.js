@@ -196,19 +196,30 @@ export async function retrieveEventsWithAgent(params) {
         }
     }
 
+    // Per-query timeout: the fanout runs in parallel, so the whole retrieval
+    // waits on the SLOWEST query. A single embed/search latency spike (e.g. the
+    // shared embedding provider stalling) could otherwise freeze the turn for
+    // tens of seconds. Cap each query; a straggler is dropped and the other
+    // queries' results still flow through. queryCollection has no abort hook, so
+    // the underlying request keeps running — we just stop awaiting it.
+    const queryTimeoutMs = Math.max(1000, settings.agentic_retrieval_query_timeout_ms || 10000);
     const tFanoutStart = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     const fanoutPromises = [];
     for (const colId of liveCollectionIds) {
         for (const queryText of validatedQueries) {
             fanoutPromises.push(
-                queryCollection(colId, queryText, topK, ebSettings, plannerFilters)
+                _raceWithTimeout(queryCollection(colId, queryText, topK, ebSettings, plannerFilters), queryTimeoutMs)
                     .then(({ hashes, metadata }) => {
                         if (!hashes?.length) return { queryText, hits: [] };
                         const hits = metadata.map((meta, i) => ({ ...meta, _hash: hashes[i] }));
                         return { queryText, hits };
                     })
                     .catch(err => {
-                        log.warn(`[VectFox-Agentic] Query failed (${colId}, "${queryText}"): ${err?.message || err}`);
+                        if (err?.__timeout) {
+                            log.warn(`[VectFox-Agentic] Query timed out after ${queryTimeoutMs}ms (${colId}, "${queryText}") — dropped; other queries still count. Raise "Per-query Timeout" in the AgentMode tab if needed.`);
+                        } else {
+                            log.warn(`[VectFox-Agentic] Query failed (${colId}, "${queryText}"): ${err?.message || err}`);
+                        }
                         return { queryText, hits: [] };
                     })
             );
@@ -435,6 +446,29 @@ async function _callPlanner({ systemPrompt, userMessage, llmCfg, timeoutMs }) {
 // ============================================================================
 // Helpers
 // ============================================================================
+
+/**
+ * Resolve/reject with whichever settles first: the wrapped promise, or a timeout
+ * that rejects with an error tagged `__timeout` after `ms`. Used to bound each
+ * parallel fanout query so one slow Qdrant/embedding call can't stall the turn.
+ * The timer is always cleared so a fast resolve doesn't leak a pending timeout.
+ *
+ * @template T
+ * @param {Promise<T>} promise
+ * @param {number} ms
+ * @returns {Promise<T>}
+ */
+function _raceWithTimeout(promise, ms) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+            const err = new Error(`query timed out after ${ms}ms`);
+            err.__timeout = true;
+            reject(err);
+        }, ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
 
 /**
  * Read recent non-system chat turns from getContext().chat. Source of "what

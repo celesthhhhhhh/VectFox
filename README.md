@@ -401,11 +401,11 @@ Each collection card has an Activation panel. The priority chain is:
 4. **Active for current chat / Character lock** → manual always-on fallback
 5. **Nothing matched** → does not activate
 
-Conditions support emotion (via Character Expressions sprite detection), keywords, message/turn count, and combined AND/OR rules.
+Conditions support keywords/patterns, speaker, character-present, message/turn count, time of day, and combined AND/OR rules.
 
 > ⚠️ **Legacy feature note:** Triggers and condition-based activation are **inherited from VectHare** and kept here for backward compatibility only. Due to major architectural changes in VectFox, **users should always make collections "Active for current chat" or use Character lock** instead of relying on triggers/conditions. The whole point of vector search is to let the search engine search everything — selective activation based on keyword triggers defeats that purpose.
 >
-> **CJK note:** Triggers and emotion/keyword conditions are also **English-only** — the keyword dictionary is English and regex `\b` word boundaries don't fire between CJK characters. For Chinese/Japanese/Korean stories, use **"Active for current chat" / Character lock** instead. Message Count / Turn Count conditions are numeric and work fine for any language.
+> **CJK note:** Triggers and condition-based activation are **language-neutral** — keyword/pattern matching uses plain substring search, which works for Chinese/Japanese/Korean the same as English. (Only user-written regex with ASCII `\b` boundaries won't fire across CJK — use plain substrings or `\p{L}` + the `u` flag.)
 
 ---
 
@@ -529,8 +529,8 @@ No — don't do it. The CJK Tokenizer Mode is **locked into each Qdrant collecti
 
 Pick your tokenizer mode *before* you start vectorizing a chat and stick with it. There's no in-place migration — sparse vectors were tokenized with the original mode, so they're incompatible with a different tokenizer's output.  Pick your embedding model *before* you start vectorizing a chat and stick with it.
 
-**Can I use triggers/emotion conditions on Chinese/Japanese/Korean chats?**
-Not reliably. The keyword dictionary is English-only and regex `\b` word boundaries don't fire between CJK characters. Use "Active for current chat" / Character lock instead, or numeric Message Count / Turn Count conditions.
+**Can I use triggers/conditions on Chinese/Japanese/Korean chats?**
+Yes. Keyword/pattern matching uses plain substring search, so it works for CJK the same as English. The only caveat is user-written regex using ASCII `\b` word boundaries (which don't fire between CJK characters) — use plain substrings or Unicode `\p{L}` with the `u` flag. Numeric conditions (Message Count / Turn Count) are always language-independent.
 
 **How do I delete a collection safely?**
 **ALWAYS use the Database Browser inside VectFox** (Action tab → "Database Browser" button) to delete collections. Click the red "Delete" button on the collection card. This properly cleans up both the vector database **and** VectFox's internal registry + metadata. Never delete collections manually from Qdrant's web UI or by editing SillyTavern's `settings.json` — doing so leaves orphaned metadata that causes sync conflicts, "collection not found" errors, and other strange behavior.

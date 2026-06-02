@@ -51,7 +51,6 @@ conditional-activation.js
 content-vectorization.js
 core-vector-api.js
 corpus-stats.js
-emotion-classifier.js
 png-export.js
 world-info-integration.js
 collection-ids.js

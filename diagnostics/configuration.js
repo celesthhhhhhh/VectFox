@@ -10,7 +10,7 @@
  */
 
 import { getSavedHashes } from '../core/core-vector-api.js';
-import { VALID_EMOTIONS, VALID_GENERATION_TYPES, validateConditionRule } from '../core/conditional-activation.js';
+import { VALID_GENERATION_TYPES, validateConditionRule } from '../core/conditional-activation.js';
 import { isCollectionEnabled } from '../core/collection-metadata.js';
 import { getCollectionRegistry } from '../core/collection-loader.js';
 
@@ -255,15 +255,6 @@ export function checkCollectionIdFormat() {
  */
 export function checkConditionalActivationModule() {
     try {
-        if (!VALID_EMOTIONS || VALID_EMOTIONS.length === 0) {
-            return {
-                name: 'Conditional Activation',
-                status: 'fail',
-                message: 'VALID_EMOTIONS not loaded correctly',
-                category: 'configuration'
-            };
-        }
-
         if (!VALID_GENERATION_TYPES || VALID_GENERATION_TYPES.length === 0) {
             return {
                 name: 'Conditional Activation',
@@ -285,7 +276,7 @@ export function checkConditionalActivationModule() {
         return {
             name: 'Conditional Activation',
             status: 'pass',
-            message: `Module loaded (${VALID_EMOTIONS.length} emotions, ${VALID_GENERATION_TYPES.length} gen types)`,
+            message: `Module loaded (${VALID_GENERATION_TYPES.length} gen types)`,
             category: 'configuration'
         };
     } catch (error) {

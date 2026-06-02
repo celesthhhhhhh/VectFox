@@ -722,29 +722,25 @@ A3 leverages **all four** of Qdrant's relevant server-side features:
 
 ---
 
-## 12) Trigger / Condition Activation — English Only
+## 12) Trigger / Condition Activation — Language-Neutral
 
-Activation Triggers and Advanced Conditions (Collection Settings → Activation panel) are **English-only**. They do not work reliably for CJK (Chinese / Japanese / Korean) stories.
+Activation Triggers and Advanced Conditions (Collection Settings → Activation panel) are **language-neutral**. They work for CJK (Chinese / Japanese / Korean) stories the same as for English.
 
-### Why
+### Why it works for any language
 
-**Triggers** match keywords against recent messages using JavaScript `String.includes()` and `/\b.../` regex anchors. `\b` is an ASCII word-boundary — it does not fire between CJK characters, so regex triggers will never match CJK text. Plain-string triggers (`includes()`) technically match substrings, but CJK chat messages lack the whitespace separators that make keyword matching useful, so hit rates are extremely low.
+**Triggers** and the text-matching conditions (`pattern` / `speaker` / `characterPresent` / `lorebookActive`) match against recent messages with JavaScript `String.includes()` — see `checkTriggers()` in `core/collection-metadata.js` and `evaluatePatternCondition()` in `core/conditional-activation.js`. Substring matching is inherently language-neutral: `"贖身".includes("贖身")` is `true` regardless of script or whitespace. There is no tokenization or word-boundary assumption in the plain-string path.
 
-**Advanced Conditions → Emotion** relies on two detection paths, both English-only:
+**Numeric / structural conditions** — Message Count, Swipe Count, Time of Day, Generation Type, Group Chat, Random Chance, plus the chunk-only Recency / Frequency / Score Threshold — never inspect text and are trivially language-independent.
 
-1. **Character Expressions classifier (primary)**: The sprite classification model bundled with the Character Expressions SillyTavern extension is trained on English text. CJK input produces unreliable or random emotion labels.
-2. **`EMOTION_KEYWORDS` fallback (secondary)**: Defined in `core/conditional-activation.js` → `EMOTION_KEYWORDS`. Every entry is an English word or English regex pattern (e.g. `joy: ['joy', 'happy', 'smile', '/\\b(grin|beam)\\w*/i']`). Zero CJK coverage.
+**Manual always-on** — "Active for current chat" and Character lock have no language dependency.
 
-**Advanced Conditions → Message Contains / Pattern** also use `includes()` / regex with `\b` anchors — same limitation as Triggers.
+### One caveat: user-supplied regex
 
-### What works for CJK
+A trigger or `pattern` value wrapped in `/.../` is run as a real `RegExp`. If *you* type an ASCII word-boundary (`\b`) in that regex, it will not fire between CJK characters — that is a property of the regex you wrote, not of VectFox. For CJK, prefer plain substrings, or use Unicode word boundaries with the `u` flag (e.g. `/\p{L}+/u`).
 
-- **Active for current chat / Character lock** (manual always-on) — no language dependency.
-- **Advanced Conditions → Message Count / Turn Count** — purely numeric, language-independent.
+### Removed: the Emotion condition (2026-06-02)
 
-### If CJK keyword matching is needed
-
-Add CJK terms to `EMOTION_KEYWORDS` in `core/conditional-activation.js`, or extend `matchesEmotionPatterns()` to use `\p{L}` Unicode word boundaries (requires the `u` flag on the regex). Neither is implemented as of 2026-05-11.
+The **Emotion** condition and the standalone **Cotton-Tales emotion classifier** were removed. They were the only genuinely English-locked paths in the extension: the condition relied on a hardcoded English `EMOTION_KEYWORDS` list plus the English-trained Character Expressions sprite classifier, and the Cotton-Tales classifier recommended English-only transformers.js models. With them gone, the activation system has **10** condition types (was 11) and no language-dependent code remains. The multilingual sparse-search stack (`language-modes.js`, `stop-words.js`, `bm25-scorer.js`) is unaffected.
 
 ---
 

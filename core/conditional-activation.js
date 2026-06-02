@@ -13,177 +13,7 @@
 import { log } from './log.js';
 
 // ============================================================================
-// EXPRESSIONS EXTENSION INTEGRATION
-// ============================================================================
-
-// Try to import expressions extension for emotion detection
-let expressionsExtension = null;
-let expressionsExtensionStatus = {
-    available: false,
-    enabled: false,
-    lastCheck: null,
-    error: null,
-};
-
-/**
- * Initializes the expressions extension integration
- * Called during module load
- */
-async function initExpressionsExtension() {
-    try {
-        // Dynamic import of expressions extension (may not be available)
-        const module = await import('../../../expressions/index.js');
-        expressionsExtension = module;
-        expressionsExtensionStatus.available = true;
-        expressionsExtensionStatus.enabled = true;
-        expressionsExtensionStatus.lastCheck = Date.now();
-        log.lifecycle('VectFox Conditions: Character Expressions extension loaded for emotion detection');
-    } catch (e) {
-        expressionsExtensionStatus.available = false;
-        expressionsExtensionStatus.enabled = false;
-        expressionsExtensionStatus.error = e.message;
-        expressionsExtensionStatus.lastCheck = Date.now();
-        log.lifecycle('VectFox Conditions: Character Expressions extension not available, using keyword-based emotion detection');
-    }
-}
-
-// Initialize on module load
-initExpressionsExtension();
-
-/**
- * Gets the current status of the Character Expressions extension integration
- * @returns {object} Status object with availability info and user message
- */
-export function getExpressionsExtensionStatus() {
-    const status = { ...expressionsExtensionStatus };
-
-    if (status.available && status.enabled) {
-        status.message = 'Character Expressions extension is active. Emotion detection uses sprite-based detection with keyword fallback.';
-        status.level = 'success';
-    } else if (status.available && !status.enabled) {
-        status.message = 'Character Expressions extension is installed but disabled. Enable it for enhanced emotion detection.';
-        status.level = 'warning';
-    } else {
-        status.message = 'Character Expressions extension not found. Emotion detection uses keyword matching only. Install the extension for sprite-based emotion detection.';
-        status.level = 'info';
-    }
-
-    return status;
-}
-
-/**
- * Re-checks expressions extension availability
- * Call this if user enables/disables the extension
- */
-export async function recheckExpressionsExtension() {
-    await initExpressionsExtension();
-    return getExpressionsExtensionStatus();
-}
-
-// ============================================================================
-// EMOTION KEYWORDS & PATTERNS
-// ============================================================================
-
-/**
- * Enhanced emotion patterns - supports both plain keywords and regex patterns.
- * Maps emotion names to arrays of patterns for fallback detection.
- *
- * Pattern format:
- * - Plain string: 'happy' (case-insensitive contains match)
- * - Regex string: '/laugh(s|ed|ing)?/i' (parsed as RegExp)
- *
- * These patterns are used when Character Expressions extension is unavailable
- * or as a fallback when expressions don't match.
- *
- * NOTE: Future expansion planned for ML-based emotion detection.
- * See collection-metadata.js for roadmap notes.
- */
-export const EMOTION_KEYWORDS = {
-    // Positive emotions
-    joy: ['joy', 'happy', 'smile', 'laugh', 'glad', 'cheerful', 'delighted', 'pleased', 'joyful', 'happiness', '/\\b(grin|beam|radiat)\\w*/i'],
-    amusement: ['amusement', 'amused', 'funny', 'humorous', 'entertaining', 'playful', '/\\b(giggl|chuckl|snicker)\\w*/i'],
-    love: ['love', 'adore', 'cherish', 'affection', 'beloved', 'loving', 'tender', '/\\b(heart|sweetheart|darling)\\b/i'],
-    caring: ['caring', 'care', 'compassion', 'kind', 'gentle', 'nurturing', 'supportive', '/\\b(comfort|sooth|consol)\\w*/i'],
-    admiration: ['admiration', 'admire', 'respect', 'impressed', 'awe', 'wonderful', '/\\b(amaz|incredibl|remarkab)\\w*/i'],
-    approval: ['approval', 'approve', 'agree', 'accept', 'support', 'endorse', '/\\b(nod|yes|correct)\\b/i'],
-    excitement: ['excitement', 'excited', 'thrilled', 'energetic', 'pumped', 'hyped', 'enthusiastic', '/!{2,}/'],
-    gratitude: ['gratitude', 'grateful', 'thankful', 'thanks', 'appreciate', 'appreciation', '/\\bthank\\w*/i'],
-    optimism: ['optimism', 'optimistic', 'hopeful', 'positive', 'confident', 'upbeat', '/\\b(bright|promis)\\w*/i'],
-    pride: ['pride', 'proud', 'accomplished', 'achievement', 'success', 'triumphant'],
-    relief: ['relief', 'relieved', 'ease', 'calm', 'relaxed', 'unburdened', '/\\b(phew|sigh|finally)\\b/i'],
-    desire: ['desire', 'want', 'wish', 'crave', 'yearn', 'longing', 'passion', '/\\b(need|must have)\\b/i'],
-
-    // Negative emotions
-    anger: ['anger', 'angry', 'mad', 'furious', 'rage', 'hostile', 'wrath', 'irate', '/!{3,}/', '/\\b(damn|hell|fury)\\b/i'],
-    annoyance: ['annoyance', 'annoyed', 'irritated', 'bothered', 'frustrated', 'vexed', '/\\b(ugh|argh|tsk)\\b/i'],
-    disapproval: ['disapproval', 'disapprove', 'disagree', 'reject', 'oppose', 'condemn', '/\\b(no|wrong|bad)\\b/i'],
-    disgust: ['disgust', 'disgusted', 'repulsed', 'revolted', 'nauseated', 'repelled', '/\\b(ew+|gross|yuck)\\b/i'],
-    sadness: ['sadness', 'sad', 'unhappy', 'miserable', 'sorrowful', 'melancholy', 'down', '/\\b(cry|tear|sob|weep)\\w*/i'],
-    grief: ['grief', 'grieving', 'mourn', 'loss', 'bereavement', 'heartbroken', '/\\b(lost|gone|miss)\\w*/i'],
-    disappointment: ['disappointment', 'disappointed', 'letdown', 'dissatisfied', 'disheartened'],
-    remorse: ['remorse', 'regret', 'guilty', 'ashamed', 'sorry', 'repentant', '/\\b(apolog|forgive)\\w*/i'],
-    embarrassment: ['embarrassment', 'embarrassed', 'awkward', 'self-conscious', 'humiliated', 'flustered', '/\\b(blush|flush)\\w*/i'],
-    fear: ['fear', 'afraid', 'scared', 'terrified', 'frightened', 'dread', 'alarmed', '/\\b(trembl|shak|shiver)\\w*/i'],
-    nervousness: ['nervousness', 'nervous', 'anxious', 'worried', 'uneasy', 'jittery', 'tense', '/\\b(sweat|fidget|pace)\\w*/i'],
-
-    // Mixed/Neutral emotions
-    surprise: ['surprise', 'surprised', 'shocked', 'amazed', 'astonished', 'startled', 'stunned', '/\\b(what|wow|oh)\\b/i', '/\\?{2,}/'],
-    curiosity: ['curiosity', 'curious', 'interested', 'intrigued', 'inquisitive', 'wondering', '/\\b(hmm+|wonder)\\w*/i'],
-    confusion: ['confusion', 'confused', 'puzzled', 'perplexed', 'bewildered', 'uncertain', '/\\b(huh|what|eh)\\?/i'],
-    realization: ['realization', 'realize', 'understand', 'comprehend', 'grasp', 'see', 'aha', '/\\b(oh!|aha|eureka)\\b/i'],
-    neutral: [] // Neutral has no keywords
-};
-
-/**
- * List of all valid emotion names
- */
-export const VALID_EMOTIONS = Object.keys(EMOTION_KEYWORDS);
-
-/**
- * Parses a pattern string into a matcher function
- * @param {string} pattern - Plain string or regex pattern (e.g., '/pattern/flags')
- * @returns {function} Function that takes text and returns boolean
- */
-function parseEmotionPattern(pattern) {
-    // Check if it's a regex pattern
-    if (pattern.startsWith('/')) {
-        const match = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
-        if (match) {
-            try {
-                const regex = new RegExp(match[1], match[2]);
-                return (text) => regex.test(text);
-            } catch (e) {
-                log.warn(`VectFox: Invalid regex pattern: ${pattern}`, e);
-                return () => false;
-            }
-        }
-    }
-
-    // Plain string - case-insensitive contains
-    const lowerPattern = pattern.toLowerCase();
-    return (text) => text.toLowerCase().includes(lowerPattern);
-}
-
-/**
- * Checks if text matches any pattern for an emotion
- * @param {string} emotionName - Name of the emotion
- * @param {string} text - Text to check
- * @returns {boolean} Whether any pattern matches
- */
-export function matchesEmotionPatterns(emotionName, text) {
-    const patterns = EMOTION_KEYWORDS[emotionName.toLowerCase()];
-    if (!patterns || patterns.length === 0) {
-        return false;
-    }
-
-    return patterns.some(pattern => {
-        const matcher = parseEmotionPattern(pattern);
-        return matcher(text);
-    });
-}
-
-// ============================================================================
-// COLLECTION & CHUNK CONDITION EVALUATORS (11 types)
+// COLLECTION & CHUNK CONDITION EVALUATORS (10 types)
 // ============================================================================
 // These can be used at both collection-level and chunk-level.
 // Collection-level: Determines if a collection should be queried
@@ -522,121 +352,6 @@ function evaluateTimeOfDayCondition(rule, context) {
 }
 
 /**
- * Evaluates an emotion condition
- * Uses hybrid detection: Character Expressions extension + Enhanced pattern matching
- *
- * Detection methods:
- * - 'auto': Try expressions first, fall back to patterns (RECOMMENDED)
- * - 'expressions': Only use Character Expressions extension
- * - 'patterns': Only use keyword/regex pattern matching
- * - 'both': Must match BOTH expressions AND patterns (strict mode)
- *
- * @param {object} rule Condition rule
- * @param {object} context Search context
- * @returns {boolean} Whether condition is met
- */
-function evaluateEmotionCondition(rule, context) {
-    const settings = rule.settings || { values: [], detectionMethod: 'auto' };
-    const targetEmotions = settings.values || [];
-
-    if (targetEmotions.length === 0) {
-        log.warn('VectFox Conditions: No target emotions selected. Condition fails.');
-        return false;
-    }
-
-    const detectionMethod = settings.detectionMethod || 'auto';
-    let expressionsResult = null; // null = not checked, true/false = result
-    let patternsResult = null;
-
-    // =========================================================================
-    // CHARACTER EXPRESSIONS EXTENSION CHECK
-    // =========================================================================
-    if (detectionMethod !== 'patterns' && expressionsExtension && context.currentCharacter) {
-        try {
-            const detectedEmotion = expressionsExtension.lastExpression?.[context.currentCharacter];
-            if (detectedEmotion) {
-                const matchedEmotion = detectedEmotion.toLowerCase();
-
-                // Check if detected emotion matches any target emotions
-                expressionsResult = targetEmotions.some(target =>
-                    target.toLowerCase() === matchedEmotion
-                );
-
-                if (expressionsResult) {
-                    log.trace(`VectFox Conditions: Expressions match: "${detectedEmotion}" matches target [${targetEmotions.join(', ')}]`);
-                } else {
-                    log.trace(`VectFox Conditions: Expressions detected "${detectedEmotion}" but not in targets [${targetEmotions.join(', ')}]`);
-                }
-            }
-        } catch (error) {
-            log.warn('VectFox Conditions: Failed to get expression:', error);
-        }
-    }
-
-    // =========================================================================
-    // PATTERN MATCHING (keywords + regex)
-    // =========================================================================
-    if (detectionMethod !== 'expressions') {
-        const emotionText = context.recentMessages.join(' ');
-
-        // Check each target emotion's patterns
-        patternsResult = targetEmotions.some(targetEmotion => {
-            const found = matchesEmotionPatterns(targetEmotion, emotionText);
-
-            if (found) {
-                log.trace(`VectFox Conditions: Pattern match: "${targetEmotion}" found in recent messages`);
-            }
-
-            return found;
-        });
-
-        if (!patternsResult) {
-            log.trace(`VectFox Conditions: No pattern match for [${targetEmotions.join(', ')}]`);
-        }
-    }
-
-    // =========================================================================
-    // COMBINE RESULTS BASED ON DETECTION METHOD
-    // =========================================================================
-    let result = false;
-
-    switch (detectionMethod) {
-        case 'expressions':
-            // Expressions only - fail if not available
-            if (expressionsResult === null) {
-                log.warn('VectFox Conditions: Expressions-only mode but extension not available');
-                result = false;
-            } else {
-                result = expressionsResult;
-            }
-            break;
-
-        case 'patterns':
-            // Patterns only
-            result = patternsResult === true;
-            break;
-
-        case 'both':
-            // Both must match (strict mode)
-            if (expressionsResult === null) {
-                log.warn('VectFox Conditions: Both-mode requires expressions extension');
-                result = false;
-            } else {
-                result = expressionsResult === true && patternsResult === true;
-            }
-            break;
-
-        case 'auto':
-        default:
-            // Auto: expressions OR patterns (whichever succeeds)
-            result = expressionsResult === true || patternsResult === true;
-            break;
-    }
-
-    return result;
-}
-
-/**
  * Evaluates a character present condition
  * @param {object} rule Condition rule
  * @param {object} context Search context
@@ -805,10 +520,6 @@ export function evaluateConditionRule(rule, context) {
 
         case 'timeOfDay':
             result = evaluateTimeOfDayCondition(rule, context);
-            break;
-
-        case 'emotion':
-            result = evaluateEmotionCondition(rule, context);
             break;
 
         case 'characterPresent':
@@ -1072,15 +783,6 @@ export function validateConditionRule(rule) {
             }
             break;
 
-        case 'emotion':
-            const emotionValues = rule.settings?.values || [rule.value];
-            for (const emotion of emotionValues) {
-                if (emotion && !VALID_EMOTIONS.includes(emotion.toLowerCase())) {
-                    errors.push(`Unknown emotion: "${emotion}". Valid emotions: ${VALID_EMOTIONS.join(', ')}`);
-                }
-            }
-            break;
-
         case 'randomChance':
             const chance = rule.settings?.probability ?? parseInt(rule.value);
             if (isNaN(chance) || chance < 0 || chance > 100) {
@@ -1258,13 +960,6 @@ export default {
     // Statistics
     getConditionStats,
 
-    // Emotion detection
-    getExpressionsExtensionStatus,
-    recheckExpressionsExtension,
-    matchesEmotionPatterns,
-
     // Constants
-    EMOTION_KEYWORDS,
-    VALID_EMOTIONS,
     VALID_GENERATION_TYPES
 };

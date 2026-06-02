@@ -57,9 +57,7 @@ import {
 } from "../core/collection-metadata.js";
 import { getContext } from "../../../../extensions.js";
 import {
-  VALID_EMOTIONS,
   VALID_GENERATION_TYPES,
-  getExpressionsExtensionStatus,
 } from "../core/conditional-activation.js";
 import { world_names, loadWorldInfo } from "../../../../world-info.js";
 import { icons } from "./icons.js";
@@ -1864,7 +1862,6 @@ const CONDITION_TYPES = [
     label: "#️⃣ Message Count",
     desc: "Conversation length check",
   },
-  { value: "emotion", label: "😊 Emotion", desc: "Detect emotional tone" },
   { value: "isGroupChat", label: "👪 Group Chat", desc: "Group vs 1-on-1" },
   {
     value: "generationType",
@@ -2530,31 +2527,6 @@ function renderConditionSettings(rule, index) {
                     <option value="gte" ${settings.operator === "gte" ? "selected" : ""}>At least</option>
                     <option value="lte" ${settings.operator === "lte" ? "selected" : ""}>At most</option>
                 </select>
-            `;
-
-    case "emotion":
-      const emotionOptions = VALID_EMOTIONS.map(
-        (e) =>
-          `<option value="${e}" ${(settings.values || []).includes(e) ? "selected" : ""}>${e}</option>`,
-      ).join("");
-      const expressionsStatus = getExpressionsExtensionStatus();
-      return `
-                <div class="vectfox-emotion-condition-wrapper">
-                    <div class="vectfox-conditions-notice vectfox-notice-${expressionsStatus.level} vectfox-emotion-notice">
-                        ${expressionsStatus.message}
-                    </div>
-                    <div class="vectfox-emotion-controls">
-                        <select multiple data-field="values" data-rule-index="${index}" class="vectfox-multi-select">
-                            ${emotionOptions}
-                        </select>
-                        <select data-field="detectionMethod" data-rule-index="${index}">
-                            <option value="auto" ${settings.detectionMethod === "auto" ? "selected" : ""}>Auto (recommended)</option>
-                            <option value="expressions" ${settings.detectionMethod === "expressions" ? "selected" : ""}>Expressions only</option>
-                            <option value="patterns" ${settings.detectionMethod === "patterns" ? "selected" : ""}>Patterns only</option>
-                            <option value="both" ${settings.detectionMethod === "both" ? "selected" : ""}>Both must match</option>
-                        </select>
-                    </div>
-                </div>
             `;
 
     case "isGroupChat":

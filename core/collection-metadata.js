@@ -92,7 +92,6 @@ const defaultCollectionMeta = {
  * - speaker:          Match by who spoke last
  * - characterPresent: Check if specific character(s) spoke recently
  * - messageCount:     Conversation length pacing (eq, gte, lte, between)
- * - emotion:          Hybrid emotion detection (Expressions + patterns)
  * - isGroupChat:      Group vs 1-on-1 chat
  * - generationType:   Normal, swipe, continue, regenerate, impersonate
  * - lorebookActive:   Specific lorebook entries are triggered
@@ -112,12 +111,6 @@ const defaultCollectionMeta = {
  * - recency:          Filter by message age (messagesAgo)
  * - frequency:        Limit activations (maxActivations, cooldownMessages)
  *
- * EMOTION DETECTION:
- * Uses hybrid approach with Character Expressions extension + keyword/regex patterns.
- * Detection methods: 'auto' (recommended), 'expressions', 'patterns', 'both'
- * - Character Expressions: Uses sprite-based emotion from last message
- * - Pattern matching: Keywords + regex patterns (wrapped in forward slashes)
- * Call getExpressionsExtensionStatus() to check if extension is available.
  * See: conditional-activation.js for full implementation.
  * ============================================================================
  */

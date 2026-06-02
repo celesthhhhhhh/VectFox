@@ -3,7 +3,7 @@
  * VectFox DIAGNOSTICS - ACTIVATION TESTS
  * ============================================================================
  * Comprehensive tests for conditional activation system
- * Tests all 11 condition types + activation triggers + chunk-only features
+ * Tests all 10 condition types + activation triggers + chunk-only features
  * Returns individual test results for each condition type
  *
  * @author Kritblade
@@ -26,7 +26,6 @@ export async function testConditionalActivation() {
             filterChunksByConditions,
             validateConditionRule,
             processChunkLinks,
-            VALID_EMOTIONS,
             VALID_GENERATION_TYPES
         } = await import('../core/conditional-activation.js');
 
@@ -102,10 +101,6 @@ export async function testConditionalActivation() {
         // Test: Time of day (always valid range)
         const timeRule = { type: 'timeOfDay', settings: { startTime: '00:00', endTime: '23:59' } };
         addTest('Time of Day', evaluateConditionRule(timeRule, context) === true, 'Within 00:00-23:59');
-
-        // Test: Emotion detection
-        const emotionRule = { type: 'emotion', settings: { values: ['joy', 'excitement'], detectionMethod: 'patterns' } };
-        addTest('Emotion', evaluateConditionRule(emotionRule, context) === true, 'Detected joy/excitement');
 
         // Test: Swipe count
         const swipeContext = { ...context, swipeCount: 2 };

@@ -944,8 +944,6 @@ function formatConditionRule(rule) {
                 return `${negation}Message Count ${operator} ${count}`;
             }
             return `${negation}Message Count: ${value}`;
-        case 'emotion':
-            return `${negation}Emotion: ${value}`;
         case 'isGroupChat':
             return `${negation}Is Group Chat`;
         case 'timeOfDay':
@@ -1439,7 +1437,6 @@ const CONDITION_TYPES = [
     { value: 'pattern', label: 'Pattern Match', icon: '🔍' },
     { value: 'speaker', label: 'Speaker', icon: '💬' },
     { value: 'messageCount', label: 'Message Count', icon: '📊' },
-    { value: 'emotion', label: 'Emotion', icon: '😊' },
     { value: 'isGroupChat', label: 'Group Chat', icon: '👥' },
     { value: 'timeOfDay', label: 'Time of Day', icon: '🕐' },
     { value: 'randomChance', label: 'Random Chance', icon: '🎲' },

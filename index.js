@@ -29,6 +29,7 @@ import { migrateOldEnabledKeys } from './core/collection-metadata.js';
 import { clearCollectionRegistry, discoverExistingCollections, cleanupCorruptedCollections } from './core/collection-loader.js';
 import { migrateLegacyApiKeys } from './core/api-keys.js';
 import AsyncUtils from './utils/async-utils.js';
+import { log } from './core/log.js';
 
 // VectFox modules - UI
 import { renderSettings, openDiagnosticsModal, loadWebLlmModels, updateWebLlmStatus, refreshAutoSyncCheckbox } from './ui/ui-manager.js';
@@ -404,7 +405,7 @@ async function onPurgeClick() {
         toastr.success('All vector data purged', 'Purge Complete');
 
     } catch (error) {
-        console.error('VectFox: Purge failed:', error);
+        log.error('VectFox: Purge failed:', error);
         toastr.error('Purge failed: ' + error.message);
     }
 }
@@ -442,7 +443,7 @@ async function onCleanupCorruptedClick() {
             toastr.warning(summary, 'Cleanup Partial');
         }
     } catch (error) {
-        console.error('VectFox: Cleanup failed:', error);
+        log.error('VectFox: Cleanup failed:', error);
         toastr.error('Cleanup failed: ' + error.message);
     }
 }
@@ -458,7 +459,7 @@ function onRunDiagnosticsClick() {
  * Initialize VectFox extension
  */
 jQuery(async () => {
-    console.log('VectFox: Initializing...');
+    log.lifecycle('VectFox: Initializing...');
 
     // Load saved settings
     if (!extension_settings.vectfox) {
@@ -478,7 +479,7 @@ jQuery(async () => {
     // Migrate old scattered enabled keys to new collections structure
     const migrationResult = migrateOldEnabledKeys();
     if (migrationResult.migrated > 0) {
-        console.log(`VectFox: Migrated ${migrationResult.migrated} old collection enabled keys`);
+        log.lifecycle(`VectFox: Migrated ${migrationResult.migrated} old collection enabled keys`);
     }
 
     // Migrate legacy EventBase LLM overrides → unified Core summarize settings.
@@ -524,7 +525,7 @@ jQuery(async () => {
     try {
         await migrateLegacyApiKeys();
     } catch (err) {
-        console.warn('[VectFox] migrateLegacyApiKeys failed:', err?.message || err);
+        log.warn('[VectFox] migrateLegacyApiKeys failed:', err?.message || err);
         // Non-fatal — readers fall back to legacy plaintext slots if migration didn't complete.
     }
 
@@ -557,18 +558,18 @@ jQuery(async () => {
     if (settings.cjk_tokenizer_mode === CJK_TOKENIZER_MODES.jieba) {
         ensureJiebaTokenizerLoaded().then((ok) => {
             if (ok) {
-                console.log('VectFox CJK: Jieba tokenizer initialized');
+                log.lifecycle('VectFox CJK: Jieba tokenizer initialized');
             } else {
-                console.warn('VectFox CJK: Jieba tokenizer unavailable, using Intl.Segmenter fallback');
+                log.warn('VectFox CJK: Jieba tokenizer unavailable, using Intl.Segmenter fallback');
             }
         });
     }
     if (settings.cjk_tokenizer_mode === CJK_TOKENIZER_MODES.jieba_tw) {
         ensureJiebaTwLoaded().then((ok) => {
             if (ok) {
-                console.log('VectFox CJK: Jieba TW tokenizer initialized');
+                log.lifecycle('VectFox CJK: Jieba TW tokenizer initialized');
             } else {
-                console.warn('VectFox CJK: Jieba TW tokenizer unavailable, using Intl.Segmenter fallback');
+                log.warn('VectFox CJK: Jieba TW tokenizer unavailable, using Intl.Segmenter fallback');
             }
         });
     }
@@ -605,15 +606,15 @@ jQuery(async () => {
                     maxDelay: 10000,
                     backoffFactor: 2,
                     onRetry: (attempt, error) => {
-                        console.warn(`VectFox: Collection discovery attempt ${attempt} failed: ${error.message}. Retrying...`);
+                        log.warn(`VectFox: Collection discovery attempt ${attempt} failed: ${error.message}. Retrying...`);
                     }
                 }
             );
             if (collections.length > 0) {
-                console.log(`VectFox: Discovered ${collections.length} existing collections`);
+                log.lifecycle(`VectFox: Discovered ${collections.length} existing collections`);
             }
         } catch (err) {
-            console.error('VectFox: Collection discovery failed after retries:', err.message);
+            log.error('VectFox: Collection discovery failed after retries:', err.message);
             toastr.warning(
                 'Could not discover existing collections. Open Database Browser to refresh manually.',
                 'VectFox: Collection Discovery Failed',
@@ -626,7 +627,7 @@ jQuery(async () => {
     if (settings.vector_backend === 'qdrant') {
         import('./core/eventbase-store.js').then(({ ensureEventBaseIndexes }) => {
             ensureEventBaseIndexes(settings).catch(err => {
-                console.warn('[VectFox] EventBase index backfill failed:', err);
+                log.warn('[VectFox] EventBase index backfill failed:', err);
             });
         }).catch(() => {});
     }
@@ -639,9 +640,9 @@ jQuery(async () => {
             if (resp.ok) {
                 const { pluginVersion } = await resp.json();
                 if (pluginVersion !== SIMILHARITY_EXPECTED_VERSION) {
-                    console.warn(`[VectFox] VERSION MISMATCH: expected similharity v${SIMILHARITY_EXPECTED_VERSION}, got v${pluginVersion}. Pull matching versions.`);
+                    log.warn(`[VectFox] VERSION MISMATCH: expected similharity v${SIMILHARITY_EXPECTED_VERSION}, got v${pluginVersion}. Restart SillyTavern to let it auto-update the server plugin.`);
                     toastr.warning(
-                        `similharity version mismatch (expected ${SIMILHARITY_EXPECTED_VERSION}, got ${pluginVersion}) — see console`,
+                        `similharity version mismatch (expected ${SIMILHARITY_EXPECTED_VERSION}, got ${pluginVersion}). Please restart SillyTavern so it can auto-update the server plugin.`,
                         'VectFox',
                         { timeOut: 10000 }
                     );
@@ -665,7 +666,7 @@ jQuery(async () => {
     // When WebLLM extension is loaded, refresh the model list
     eventSource.on(event_types.EXTENSION_SETTINGS_LOADED, async (manifest) => {
         if (settings.source === 'webllm' && manifest?.display_name === 'WebLLM') {
-            console.log('VectFox: WebLLM extension loaded, refreshing models...');
+            log.lifecycle('VectFox: WebLLM extension loaded, refreshing models...');
             updateWebLlmStatus();
             await loadWebLlmModels(settings);
         }
@@ -673,11 +674,11 @@ jQuery(async () => {
 
     // When chat changes, refresh UI state to match settings
     eventSource.on(event_types.CHAT_CHANGED, () => {
-        console.log('VectFox: Chat changed, refreshing UI state');
+        log.lifecycle('VectFox: Chat changed, refreshing UI state');
         refreshAutoSyncCheckbox(settings);
     });
 
-    console.log('VectFox: ✅ Initialized successfully');
+    log.lifecycle('VectFox: ✅ Initialized successfully');
 });
 
 /**
@@ -686,6 +687,6 @@ jQuery(async () => {
  * instead of serving stale cached versions.
  */
 export async function onUpdate() {
-    console.log('VectFox: Update detected — reloading page to clear module cache');
+    log.lifecycle('VectFox: Update detected — reloading page to clear module cache');
     location.reload();
 }

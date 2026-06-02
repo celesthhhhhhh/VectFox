@@ -879,6 +879,17 @@ If you are about to write code that:
 
 The Similharity plugin (`/api/plugins/similharity/*`) was built for Qdrant. Its relationship with the standard backend follows strict rules.
 
+### Cross-repo version check (where to hunt)
+
+VectFox warns when the installed similharity server plugin doesn't match the version VectFox expects. Code lives in **`index.js`** inside the `jQuery(async () => …)` init block, marked **`// D5: Cross-repo version check`**:
+
+- Constant `SIMILHARITY_EXPECTED_VERSION` (keep in sync with `manifest.json` `version`).
+- Fetches `/api/plugins/similharity/version`, compares `pluginVersion` with **exact `!==`** (not semver `<`).
+- On mismatch: `log.warn(...)` + a `toastr.warning` telling the user to **restart SillyTavern so it auto-updates the server plugin**. Soft warning only — init continues.
+- Plugin not installed → silently ignored (`catch`), since that's a separate concern.
+
+Search hint: grep `SIMILHARITY_EXPECTED_VERSION` or `D5:`.
+
 ### Deployment scope — local / LAN only
 
 **VectFox + Similharity is designed for a single-user SillyTavern install on the user's own machine (or private LAN).** It is NOT designed for:

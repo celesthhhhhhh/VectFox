@@ -162,17 +162,16 @@ All four merge with the original search and feed the same 4-weight re-ranker. Th
 
 Most existing memory extensions use one of two approaches. Both lose detail as the chat grows. Here's why — and how EventBase avoids it:
 
-
-| Aspect                      | 📝 Rolling Summary<br>*(most "memory" extensions)*                        | ✂️ Raw Chunking<br>*(older vector RAG)*                              | 🧬 EventBase<br>*(VectFox)*                                                                                            |
-| ----------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| **What gets stored**        | One ever-growing summary text                                             | Every message cut into raw chunks                                      | Structured event records with metadata                                                                                 |
-| **At msg 100**              | Mostly intact                                                             | Intact                                                                 | Intact                                                                                                                 |
-| **At msg 200**              | Heavily compressed — names, numbers, and one-off details drift or vanish | Token budget overflow — older chunks score-pruned or dropped          | **Intact** — old events still in DB, surfaced by relevance                                                            |
-| **At msg 1,000+**           | Effectively a blur                                                        | DB bloat; retrieval gets noisy because raw chunks are low signal       | **Intact** — only the few events relevant to the current scene are pulled                                             |
-| **What "compression" does** | Re-summarizes the summary recursively, so every pass loses information    | None — but no synthesis either; raw text is hit-or-miss for retrieval | One-time, semantic — extracts*the meaningful event* and drops filler. Detail in the event itself is preserved.        |
-| **Retrieval signal**        | None — the whole summary is always injected                              | Vector similarity over raw text (catches paraphrases but also noise)   | Vector + BM25 hybrid over rich fields (`characters`, `items`, `locations`, `concepts`, `keywords`, `open_threads`, plus dense meaning) |
-| **Where detail goes**       | Lost forever once compressed                                              | Lost when chunk drops below score threshold                            | **Doesn't go anywhere** — events live in the vector DB and surface when relevant                                      |
-| **What gets injected**      | The whole running summary (every turn, every time)                        | A few semantically-close raw messages                                  | Only the events that matter for the current message                                                                    |
+| Aspect                      | 📝 Rolling Summary<br>*(most "memory" extensions)*                      | ✂️ Raw Chunking<br>*(older vector RAG)*                              | 🧬 EventBase<br>*(VectFox)*                                                                         |
+| --------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **What gets stored**        | One ever-growing summary text                                            | Every message cut into raw chunks                                     | Structured event records with metadata                                                               |
+| **At msg 100**              | Mostly intact                                                            | Intact                                                                | Intact                                                                                               |
+| **At msg 200**              | Heavily compressed — names, numbers, and one-off details drift or vanish | Token budget overflow — older chunks score-pruned or dropped          | **Intact** — old events still in DB, surfaced by relevance                                           |
+| **At msg 1,000+**           | Effectively a blur                                                       | DB bloat; retrieval gets noisy because raw chunks are low signal      | **Intact** — only the few events relevant to the current scene are pulled                            |
+| **What "compression" does** | Re-summarizes the summary recursively, so every pass loses information   | None — but no synthesis either; raw text is hit-or-miss for retrieval | One-time, semantic — extracts*the meaningful event* and drops filler. Detail in the event itself is preserved. |
+| **Retrieval signal**        | None — the whole summary is always injected                              | Vector similarity over raw text (catches paraphrases but also noise)  | Vector + BM25 hybrid over rich fields (`characters`, `items`, `locations`, `concepts`, `keywords`, `open_threads`, plus dense meaning) |
+| **Where detail goes**       | Lost forever once compressed                                             | Lost when chunk drops below score threshold                           | **Doesn't go anywhere** — events live in the vector DB and surface when relevant                     |
+| **What gets injected**      | The whole running summary (every turn, every time)                       | A few semantically-close raw messages                                 | Only the events that matter for the current message                                                  |
 
 **The core insight:** rolling summaries lose detail because they *throw away* old content to make room. Raw chunking loses detail because *retrieval breaks* at scale. EventBase keeps every meaningful event around forever — and lets vector + keyword search decide which 5–10 of them are worth showing the AI right now. Detail isn't compressed; **irrelevance is filtered**.
 
@@ -227,24 +226,22 @@ The browser only handles anchor boost (phrase matching), pairwise dedup, and the
 
 **Tradeoff:** Best accuracy, fastest at scale. Requires a Qdrant instance (free, open-source). → [Qdrant installation guide](Doc/Qdrant_install.md)
 
-
-| What runs where                  | A1 — Standard + BM25                                | A2 — Standard + Hybrid                                  | A3 — Qdrant Native                                                       |
-| ---------------------------------- | ----------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Requires Qdrant                  | ❌ No                                               | ❌ No                                                   | ✅ Yes (free, open-source)                                                |
-| **Keyword search scope**         | Scores top ~100 dense candidates only (`topK × 2`, cap 100) | Scores top ~100 dense candidates only (`topK × 3`, cap 100) | **Searches every event in the collection by keywords** (sparse index)    |
-| BM25 IDF weights                 | Corpus-wide (default on)                            | Corpus-wide (default on)                                | Corpus-wide (server-side, always)                                        |
-| Recall ceiling                   | Bounded by dense vector top-K                       | Bounded by dense vector top-K                           | **Union of dense + sparse results** — keyword-only matches still surface |
-| Vector + BM25 score fusion       | Weighted-sum `0.5·v + 0.5·bm25`, browser            | RRF + dual-signal bonus (+0–8%) + single-signal penalty (×0.55 / ×0.60), browser | **Server-side native RRF over dense + sparse vectors, 1 call**           |
-| Importance / recency re-ranking  | Browser JS                                          | Browser JS                                              | **Server-side formula** (Qdrant ≥ 1.13)                                  |
-| Minimum importance filter        | Browser JS                                          | Browser JS                                              | **Server-side**                                                          |
-| Context dedup filter             | Browser JS                                          | Browser JS                                              | **Server-side**                                                          |
-| AgentMode semantic pre-filtering | ❌ Not supported                                    | ❌ Not supported                                        | **Server-side** (characters, locations, factions, concepts, event type)  |
-| Network calls per query          | 1                                                   | 1                                                       | **1** (hybrid + rerank + filter, all in one)                             |
-| Scale ceiling                    | Hundreds of events (sub-second BM25 over ANN top-K) | Hundreds of events (sub-second BM25 over ANN top-K)     | **Thousands+ events** (sparse index, server-side rerank)                 |
-
+| What runs where                  | A1 — Standard + BM25                                        | A2 — Standard + Hybrid                                                           | A3 — Qdrant Native                                                       |
+| -------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Requires Qdrant                  | ❌ No                                                       | ❌ No                                                                            | ✅ Yes (free, open-source)                                               |
+| **Keyword search scope**         | Scores top ~100 dense candidates only (`topK × 2`, cap 100) | Scores top ~100 dense candidates only (`topK × 3`, cap 100)                      | **Searches every event in the collection by keywords** (sparse index)    |
+| BM25 IDF weights                 | Corpus-wide (default on)                                    | Corpus-wide (default on)                                                         | Corpus-wide (server-side, always)                                        |
+| Recall ceiling                   | Bounded by dense vector top-K                               | Bounded by dense vector top-K                                                    | **Union of dense + sparse results** — keyword-only matches still surface |
+| Vector + BM25 score fusion       | Weighted-sum `0.5·v + 0.5·bm25`, browser                    | RRF + dual-signal bonus (+0–8%) + single-signal penalty (×0.55 / ×0.60), browser | **Server-side native RRF over dense + sparse vectors, 1 call**           |
+| Importance / recency re-ranking  | Browser JS                                                  | Browser JS                                                                       | **Server-side formula** (Qdrant ≥ 1.13)                                  |
+| Minimum importance filter        | Browser JS                                                  | Browser JS                                                                       | **Server-side**                                                          |
+| Context dedup filter             | Browser JS                                                  | Browser JS                                                                       | **Server-side**                                                          |
+| AgentMode semantic pre-filtering | ❌ Not supported                                            | ❌ Not supported                                                                 | **Server-side** (characters, locations, factions, concepts, event type)  |
+| Network calls per query          | 1                                                           | 1                                                                                | **1** (hybrid + rerank + filter, all in one)                             |
+| Scale ceiling                    | Hundreds of events (sub-second BM25 over ANN top-K)         | Hundreds of events (sub-second BM25 over ANN top-K)                              | **Thousands+ events** (sparse index, server-side rerank)                 |
 
 | Backend setting                                                 | Path you get |
-| ----------------------------------------------------------------- | -------------- |
+| --------------------------------------------------------------- | ------------ |
 | Standard (Vectra - standard SillyTavern vector format) + BM25   | A1           |
 | Standard (Vectra - standard SillyTavern vector format) + Hybrid | A2           |
 | Qdrant (dedicated vector DB)                                    | A3           |
@@ -326,11 +323,10 @@ Vectorizing a long chat normally processes one window at a time: send window 1 t
 
 The **Parallel Windows** slider (Chunking Strategy section in Vectorize Content) lets you spawn up to **8 LLM extraction + embedding calls at the same time**. Window 1 is being extracted while windows 2–8 are also in flight, dramatically cutting total ingestion time.
 
-
-| Slider value    | Behavior                                                                                                                               |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **1 (safe)**    | One window at a time. Lowest provider load, no risk of rate limits, slowest.                                                           |
-| **2–4**        | Mild parallelism. Good middle ground for most providers.                                                                               |
+| Slider value   | Behavior                                                                                             |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| **1 (safe)**   | One window at a time. Lowest provider load, no risk of rate limits, slowest.                         |
+| **2–4**        | Mild parallelism. Good middle ground for most providers.                                             |
 | **5–8 (fast)** | Aggressive parallelism. Best for cloud providers with high rate limits (OpenRouter, OpenAI, vLLM). May trip rate limits on free tiers. |
 
 Use **1** if you're on a strict rate-limited free tier or a single local GPU. Crank to **8** if you're on a paid cloud provider and want a 2000-message chat ingested in minutes instead of an hour.
@@ -365,9 +361,8 @@ Conditions support emotion (via Character Expressions sprite detection), keyword
 
 ## 📦 Backends
 
-
 | Backend                                                   | Best for                                      | Notes                                                                                 |
-| ----------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| --------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------- |
 | **Standard (Vectra - SillyTavern default vector format)** | Small datasets, multilingual, getting started | No dependencies. Limited to A1/A2 hybrid.                                             |
 | **Qdrant**                                                | Large chats, multilingual, production         | A3 hybrid (best accuracy). Requires Qdrant + Similharity plugin (installation below). |
 
@@ -390,6 +385,7 @@ Use **Qdrant vector database** for any ultra fast and accurate delopment — A3 
 2. Go to **Extensions** panel (puzzle piece icon)
 3. Click **"Install Extension"**
 4. Paste this URL:
+
    ```
    https://github.com/KritBlade/VectFox
    ```
@@ -401,19 +397,21 @@ That's it! VectFox will be downloaded and enabled automatically.
 
 **Required if using Qdrant backend.** Optional if using the Standard backend, but installing it unlocks additional functionality even there:
 
-| Feature | Standard without plugin | Standard with plugin | **Qdrant (Cloud or Local)** ⭐ |
-|---|---|---|---|
-| Event search & injection | ✅ Full functionality | ✅ Full functionality | ✅ Full functionality |
-| Embedding & vectorization | ✅ Works | ✅ Works | ✅ Works |
-| Keywords stored in DB (boost search) | ❌ Saved to local settings only | ✅ Stored in vector DB | ✅ Stored in vector DB |
-| Event importance score | ❌ Lost (native API drops metadata) | ⚠️ Stored, not used in re-rank | ✅ Stored & used in re-rank |
-| View Chunks in Database Browser | ❌ Not available | ✅ Available | ✅ Available |
-| Edit individual chunks | ❌ Not available | ✅ Available | ✅ Available |
-| Search algorithm | A1/A2 hybrid | A1/A2 hybrid | **A3 hybrid (best accuracy)** |
-| Scales to large datasets | ⚠️ Degrades past ~10 k | ⚠️ Degrades past ~10 k | ✅ 100 k+ messages, stays fast |
-| Setup | None | Plugin install | Free cloud account **or** [local install](Doc/Qdrant_install.md) |
+| Feature                              | Standard without plugin             | Standard with plugin            | **Qdrant (Cloud or Local)** ⭐                                   |
+| ------------------------------------ | ----------------------------------- | ------------------------------- | ---------------------------------------------------------------- |
+| Event search & injection             | ✅ Full functionality               | ✅ Full functionality           | ✅ Full functionality                                            |
+| Embedding & vectorization            | ✅ Works                            | ✅ Works                        | ✅ Works                                                         |
+| Keywords stored in DB (boost search) | ❌ Saved to local settings only     | ✅ Stored in vector DB          | ✅ Stored in vector DB                                           |
+| Event importance score               | ❌ Lost (native API drops metadata) | ⚠️ Stored, not used in re-rank | ✅ Stored & used in re-rank                                      |
+| View Chunks in Database Browser      | ❌ Not available                    | ✅ Available                    | ✅ Available                                                     |
+| Edit individual chunks               | ❌ Not available                    | ✅ Available                    | ✅ Available                                                     |
+| Search algorithm                     | A1/A2 hybrid                        | A1/A2 hybrid                    | **A3 hybrid (best accuracy)**                                    |
+| Scales to large datasets             | ⚠️ Degrades on long story          | ⚠️ Degrades on long story      | ✅ 10 k+ messages, stays fast                                    |
+| Setup                                | None                                | Plugin install                  | Plugin install + Free cloud account **or** [local install](Doc/Qdrant_install.md) |
 
 If you are on the Standard backend and do not install the plugin, event search and injection still work correctly — you just won't have chunk inspection or keyword metadata. For the best retrieval quality, **Qdrant is strongly recommended** — the free cloud tier at https://qdrant.tech/ requires no local setup at all.
+
+#### Instruction on installing the plugin:
 
 ```bash
 Open Command prompt on Windows or Terminal on Linux/Mac or Get into Console if you are on docker
@@ -436,8 +434,10 @@ Restart SillyTavern.
 1. Open **VectFox Settings** (Core tab in the extensions panel).
 2. Choose your vector storage (Standard or Qdrant).
 3. Select your embedding provider (Transformers, vLLM, Ollama, OpenRouter, etc.).
+
    - 💡 **Recommended:** use `qwen/qwen3-embedding-8b` through **OpenRouter**. It's extremely cheap ($0.00000015/run), multilingual (excellent CJK + Latin), and produces high-quality dense vectors for the corpus size VectFox targets.
 4. Select your Summarization LLM (OpenRouter or vLLM) — used by EventBase extraction during vectorization.
+
    - 💡 **Recommended OpenRouter models:** for a cheap & fast extraction path, use `openai/gpt-4o-mini` or `google/gemini-3.1-flash-lite` — both keep cost and ingestion latency low. If you want higher extraction quality and don't mind paying more, `x-ai/grok-4.3` is a stronger but more expensive option. Avoid older model IDs such as `x-ai/grok-4.1-fast` if OpenRouter returns a 404/deprecation error; model availability changes over time, so verify the exact ID on OpenRouter before long ingestion runs. The same recommendation applies to the **Agent Mode LLM** (configured separately in the AgentMode tab) — if you leave the AgentMode model field blank it inherits this summarizer setting.
 5. Configure API keys if using cloud providers (OpenRouter / vLLM ).
 6. Under **Keyword Extraction**, choose the language of your story.
@@ -464,9 +464,8 @@ Setting enableServerPlugin to true is required for Qdrant backend.
 **Why are there two separate pipelines under the hood?**
 Internally VectFox routes content through one of two retrieval paths, picked by content type:
 
-
 | Pipeline             | What it handles                                                                              |
-| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| -------------------- | -------------------------------------------------------------------------------------------- |
 | **EventBase**        | Your chat history (live chat + uploaded`.jsonl` archives)                                    |
 | **Standard (Chunk)** | Everything else: Lorebook, Character Cards, URLs, documents, wiki pages, YouTube transcripts |
 

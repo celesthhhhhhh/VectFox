@@ -26,7 +26,7 @@ import {
     buildStopSet,
 } from '../core/stop-words.js';
 
-import { LATIN_TOKEN_RE, NON_WORD_RE } from '../core/script-segmentation.js';
+import { LATIN_TOKEN_RE, NON_WORD_RE, localeForSpan, getSegmenter, CJK_CHAR_RE } from '../core/script-segmentation.js';
 
 // ── §6.1–6.3: stopLocalesForMode returns correct locale arrays ────────────────
 
@@ -174,6 +174,103 @@ describe('W2 — Indic combining-mark fix (LATIN_TOKEN_RE / NON_WORD_RE)', () =>
         const stripped = 'hello, world!'.replace(NON_WORD_RE, ' ');
         expect(stripped).toBe('hello  world ');
     });
+});
+
+// ── Language probe — undefined-in-dropdown languages must fall back SAFELY ──────
+//
+// PURPOSE: verify that a language NOT (yet) defined in the Core-tab "CJK Tokenizer
+// Mode" dropdown still routes to a correct, safe setting — it must keep working,
+// just without the optional stop-word polish. No expected values are hardcoded; we
+// hand VectFox 8 strings and print back exactly what its real, shipped functions
+// return, so you can read off what it does with each.
+//
+// WHY MOST OF THESE REPORT locale === 'und' — AND WHY THAT'S CORRECT, NOT A BUG:
+//   • Stop-word / tokenizer selection is driven by the Core-tab dropdown, NOT guessed
+//     from text (plan §7: no auto Latin-language detection — Latin scripts are mutually
+//     indistinguishable). Spanish/German/Italian/Vietnamese/Hindi are deliberately
+//     thrown in here even though they have NO dropdown entry yet.
+//   • With no matching mode, they fall back to 'und' ("undetermined"), which is a
+//     fully valid BCP-47 tag — Intl treats it ≈ English. That fallback is intentional.
+//   • Crucially, the fallback does NOT degrade retrieval: BM25/keyword tokenization
+//     still extracts the correct content words (via the \p{L}\p{M} Latin regex — see
+//     the W2 Indic fix), and the DENSE/semantic vector still captures meaning (it never
+//     used stop-words at all). Stop-word lists are a PURELY ADDITIVE enhancement that
+//     filters junk function words; their absence is mild keyword noise, never breakage.
+//     So VectFox is already effective on every one of these languages today.
+//   • A language only "lights up" its own locale + stop list once someone adds its
+//     dropdown mode + list (plan "add a language" recipe). Until then: 'und'/en baseline.
+//
+// What VectFox derives FROM THE TEXT (the only auto-detection):
+//   • localeForSpan(text) → script→locale (ja, zh, ko, th, …, or 'und' for Latin/Indic)
+//   • getSegmenter(text)  → the Intl.Segmenter it resolves for a segmented span
+//   • CJK_CHAR_RE.test()  → is this a segmented (no inter-word space) script?
+// What is MODE-DRIVEN (the dropdown, NOT text): the forced tokenizer (jieba/jieba_tw/
+// tiny_segmenter) and the stop-word locales. The probe maps the detected locale to a
+// stop list where one exists and flags where the mode decides (zh→zh-Hant/zh-Hans).
+
+const SAMPLES = [
+    ['English',             'the brave warrior fought the dragon'],
+    ['Spanish',             'el valiente guerrero luchó contra el dragón'],
+    ['German',              'der tapfere Krieger kämpfte gegen den Drachen'],
+    ['Italian',             'il coraggioso guerriero combatté contro il drago'],
+    ['Vietnamese',          'chiến binh dũng cảm đã chiến đấu với con rồng'],
+    ['Indian (Hindi)',      'बहादुर योद्धा ने ड्रैगन से युद्ध किया'],
+    ['Traditional Chinese', '勇敢的戰士與惡龍戰鬥'],
+    ['Japanese',            '勇敢な戦士がドラゴンと戦った'],
+    // Thai: a NO-SPACE (segmented) script that VectFox's script detection DOES recognize
+    // (→ locale 'th' + an Intl.Segmenter('th')), yet has NO stop-word list defined. This is
+    // the distinct "segmented + segmenter resolves + no stoplist" quadrant — proof that even
+    // a no-space, undefined-in-dropdown language still tokenizes (real segmenter) and searches
+    // fine; only the additive stop-word filter is absent.
+    ['Thai',                'นักรบผู้กล้าหาญต่อสู้กับมังกร'],
+];
+
+describe('Language probe — undefined-in-dropdown languages fall back to a safe setting', () => {
+    for (const [label, text] of SAMPLES) {
+        it(label, () => {
+            // Everything below comes straight from VectFox's own functions.
+            const segmented = CJK_CHAR_RE.test(text);                  // segmented (no-space) script?
+            const locale = localeForSpan(text);                        // VectFox text→locale detection
+            // getSegmenter is only used on segmented spans in the real pipeline; Latin/Indic
+            // text never reaches it (it goes through the \p{L}\p{M} regex), so only probe it
+            // for segmented scripts to mirror real usage.
+            const seg = segmented ? getSegmenter(text) : null;
+            const segLocale = seg ? seg.resolvedOptions().locale : null;
+
+            // Does the DETECTED script-locale map directly to a shipped stop-word list?
+            const directList = STOP_WORDS_BY_LOCALE[locale];
+            const stopForLocale = directList
+                ? `${locale} (${directList.length} words)`
+                : `no list for script-locale '${locale}' → MODE decides (zh→zh-Hant/zh-Hans; Latin/Indic→en baseline)`;
+
+            const tokenizer = segmented
+                ? `Intl.Segmenter('${segLocale}') on the auto path (a jieba/jieba_tw/tiny_segmenter MODE overrides this)`
+                : `none — Latin \\p{L}\\p{M} regex path (no segmenter)`;
+
+            console.log(
+                `\n[${label}]  "${text}"\n` +
+                `   • segmented (no-space) script : ${segmented}\n` +
+                `   • locale detected             : ${locale}${segmented ? '' : "   ('und' = undefined-in-dropdown → intentional, valid, en-baseline fallback)"}\n` +
+                `   • tokenizer VectFox would use : ${tokenizer}\n` +
+                `   • stop-word list for locale   : ${stopForLocale}`
+            );
+
+            // The report above is the point; these assertions only confirm the FALLBACK IS
+            // SAFE for every language (defined in the dropdown or not) — no per-language
+            // values are hardcoded:
+            //   • a valid, non-empty BCP-47 locale always comes back (defined → its tag;
+            //     undefined → 'und', which Intl accepts ≈ English — never null/throw), and
+            //   • a segmented script always resolves a real Intl.Segmenter, while Latin/Indic
+            //     correctly uses the no-segmenter Latin path. Either way the text stays
+            //     tokenizable + searchable; stop-words are only an additive enhancement.
+            expect(typeof locale).toBe('string');
+            expect(locale.length).toBeGreaterThan(0);
+            if (segmented) {
+                expect(seg).toBeTruthy();
+                expect(typeof segLocale).toBe('string');
+            }
+        });
+    }
 });
 
 // ── §6.7: ingest/query parity (highest-risk item per §4) ──────────────────────

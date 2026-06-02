@@ -17,7 +17,7 @@ Built on the excellent VectHare foundation, VectFox is a **high-performance long
 I branched the original VectHare to handle the massive scale of my personal [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) projects, which feature:
 
 - **Extreme scale: 2,000+ replies per story, with 1,000+ words per reply. Summary retrieval returns in less than 3 seconds**
-- Non-English language support (Japanese, Korean, Traditional/Simplified Chinese). It supports English by default.
+- Multi-language support: works with virtually any language out of the box, with extra stop-word tuning for English, Japanese, Korean, Traditional Chinese, and Simplified Chinese. Spanish, German, Arabic, Hindi, and others work without any extra setup.
 - Strip out all functional tag from [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker).
 - Super long term memory that actually works (2000+ messages)
 

@@ -192,11 +192,25 @@ There are **three paths** for combining them, depending on backend and settings:
 
 ### A1 — Standard backend + BM25
 
+VectFox first finds about **100 events that *feel* related** to your message (by meaning), then re-checks only those 100 for your exact words and blends the two scores. It's fast and light, so it's a good fit for slower computers.
+
+**The catch:** if the event with the perfect keyword wasn't in that first batch of 100, it never gets looked at — it's invisible to the keyword step.
+
+<details>
+<summary>⚙️ Technical detail</summary>
+
 Browser does a vector search to get the top ~100 candidates, then computes BM25 keyword scores on just those candidates. Simple weighted sum: `α × vectorScore + β × bm25Score`.
 
-**Tradeoff:** Fast and lightweight for slower computer, but if a perfect keyword match was outside the top 100 vector results, it's invisible.
+</details>
 
-### A2 — Standard backend + Hybrid (Recommend for most users that doesn't go the A3 Path)
+### A2 — Standard backend + Hybrid (Recommend for most users that don't go the A3 path)
+
+Same first step as A1 — grab the ~100 events that *feel* related — but A2 is **smarter about ordering** them. It ranks that same batch two ways (once by meaning, once by keyword), blends the two lists, and gives a bonus to events that score well on *both* signals. Recommended for most users who aren't on A3.
+
+**The catch:** it's the same as A1's. A2 can only re-order the 100 events it already grabbed — it still can't pull in a keyword match that was missed in that first step. (Only A3 fixes this.)
+
+<details>
+<summary>⚙️ Technical detail</summary>
 
 Browser does a vector search to get the top ~100 candidates, then ranks **the same candidate pool** two ways — once by vector similarity, once by BM25 — and fuses the two ranked lists via:
 
@@ -207,9 +221,18 @@ Browser does a vector search to get the top ~100 candidates, then ranks **the sa
 
 **Example:** Searching "Astarion drinks blood." If the dense ANN returned an event mentioning Astarion and blood (e.g. because "vampires/hunger" is semantically close), both rankings will surface it and the dual-signal bonus pushes it up. If a rare keyword-only event is outside the top-100 window, A2 won't find it — A3 would.
 
-**Tradeoff:** Better fusion on browser with a faster computer, but recall is still bounded by the dense top-K (~100 candidates).
+</details>
 
 ### A3 — Qdrant native sparse + server-side RRF + formula rerank (best accuracy)
+
+A3 is the big upgrade. Instead of grabbing ~100 events first, Qdrant searches your **entire history two ways at once** — by meaning **and** by exact keyword — and does all the ranking and filtering on the server in a single request. So even a rare word buried in one event from 1,500 chats ago gets found directly, instead of being missed because it didn't make the first cut.
+
+If you use **AgentMode**, it goes further: it breaks your question into several angles (*how did this happen? what led up to it? who else was involved?*) and narrows the search by who/where/what *before* searching, so irrelevant events never compete for a slot.
+
+**Tradeoff:** Best accuracy, fastest at scale. Requires a Qdrant instance (free, open-source). → [Qdrant installation guide](Doc/Qdrant_install.md)
+
+<details>
+<summary>⚙️ Technical detail</summary>
 
 A3 runs **everything inside Qdrant in a single API call**. The key structural advantage over A1 / A2 isn't just "faster" — it's that **A3 actually searches the full corpus by keywords**, while A1 / A2 only search by dense vectors:
 
@@ -224,7 +247,7 @@ The browser only handles anchor boost (phrase matching), pairwise dedup, and the
 
 **AgentMode example:** Asking "What deal did we make with Shadowheart?" The planner emits `characters_any: ["Shadowheart"]` and fans out into sub-queries: the original question, *"what agreement or promise involving Shadowheart"*, *"what event led to the deal with Shadowheart"*, *"what did Shadowheart ask for in return"*. Each sub-query runs against a Qdrant candidate pool already restricted to Shadowheart-tagged events — broad semantic recall, zero cross-character noise.
 
-**Tradeoff:** Best accuracy, fastest at scale. Requires a Qdrant instance (free, open-source). → [Qdrant installation guide](Doc/Qdrant_install.md)
+</details>
 
 | What runs where                  | A1 — Standard + BM25                                        | A2 — Standard + Hybrid                                                           | A3 — Qdrant Native                                                       |
 | -------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |

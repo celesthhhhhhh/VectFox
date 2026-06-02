@@ -969,14 +969,17 @@ Marker key: ✅ runs, ⏭️ soft-skips, — n/a.
 | **017**    | Pause button (`enabled=false`) blocks activation even when locked — priority 1 overrides priority 4  | ✅                       | ✅                                | ✅                                |
 | **018**    | `shouldCollectionActivate` priority chain: triggers (P2) / conditions (P3) / character lock (P5) / nothing | ✅                       | ✅                                | ✅                                |
 | **019**    | WI / AutoSync refresh smoke: refresh paths are pure UI mirrors (locks/autoSync/enabled unchanged after 3× idempotent calls) | ✅                       | ✅                                | ✅                                |
-| **Totals** |                                                                                                      | **10 passed, 9 skipped** | **11 passed, 8 skipped**          | **19 passed, 0 skipped**          |
+| **020**    | Qdrant: per-chunk override is backend-first (survives ext_settings wipe)                             | ⏭️ no plugin            | ⏭️ no qdrant config              | ✅                                |
+| **021**    | Standard+plugin: per-chunk override is backend-first (survives ext_settings wipe)                   | ⏭️ no plugin            | ✅                                | ✅                                |
+| **022**    | Standard+plugin: context/xmlTag wrapping + condition filter through retrieval (backend-first)        | ⏭️ no plugin            | ✅                                | ✅                                |
+| **Totals** |                                                                                                      | **10 passed, 12 skipped** | **13 passed, 9 skipped**         | **22 passed, 0 skipped**          |
 
 ### Skip logic that drives the matrix
 
 | Helper                      | Used by                    | Skip condition                                                                                       |
 | --------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `skipIfQdrantUnavailable()` | TEST 001-004, 010-013      | (a) Plugin probe fails, **or** (b) `qdrant_url`/`qdrant_host` not set in `extension_settings.vectfox`, **or** (c) qdrant config is set but qdrant is unreachable (emits a **WARNING** in the skip reason). |
-| `skipIfNoPlugin()`          | TEST 008 only              | Plugin probe fails.                                                                                  |
+| `skipIfQdrantUnavailable()` | TEST 001-004, 010-013, 020 | (a) Plugin probe fails, **or** (b) `qdrant_url`/`qdrant_host` not set in `extension_settings.vectfox`, **or** (c) qdrant config is set but qdrant is unreachable (emits a **WARNING** in the skip reason). |
+| `skipIfNoPlugin()`          | TEST 008, 021, 022         | Plugin probe fails.                                                                                  |
 | (none)                      | TEST 005-007, 009, 014-019 | These run in every environment. Split by what they exercise: **005-007** = real backend round-trips (standard backend embedding + chat retrieval); **009** = forces `pluginAvailable=false` to exercise no-plugin native path; **014-016** = pure-function auto-sync contracts (fingerprint cache, start marker, `stampAutoSyncMarker`); **017-019** = pure in-memory collection-metadata contracts (pause button overrides lock, priority chain, refresh-path purity). 014-019 don't need the plugin nor any backend — they operate directly on `extension_settings.vectfox` state and the registry. See [collection_helper.md → Chat Auto-Sync](collection_helper.md) for the 014/015/016 contract, and the same doc's "Pause/Resume" + "Manual vs auto-sync paths" sections for the 017/019 contract. |
 
 **The unreachable-qdrant case** (config present but server down) is a soft skip with a WARNING-flavored reason, NOT a hard failure. The reasoning:

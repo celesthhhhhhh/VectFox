@@ -310,10 +310,25 @@ A small planner LLM reads your recent chat plus the top pre-search candidates, t
 
 See the **AgentMode** tab in settings, or the "How It Works → Agent Mode" section above for the full architecture.
 
-### 🌏 CJK language support (Japanese, Korean, Traditional/Simplified Chinese)
+### 🌏 Multi-language support
 
-- Jieba WASM (Simplified + Traditional Chinese), TinySegmenter (Japanese), Intl.Segmenter (English/Latin/Korean)
-- **Dedicated stop-word lists per language** — separate curated dictionaries for Japanese, Korean, Traditional Chinese, and Simplified Chinese (plus English/Latin). Stop words are the filler grammar particles like 「の・は・を」 in Japanese, 「的・地・得」 in Chinese, and 「의・은・는・을」 in Korean that show up everywhere but carry zero search signal. Stripping them before keyword scoring is what keeps BM25 hit-rates high on CJK content — without it, every event would "match" your query just because it contains common particles, drowning out the actual signal words.
+VectFox tokenizes and indexes any language — the BM25/keyword half is fully language-neutral. Every language works out of the box; five have extra stop-word tuning.
+
+| Language | Segmenter | Stop-word list | Notes |
+|---|---|---|---|
+| **English** | Intl.Segmenter | ✅ 667 words | Always-on baseline; present in every mode |
+| **Japanese** | TinySegmenter | ✅ 672 words | Particles 「は・を・の…」 stripped |
+| **Korean** | Intl.Segmenter | ✅ 679 words | Particles 「의・은・는…」 stripped |
+| **Traditional Chinese** | Jieba WASM (TW dict) | ✅ 899 words | `jieba_tw` mode only; distinct from Simplified |
+| **Simplified Chinese** | Jieba WASM | ✅ 994 words | `jieba` mode only; distinct from Traditional |
+| **Spanish, French, German, Arabic, Hindi, …** | Intl.Segmenter | — | Tokenize and index correctly; English stop-word baseline only (no dedicated list yet) |
+
+**Stop-word lists are per-mode, not a global union.** A Korean collection consults only English + Korean (~1 346 words) — never the 2 200+ Chinese entries it used to. This prevents a Sino-Korean word from being silently dropped because it happened to match a Chinese grammar particle.
+
+**Combining-mark scripts** (Indic: Hindi, Tamil, Bengali…; Arabic harakat) tokenize as whole words — matras and virama (`्`) are preserved rather than stripped, so `युद्ध` ("war") indexes intact instead of shattering into fragments. Dense/semantic search has always been language-neutral; this extends the same quality to the BM25/keyword half.
+
+**Adding a language's stop list** is a one-file PR: add the word array + one line in the locale registry + one record in the mode table. Nothing else changes.
+
 - CJK tokenizer mode is **locked per Qdrant collection** at upsert — switching modes shows a warning modal
 
 ### 🔍 Native sparse-vector hybrid search (Qdrant)
@@ -389,7 +404,7 @@ Conditions support emotion (via Character Expressions sprite detection), keyword
 | **Standard (Vectra - SillyTavern default vector format)** | Small datasets, multilingual, getting started | No dependencies. Limited to A1/A2 hybrid.                                             |
 | **Qdrant**                                                | Large chats, multilingual, production         | A3 hybrid (best accuracy). Requires Qdrant + Similharity plugin (installation below). |
 
-Use **Qdrant vector database** for any ultra fast and accurate delopment — A3 is materially more accurate than A1/A2, especially for CJK, and it is free and opensource.  2000+ events in the database takes less than 3 seconds round trip search.
+Use **Qdrant vector database** for any ultra fast and accurate delopment — A3 is materially more accurate than A1/A2, especially for CJK and multi-language content, and it is free and opensource.  2000+ events in the database takes less than 3 seconds round trip search.
 
 ---
 

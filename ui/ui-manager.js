@@ -280,10 +280,10 @@ export function renderSettings(containerId, settings, callbacks) {
 
                                 </div>
 
-                                <!-- API Rate Limiting -->
+                                <!-- Embedding API Rate Limiting -->
                                 <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--grey30);">
                                     <label>
-                                        <small>API Rate Limiting (0 to disable)</small>
+                                        <small>Embedding API Rate Limiting (0 to disable)</small>
                                     </label>
                                     <div style="display: flex; gap: 10px;">
                                         <div style="flex: 1;">
@@ -299,7 +299,29 @@ export function renderSettings(containerId, settings, callbacks) {
                                             <input type="number" id="VectFox_rate_limit_interval" class="vectfox-input" min="1" placeholder="60" />
                                         </div>
                                     </div>
-                                    <small class="VectFox_hint">Limit the number of API requests per time interval</small>
+                                    <small class="VectFox_hint">Limit embedding API requests per time interval</small>
+                                </div>
+
+                                <!-- Summarizer / Agent Mode Rate Limiting -->
+                                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--grey30);">
+                                    <label>
+                                        <small>Summarizer / Agent Mode Rate Limiting (0 to disable)</small>
+                                    </label>
+                                    <div style="display: flex; gap: 10px;">
+                                        <div style="flex: 1;">
+                                            <label for="VectFox_generation_rate_limit_calls" style="display: block; margin-bottom: 4px;">
+                                                <small>Max Calls</small>
+                                            </label>
+                                            <input type="number" id="VectFox_generation_rate_limit_calls" class="vectfox-input" min="0" placeholder="0" />
+                                        </div>
+                                        <div style="flex: 1;">
+                                            <label for="VectFox_generation_rate_limit_interval" style="display: block; margin-bottom: 4px;">
+                                                <small>Interval (sec)</small>
+                                            </label>
+                                            <input type="number" id="VectFox_generation_rate_limit_interval" class="vectfox-input" min="1" placeholder="60" />
+                                        </div>
+                                    </div>
+                                    <small class="VectFox_hint">Throttle summarization (EventBase) and Agent Mode LLM calls (chat-completions) — separate from embeddings above. Prevents 429s when many windows extract at once. 0 = unlimited.</small>
                                 </div>
 
                                 <div class="vectfox-form-group" style="margin-top: 12px;">
@@ -4142,6 +4164,26 @@ function bindSettingsEvents(settings, callbacks) {
         .on('input', function() {
             const value = parseInt($(this).val());
             settings.rate_limit_interval = isNaN(value) ? 60 : value;
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // Summarizer / Agent Mode (chat-completions) Rate Limiting — shared budget,
+    // separate from the embedding limiter above. 0 = disabled.
+    $('#VectFox_generation_rate_limit_calls')
+        .val(settings.generation_rate_limit_calls || 0)
+        .on('input', function() {
+            const value = parseInt($(this).val());
+            settings.generation_rate_limit_calls = isNaN(value) ? 0 : value;
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    $('#VectFox_generation_rate_limit_interval')
+        .val(settings.generation_rate_limit_interval || 60)
+        .on('input', function() {
+            const value = parseInt($(this).val());
+            settings.generation_rate_limit_interval = isNaN(value) ? 60 : value;
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

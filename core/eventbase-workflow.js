@@ -19,6 +19,7 @@ import { queryCollection } from './core-vector-api.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { EventBaseFatalError, EventBaseExtractionError } from './eventbase-schema.js';
 import { extractEvents } from './eventbase-extractor.js';
+import { generationRateLimiter, generationRateLimitSettings } from './generation-rate-limiter.js';
 import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearExtractionCachesForChat, buildEventBaseCollectionId, isLastWindowExtracted, setVectorizationTip, ensureVectorizationTip, shouldUseTipFallback } from './eventbase-store.js';
 import { getSavedHashes } from './core-vector-api.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
@@ -367,13 +368,19 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                 let rawEvents;
                 const extractStart = performance.now();
                 try {
-                    rawEvents = await extractEvents({
-                        messages: win.msgs,
-                        windowStart: win.start,
-                        windowEnd: win.end,
-                        settings,
-                        windowIndex: wIdx,
-                    });
+                    // Throttle extraction (summarization LLM) calls. Shares one
+                    // budget with Agent Mode via generationRateLimiter. 0 = off.
+                    rawEvents = await generationRateLimiter.execute(
+                        () => extractEvents({
+                            messages: win.msgs,
+                            windowStart: win.start,
+                            windowEnd: win.end,
+                            settings,
+                            windowIndex: wIdx,
+                        }),
+                        generationRateLimitSettings(settings),
+                        'extraction',
+                    );
                     const extractMs = performance.now() - extractStart;
                     log.verbose(`[EventBase concurrency] Window ${wIdx}: LLM extract done in ${extractMs.toFixed(0)}ms (finished at +${(performance.now() - batchStartedAt).toFixed(1)}ms from batch start)`);
                 } catch (err) {

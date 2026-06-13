@@ -26,6 +26,7 @@ import { buildPlannerUserMessage, getAgenticPlannerPrompt } from './prompts-i18n
 import { stripReasoningBlocks, stripGameSystemBlocks } from './text-cleaning.js';
 import { getOpenRouterApiKey, getCustomApiKey } from './api-keys.js';
 import { getModelConfigErrorMessage } from './model-http-errors.js';
+import { generationRateLimiter, generationRateLimitSettings } from './generation-rate-limiter.js';
 import { getRequestHeaders } from '../../../../../script.js';
 import { log } from './log.js';
 
@@ -115,12 +116,20 @@ export async function retrieveEventsWithAgent(params) {
     let plan;
     const tLlmStart = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     try {
-        plan = await _callPlanner({
-            systemPrompt: getAgenticPlannerPrompt(settings?.cjk_tokenizer_mode),
-            userMessage,
-            llmCfg,
-            timeoutMs,
-        });
+        // Throttle the planner LLM call. Shares one budget with EventBase
+        // extraction via generationRateLimiter (same chat-completions provider).
+        // 0 = off. The gate sleeps BEFORE _callPlanner runs, so the per-request
+        // AbortSignal.timeout (created inside _callPlanner) is unaffected.
+        plan = await generationRateLimiter.execute(
+            () => _callPlanner({
+                systemPrompt: getAgenticPlannerPrompt(settings?.cjk_tokenizer_mode),
+                userMessage,
+                llmCfg,
+                timeoutMs,
+            }),
+            generationRateLimitSettings(settings),
+            'agent',
+        );
     } catch (err) {
         const tLlmMs = Math.round(((typeof performance !== 'undefined' ? performance.now() : Date.now()) - tLlmStart));
         // A retired/unknown Agent Mode model would otherwise silently degrade to

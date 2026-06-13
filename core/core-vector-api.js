@@ -107,7 +107,7 @@ async function withHealthInvalidation(operation, settings) {
 /**
  * Rate limiter that respects user settings dynamically.
  */
-class DynamicRateLimiter {
+export class DynamicRateLimiter {
     constructor() {
         this.timestamps = [];
     }
@@ -116,9 +116,12 @@ class DynamicRateLimiter {
      * Executes a function if rate limits allow, or waits until they do.
      * @param {Function} fn Function to execute
      * @param {object} settings Settings containing rate_limit_calls and rate_limit_interval
+     * @param {string} [label] Optional source tag for the "rate limit reached" log
+     *   (e.g. 'embedding', 'extraction', 'agent') so logs are distinguishable now
+     *   that more than one limiter instance exists.
      * @returns {Promise<any>} Result of the function
      */
-    async execute(fn, settings) {
+    async execute(fn, settings, label = '') {
         const maxCalls = settings.rate_limit_calls || 0; // 0 = disabled
         const intervalMs = (settings.rate_limit_interval || 60) * 1000;
 
@@ -136,12 +139,12 @@ class DynamicRateLimiter {
             const waitTime = (oldest + intervalMs) - now;
 
             if (waitTime > 0) {
-                log.verbose(`VectFox: Rate limit reached. Waiting ${Math.round(waitTime / 1000)}s...`);
+                log.verbose(`VectFox: Rate limit reached${label ? ` [${label}]` : ''}. Waiting ${Math.round(waitTime / 1000)}s...`);
                 await AsyncUtils.sleep(waitTime + 100); // Add small buffer
             }
 
             // Recursive call to re-check
-            return this.execute(fn, settings);
+            return this.execute(fn, settings, label);
         }
 
         // Add timestamp and execute

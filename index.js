@@ -70,6 +70,11 @@ const defaultSettings = {
     vllm_use_alt_endpoint: false,
     rate_limit_calls: 60,
     rate_limit_interval: 60, // seconds
+    // Summarizer (EventBase extraction) + Agent Mode planner share ONE
+    // chat-completions rate budget, independent of the embedding limit above.
+    // 0 = disabled (no throttle, today's behavior). See core/generation-rate-limiter.js.
+    generation_rate_limit_calls: 0,
+    generation_rate_limit_interval: 60, // seconds
 
     // VEC-6: Batch insert optimization
     insert_batch_size: 50, // Chunks per insert batch (50-100 recommended)

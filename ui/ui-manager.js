@@ -3627,15 +3627,6 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
-    // BananaBread reranking
-    $('#VectFox_bananabread_rerank')
-        .prop('checked', settings.bananabread_rerank)
-        .on('input', function() {
-            settings.bananabread_rerank = $(this).prop('checked');
-            Object.assign(extension_settings.vectfox, settings);
-            saveSettingsDebounced();
-        });
-
     // ─── Logging (core/log.js) ──────────────────────────────────────────
     // Verbosity dropdown — single noise floor, drives all gated log.* calls
     // (the 22 Phase-1 sites). Plus the raw_llm domain deep-dive, the one domain
@@ -3900,15 +3891,6 @@ function bindSettingsEvents(settings, callbacks) {
     });
 
     // ── End EventBase settings ───────────────────────────────────────────────
-
-    // BananaBread API key input removed 2026-05-26: the BananaBread provider
-    // is commented out in providers.js (unselectable from the Embedding
-    // dropdown) AND the #VectFox_bananabread_apikey HTML element doesn't
-    // exist anywhere in the template — this handler was bound to a selector
-    // that matched nothing. Doubly-dead code. The deeper BananaBread paths
-    // (rerank, embeddings, diagnostics, backend switch) remain in the
-    // codebase as unresolved work; see Doc/dev_helper.md "Unresolved code"
-    // section for the rationale.
 
     // OpenAI model
     $('#VectFox_openai_model')

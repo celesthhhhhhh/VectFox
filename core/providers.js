@@ -11,6 +11,7 @@
  */
 
 import { SECRET_KEYS } from '../../../../secrets.js';
+import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
 
 /**
  * All supported embedding providers
@@ -28,7 +29,6 @@ export const EMBEDDING_PROVIDERS = {
     // webllm: { name: 'WebLLM Extension', local: true, requiresModel: true, modelField: 'webllm_model', requiresApiKey: false, requiresUrl: false },
 
     // Local server providers (need URL)
-    // bananabread: { name: 'BananaBread', local: true, requiresModel: false, requiresApiKey: true, secretKey: 'bananabread_api_key', requiresUrl: true, defaultUrl: 'http://localhost:8008' },
     ollama: {
         name: 'Ollama',
         local: true,
@@ -159,4 +159,47 @@ export function getUrlProviders() {
     return Object.entries(EMBEDDING_PROVIDERS)
         .filter(([_, config]) => config.requiresUrl)
         .map(([id]) => id);
+}
+
+/**
+ * Resolve the embedding base URL for a URL-based local provider.
+ *
+ * Single source of truth for "alternative endpoint" resolution. The settings UI
+ * writes PER-PROVIDER keys (`ollama_use_alt_endpoint`/`ollama_alt_endpoint_url`,
+ * `vllm_use_alt_endpoint`/`vllm_alt_endpoint_url`) — these are the canonical
+ * values. Earlier code scattered across backends + diagnostics read the legacy
+ * unprefixed `use_alt_endpoint`/`alt_endpoint_url` keys, which the UI never
+ * writes, so the alt endpoint silently read as OFF and requests fell back to
+ * localhost (GitHub issue #6). Route every apiUrl read through here instead.
+ *
+ * llamacpp/koboldcpp have no per-provider keys (they are currently commented out
+ * of EMBEDDING_PROVIDERS); they keep the legacy unprefixed keys so their behavior
+ * is unchanged. Add prefixed keys here if they are ever re-enabled.
+ *
+ * @param {object} settings - VectFox settings
+ * @param {string} [source=settings.source] - Provider id (defaults to active source)
+ * @returns {string|undefined} Base URL, or undefined for providers that take no URL.
+ *   May be an empty string when the provider is URL-based but nothing is configured.
+ */
+export function resolveProviderApiUrl(settings, source = settings?.source) {
+    switch (source) {
+        case 'ollama':
+            return settings.ollama_use_alt_endpoint
+                ? settings.ollama_alt_endpoint_url
+                : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+        case 'vllm':
+            return settings.vllm_use_alt_endpoint
+                ? settings.vllm_alt_endpoint_url
+                : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
+        case 'llamacpp':
+            return settings.use_alt_endpoint
+                ? settings.alt_endpoint_url
+                : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+        case 'koboldcpp':
+            return settings.use_alt_endpoint
+                ? settings.alt_endpoint_url
+                : textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP];
+        default:
+            return undefined;
+    }
 }

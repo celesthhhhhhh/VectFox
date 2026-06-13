@@ -96,15 +96,6 @@ const defaultSettings = {
     // (presence/masked-value indicator only; real key lives server-side).
     webllm_model: '',
     google_model: 'text-embedding-005',
-    bananabread_rerank: false,
-    // bananabread_api_key removed from defaults 2026-05-26 — the BananaBread
-    // provider is unselectable (commented out in providers.js) and the API
-    // key input handler had no matching HTML element. The deeper bananabread
-    // code paths still reference settings.bananabread_api_key defensively
-    // via `if (settings.bananabread_api_key) ...` guards; they handle the
-    // missing field gracefully. Migration drains-and-deletes any leftover
-    // plaintext from settings.json on first load. See Doc/dev_helper.md
-    // "Unresolved code" section for the full BananaBread state.
 
     // Chat vectorization
     enabled_chats: true,

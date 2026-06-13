@@ -11,7 +11,6 @@
 
 import { getRequestHeaders } from '../../../../../script.js';
 import { secret_state } from '../../../../secrets.js';
-import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
 import {
     EMBEDDING_PROVIDERS,
     getValidProviderIds,
@@ -22,12 +21,13 @@ import {
     getSecretKey,
     requiresApiKey,
     requiresUrl,
-    getUrlProviders
+    getUrlProviders,
+    resolveProviderApiUrl
 } from '../core/providers.js';
 
 /**
  * Helper: Get provider-specific body parameters for Similharity plugin requests
- * This ensures BananaBread and other providers that need special params get them
+ * This ensures local-server providers that need special params get them
  * @param {object} settings - VectFox settings
  * @returns {object} Additional body parameters for the request
  */
@@ -35,35 +35,20 @@ function getPluginProviderParams(settings) {
     const params = {};
     const source = settings.source;
 
-    // BananaBread requires apiUrl and apiKey in request body
-    if (source === 'bananabread') {
-        params.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : 'http://localhost:8008';
-        // API key is stored in extension settings (not ST's secret store)
-        if (settings.bananabread_api_key) {
-            params.apiKey = settings.bananabread_api_key;
-        }
-    }
-
     // Ollama needs apiUrl and keep param
     if (source === 'ollama') {
-        params.apiUrl = settings.use_alt_endpoint
-            ? settings.alt_endpoint_url
-            : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+        params.apiUrl = resolveProviderApiUrl(settings, 'ollama');
         params.keep = !!settings.ollama_keep;
     }
 
     // llamacpp needs apiUrl
     if (source === 'llamacpp') {
-        params.apiUrl = settings.use_alt_endpoint
-            ? settings.alt_endpoint_url
-            : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+        params.apiUrl = resolveProviderApiUrl(settings, 'llamacpp');
     }
 
     // vllm needs apiUrl
     if (source === 'vllm') {
-        params.apiUrl = settings.use_alt_endpoint
-            ? settings.alt_endpoint_url
-            : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
+        params.apiUrl = resolveProviderApiUrl(settings, 'vllm');
     }
 
     return params;
@@ -115,7 +100,7 @@ export async function checkVectorsExtension() {
  * Check: ST Vector API endpoints
  * Tests all /api/vector/* endpoints comprehensively
  * NOTE: Always uses 'transformers' source for this check because native ST
- * endpoints don't recognize custom sources like bananabread. VectFox uses
+ * endpoints don't recognize VectFox's plugin-routed sources. VectFox uses
  * the Similharity plugin endpoints for actual operations, not these.
  */
 export async function checkBackendEndpoints(settings) {
@@ -517,7 +502,7 @@ export async function checkQdrantDimensionMatch(settings) {
                 text: 'test',
                 source: settings.source || 'transformers',
                 model: getModelFromSettings(settings),
-                // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
+                // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
             })
         });
@@ -671,26 +656,6 @@ export function checkApiKeys(settings) {
         };
     }
 
-    // BananaBread stores API key in extension settings (not ST's secret store)
-    // because custom keys aren't reliably returned by ST's readSecretState()
-    if (source === 'bananabread') {
-        if (settings.bananabread_api_key) {
-            return {
-                name: 'API Key',
-                status: 'pass',
-                message: 'API key configured'
-            };
-        } else {
-            return {
-                name: 'API Key',
-                status: 'fail',
-                message: 'BananaBread requires an API key',
-                fixable: true,
-                fixAction: 'configure_api_key'
-            };
-        }
-    }
-
     const secretKey = getSecretKey(source);
     const keyPresent = secretKey && secret_state[secretKey];
 
@@ -726,32 +691,11 @@ export function checkApiUrls(settings) {
         };
     }
 
-    if (settings.use_alt_endpoint) {
-        if (!settings.alt_endpoint_url) {
-            return {
-                name: 'API URL',
-                status: 'fail',
-                message: 'Alternative endpoint enabled but no URL configured',
-                fixable: true,
-                fixAction: 'configure_url'
-            };
-        }
-        return {
-            name: 'API URL',
-            status: 'pass',
-            message: `Custom: ${settings.alt_endpoint_url}`
-        };
-    }
-
-    const textgenMapping = {
-        'ollama': textgen_types.OLLAMA,
-        'vllm': textgen_types.VLLM,
-        'llamacpp': textgen_types.LLAMACPP,
-        'koboldcpp': textgen_types.KOBOLDCPP
-    };
-
+    // resolveProviderApiUrl() reads the canonical per-provider alt-endpoint keys
+    // (ollama_*, vllm_*) and falls back to ST's native server URL — the same
+    // resolution the live embedding path uses. Anything empty means unconfigured.
     const config = getProviderConfig(source);
-    const url = textgenMapping[source] ? textgenerationwebui_settings.server_urls[textgenMapping[source]] : null;
+    const url = resolveProviderApiUrl(settings, source);
 
     if (!url) {
         return {
@@ -859,88 +803,4 @@ export function checkWebLlmExtension(settings) {
         message: `WebLLM ready with model: ${settings.webllm_model}`,
         category: 'infrastructure'
     };
-}
-
-/**
- * Check: BananaBread Connection
- * Tests connection to BananaBread server and validates API key
- */
-export async function checkBananaBreadConnection(settings) {
-    if (settings.source !== 'bananabread') {
-        return {
-            name: 'BananaBread Connection',
-            status: 'skipped',
-            message: 'BananaBread not selected as provider',
-            category: 'infrastructure'
-        };
-    }
-
-    try {
-        const serverUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : 'http://localhost:8008';
-        const cleanUrl = serverUrl.replace(/\/$/, '').replace(/\/v1$/, '');
-
-        const headers = {
-            'Content-Type': 'application/json',
-        };
-
-        // Use extension settings for API key (custom keys aren't returned by ST's readSecretState)
-        if (settings.bananabread_api_key) {
-            headers['Authorization'] = `Bearer ${settings.bananabread_api_key}`;
-        }
-
-        const response = await fetch(`${cleanUrl}/v1/models`, {
-            method: 'GET',
-            headers: headers
-        });
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                 return {
-                    name: 'BananaBread Connection',
-                    status: 'fail',
-                    message: `Authentication failed (${response.status}). Check API key.`,
-                    fixable: true,
-                    fixAction: 'configure_api_key',
-                    category: 'infrastructure'
-                };
-            }
-             return {
-                name: 'BananaBread Connection',
-                status: 'fail',
-                message: `Connection failed: ${response.status} ${response.statusText}`,
-                fixable: true,
-                fixAction: 'configure_url',
-                category: 'infrastructure'
-            };
-        }
-        
-        const data = await response.json();
-        const modelCount = data.data?.length || 0;
-
-        if (modelCount > 0) {
-            return {
-                name: 'BananaBread Connection',
-                status: 'pass',
-                message: `Connected to ${cleanUrl} (${modelCount} models available)`,
-                category: 'infrastructure'
-            };
-        } else {
-             return {
-                name: 'BananaBread Connection',
-                status: 'warning',
-                message: `Connected to ${cleanUrl} but no models found`,
-                category: 'infrastructure'
-            };
-        }
-
-    } catch (error) {
-        return {
-            name: 'BananaBread Connection',
-            status: 'fail',
-            message: `Connection error: ${error.message}`,
-            fixable: true,
-            fixAction: 'configure_url',
-            category: 'infrastructure'
-        };
-    }
 }

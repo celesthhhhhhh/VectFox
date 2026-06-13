@@ -10,9 +10,8 @@
  */
 
 import { getRequestHeaders } from '../../../../../script.js';
-import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
 import { getSavedHashes, purgeVectorIndex } from '../core/core-vector-api.js';
-import { getModelField, getModelFromSettings, getProviderConfig } from '../core/providers.js';
+import { getModelField, getModelFromSettings, getProviderConfig, resolveProviderApiUrl } from '../core/providers.js';
 import { unregisterCollection } from '../core/collection-loader.js';
 import { reciprocalRankFusion, weightedCombination } from '../core/hybrid-search.js';
 import { applyKeywordBoost, extractTextKeywords, extractLorebookKeywords } from '../core/keyword-boost.js';
@@ -138,7 +137,7 @@ function getProviderBody(settings) {
 
 /**
  * Helper: Get provider-specific body parameters for Similharity plugin requests
- * This ensures BananaBread and other providers that need special params get them
+ * This ensures local-server providers that need special params get them
  * @param {object} settings - VectFox settings
  * @returns {object} Additional body parameters for the request
  */
@@ -146,35 +145,20 @@ function getPluginProviderParams(settings) {
     const params = {};
     const source = settings.source;
 
-    // BananaBread requires apiUrl and apiKey in request body
-    if (source === 'bananabread') {
-        params.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : 'http://localhost:8008';
-        // API key is stored in extension settings (not ST's secret store)
-        if (settings.bananabread_api_key) {
-            params.apiKey = settings.bananabread_api_key;
-        }
-    }
-
     // Ollama needs apiUrl and keep param
     if (source === 'ollama') {
-        params.apiUrl = settings.use_alt_endpoint
-            ? settings.alt_endpoint_url
-            : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+        params.apiUrl = resolveProviderApiUrl(settings, 'ollama');
         params.keep = !!settings.ollama_keep;
     }
 
     // llamacpp needs apiUrl
     if (source === 'llamacpp') {
-        params.apiUrl = settings.use_alt_endpoint
-            ? settings.alt_endpoint_url
-            : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+        params.apiUrl = resolveProviderApiUrl(settings, 'llamacpp');
     }
 
     // vllm needs apiUrl
     if (source === 'vllm') {
-        params.apiUrl = settings.use_alt_endpoint
-            ? settings.alt_endpoint_url
-            : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
+        params.apiUrl = resolveProviderApiUrl(settings, 'vllm');
     }
 
     return params;
@@ -223,7 +207,7 @@ export async function testEmbeddingGeneration(settings) {
                 text: testText,
                 source: settings.source || 'transformers',
                 model: getModelFromSettings(settings, null),
-                // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
+                // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
             })
         });
@@ -268,7 +252,7 @@ export async function testEmbeddingGeneration(settings) {
 
 /**
  * Test: Can we store and retrieve a vector?
- * Uses Similharity plugin to test actual configured provider (incl. bananabread).
+ * Uses Similharity plugin to test the actual configured provider.
  * Creates a temporary test collection that is cleaned up after the test.
  */
 export async function testVectorStorage(settings) {
@@ -300,7 +284,7 @@ export async function testVectorStorage(settings) {
                 }],
                 source: settings.source || 'transformers',
                 model: getModelFromSettings(settings, null),
-                // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
+                // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
             })
         });
@@ -651,7 +635,7 @@ export async function testPluginEmbeddingGeneration(settings) {
                 }],
                 source: settings.source || 'transformers',
                 model: getModelFromSettings(settings, null),
-                // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
+                // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
             }),
         });
@@ -677,7 +661,7 @@ export async function testPluginEmbeddingGeneration(settings) {
                 topK: 1,
                 source: settings.source || 'transformers',
                 model: getModelFromSettings(settings, null),
-                // Include provider-specific params (apiUrl, apiKey for BananaBread, etc.)
+                // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
             }),
         });

@@ -30,10 +30,9 @@
 
 import { getRequestHeaders } from '../../../../../script.js';
 import { VectorBackend } from './backend-interface.js';
-import { getModelFromSettings } from '../core/providers.js';
+import { getModelFromSettings, resolveProviderApiUrl } from '../core/providers.js';
 import { throwIfModelConfigError } from '../core/model-http-errors.js';
 import { VECTOR_LIST_LIMIT } from '../core/constants.js';
-import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
 import { getQdrantApiKey } from '../core/api-keys.js';
 import { log } from '../core/log.js';
 
@@ -73,18 +72,14 @@ function getPluginProviderParams(settings) {
 
     switch (settings.source) {
         case 'ollama':
-            params.apiUrl = settings.ollama_use_alt_endpoint
-                ? settings.ollama_alt_endpoint_url
-                : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+            params.apiUrl = resolveProviderApiUrl(settings, 'ollama');
             params.keep = !!settings.ollama_keep;
             // No apiKey: ST has no ollama auth path. The setAdditionalHeadersByType
             // call in ST's ollama-vectors.js is a no-op for ollama. The previous
             // params.apiKey = getOllamaApiKey(...) line was dead code on both sides.
             break;
         case 'vllm':
-            params.apiUrl = (settings.vllm_use_alt_endpoint
-                ? settings.vllm_alt_endpoint_url
-                : textgenerationwebui_settings.server_urls[textgen_types.VLLM])
+            params.apiUrl = resolveProviderApiUrl(settings, 'vllm')
                 ?.replace(/\/$/, '')
                 .replace(/\/v1\/embeddings$/, '')
                 .replace(/\/embeddings$/, '');
@@ -94,7 +89,6 @@ function getPluginProviderParams(settings) {
             break;
         // case 'llamacpp': params.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]; break;
         // case 'koboldcpp': params.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP]; break;
-        // case 'bananabread': params.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : 'http://localhost:8008'; if (settings.bananabread_api_key) params.apiKey = settings.bananabread_api_key; break;
         default:
             break;
     }
@@ -197,7 +191,7 @@ export class QdrantBackend extends VectorBackend {
 
         const knownBackends = ['standard', 'vectra', 'qdrant'];
         const knownSources = ['transformers', 'openai', 'cohere', 'ollama', 'llamacpp',
-            'vllm', 'koboldcpp', 'webllm', 'bananabread', 'openrouter'];
+            'vllm', 'koboldcpp', 'webllm', 'openrouter'];
 
         const parts = collectionId.split(':');
 

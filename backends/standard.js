@@ -27,14 +27,12 @@
 
 import { getRequestHeaders } from '../../../../../script.js';
 import { VectorBackend } from './backend-interface.js';
-import { getModelFromSettings } from '../core/providers.js';
+import { getModelFromSettings, resolveProviderApiUrl } from '../core/providers.js';
 import { throwIfModelConfigError } from '../core/model-http-errors.js';
 import { VECTOR_LIST_LIMIT } from '../core/constants.js';
 import { INTERNAL_COLLECTION_IDS } from '../core/collection-ids.js';
 import { extension_settings } from '../../../../extensions.js';
-import { textgen_types, textgenerationwebui_settings } from '../../../../textgen-settings.js';
 import { oai_settings } from '../../../../openai.js';
-import { secret_state } from '../../../../secrets.js';
 import { log } from '../core/log.js';
 
 
@@ -59,42 +57,23 @@ function getProviderSpecificParams(settings, isQuery = false) {
             break;
 
         case 'ollama':
-            params.apiUrl = settings.use_alt_endpoint
-                ? settings.alt_endpoint_url
-                : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+            params.apiUrl = resolveProviderApiUrl(settings, 'ollama');
             params.keep = !!settings.ollama_keep;
             break;
 
         case 'llamacpp':
-            params.apiUrl = settings.use_alt_endpoint
-                ? settings.alt_endpoint_url
-                : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
-            log.verbose(`VectFox DEBUG llamacpp: use_alt_endpoint=${settings.use_alt_endpoint}, alt_endpoint_url="${settings.alt_endpoint_url}", ST_url="${textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]}", final apiUrl="${params.apiUrl}"`);
+            params.apiUrl = resolveProviderApiUrl(settings, 'llamacpp');
+            log.verbose(`VectFox DEBUG llamacpp: final apiUrl="${params.apiUrl}"`);
             break;
 
         case 'vllm':
-            params.apiUrl = settings.use_alt_endpoint
-                ? settings.alt_endpoint_url
-                : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
+            params.apiUrl = resolveProviderApiUrl(settings, 'vllm');
             // No apiKey passed: ST's vLLM embedding handler
             // (src/vectors/vllm-vectors.js) reads SECRET_KEYS.VLLM server-side
             // via setAdditionalHeadersByType — anything we set on params.apiKey
             // is silently ignored. User configures the embedding key via ST's
             // Text Completion → vLLM UI; chat key (separate slot) lives in
             // SECRET_KEYS.CUSTOM after the 2026-05-26 migration.
-            break;
-
-        case 'bananabread':
-            params.apiUrl = settings.use_alt_endpoint
-                ? settings.alt_endpoint_url
-                : 'http://localhost:8008';
-            if (secret_state['bananabread_api_key']) {
-                const secrets = secret_state['bananabread_api_key'];
-                const activeSecret = Array.isArray(secrets) ? (secrets.find(s => s.active) || secrets[0]) : null;
-                if (activeSecret) {
-                    params.apiKey = activeSecret.value;
-                }
-            }
             break;
 
         case 'palm':
@@ -444,7 +423,7 @@ export class StandardBackend extends VectorBackend {
                 })),
                 source: settings.source || 'transformers',
                 model: model,
-                // Pass embeddings if pre-computed (for webllm, koboldcpp, bananabread)
+                // Pass embeddings if pre-computed (for webllm, koboldcpp)
                 embeddings: items[0]?.vector ? Object.fromEntries(items.map(i => [
                     i.text || '',
                     i.vector

@@ -170,17 +170,6 @@ favor of the hardcoded `'rrf'`. To enable DBSF end-to-end:
 
 === Reranking Pipelines
 
-The Similharity plugin exposes a separate `/rerank` route
-([similharity/index.js:1382](../../similharity/index.js#L1382)) that proxies
-to BananaBread's `/v1/rerank` endpoint. This is **not** part of the A3 hybrid
-pipeline — it is an optional **post-retrieval** rerank stage:
-
-* Invoked only by [core/chat-vectorization.js:2044-2050](../core/chat-vectorization.js#L2044-L2050)
-  as "STAGE 5", and only when `settings.source === 'bananabread'` and
-  `settings.bananabread_rerank` is on.
-* Takes the retrieved chunks (from any backend / any retrieval path) and
-  reorders them by the reranker's relevance score, replacing `chunk.score`.
-
 EventBase has its own re-ranker that weights cosine + importance + persist +
 recency. When `eventbase_native_rerank = true` (Qdrant ≥ 1.13, default), this
 formula runs **server-side inside the Qdrant `/points/query` call** via a
@@ -189,8 +178,9 @@ formula runs **server-side inside the Qdrant `/points/query` call** via a
 JavaScript after retrieval
 ([core/eventbase-retrieval.js](../core/eventbase-retrieval.js)) — see Section 6b.
 
-BananaBread cross-encoder reranking (`settings.bananabread_rerank`) is **not**
-wired into the Qdrant query call; it runs as a separate post-retrieval stage.
+NOTE: An external cross-encoder rerank stage (the former BananaBread `/rerank`
+proxy) was removed 2026-06-13. The EventBase weighted re-ranker described above
+is the only reranking path that remains.
 
 == Path A2: Client-Side Hybrid (Standard Backend)
 
@@ -417,9 +407,9 @@ events that plain RRF ranked outside the top-K.
 4. **Native dense+sparse hybrid** — A3 now uses Qdrant's native sparse-vector
    hybrid API as intended, rather than emulating it in plugin code.
 
-NOTE: Reranking (BananaBread) and the EventBase weighted re-ranker are
-separate, optional post-retrieval stages — they are not part of the Qdrant
-hybrid call and do not affect how the dense+sparse fusion is computed.
+NOTE: The EventBase weighted re-ranker is a separate, optional post-retrieval
+stage — it is not part of the Qdrant hybrid call and does not affect how the
+dense+sparse fusion is computed.
 
 == Known Gaps / Not Yet Wired
 
@@ -429,9 +419,9 @@ hybrid call and do not affect how the dense+sparse fusion is computed.
   path. Enabling DBSF requires forwarding the setting through the route and
   exposing it in the GUI.
 * **Cross-encoder reranking inside the hybrid call** — Qdrant supports
-  prefetch-then-rerank query plans with an external reranker. BananaBread
-  cross-encoder reranking still runs as a separate post-retrieval stage, not
-  as a Qdrant rerank stage. EventBase's four-weight formula IS now wired into
+  prefetch-then-rerank query plans with an external reranker. VectFox no longer
+  ships an external cross-encoder rerank stage (the BananaBread proxy was
+  removed). EventBase's four-weight formula IS now wired into
   the Qdrant query via `query: { formula: { sum: [...] } }` (see Section 6a),
   so the formula-rerank gap is resolved for EventBase; only cross-encoder
   reranking remains unwired.

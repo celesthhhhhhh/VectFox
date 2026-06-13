@@ -15,8 +15,7 @@
  * `writeSecret(customSlot, value)` accepts the write but `readSecretState`
  * doesn't surface custom slots back into the in-memory `secret_state`
  * object — so the keys were write-only and the migration effectively
- * destroyed them. The BananaBread comment at ui-manager.js:3589 had
- * warned about this; we re-learned it the hard way.
+ * destroyed them; we re-learned it the hard way.
  *
  * Current model — reuse whatever ST already round-trips, and proxy when
  * the real key value is needed:
@@ -88,11 +87,6 @@
  *     leftover plaintext from settings.json on first reload post-upgrade.
  *     Users who need authed Ollama (rare — Ollama is typically LAN
  *     no-auth) should configure auth at their reverse proxy layer.
- *
- *   - bananabread_api_key:
- *     Untouched — the provider has been unselectable since day one
- *     (commented out in EMBEDDING_PROVIDERS). Its dual-storage code
- *     stays alive as zombie. No shipped user can have a value set.
  *
  * Migration (`migrateLegacyApiKeys`) runs once at init:
  *   - Consolidates the three legacy OpenRouter slots
@@ -289,14 +283,6 @@ export async function fetchQdrantApiKeyPresence() {
  *
  * ollama_api_key: drained-and-deleted from settings.json (no destination —
  * ST itself doesn't authenticate ollama; field was dead code on both sides).
- *
- * bananabread_api_key: drained-and-deleted from settings.json on first
- * load 2026-05-26+. The BananaBread provider is unselectable from the
- * Embedding dropdown (commented out in providers.js) AND the API key
- * input handler in ui-manager.js was bound to a selector that matched
- * no HTML element. The deeper BananaBread code paths (rerank, embeddings,
- * diagnostics) remain as unresolved code — see Doc/dev_helper.md
- * "Unresolved code" section.
  *
  * Idempotent: on subsequent runs the legacy fields are already absent
  * and the function is a no-op.
@@ -519,24 +505,6 @@ export async function migrateLegacyApiKeys() {
         moves.push(hadValue
             ? `Ollama → removed plaintext ollama_api_key from settings.json (ST does not authenticate ollama; field was a no-op)`
             : `Ollama → removed empty plaintext ollama_api_key from settings.json`);
-    }
-
-    // ─── BananaBread plaintext drain (no destination — input was zombie) ───
-    // The BananaBread provider is unselectable (commented out in providers.js)
-    // and the API key input handler in ui-manager.js was bound to a HTML
-    // element that didn't exist — doubly-dead. settings.bananabread_api_key
-    // could only have a real value on installs that ran a pre-2025 build
-    // when BananaBread was still selectable. Drain-and-delete on sight. The
-    // deeper bananabread code paths read this field defensively with
-    // `if (settings.bananabread_api_key)` truthy guards, so they tolerate
-    // the missing field gracefully.
-    if (Object.prototype.hasOwnProperty.call(vf, 'bananabread_api_key')) {
-        const hadValue = typeof vf.bananabread_api_key === 'string' && vf.bananabread_api_key.trim().length > 0;
-        delete vf.bananabread_api_key;
-        mutated = true;
-        moves.push(hadValue
-            ? `BananaBread → removed plaintext bananabread_api_key from settings.json (provider unselectable + input element was dead — see Doc/dev_helper.md)`
-            : `BananaBread → removed empty plaintext bananabread_api_key from settings.json`);
     }
 
     if (mutated) {

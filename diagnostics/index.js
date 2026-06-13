@@ -22,8 +22,7 @@ import {
     checkApiKeys,
     checkApiUrls,
     checkProviderConnectivity,
-    checkWebLlmExtension,
-    checkBananaBreadConnection
+    checkWebLlmExtension
 } from './infrastructure.js';
 
 import {
@@ -156,12 +155,6 @@ export async function runDiagnostics(settings, includeProductionTests = false) {
     const webllmCheck = checkWebLlmExtension(settings);
     if (webllmCheck.status !== 'skipped') {
         categories.infrastructure.push(webllmCheck);
-    }
-
-    // BananaBread check (only if BananaBread is selected)
-    const bananabreadCheck = await checkBananaBreadConnection(settings);
-    if (bananabreadCheck.status !== 'skipped') {
-        categories.infrastructure.push(bananabreadCheck);
     }
 
     // ========== CONFIGURATION CHECKS ==========

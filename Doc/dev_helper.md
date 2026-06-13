@@ -900,7 +900,7 @@ Search hint: grep `SIMILHARITY_EXPECTED_VERSION` or `D5:`.
 
 This is a deliberate scope, not an oversight. Two consequences a reviewer might flag and how we think about them:
 
-1. **No SSRF defense on plugin embedding-relay routes.** Routes like `getVectorsForSource` accept user-configured URLs (`apiUrl`, `ollama_url`, `vllm_url`, `bananabread_url`) and `fetch()` them server-side without host allowlisting. This is intentional — those URLs are legitimately set to `127.0.0.1` / RFC1918 addresses for self-hosted embedding servers. Adding allowlisting would either break legitimate localhost use OR be cosmetic-only at the plugin layer: anyone on the same LAN who can reach the qdrant port directly already has the same write/query access regardless of what the plugin does. The bigger picture is that **this whole project is designed for personal use, not multi-user**. Even Qdrant's open-source build ships without per-user authentication by default — the multi-user story requires Role-Based Access Control, which is way overkill for someone just trying to get a SillyTavern RAG running on their PC or closed LAN. Requiring it would defeat the "personal use, runs out of the box" point of this project. If your deployment context can't trust everyone on the network boundary, you need RBAC AND plugin-level allowlisting; neither alone is enough, and we're targeting the simpler scope on purpose.
+1. **No SSRF defense on plugin embedding-relay routes.** Routes like `getVectorsForSource` accept user-configured URLs (`apiUrl`, `ollama_url`, `vllm_url`) and `fetch()` them server-side without host allowlisting. This is intentional — those URLs are legitimately set to `127.0.0.1` / RFC1918 addresses for self-hosted embedding servers. Adding allowlisting would either break legitimate localhost use OR be cosmetic-only at the plugin layer: anyone on the same LAN who can reach the qdrant port directly already has the same write/query access regardless of what the plugin does. The bigger picture is that **this whole project is designed for personal use, not multi-user**. Even Qdrant's open-source build ships without per-user authentication by default — the multi-user story requires Role-Based Access Control, which is way overkill for someone just trying to get a SillyTavern RAG running on their PC or closed LAN. Requiring it would defeat the "personal use, runs out of the box" point of this project. If your deployment context can't trust everyone on the network boundary, you need RBAC AND plugin-level allowlisting; neither alone is enough, and we're targeting the simpler scope on purpose.
 2. **API keys stored plaintext in `settings.json`.** Same threat model: the user owns the machine, the keys are theirs, sharing the file means the user already failed key hygiene. ST itself uses the same pattern for most extension settings.
 
 If you deploy ST in a context where untrusted users share the same instance — be aware of VectFox's limits. ST itself **does** support per-user data isolation via `enableUserAccounts = true` (per-user directories including `vectors/`, password auth, SSO). However, Qdrant ships without per-user authentication — a shared Qdrant instance has no concept of per-user collection ownership, so two ST users on the same Qdrant server can read and write each other's VectFox collections. Use a separate Qdrant instance per user, or container-per-user, if that matters for your deployment.
@@ -1120,44 +1120,13 @@ If a future contributor sees broken-looking tests in the suite, the playbook is:
 
 ---
 
-### 16.3 BananaBread provider — partial cleanup, deeper code paths remain
+### 16.3 BananaBread provider — fully removed (2026-06-13)
 
-**Status**: Partially cleaned up 2026-05-26 during the plaintext-API-key audit response. **Full removal deferred** — needs its own deliberate cleanup pass.
+**Status**: Done. The BananaBread provider and all its code paths were removed across both the extension and the Similharity plugin. The earlier "partial cleanup, deeper paths remain" state described here is no longer applicable.
 
-**What was cleaned up**:
+**What was removed** (extension): `createBananaBreadEmbeddings()` and `rerankWithBananaBread()` + STAGE 5 dispatch, the `case 'bananabread'` provider branches in [backends/standard.js](../backends/standard.js) and [backends/qdrant.js](../backends/qdrant.js), `'bananabread'` from every `clientSideEmbeddingSources`/known-sources array, the `bananabread_rerank` default + UI handler, `checkBananaBreadConnection` + the API-key/URL diagnostic branches, and the `bananabread_api_key` plaintext-drain migration in [core/api-keys.js](../core/api-keys.js). Plugin side: the bananabread embedding branch and the `/rerank` endpoint in the Similharity plugin.
 
-- API key input handler removed from [ui/ui-manager.js](../ui/ui-manager.js) (was bound to `#VectFox_bananabread_apikey` — a selector that matched no HTML element; doubly-dead since the provider was also unselectable)
-- `bananabread_api_key: ''` removed from `defaultSettings` in [index.js](../index.js)
-- Migration drain added in [core/api-keys.js::migrateLegacyApiKeys](../core/api-keys.js) — deletes any leftover plaintext `settings.bananabread_api_key` from `settings.json` on first load post-upgrade (no destination; the key was never meaningfully used)
-
-**What's intentionally left in place** (~300 LOC of code that's unreachable from the UI but still present in the codebase):
-
-| Location                                                                                       | Code                                                                                                 |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [core/providers.js:31](../core/providers.js#L31)                                               | `// bananabread: { name: 'BananaBread', ... }` — commented out; provider doesn't appear in the Embedding dropdown |
-| [ui/ui-manager.js](../ui/ui-manager.js)                                                        | `#VectFox_bananabread_rerank` checkbox handler — still bound; setting persists but never fires the rerank because `settings.source` can't be set to `'bananabread'` via the UI |
-| [core/chat-vectorization.js:261-306, 1425-1432](../core/chat-vectorization.js#L261)            | `rerankWithBananaBread()` + STAGE 5 dispatch (gated on `source === 'bananabread' && bananabread_rerank`) |
-| [core/core-vector-api.js:415-499](../core/core-vector-api.js#L415)                             | `createBananaBreadEmbeddings()` (~85 LOC)                                                            |
-| [core/core-vector-api.js:629, 845, 1023](../core/core-vector-api.js#L629)                      | `'bananabread'` in `clientSideEmbeddingSources` arrays (3 places)                                    |
-| [backends/standard.js:85-95](../backends/standard.js#L85)                                      | `case 'bananabread':` in provider switch (reads `secret_state['bananabread_api_key']`, which is now never populated) |
-| [diagnostics/index.js:161-164](../diagnostics/index.js#L161)                                   | `checkBananaBreadConnection` runs unconditionally as part of diagnostics (skips when `source !== 'bananabread'`) |
-| [diagnostics/infrastructure.js:38-43, 674-687, 868-938](../diagnostics/infrastructure.js#L868) | Full BananaBread connection check + API key check (~80 LOC)                                          |
-| [diagnostics/production-tests.js:149-154](../diagnostics/production-tests.js#L149)             | BananaBread-specific test branch                                                                     |
-| [Doc/hybrid-backend-comparison.adoc:175-432](hybrid-backend-comparison.adoc#L175)              | Architecture docs explaining BananaBread reranking                                                   |
-
-**Why the rest was left**:
-
-- The user-facing "is there plaintext API key in settings.json" complaint is fully addressed by the partial cleanup. Removing the API key input + the default field + the migration drain completes that goal.
-- Full removal is ~300 LOC across 8+ files with non-trivial coordination (must also strip BananaBread references from the `clientSideEmbeddingSources` arrays, the diagnostics module, and the docs). This deserves its own focused commit + plan doc rather than being bundled into an API-key audit pass.
-- All remaining `settings.bananabread_api_key` reads in the deeper code paths are defensively guarded with `if (settings.bananabread_api_key)` truthy checks. They handle the missing field gracefully — no runtime errors expected from the partial state.
-
-**Tripwire** — if a future user is somehow stuck on a years-old VectFox build that had `source: 'bananabread'` in their `settings.json`:
-
-- ST itself can't restore the provider (it's commented out)
-- The deeper code paths would briefly fire but find no key (migration deleted it) → BananaBread auth fails → embedding errors surface
-- They'd need to manually edit `settings.json` to change `source` to a supported value, OR pick a different provider from the dropdown which writes a valid value
-
-**To finish**: open a separate plan in `plans/remove-bananabread-provider.md` and do the ~300 LOC sweep when there's appetite. Targets: strip `'bananabread'` from `clientSideEmbeddingSources` arrays first (kills the bulk of the reranking and embedding paths), then walk back through diagnostics + backend cases + the docs section + the rerank checkbox handler. No urgency — the partial state is stable and audit-defensible.
+**Reranking note**: this removed only the unreachable BananaBread cross-encoder rerank. The EventBase native weighted re-ranker (`eventbase_native_rerank` / `hybridQueryWithRerank`) is unrelated and remains fully intact.
 
 ### 16.4 Purge redundant `vectfox_chunk_meta_*` keys from `extension_settings` — deferred to ~2026-09
 

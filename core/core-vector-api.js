@@ -43,7 +43,8 @@ import {
     getSecretKey,
     requiresApiKey,
     requiresUrl,
-    getUrlProviders
+    getUrlProviders,
+    resolveProviderApiUrl
 } from './providers.js';
 import { getOverfetchAmount } from './keyword-boost.js';
 import { applyBM25Scoring, porterStemmer } from './bm25-scorer.js';
@@ -354,13 +355,13 @@ export function getVectorsRequestBody(args = {}, settings) {
             break;
         case 'ollama':
             body.model = settings.ollama_model;
-            body.apiUrl = settings.ollama_use_alt_endpoint ? settings.ollama_alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+            body.apiUrl = resolveProviderApiUrl(settings, 'ollama');
             body.keep = !!settings.ollama_keep;
             // No apiKey: ST has no ollama auth path. See backends/qdrant.js for
             // the full rationale.
             break;
         case 'vllm':
-            body.apiUrl = (settings.vllm_use_alt_endpoint ? settings.vllm_alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.VLLM])
+            body.apiUrl = resolveProviderApiUrl(settings, 'vllm')
                 ?.replace(/\/$/, '')
                 .replace(/\/v1\/embeddings$/, '')
                 .replace(/\/embeddings$/, '');
@@ -375,7 +376,6 @@ export function getVectorsRequestBody(args = {}, settings) {
         // case 'openai': body.model = settings.openai_model; break;
         // case 'cohere': body.model = settings.cohere_model; break;
         // case 'llamacpp': body.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]; break;
-        // case 'bananabread': body.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : 'http://localhost:8008'; if (settings.bananabread_api_key) body.apiKey = settings.bananabread_api_key; break;
         // case 'webllm': body.model = settings.webllm_model; break;
         // case 'palm': body.model = settings.google_model; body.api = 'makersuite'; break;
         // case 'vertexai': body.model = settings.google_model; body.api = 'vertexai'; body.vertexai_auth_mode = oai_settings.vertexai_auth_mode; body.vertexai_region = oai_settings.vertexai_region; body.vertexai_express_project_id = oai_settings.vertexai_express_project_id; break;
@@ -387,7 +387,7 @@ export function getVectorsRequestBody(args = {}, settings) {
 
 /**
  * Gets additional arguments for embeddings.
- * For client-side providers (webllm, koboldcpp, bananabread), this generates embeddings.
+ * For client-side providers (webllm, koboldcpp), this generates embeddings.
  * @param {string[]} items Items to embed
  * @param {object} settings VectFox settings object
  * @param {Function} onProgress - Optional callback (embedded, total) => void for progress updates
@@ -398,7 +398,6 @@ export async function getAdditionalArgs(items, settings, onProgress = null) {
     switch (settings.source) {
         // case 'webllm': args.embeddings = await createWebLlmEmbeddings(items, settings); break;
         // case 'koboldcpp': { const { embeddings, model } = await createKoboldCppEmbeddings(items, settings, onProgress); args.embeddings = embeddings; args.model = model; break; }
-        // case 'bananabread': { const { embeddings, model } = await createBananaBreadEmbeddings(items, settings); args.embeddings = embeddings; args.model = model; break; }
     }
     return args;
 }
@@ -464,7 +463,7 @@ async function createKoboldCppEmbeddings(items, settings, onProgress = null) {
 
         const result = await dynamicRateLimiter.execute(async () => {
             return await AsyncUtils.retry(async () => {
-                const serverUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP];
+                const serverUrl = resolveProviderApiUrl(settings, 'koboldcpp');
                 if (!serverUrl) {
                     throw new Error('KoboldCpp URL not found');
                 }
@@ -543,95 +542,6 @@ async function createKoboldCppEmbeddings(items, settings, onProgress = null) {
 }
 
 /**
- * Creates BananaBread embeddings for a list of items.
- * Wrapped with retry, timeout, and rate limiting for robustness.
- * @param {string[]} items Items to embed
- * @param {object} settings VectFox settings object
- * @returns {Promise<{embeddings: number[][], model: string}>} Calculated embeddings as array (index-aligned with input items)
- */
-async function createBananaBreadEmbeddings(items, settings) {
-    // Clean text before embedding (strip HTML/Markdown & Handle mixed types: strings vs objects)
-    // Note: Must preserve 1:1 mapping with input items, so we replace empty strings with space instead of filtering
-    const cleanedItems = items.map(item => {
-        let text = '';
-        // 1. Handle primitive strings
-        if (typeof item === 'string') {
-            text = stripFormatting(item) || item;
-        }
-        // 2. Handle objects: Extract known text fields (e.g., item.text, item.content)
-        else if (item && typeof item === 'object') {
-            const textValue = item.text || item.content || '';
-            text = stripFormatting(textValue) || textValue;
-        }
-
-        // 3. Fallback for unexpected types or empty result
-        return text.length > 0 ? text : ' ';
-    });
-
-    return await dynamicRateLimiter.execute(async () => {
-        return await AsyncUtils.retry(async () => {
-            const serverUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : 'http://localhost:8008';
-            const cleanUrl = serverUrl.replace(/\/$/, '');
-
-            const headers = {
-                'Content-Type': 'application/json',
-            };
-
-            // Use extension settings for API key (custom keys aren't returned by ST's readSecretState)
-            if (settings.bananabread_api_key) {
-                headers['Authorization'] = `Bearer ${settings.bananabread_api_key}`;
-            }
-
-            const fetchPromise = fetch(`${cleanUrl}/v1/embeddings`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    input: cleanedItems,
-                    model: settings.bananabread_model || 'bananabread',
-                }),
-            });
-
-            const response = await AsyncUtils.timeout(fetchPromise, API_TIMEOUT_MS * 20, 'BananaBread embedding request timed out');
-
-            if (!response.ok) {
-                throw new Error(`Failed to get BananaBread embeddings: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-
-            // OpenAI format: { data: [{ embedding: [], index: 0, ... }, ...], model: "..." }
-            if (!data.data || !Array.isArray(data.data) || data.data.length !== cleanedItems.length) {
-                throw new Error(`Invalid response from BananaBread embeddings (OpenAI format): expected ${cleanedItems.length} embeddings, got ${data.data?.length || 0}`);
-            }
-
-            // Sort by index to ensure order matches input items
-            data.data.sort((a, b) => a.index - b.index);
-
-            // Build map of embeddings keyed by original item text
-            const embeddings = /** @type {Record<string, number[]>} */ ({});
-            for (let i = 0; i < data.data.length; i++) {
-                const embedding = data.data[i].embedding;
-                if (!Array.isArray(embedding) || embedding.length === 0) {
-                    throw new Error(`BananaBread returned an empty or invalid embedding at index ${i}.`);
-                }
-                // Map back to original items for hash consistency/lookup
-                embeddings[items[i]] = embedding;
-            }
-
-            return {
-                embeddings: embeddings,
-                model: data.model || 'bananabread',
-            };
-        }, {
-            ...RETRY_CONFIG,
-            onRetry: (attempt, error) => {
-                log.warn(`VectFox: BananaBread embedding retry ${attempt} - ${error.message}`);
-            }
-        });
-    }, settings);
-}
-
-/**
  * Throws an error if the source is invalid (missing API key or URL, or missing module)
  * @param {object} settings VectFox settings object
  */
@@ -656,24 +566,12 @@ export function throwIfSourceInvalid(settings) {
         }
     }
 
-    // Check URL requirement
+    // Check URL requirement. resolveProviderApiUrl() reads the canonical
+    // per-provider alt-endpoint keys and falls back to ST's native server URL,
+    // so an empty result means nothing is configured for this provider.
     if (requiresUrl(source)) {
-        if (settings.use_alt_endpoint) {
-            if (!settings.alt_endpoint_url) {
-                throw new Error('VectFox: API URL missing', { cause: 'api_url_missing' });
-            }
-        } else {
-            // Check textgen settings for local providers
-            const textgenMapping = {
-                'ollama': textgen_types.OLLAMA,
-                'vllm': textgen_types.VLLM,
-                'koboldcpp': textgen_types.KOBOLDCPP,
-                'llamacpp': textgen_types.LLAMACPP
-            };
-
-            if (textgenMapping[source] && !textgenerationwebui_settings.server_urls[textgenMapping[source]]) {
-                throw new Error('VectFox: API URL missing', { cause: 'api_url_missing' });
-            }
+        if (!resolveProviderApiUrl(settings, source)) {
+            throw new Error('VectFox: API URL missing', { cause: 'api_url_missing' });
         }
     }
 
@@ -746,7 +644,7 @@ export async function getSavedHashes(collectionId, settings, includeMetadata = f
 /**
  * Inserts vector items into a collection
  * Handles batching and rate limiting.
- * For client-side embedding sources (webllm, koboldcpp, bananabread), generates embeddings first.
+ * For client-side embedding sources (webllm, koboldcpp), generates embeddings first.
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
  * @param {object} settings VectFox settings object
@@ -757,7 +655,7 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
     const backend = await getBackend(settings);
 
     // Sources that require client-side embedding generation
-    const clientSideEmbeddingSources = ['webllm', 'koboldcpp', 'bananabread'];
+    const clientSideEmbeddingSources = ['webllm', 'koboldcpp'];
 
     try {
         // If source requires client-side embeddings, use streaming approach
@@ -1086,7 +984,7 @@ export async function deleteVectorItems(collectionId, hashes, settings) {
 /**
  * Queries a single collection for similar vectors
  * Applies keyword boost system: overfetch → boost → trim
- * For client-side embedding sources (webllm, koboldcpp, bananabread), generates query embedding first.
+ * For client-side embedding sources (webllm, koboldcpp), generates query embedding first.
  * @param {string} collectionId - The collection to query
  * @param {string} searchText - The text to query
  * @param {number} topK - The number of results to return
@@ -1106,7 +1004,7 @@ export async function queryCollection(collectionId, searchText, topK, settings, 
         : await getBackend(settings);
 
     // Sources that require client-side embedding generation
-    const clientSideEmbeddingSources = ['webllm', 'koboldcpp', 'bananabread'];
+    const clientSideEmbeddingSources = ['webllm', 'koboldcpp'];
     let queryVector = null;
 
     // If source requires client-side embeddings, generate query vector
@@ -1293,7 +1191,7 @@ export async function queryMultipleCollections(collectionIds, searchText, topK, 
     const backend = await getBackend(settings);
 
     // Sources that require client-side embedding generation
-    const clientSideEmbeddingSources = ['webllm', 'koboldcpp', 'bananabread'];
+    const clientSideEmbeddingSources = ['webllm', 'koboldcpp'];
     let queryVector = null;
 
     // Generate query vector once for all collections (efficiency)

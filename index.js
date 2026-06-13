@@ -26,7 +26,7 @@ import { debounce_timeout } from '../../../constants.js';
 import { synchronizeChat, rearrangeChat, vectorizeAll } from './core/chat-vectorization.js';
 import { purgeAllVectorIndexes, purgeVectorIndex } from './core/core-vector-api.js';
 import { migrateOldEnabledKeys } from './core/collection-metadata.js';
-import { clearCollectionRegistry, discoverExistingCollections, cleanupCorruptedCollections } from './core/collection-loader.js';
+import { clearCollectionRegistry, discoverExistingCollections, cleanupCorruptedCollections, pruneOrphanedEventBaseChatMaps } from './core/collection-loader.js';
 import { migrateLegacyApiKeys } from './core/api-keys.js';
 import AsyncUtils from './utils/async-utils.js';
 import { log } from './core/log.js';
@@ -618,6 +618,14 @@ jQuery(async () => {
             );
             if (collections.length > 0) {
                 log.lifecycle(`VectFox: Discovered ${collections.length} existing collections`);
+            }
+            // Discovery succeeded → registry reflects reality. Sweep stale per-chat
+            // EventBase settings (marker / last-window-size / tip) for chats whose
+            // collection no longer exists. Skipped automatically on an empty registry.
+            try {
+                await pruneOrphanedEventBaseChatMaps();
+            } catch (pruneErr) {
+                log.warn('VectFox: Orphan-sweep of per-chat EventBase settings failed (non-fatal):', pruneErr?.message || pruneErr);
             }
         } catch (err) {
             log.error('VectFox: Collection discovery failed after retries:', err.message);

@@ -91,6 +91,53 @@ export function clearVectorizationTip(chatUUID) {
     }
 }
 
+// Per-chat maps in extension_settings.vectfox that are keyed by chat UUID and only
+// shrink via explicit clear paths (collection delete / fresh-extraction). Without a
+// sweep they accumulate one stale entry per chat deleted OUTSIDE the EventBase flow.
+const _ORPHANABLE_CHAT_MAPS = [
+    'eventbase_autosync_start_marker',
+    'eventbase_last_used_window_size',
+    'eventbase_vectorization_tip',
+];
+
+/**
+ * Prune orphaned per-chat entries from the EventBase maps above (+ the in-memory
+ * tip cache). An entry is orphaned when its chat UUID is NOT in `liveUuids` — the
+ * set of UUIDs that still have an EventBase/archive-event collection, supplied by
+ * the caller (which owns the registry). All pruned values are regenerable: a live
+ * chat that loses its marker/tip re-stamps/re-probes on the next ingestion, so an
+ * over-eager prune self-heals rather than losing real data.
+ *
+ * @param {Set<string>} liveUuids
+ * @returns {number} entries removed across the persisted maps
+ */
+export function pruneOrphanedChatMaps(liveUuids) {
+    if (!(liveUuids instanceof Set)) return 0;
+    const store = extension_settings?.vectfox;
+    if (!store) return 0;
+
+    let removed = 0;
+    for (const mapKey of _ORPHANABLE_CHAT_MAPS) {
+        const m = store[mapKey];
+        if (!m || typeof m !== 'object') continue;
+        for (const uuid of Object.keys(m)) {
+            if (!liveUuids.has(uuid)) {
+                delete m[uuid];
+                removed++;
+            }
+        }
+    }
+    // Drop in-memory tip entries for the same orphans (their persisted copy is gone).
+    for (const uuid of [..._vectorizationTipByUuid.keys()]) {
+        if (!liveUuids.has(uuid)) _vectorizationTipByUuid.delete(uuid);
+    }
+    if (removed > 0) {
+        saveSettingsDebounced();
+        log.lifecycle(`[EventBase] Pruned ${removed} orphaned per-chat entries (marker / last-window-size / tip)`);
+    }
+    return removed;
+}
+
 /**
  * Async cache-miss reader. On hit (in-memory OR persisted, via getVectorizationTip),
  * returns the tip immediately with no backend round-trip. Only when nothing is

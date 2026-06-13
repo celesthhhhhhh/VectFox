@@ -93,6 +93,43 @@ export function getCollectionRegistry() {
 }
 
 /**
+ * Prune orphaned per-chat EventBase settings (auto-sync marker, last-used window
+ * size, vectorization tip) — entries whose chat UUID no longer has an EventBase or
+ * archive-event collection in the registry (chat or its collection deleted, possibly
+ * outside the EventBase delete flow). Keeps the persist-the-tip benefit from leaving
+ * stale per-chat junk in settings.json.
+ *
+ * SAFETY: run this only AFTER a successful discovery so the registry reflects reality.
+ * It additionally bails when the registry is empty, so a transient discovery failure
+ * can't be read as "every chat is orphaned" and wipe live entries. (Pruned values are
+ * regenerable anyway — a live chat re-stamps/re-probes on next ingestion.)
+ *
+ * @returns {Promise<number>} entries removed
+ */
+export async function pruneOrphanedEventBaseChatMaps() {
+    const registry = getCollectionRegistry();
+    if (!registry.length) return 0; // empty registry → don't risk a mass wipe
+
+    const liveUuids = new Set();
+    for (const registryKey of registry) {
+        const colId = parseRegistryKey(registryKey)?.collectionId || '';
+        let raw = null;
+        if (colId.startsWith(COLLECTION_PREFIXES.VECTFOX_EVENTBASE)) {
+            raw = colId.slice(COLLECTION_PREFIXES.VECTFOX_EVENTBASE.length);
+        } else if (colId.startsWith(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT)) {
+            raw = colId.slice(COLLECTION_PREFIXES.VECTFOX_ARCHIVE_EVENT.length);
+        }
+        if (raw) {
+            const uuid = raw.split('_').pop(); // uuid is the final underscore-free segment
+            if (uuid) liveUuids.add(uuid);
+        }
+    }
+
+    const { pruneOrphanedChatMaps } = await import('./eventbase-store.js');
+    return pruneOrphanedChatMaps(liveUuids);
+}
+
+/**
  * Registers a collection in the registry (idempotent)
  * @param {string} collectionId Collection identifier
  */

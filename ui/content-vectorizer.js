@@ -293,6 +293,38 @@ function createModal() {
                                     <span>8 (fast)</span>
                                 </div>
                             </div>
+
+                            <!-- Window Size - moved from EventBase tab (Feature A re-home).
+                                 Shown for content types that use the EventBase extraction path
+                                 (today: chat history + chat-history file upload). Gated via
+                                 _usesEventBaseWindowControls() so future chunk-based summarizer
+                                 types can opt in from one place. -->
+                            <div class="vectfox-cv-slider-row" id="vectfox_cv_window_size_row" style="display:none;">
+                                <label>
+                                    Window Size
+                                    <span class="vectfox-cv-value" id="vectfox_cv_window_size_val">2</span> messages
+                                </label>
+                                <input type="range" id="vectfox_cv_window_size"
+                                       min="2" max="20" step="1" value="2">
+                                <div class="vectfox-cv-slider-hints">
+                                    <span>2 (granular)</span>
+                                    <span>20 (coarse)</span>
+                                </div>
+                            </div>
+
+                            <!-- Window Overlap - moved from EventBase tab (Feature A re-home). -->
+                            <div class="vectfox-cv-slider-row" id="vectfox_cv_window_overlap_row" style="display:none;">
+                                <label>
+                                    Window Overlap
+                                    <span class="vectfox-cv-value" id="vectfox_cv_window_overlap_val">0</span>
+                                </label>
+                                <input type="range" id="vectfox_cv_window_overlap"
+                                       min="0" max="5" step="1" value="0">
+                                <div class="vectfox-cv-slider-hints">
+                                    <span>0 (none)</span>
+                                    <span>5 (high)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -802,6 +834,19 @@ function renderYouTubeSource(type) {
 /**
  * Updates chunking strategy section
  */
+/**
+ * Content types whose Vectorize Content run uses the EventBase extraction path,
+ * and therefore the Window Size / Window Overlap / Parallel Windows controls.
+ * Today: 'chat' (covers both live chat history and chat-history .jsonl upload).
+ * FUTURE: when a chunk-based summarizer path is added, return true for those
+ * content-type ids here — slider visibility follows automatically, no other edits.
+ * @param {string} typeId
+ * @returns {boolean}
+ */
+function _usesEventBaseWindowControls(typeId) {
+    return typeId === 'chat';
+}
+
 function updateChunkingSection(type) {
     const strategies = getChunkingStrategies(type.id);
     const defaults = getContentTypeDefaults(type.id);
@@ -811,6 +856,12 @@ function updateChunkingSection(type) {
     // Default: ensure section is visible. The chat branch below may hide it for the
     // archive+EventBase route; non-chat types always need it visible.
     $('.vectfox-cv-chunking-section').show();
+
+    // Window Size / Overlap / Parallel Windows are EventBase-extraction-path controls.
+    // Show/hide them together based on the content type (single predicate above) so
+    // they appear for chat history (+ chat upload) and, later, any chunk-based path.
+    $('#vectfox_cv_parallel_row, #vectfox_cv_window_size_row, #vectfox_cv_window_overlap_row')
+        .toggle(_usesEventBaseWindowControls(type.id));
 
     const strategySelect = $('#vectfox_cv_strategy');
     strategySelect.empty();
@@ -848,7 +899,7 @@ function updateChunkingSection(type) {
         $('#vectfox_cv_strategy_desc').text('');
         $('#vectfox_cv_size_controls').hide();
         $('.vectfox-cv-chunking-section').show();
-        $('#vectfox_cv_parallel_row').show();
+        // Parallel/window rows already toggled above via _usesEventBaseWindowControls.
         return;
     }
 
@@ -1197,6 +1248,31 @@ function bindEvents() {
         const val = parseInt($(this).val());
         $('#vectfox_cv_parallel_val').text(val);
     });
+
+    // Window Size / Overlap (moved from the EventBase tab). Bind to the SAME setting
+    // keys so the workflow + Continue path read them unchanged — no migration.
+    {
+        const vf = extension_settings.vectfox || {};
+        const ws = vf.eventbase_window_size ?? 2;
+        const wo = vf.eventbase_window_overlap ?? 0;
+        $('#vectfox_cv_window_size').val(ws);
+        $('#vectfox_cv_window_size_val').text(ws);
+        $('#vectfox_cv_window_overlap').val(wo);
+        $('#vectfox_cv_window_overlap_val').text(wo);
+
+        $('#vectfox_cv_window_size').on('input', function() {
+            const val = parseInt($(this).val(), 10) || 2;
+            $('#vectfox_cv_window_size_val').text(val);
+            extension_settings.vectfox.eventbase_window_size = val;
+            saveSettingsDebounced();
+        });
+        $('#vectfox_cv_window_overlap').on('input', function() {
+            const val = parseInt($(this).val(), 10) || 0;
+            $('#vectfox_cv_window_overlap_val').text(val);
+            extension_settings.vectfox.eventbase_window_overlap = val;
+            saveSettingsDebounced();
+        });
+    }
 
     // Scope selection
     $(document).on('change', 'input[name="vectfox_cv_scope"]', function() {

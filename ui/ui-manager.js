@@ -803,6 +803,15 @@ export function renderSettings(containerId, settings, callbacks) {
                             <small id="VectFox_autosync_hint" class="VectFox_hint">Auto-Sync new messages (requires initial vectorization)</small>
                             <div id="VectFox_autosync_status" style="margin-top: 6px; font-size: 0.82em;"></div>
 
+                            <div class="vectfox-form-group" style="margin-top: 12px;">
+                                <label class="vectfox-label">
+                                    Auto-sync window: <span id="VectFox_eventbase_autosync_window_turns_val">1</span> turn(s)
+                                    <span class="VectFox_hint" id="VectFox_autosync_window_msg_equiv" style="margin-left:4px;">(= 2 messages)</span>
+                                </label>
+                                <input type="range" id="VectFox_eventbase_autosync_window_turns" min="1" max="20" step="1" class="vectfox-range" />
+                                <small class="VectFox_hint">Independent of the EventBase "Window Size". 1 turn = 2 messages (1 user + 1 AI reply). Auto-sync extracts a window every this-many turns of new chat.</small>
+                            </div>
+
                             <!-- Collection lock moved to Database Browser (per-collection settings) -->
 
                             <div class="vectfox-form-group" style="margin-top: 12px;">
@@ -945,17 +954,9 @@ export function renderSettings(containerId, settings, callbacks) {
                             <!-- Extraction settings -->
                             <p class="vectfox-section-label"><strong>Extraction</strong></p>
 
-                            <div class="vectfox-form-group">
-                                <label class="vectfox-label">Window Size <span id="VectFox_eventbase_window_size_val">2</span> messages</label>
-                                <input type="range" id="VectFox_eventbase_window_size" min="2" max="20" step="1" class="vectfox-range" />
-                                <small class="VectFox_hint">Number of consecutive messages sent to the AI per extraction call.</small>
-                            </div>
-
-                            <div class="vectfox-form-group">
-                                <label class="vectfox-label">Window Overlap <span id="VectFox_eventbase_window_overlap_val">0</span></label>
-                                <input type="range" id="VectFox_eventbase_window_overlap" min="0" max="5" step="1" class="vectfox-range" />
-                                <small class="VectFox_hint">Messages shared between consecutive windows. Higher overlap re-extracts edge messages with more context (more LLM calls). 0 = no overlap, each message extracted once.</small>
-                            </div>
+                            <!-- Window Size / Window Overlap moved to the Vectorize Content panel
+                                 (Feature A): after the independent auto-sync window, these two only
+                                 affect one-off Vectorize Content / backfill, so they live next to it. -->
 
                             <div class="vectfox-form-group">
                                 <label class="vectfox-label">Min Importance to Store <span id="VectFox_eventbase_min_importance_store_val">3</span></label>
@@ -3112,6 +3113,38 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
+    // Auto-sync independent window (turns). Feature A.
+    {
+        const _turns0 = Math.max(1, Math.min(20, settings.eventbase_autosync_window_turns ?? 1));
+        $('#VectFox_eventbase_autosync_window_turns_val').text(_turns0);
+        $('#VectFox_autosync_window_msg_equiv').text(`(= ${_turns0 * 2} messages)`);
+        $('#VectFox_eventbase_autosync_window_turns')
+            .val(_turns0)
+            .on('input', async function() {
+                const val = Math.max(1, Math.min(20, parseInt(this.value, 10) || 1));
+                const prev = settings.eventbase_autosync_window_turns;
+                settings.eventbase_autosync_window_turns = val;
+                $('#VectFox_eventbase_autosync_window_turns_val').text(val);
+                $('#VectFox_autosync_window_msg_equiv').text(`(= ${val * 2} messages)`);
+                Object.assign(extension_settings.vectfox, settings);
+                saveSettingsDebounced();
+
+                // Re-stamp the per-chat auto-sync marker so a new window size starts
+                // from the current high-water mark instead of triggering a backfill
+                // storm. Guarded on real change (input fires on every drag tick).
+                if (prev !== val) {
+                    try {
+                        const { stampAutoSyncMarker } = await import('../core/eventbase-store.js');
+                        const { getChatUUID } = await import('../core/collection-ids.js');
+                        const uuid = getChatUUID();
+                        if (uuid) await stampAutoSyncMarker(uuid, extension_settings.vectfox);
+                    } catch (err) {
+                        log.warn('[VectFox] Failed to re-stamp marker on auto-sync window change:', err?.message || err);
+                    }
+                }
+            });
+    }
+
     // Auto-sync popup toggle
     $('#VectFox_autosync_popup')
         .prop('checked', settings.eventbase_autosync_popup !== false)
@@ -3790,8 +3823,8 @@ function bindSettingsEvents(settings, callbacks) {
         if (labelId) $(`#VectFox_eventbase_${labelId}_val`).text(settings[settingKey] ?? $el.val());
     };
 
-    _bindEventBaseRange('window_size', 'eventbase_window_size', 'window_size');
-    _bindEventBaseRange('window_overlap', 'eventbase_window_overlap', 'window_overlap');
+    // window_size / window_overlap bindings moved to the Vectorize Content panel
+    // (ui/content-vectorizer.js) — see Feature A re-home.
     _bindEventBaseRange('min_importance_store', 'eventbase_min_importance_store', 'min_importance_store');
     _bindEventBaseRange('max_events_per_window', 'eventbase_max_events_per_window', 'max_events_per_window');
     _bindEventBaseRange('retrieval_top_k', 'eventbase_retrieval_top_k', 'retrieval_top_k');

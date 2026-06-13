@@ -312,7 +312,7 @@ export async function synchronizeChat(settings, batchSize = 5, triggerEvent = nu
         return { remaining: -1, messagesProcessed: 0, chunksCreated: 0 };
     }
 
-    const { runEventBaseIngestion } = await import('./eventbase-workflow.js');
+    const { runEventBaseIngestion, getAutoSyncWindowSize } = await import('./eventbase-workflow.js');
     const messages = context.chat.filter(m => m.mes && m.mes.trim().length > 0);
     log.lifecycle(`[AutoSync] calling runEventBaseIngestion: messages=${messages.length}`);
     let result;
@@ -326,6 +326,11 @@ export async function synchronizeChat(settings, batchSize = 5, triggerEvent = nu
             // the popup should only appear after the AI's reply, not mid-generation.
             // MESSAGE_RECEIVED (and edits/swipes/deletes) still get the popup.
             suppressAutoSyncPopup: triggerEvent === 'MESSAGE_SENT',
+            // Feature A: auto-sync uses its own independent window (turns*2), NOT the
+            // one-off Vectorize Content eventbase_window_size. Zero overlap so each
+            // turn-pair is an independent window.
+            windowSizeOverride: getAutoSyncWindowSize(settings),
+            windowOverlapOverride: 0,
         });
     } catch (err) {
         // A retired/unknown model (extraction OR embedding) would otherwise be

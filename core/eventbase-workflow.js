@@ -32,6 +32,20 @@ import { log } from './log.js';
 /** Extension prompt tag for EventBase (distinct from legacy chunks tag) */
 const EVENTBASE_PROMPT_TAG = `${EXTENSION_PROMPT_TAG}_eventbase`;
 
+/**
+ * Resolve the auto-sync extraction window size in MESSAGES from the per-user
+ * turns setting (1 turn = 2 messages: 1 user + 1 AI reply). Clamped to 1-20 turns.
+ * Auto-sync uses this instead of settings.eventbase_window_size so its cadence is
+ * independent of the one-off Vectorize Content window. Single source of truth for
+ * the conversion — used by the auto-sync caller AND the auto-sync status check.
+ * @param {object} settings - VectFox settings
+ * @returns {number} window size in messages
+ */
+export function getAutoSyncWindowSize(settings) {
+    const turns = Math.max(1, Math.min(20, settings?.eventbase_autosync_window_turns ?? 1));
+    return turns * 2;
+}
+
 // ---------------------------------------------------------------------------
 // Ingestion
 // ---------------------------------------------------------------------------
@@ -58,7 +72,7 @@ const EVENTBASE_PROMPT_TAG = `${EXTENSION_PROMPT_TAG}_eventbase`;
  * @param {{ strategy?: string, batchSize?: number, totalChunks?: number }|null} [params.progressPlan]
  * @returns {Promise<{ eventsExtracted: number, windowsProcessed: number, windowsSkipped: number }>}
  */
-export async function runEventBaseIngestion({ messages, chatUUID, settings, abortSignal = null, progressPlan = null, collectionIdOverride = null, parallelWindows = 3, isAutoSync = false, suppressAutoSyncPopup = false, skipTipFallback = false }) {
+export async function runEventBaseIngestion({ messages, chatUUID, settings, abortSignal = null, progressPlan = null, collectionIdOverride = null, parallelWindows = 3, isAutoSync = false, suppressAutoSyncPopup = false, skipTipFallback = false, windowSizeOverride = undefined, windowOverlapOverride = undefined }) {
     const uuid = chatUUID || getChatUUID();
 
     // Respect the global collection pause toggle before doing any extraction,
@@ -90,8 +104,12 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         return { eventsExtracted: 0, windowsProcessed: 0, windowsSkipped: 0 };
     }
 
-    const windowSize = Math.max(2, settings.eventbase_window_size || 6);
-    const windowOverlap = Math.max(0, Math.min(windowSize - 1, settings.eventbase_window_overlap ?? 0));
+    const windowSize = windowSizeOverride != null
+        ? Math.max(2, windowSizeOverride)
+        : Math.max(2, settings.eventbase_window_size || 6);
+    const windowOverlap = windowOverlapOverride != null
+        ? Math.max(0, Math.min(windowSize - 1, windowOverlapOverride))
+        : Math.max(0, Math.min(windowSize - 1, settings.eventbase_window_overlap ?? 0));
     const step = windowSize - windowOverlap;
     const minImportanceStore = settings.eventbase_min_importance_store || 1;
 
@@ -1154,9 +1172,13 @@ function _djb2(str) {
  * @param {string}   chatUUID  - Current chat UUID
  * @returns {boolean}
  */
-export function isChatFullyVectorized(messages, settings, chatUUID) {
-    const windowSize = Math.max(2, settings.eventbase_window_size || 6);
-    const windowOverlap = Math.max(0, Math.min(windowSize - 1, settings.eventbase_window_overlap ?? 0));
+export function isChatFullyVectorized(messages, settings, chatUUID, windowSizeOverride = undefined, windowOverlapOverride = undefined) {
+    const windowSize = windowSizeOverride != null
+        ? Math.max(2, windowSizeOverride)
+        : Math.max(2, settings.eventbase_window_size || 6);
+    const windowOverlap = windowOverlapOverride != null
+        ? Math.max(0, Math.min(windowSize - 1, windowOverlapOverride))
+        : Math.max(0, Math.min(windowSize - 1, settings.eventbase_window_overlap ?? 0));
     const step = windowSize - windowOverlap;
     const msgHash = m => { const t = (m.mes || '').trim(); return m.hash ?? _djb2(`${m.name || ''}:${t}`); };
     return isLastWindowExtracted(messages, windowSize, step, chatUUID, msgHash);
@@ -1233,7 +1255,10 @@ export async function getChatAutoSyncStatus(settings) {
         };
     }
 
-    const fullyVectorized = isChatFullyVectorized(messages, settings, uuid);
+    // Evaluate auto-sync "fully vectorized" against the AUTO-SYNC window (turns*2,
+    // overlap 0), not the one-off Vectorize Content window — otherwise the LED
+    // would read "partial" forever whenever the two window sizes differ.
+    const fullyVectorized = isChatFullyVectorized(messages, settings, uuid, getAutoSyncWindowSize(settings), 0);
 
     // Cache-first read; one-time probe on cold cache populates from Qdrant.
     // After first session-warmup, the ingestion loop keeps this up-to-date

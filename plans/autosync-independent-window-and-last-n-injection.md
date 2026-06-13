@@ -19,6 +19,108 @@ An implementer can follow the plan top-to-bottom; §9 (bug-fix history) is refer
 
 ---
 
+## 0.0 AMENDMENTS / STALENESS AUDIT (2026-06-13)
+
+Re-verified against the current tree after the alt-endpoint consolidation, bananabread removal, settings.html deletion, and the generation rate-limiter work. **Read this section first — it overrides the older sections below where they conflict.**
+
+### A. Feature B respec (per owner, 2026-06-13)
+
+Feature B is renamed and re-scoped. Where §1, §3, §4.3–§4.4, §5, §6 say "Inject Last N Turn Summary" / "last N", apply these instead:
+
+| Item | Old (sections below) | **New (authoritative)** |
+|---|---|---|
+| Feature name | "Inject Last N Turn Summary" | **"Summarizer Injection"** |
+| Setting keys | `eventbase_inject_last_n_enabled` / `eventbase_inject_last_n_count` | `summarizer_injection_enabled` / `summarizer_injection_count` |
+| Count slider | range 1–30, default 10 | **range 1–50, default 30** |
+| New module | `core/eventbase-last-n-injection.js` | `core/summarizer-injection.js` |
+| Entry fn | `runLastNTurnInjection(settings)` | `runSummarizerInjection(settings)` |
+| Prompt slot key | `${EXTENSION_PROMPT_TAG}_eventbase_lastn` | `${EXTENSION_PROMPT_TAG}_summarizer` (= `3_vectfox_summarizer`) |
+| Injected wrapper | `[Recent Turn Memory — …]` header | wrap the block in **`<VectFoxSummarizer>` … `</VectFoxSummarizer>`** XML-style tags |
+| Clamp in code | `Math.min(30, … ?? 10)` | `Math.min(50, … ?? 30)` |
+
+Everything else about Feature B (sort by `source_window_end` desc, slice top N, separate prompt slot from EventBase retrieval, one-way lock forcing the auto-sync window to 1 turn, "inject whatever exists" for sparse chats) is unchanged.
+
+### B. §0.6 — done 2026-06-13 (adapted, not as originally written)
+
+When this plan was written, §0.6 proposed a full rewrite (persist the tip, delete `ensureVectorizationTip`, revert `getChatAutoSyncStatus` to sync). Two things to know:
+1. A *separate* correctness mechanism had already shipped independently — `shouldUseTipFallback({ skipTipFallback, fastForwardSkipped, hasCollection })` ([`core/eventbase-store.js:474`](core/eventbase-store.js#L474)), `prepareForFreshExtraction(chatUUID)` ([`:500`](core/eventbase-store.js#L500)), and a `skipTipFallback` param on `runEventBaseIngestion` ([`core/eventbase-workflow.js:61`](core/eventbase-workflow.js#L61)). That handles re-extraction correctness; leave it alone.
+2. **The tip *persistence* part of §0.6 is now implemented** (2026-06-13) in an adapted form — see the ✅ banner on §0.6. We persist the tip (`eventbase_vectorization_tip` key) and warm it on read, but kept `ensureVectorizationTip` and `getChatAutoSyncStatus`-async intact (the ingestion path still uses the probe). Benefit: no `listChunks` probe / no display flicker on reload for the two plugin-backed user groups.
+
+So §0.6's *intent* shipped; just don't follow its original "delete the probe / go sync" steps.
+
+### C. §10 (Continue unification) — the modal evolved
+
+The "window-size-change warn modal" §10 plans to delete still exists, but it's now a `callGenericPopup` gated on `checkWindowSizeChanged` + `prepareForFreshExtraction` (skip-tip-fallback threading), not the standalone block §10.3 describes. See [`ui/content-vectorizer.js:2695-2724`](ui/content-vectorizer.js#L2695). §10's intent (route Continue through the marker path, drop the modal) still holds, but its implementation must reuse `checkWindowSizeChanged` / `prepareForFreshExtraction` rather than the structure quoted in §10.3–§10.4.
+
+### D. All line numbers are stale — re-grep. Corrected anchors for the critical ones:
+
+The bananabread removal (chat-vectorization.js −~63 lines around the old rerank block), the generation rate-limiter, and prior drift moved nearly every reference. Re-grep per §0. Verified current locations:
+
+| Symbol | Plan says | **Actual now** |
+|---|---|---|
+| `runEventBaseIngestion` signature (now incl. `skipTipFallback`) | workflow.js:59 | [`:61`](core/eventbase-workflow.js#L61) |
+| Marker filter gate `if (isAutoSync)` | workflow.js:170 | [`:199`](core/eventbase-workflow.js#L199) |
+| `runEventBaseRetrieval` (Feature B injection hook is its caller) | "grep" | def at [`:922`](core/eventbase-workflow.js#L922); EventBase `setExtensionPrompt` at [`:1074`](core/eventbase-workflow.js#L1074) |
+| `isChatFullyVectorized` | workflow.js:725-727 | [`:1157`](core/eventbase-workflow.js#L1157) |
+| Auto-sync `runEventBaseIngestion` call | chat-vectorization.js:371 | [`:320`](core/chat-vectorization.js#L320) |
+| Backfill `runEventBaseIngestion` call | chat-vectorization.js:1572 | [`:1640`](core/chat-vectorization.js#L1640) |
+| `eventbase_window_size` / `_overlap` defaults | index.js:179-180 | [`:208-209`](index.js#L208) |
+| Marker / last-used-size defaults | index.js:181-192 | `eventbase_autosync_start_marker` [`:216`](index.js#L216), `eventbase_last_used_window_size` [`:221`](index.js#L221) |
+| EventBase-tab Window Size / Overlap sliders (§4.2 deletes) | ui-manager.js:869-876 | [`:949-956`](ui/ui-manager.js#L949) |
+| Their bindings (§4.2 deletes) | ui-manager.js:3413-3414 | `_bindEventBaseRange('window_size'…)` [`:3793-3794`](ui/ui-manager.js#L3793) |
+| AutoSync tab anchor (`VectFox_autosync_popup`) | ui-manager.js:742 | [`:809-810`](ui/ui-manager.js#L809) |
+| Stamp-on-enable `stampAutoSyncMarker` | ui-manager.js:2063-2103 | [`:2204-2207`](ui/ui-manager.js#L2204) |
+| Vectorize Content parallel-windows row (§4.2 anchor) | content-vectorizer.js:245 | `vectfox_cv_parallel_row` [`:284`](ui/content-vectorizer.js#L284) |
+| `EXTENSION_PROMPT_TAG` | — | `'3_vectfox'` [`constants.js:18`](core/constants.js#L18) |
+
+Also note: `chat-vectorization.js` STAGE numbering is now non-contiguous (old "STAGE 5: BananaBread reranking" was deleted with the bananabread removal; stages now run 1, 2, 2.5, 3, 4, 4.3, 4.5, 6, 8, 8.5, 9, 10). Feature B hooks at the `runEventBaseRetrieval` path, not these stages, so it's unaffected — but don't trust a literal "STAGE 5" reference.
+
+### E. Backend support + Feature B plugin gate (decided 2026-06-13)
+
+EventBase's two read paths behave differently without the Similharity plugin:
+- The **query/retrieval** path degrades gracefully — native ST Vectra stores `{hash, text, index}` and retrieval re-parses the embed text to recover event fields; cosine ranking is auto-coerced to 0 ([`core/eventbase-retrieval.js:220-227`](core/eventbase-retrieval.js#L220), [`:382-396`](core/eventbase-retrieval.js#L382)).
+- The **`listChunks`** path returns **hashes only — `metadata: {}`, `text: ''`** ([`backends/standard.js:958-963`](backends/standard.js#L958)). The auto-sync marker, the vectorization tip, and Feature B (Summarizer Injection) all use `listChunks`.
+
+Support matrix:
+
+| Capability | standard+plugin / qdrant+plugin | **standard + NO plugin** |
+|---|---|---|
+| Extraction + storage (ingestion) | ✅ | ✅ |
+| EventBase retrieval / injection | ✅ full | ⚠️ degraded (text-parse; cosine off) |
+| Marker smart-placement (gap backfill) | ✅ `max(source_window_end)+1` | ⚠️ stamps at `chatLength` (safe, "from now"; no backfill) |
+| **Feature A** (independent auto-sync window) | ✅ | ⚠️ works degraded — adds NO new dependency vs today's auto-sync |
+| **Feature B** (Summarizer Injection) | ✅ | ❌ `listChunks` has no metadata → 0 events → silent no-op |
+
+**Directive (owner, 2026-06-13): Do NOT show the Summarizer Injection controls when the backend is Standard and the plugin probe reports no plugin.** Hide them (don't merely disable), since the feature can't function at all there. Implementation: mirror the existing `_refreshCosineWeightAvailability` helper at [`ui/ui-manager.js:3848-3860`](ui/ui-manager.js#L3848):
+
+```js
+// In the AutoSync settings-load + on any backend/plugin change:
+_refreshSummarizerInjectionAvailability = async function() {
+    const $group = $('#VectFox_summarizer_injection_group'); // wraps checkbox + count slider + lock note
+    if ($group.length === 0) return;
+    const backend = settings.vector_backend || 'standard';
+    const pluginUp = await checkPluginAvailable(); // cached after first call — cheap
+    const unsupported = backend === 'standard' && !pluginUp;
+    $group.toggle(!unsupported);
+};
+```
+
+So §4.3's markup must wrap the checkbox + count slider (+ lock hint) in a single `#VectFox_summarizer_injection_group` container so this one toggle hides the whole feature. Call the helper on settings load and whenever the backend selector or plugin status changes (the cosine helper is already called from both spots — hook in next to it). Note: qdrant always implies the plugin, so `backend === 'standard' && !pluginUp` is the only no-plugin case worth gating.
+
+### F. Feature A — IMPLEMENTED 2026-06-13 (incl. §4.2 re-home)
+
+The independent auto-sync window and the UI re-home are done:
+- `eventbase_autosync_window_turns: 1` default ([`index.js`](index.js)).
+- `getAutoSyncWindowSize(settings)` helper (turns→messages, clamped 1-20) + `windowSizeOverride`/`windowOverlapOverride` params on `runEventBaseIngestion` and the size/overlap derivation ([`core/eventbase-workflow.js`](core/eventbase-workflow.js)).
+- Auto-sync caller passes `windowSizeOverride: getAutoSyncWindowSize(settings)`, `windowOverlapOverride: 0` ([`core/chat-vectorization.js`](core/chat-vectorization.js)); backfill + one-off callers unchanged.
+- AutoSync-tab "Auto-sync window (turns)" slider + binding with the marker re-stamp hook ([`ui/ui-manager.js`](ui/ui-manager.js)).
+- **Correction to §2.1's "moot" claim:** `isChatFullyVectorized` got the same override params, and `getChatAutoSyncStatus` now evaluates against the auto-sync window — otherwise the auto-sync LED reads "partial" forever once the two window sizes differ. Not moot.
+- **§4.2 re-home done:** Window Size / Window Overlap markup + `_bindEventBaseRange` bindings deleted from the EventBase tab; equivalent rows added to the Vectorize Content panel ([`ui/content-vectorizer.js`](ui/content-vectorizer.js)), bound to the same `eventbase_window_size`/`eventbase_window_overlap` keys (no migration). **Min Importance / Max Events stayed on the EventBase tab** (they affect auto-sync too — only the two window-cadence sliders moved).
+
+**Future-proofing (owner note, 2026-06-13):** these two sliders currently apply only to the chat (EventBase) path, but a future **chunk-based summarizer** will be a separate path that also wants them on other content types. So visibility is gated by a single predicate `_usesEventBaseWindowControls(typeId)` (returns `typeId === 'chat'` today) — to surface the sliders for the future chunk-summarizer content types, return true for those ids there and nothing else changes.
+
+---
+
 ## 0. Pre-flight verifications
 
 Before changing code, confirm the surface area is what was read while planning. Line numbers are post-C3 (the bug fix shipped on 2026-05-20 — see §9).
@@ -55,7 +157,14 @@ When this plan was first written, several pieces of mechanism were proposed as p
 
 ## 0.6 Pre-implementation fix: vectorization tip persistence
 
-**Do this before starting §1.** It is a self-contained cleanup (~20 lines net) that removes async complexity from a hot code path and makes the "vectorization: N msgs" display correct for all backends.
+> ✅ **IMPLEMENTED 2026-06-13 (adapted to current code).** We chose to do this because it benefits both main user groups (standard+plugin and qdrant+plugin): the persisted tip makes the "N msgs vectorized" display correct immediately after a reload with **no `listChunks` probe** and no flicker. The original §0.6 also proposed deleting `ensureVectorizationTip` and reverting `getChatAutoSyncStatus` to sync — we did **NOT** do that, because the ingestion tip-fallback path ([`core/eventbase-workflow.js:266`](core/eventbase-workflow.js#L266)) still relies on `ensureVectorizationTip`. Instead we made `ensureVectorizationTip` read the persisted value first (via `getVectorizationTip`), so its await resolves instantly with no network call when a tip is known. The text below is the original proposal, kept for context; **the as-built shape is:**
+>
+> - `index.js` — added `eventbase_vectorization_tip: {}` default (next to the marker keys).
+> - `core/eventbase-store.js` — `setVectorizationTip` now also persists (monotonic) to `extension_settings.vectfox.eventbase_vectorization_tip[chatUUID]` + `saveSettingsDebounced()`; `getVectorizationTip` warms the in-memory cache from that persisted map on miss; `clearVectorizationTip` also deletes the persisted entry (so the existing reset paths — `clearExtractionCachesForChat` via collection-delete / `prepareForFreshExtraction` / ingestion-clear — keep it from going stale); `ensureVectorizationTip` checks `getVectorizationTip` (in-memory + persisted) before probing the backend.
+> - `getChatAutoSyncStatus` stays `async` (unchanged) — the two UI callers keep their `await`. The benefit (no probe, no flicker) is realized without the sync refactor.
+> - Note: standard-no-plugin still can't produce a tip (no metadata to probe), and persistence doesn't help there — but that config can't meaningfully run EventBase anyway (see §0.0.E).
+
+**(Original proposal — historical) Do this before starting §1.** It is a self-contained cleanup (~20 lines net) that removes async complexity from a hot code path and makes the "vectorization: N msgs" display correct for all backends.
 
 ### Why the current approach is wrong
 

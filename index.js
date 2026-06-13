@@ -207,6 +207,11 @@ const defaultSettings = {
     eventbase_timeout_ms: 60000,
     eventbase_window_size: 2,                     // Chat messages per extraction window
     eventbase_window_overlap: 0,                  // Window overlap to avoid edge cuts
+    // Independent auto-sync window, owned by the AutoSync tab. Expressed in TURNS
+    // (1 turn = 2 messages: 1 user + 1 AI reply); messageCount = turns * 2. Auto-sync
+    // uses this instead of eventbase_window_size, so its cadence is independent of the
+    // one-off Vectorize Content window. Range 1-20. Default 1 (most reactive).
+    eventbase_autosync_window_turns: 1,
     // Per-chat marker: auto-sync only processes windows whose start >= marker.
     // Stamped at "max(source_window_end across existing events) + 1" when auto-sync
     // is enabled on a non-empty collection, or at current chat length when collection
@@ -219,6 +224,11 @@ const defaultSettings = {
     // and warn the user before triggering a full re-extraction.
     // Keyed by chat UUID.
     eventbase_last_used_window_size: {},
+    // Per-chat persisted vectorization tip (= max(source_window_end)+1, the first
+    // uncovered message). Persisted so the "N msgs vectorized" display is correct
+    // immediately after a reload WITHOUT a backend probe — benefits standard+plugin
+    // and qdrant+plugin users. Keyed by chat UUID. See core/eventbase-store.js.
+    eventbase_vectorization_tip: {},
     eventbase_min_importance_store: 3,            // Drop events below this importance before storing
     eventbase_max_events_per_window: 3,           // Hard cap on events returned per LLM call
     eventbase_retrieval_top_k: 10,                // Events to retrieve per generation

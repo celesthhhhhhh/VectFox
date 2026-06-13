@@ -39,33 +39,64 @@ const _windowCacheSet = new Map(); // chatUUID → Set<fingerprint>
 //
 // Lifecycle:
 //   - written by the ingestion loop after each successful markWindowExtracted
-//   - probed once per (chat, session) on cache-miss via ensureVectorizationTip
+//   - persisted to extension_settings.vectfox.eventbase_vectorization_tip so the
+//     value survives reload WITHOUT a backend probe (benefits standard+plugin and
+//     qdrant+plugin users; standard-no-plugin can't probe anyway). See getter.
+//   - probed via ensureVectorizationTip only when neither the in-memory cache nor
+//     the persisted map has a value (i.e. the very first read on a chat)
 //   - cleared by clearVectorizationTip (parity with clearAutoSyncMarker)
-//   - NOT persisted; recomputed from Qdrant payloads on next probe after reload
 const _vectorizationTipByUuid = new Map(); // chatUUID → number (tip)
 
-/** Sync getter — returns cached tip or undefined (caller falls back to marker). */
+/**
+ * Sync getter. On in-memory miss, warms the cache from the persisted
+ * extension_settings map, so the tip is correct immediately after a reload with
+ * no backend round-trip. Returns undefined only when nothing is known yet.
+ */
 export function getVectorizationTip(chatUUID) {
-    return chatUUID ? _vectorizationTipByUuid.get(chatUUID) : undefined;
+    if (!chatUUID) return undefined;
+    const cached = _vectorizationTipByUuid.get(chatUUID);
+    if (typeof cached === 'number') return cached;
+    const persisted = extension_settings?.vectfox?.eventbase_vectorization_tip?.[chatUUID];
+    if (typeof persisted === 'number') {
+        _vectorizationTipByUuid.set(chatUUID, persisted);
+        return persisted;
+    }
+    return undefined;
 }
 
-/** Sync setter — monotonic max so out-of-order calls don't regress the tip. */
+/** Sync setter — monotonic max (in-memory + persisted) so out-of-order calls don't regress the tip. */
 export function setVectorizationTip(chatUUID, tip) {
     if (!chatUUID || typeof tip !== 'number' || !Number.isFinite(tip)) return;
     const current = _vectorizationTipByUuid.get(chatUUID) ?? -1;
     if (tip > current) _vectorizationTipByUuid.set(chatUUID, tip);
+    // Persist (also monotonic) so the value survives reload without a probe.
+    const store = extension_settings?.vectfox;
+    if (store) {
+        if (!store.eventbase_vectorization_tip) store.eventbase_vectorization_tip = {};
+        if (tip > (store.eventbase_vectorization_tip[chatUUID] ?? -1)) {
+            store.eventbase_vectorization_tip[chatUUID] = tip;
+            saveSettingsDebounced();
+        }
+    }
 }
 
-/** Clear the cached tip (e.g. when the user clears EventBase for this chat). */
+/** Clear the cached + persisted tip (e.g. when the user clears EventBase for this chat). */
 export function clearVectorizationTip(chatUUID) {
-    if (chatUUID) _vectorizationTipByUuid.delete(chatUUID);
+    if (!chatUUID) return;
+    _vectorizationTipByUuid.delete(chatUUID);
+    const store = extension_settings?.vectfox?.eventbase_vectorization_tip;
+    if (store && Object.prototype.hasOwnProperty.call(store, chatUUID)) {
+        delete store[chatUUID];
+        saveSettingsDebounced();
+    }
 }
 
 /**
- * Async cache-miss reader. On hit, returns the cached tip immediately.
- * On miss, probes the backend via listChunks ONCE, populates the cache, and
- * returns the value. Same shape as stampAutoSyncMarker's existing scan, so
- * cost per cold chat is the same as the existing marker-stamp flow.
+ * Async cache-miss reader. On hit (in-memory OR persisted, via getVectorizationTip),
+ * returns the tip immediately with no backend round-trip. Only when nothing is
+ * known yet does it probe the backend via listChunks ONCE, populate the cache, and
+ * return the value. Same shape as stampAutoSyncMarker's existing scan, so cost on a
+ * genuinely-cold chat is the same as the existing marker-stamp flow.
  *
  * @param {string} chatUUID
  * @param {string} collectionId  - Bare or registry-key form; passed straight to listChunks.
@@ -74,7 +105,7 @@ export function clearVectorizationTip(chatUUID) {
  */
 export async function ensureVectorizationTip(chatUUID, collectionId, settings) {
     if (!chatUUID) return null;
-    const cached = _vectorizationTipByUuid.get(chatUUID);
+    const cached = getVectorizationTip(chatUUID); // in-memory, else warms from persisted
     if (typeof cached === 'number') return cached;
     if (!collectionId) return null;
     try {

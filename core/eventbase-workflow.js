@@ -1219,12 +1219,20 @@ export async function getChatAutoSyncStatus(settings) {
     // Ownership/superadmin filtering is bundled into getCollectionListing.
     const patterns = buildChatSearchPatterns(chatId, uuid);
     const listing = getCollectionListing(settings);
-    const match = listing.find(({ collectionId, registryKey, isOwn }) => {
+    const isEbMatch = ({ collectionId, registryKey, isOwn }) => {
         if (!isOwn) return false;
         const idLower = collectionId.toLowerCase();
         if (!idLower.startsWith('vf_eventbase_') && !idLower.includes('eventbase_')) return false;
         return matchesPatterns(collectionId, patterns) || matchesPatterns(registryKey, patterns);
-    });
+    };
+    // A chat UUID can have multiple per-persona EventBase collections. Prefer the
+    // one locked to THIS chat (matches the DB Browser's "Active here only" and the
+    // auto-sync write target) over an arbitrary first UUID match. Fall back to the
+    // first match for legacy collections that predate the lock index.
+    const ebMatches = listing.filter(isEbMatch);
+    const match = ebMatches.find(m => isCollectionLockedToChat(m.registryKey, chatId)
+                                   || isCollectionLockedToChat(m.collectionId, chatId))
+        || ebMatches[0];
 
     if (!match) return { state: 'no-collection' };
 

@@ -15,10 +15,11 @@ import {
     getAdditionalArgs,
     getSavedHashes,
 } from './core-vector-api.js';
-import { saveSettingsDebounced, getRequestHeaders } from '../../../../../script.js';
+import { saveSettingsDebounced, getRequestHeaders, getCurrentChatId } from '../../../../../script.js';
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { getChatUUID, buildEventBaseCollectionId, getRegistryBackend, COLLECTION_PREFIXES, parseRegistryKey } from './collection-ids.js';
 import { registerCollection, getCollectionRegistry } from './collection-loader.js';
+import { getChatLockedCollections } from './collection-metadata.js';
 import { buildEmbedText } from './eventbase-schema.js';
 import { log } from './log.js';
 
@@ -753,12 +754,28 @@ export function findEventBaseCollectionIdsForChat(uuid, preferredBackend) {
         matches.push({ registryKey, collectionId: colId, backend: parsed.backend });
     }
 
+    // A single chat UUID can have MULTIPLE EventBase collections on the same
+    // backend — one per persona/handle (e.g. an imported archive under a different
+    // name1). Backend rank alone then picks an arbitrary one, which is how the
+    // auto-sync marker ended up reading a stale import instead of the active
+    // collection. Disambiguate by the chat lock: the collection locked to the
+    // CURRENT chat is the one the rest of the system treats as active (DB Browser
+    // "Active here only", isCollectionActiveForContext). Rank it first so callers
+    // that take [0] resolve correctly. Only meaningful when resolving the current
+    // chat; for any other UUID lock state is irrelevant and we keep backend order.
+    const lockedKeys = (uuid === getChatUUID())
+        ? new Set(getChatLockedCollections(getCurrentChatId()))
+        : new Set();
+    const isLocked = (m) => lockedKeys.has(m.registryKey) || lockedKeys.has(m.collectionId);
+
     const wantBackend = String(preferredBackend || '').toLowerCase();
-    const rank = (m) => {
+    const backendRank = (m) => {
         if (wantBackend && m.backend === wantBackend) return 0;
         if (m.backend) return 1;
         return 2;
     };
+    // Lock dominates; backend preference tie-breaks within each lock tier.
+    const rank = (m) => (isLocked(m) ? 0 : 10) + backendRank(m);
     matches.sort((a, b) => rank(a) - rank(b));
     return matches.map(({ registryKey, collectionId }) => ({ registryKey, collectionId }));
 }

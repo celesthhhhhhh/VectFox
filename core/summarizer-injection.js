@@ -98,15 +98,22 @@ export async function buildSummarizerInjection(settings) {
 }
 
 /**
- * Render events oldest→newest inside <VectFoxSummarizer> tags, one summary per line.
- * @param {Array<{text?: string, metadata?: object}>} events - newest-first
+ * Render events oldest→newest inside <VectFoxSummarizer> tags, one summary per
+ * line, each tagged with its recency so the model knows how far back it is:
+ * the most recent extracted turn is "(latest turn)", older ones "(N turns ago)".
+ * @param {Array<{text?: string, metadata?: object}>} events - newest-first (sorted desc)
  * @returns {string}
  */
 function _format(events) {
-    const lines = [...events]
-        .reverse() // chronological for the LLM (oldest → newest)
-        .map(evt => _stripEventTypePrefix(evt.text || evt.metadata?.summary || ''))
-        .filter(Boolean);
+    const lines = [];
+    // Walk oldest→newest. `events[0]` is the most recent (rank 1), so event at
+    // index i is "i+1" turns back; i === 0 is the latest.
+    for (let i = events.length - 1; i >= 0; i--) {
+        const summary = _stripEventTypePrefix(events[i].text || events[i].metadata?.summary || '');
+        if (!summary) continue;
+        const label = i === 0 ? 'latest turn' : `${i + 1} turns ago`;
+        lines.push(`(${label}) ${summary}`);
+    }
     return `<VectFoxSummarizer>\n${lines.join('\n')}\n</VectFoxSummarizer>`;
 }
 

@@ -82,15 +82,15 @@ describe('runSummarizerInjection', () => {
         expect(r.injected).toBe(3);
         const [tag, text] = lastInjected();
         expect(tag).toBe('3_vectfox_summarizer');
-        // top-3 by swe desc = D(8), C(6), B(4); rendered chronological = B, C, D
-        expect(text).toBe('<VectFoxSummarizer>\nB\nC\nD\n</VectFoxSummarizer>');
+        // top-3 by swe desc = D(8), C(6), B(4); rendered chronological with recency tags
+        expect(text).toBe('<VectFoxSummarizer>\n(3 turns ago) B\n(2 turns ago) C\n(latest turn) D\n</VectFoxSummarizer>');
     });
 
     it('injects all when fewer events than N exist (no padding)', async () => {
         mocks.listChunks.mockResolvedValue({ items: [ev(2, 'X'), ev(4, 'Y')] });
         const r = await runSummarizerInjection(SETTINGS({ summarizer_injection_count: 10 }));
         expect(r.injected).toBe(2);
-        expect(lastInjected()[1]).toBe('<VectFoxSummarizer>\nX\nY\n</VectFoxSummarizer>');
+        expect(lastInjected()[1]).toBe('<VectFoxSummarizer>\n(2 turns ago) X\n(latest turn) Y\n</VectFoxSummarizer>');
     });
 
     it('clamps count to 50', async () => {
@@ -105,7 +105,7 @@ describe('runSummarizerInjection', () => {
         mocks.listChunks.mockResolvedValue({ items: [{ text: 'hash-only', metadata: {} }, ev(2, 'real')] });
         const r = await runSummarizerInjection(SETTINGS());
         expect(r.injected).toBe(1);
-        expect(lastInjected()[1]).toBe('<VectFoxSummarizer>\nreal\n</VectFoxSummarizer>');
+        expect(lastInjected()[1]).toBe('<VectFoxSummarizer>\n(latest turn) real\n</VectFoxSummarizer>');
     });
 });
 
@@ -114,7 +114,7 @@ describe('buildSummarizerInjection (Debug Summarizer preview path)', () => {
         mocks.listChunks.mockResolvedValue({ items: [ev(4, 'Y'), ev(2, 'X')] });
         const out = await buildSummarizerInjection(SETTINGS({ summarizer_injection_enabled: false, summarizer_injection_count: 5 }));
         expect(out.count).toBe(2);
-        expect(out.text).toBe('<VectFoxSummarizer>\nX\nY\n</VectFoxSummarizer>');
+        expect(out.text).toBe('<VectFoxSummarizer>\n(2 turns ago) X\n(latest turn) Y\n</VectFoxSummarizer>');
         // Preview must NOT touch the prompt slot.
         expect(mocks.setExtensionPrompt).not.toHaveBeenCalled();
     });

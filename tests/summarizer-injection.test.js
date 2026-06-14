@@ -128,6 +128,34 @@ describe('buildSummarizerInjection (Debug Summarizer preview path)', () => {
         expect(mocks.setExtensionPrompt).not.toHaveBeenCalled();
     });
 
+    it('char budget keeps the most-recent events and drops the oldest overflow', async () => {
+        // 6 events ~30 chars each; budget 80 → fits the latest 2-3, drops the rest.
+        mocks.listChunks.mockResolvedValue({ items: [
+            ev(10, 'AAAAAAAAAAAAAAAAAAAA'), ev(9, 'BBBBBBBBBBBBBBBBBBBB'),
+            ev(8, 'CCCCCCCCCCCCCCCCCCCC'), ev(7, 'DDDDDDDDDDDDDDDDDDDD'),
+            ev(6, 'EEEEEEEEEEEEEEEEEEEE'), ev(5, 'FFFFFFFFFFFFFFFFFFFF'),
+        ] });
+        const out = await buildSummarizerInjection(SETTINGS({ summarizer_injection_count: 6, summarizer_injection_max_chars: 80 }));
+        expect(out.count).toBeLessThan(6);          // trimmed
+        expect(out.count).toBeGreaterThanOrEqual(1);
+        expect(out.text).toContain('(latest turn) AAAAAAAAAAAAAAAAAAAA'); // newest always kept
+        expect(out.text).not.toContain('FFFFFFFFFFFFFFFFFFFF');           // oldest dropped
+    });
+
+    it('always includes the latest event even if it alone exceeds the budget', async () => {
+        mocks.listChunks.mockResolvedValue({ items: [ev(10, 'X'.repeat(500)), ev(9, 'older')] });
+        const out = await buildSummarizerInjection(SETTINGS({ summarizer_injection_count: 2, summarizer_injection_max_chars: 50 }));
+        expect(out.count).toBe(1);
+        expect(out.text).toContain('X'.repeat(500));
+        expect(out.text).not.toContain('older');
+    });
+
+    it('max_chars = 0 disables the cap', async () => {
+        mocks.listChunks.mockResolvedValue({ items: Array.from({ length: 40 }, (_, i) => ev(i, 'e'.repeat(100))) });
+        const out = await buildSummarizerInjection(SETTINGS({ summarizer_injection_count: 40, summarizer_injection_max_chars: 0 }));
+        expect(out.count).toBe(40);
+    });
+
     it('reports a reason on empty outcomes', async () => {
         mocks.resolveActive.mockReturnValue(null);
         const out = await buildSummarizerInjection(SETTINGS());

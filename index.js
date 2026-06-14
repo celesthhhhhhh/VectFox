@@ -217,11 +217,17 @@ const defaultSettings = {
     // independent of semantic retrieval. Only meaningful with auto-sync active, so
     // it lives on the AutoSync tab and forces the auto-sync window to 1 turn while on.
     summarizer_injection_enabled: false,
-    summarizer_injection_count: 30,               // recent events to inject; range 1-50
+    summarizer_injection_count: 20,               // recent events to inject; range 1-50
     // When on (default), each injected event also includes its structured fields
     // (cause, result, characters, locations, items, DateTime, concepts, keywords,
     // open_threads, message index) beneath the summary line. Off = summary only.
     summarizer_injection_full_detail: true,
+    // Safety cap (characters) on the whole <VectFoxSummarizer> block. Full-detail ×
+    // many events can balloon the prompt past the model's context and kill generation
+    // (the model returns ~0 tokens). When the requested events exceed this budget, the
+    // OLDEST overflow is dropped (most-recent always kept); the latest event is always
+    // included even if it alone exceeds the cap. 0 = no cap. Default ~4-6.5k tokens.
+    summarizer_injection_max_chars: 10000,
     // Per-chat marker: auto-sync only processes windows whose start >= marker.
     // Stamped at "max(source_window_end across existing events) + 1" when auto-sync
     // is enabled on a non-empty collection, or at current chat length when collection

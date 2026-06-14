@@ -820,7 +820,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                 </label>
                                 <small class="VectFox_hint">Inject the most recent N EventBase summaries into the prompt every turn (wrapped in &lt;VectFoxSummarizer&gt; tags), in addition to semantic retrieval. Enables word-for-word-ish memory of the last few turns. <strong>Forces the auto-sync window to 1 turn while on.</strong></small>
                                 <div class="vectfox-form-group" id="VectFox_summarizer_injection_count_group" style="margin-top: 8px;">
-                                    <label class="vectfox-label">Inject last <span id="VectFox_summarizer_injection_count_val">30</span> turn(s)</label>
+                                    <label class="vectfox-label">Inject last <span id="VectFox_summarizer_injection_count_val">20</span> turn(s)</label>
                                     <input type="range" id="VectFox_summarizer_injection_count" min="1" max="50" step="1" class="vectfox-range" />
                                 </div>
                                 <label class="checkbox_label" for="VectFox_summarizer_injection_full_detail" style="margin-top: 8px;">
@@ -828,6 +828,9 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <span>Include full event detail</span>
                                 </label>
                                 <small class="VectFox_hint">Add each event's structured fields (cause, result, characters, locations, items, time, concepts, keywords, open threads, message index) beneath its summary. Off = summary only.</small>
+                                <label for="VectFox_summarizer_injection_max_chars" style="margin-top: 8px; display:block;"><small>Max injection size (characters, 0 = no cap)</small></label>
+                                <input type="number" id="VectFox_summarizer_injection_max_chars" class="vectfox-input" min="0" max="100000" step="500" />
+                                <small class="VectFox_hint">Safety cap on the whole &lt;VectFoxSummarizer&gt; block. If the events exceed it, the OLDEST are dropped (newest always kept) — prevents a huge injection from overflowing the model's context.</small>
                             </div>
 
                             <!-- Collection lock moved to Database Browser (per-collection settings) -->
@@ -3231,12 +3234,12 @@ function bindSettingsEvents(settings, callbacks) {
 
     // --- Summarizer Injection (Feature B) ---
     // Count slider (1-50, default 30).
-    const _summCount0 = Math.max(1, Math.min(50, settings.summarizer_injection_count ?? 30));
+    const _summCount0 = Math.max(1, Math.min(50, settings.summarizer_injection_count ?? 20));
     $('#VectFox_summarizer_injection_count_val').text(_summCount0);
     $('#VectFox_summarizer_injection_count')
         .val(_summCount0)
         .on('input', function() {
-            const val = Math.max(1, Math.min(50, parseInt(this.value, 10) || 30));
+            const val = Math.max(1, Math.min(50, parseInt(this.value, 10) || 20));
             settings.summarizer_injection_count = val;
             $('#VectFox_summarizer_injection_count_val').text(val);
             Object.assign(extension_settings.vectfox, settings);
@@ -3248,6 +3251,16 @@ function bindSettingsEvents(settings, callbacks) {
         .prop('checked', settings.summarizer_injection_full_detail !== false)
         .on('change', function() {
             settings.summarizer_injection_full_detail = $(this).prop('checked');
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // Max injection size (characters). 0 = no cap.
+    $('#VectFox_summarizer_injection_max_chars')
+        .val(Number(settings.summarizer_injection_max_chars ?? 10000))
+        .on('change input', function() {
+            const v = Number($(this).val());
+            settings.summarizer_injection_max_chars = Number.isFinite(v) ? Math.max(0, v) : 10000;
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

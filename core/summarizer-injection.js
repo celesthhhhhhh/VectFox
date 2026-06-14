@@ -56,7 +56,7 @@ export async function runSummarizerInjection(settings) {
  *   `reason` is set on a 0-count outcome (disabled handled by the caller).
  */
 export async function buildSummarizerInjection(settings) {
-    const n = Math.max(1, Math.min(50, settings.summarizer_injection_count ?? 30));
+    const n = Math.max(1, Math.min(50, settings.summarizer_injection_count ?? 20));
     const uuid = getChatUUID();
     if (!uuid) return { text: '', count: 0, reason: 'no-chat', requested: n };
 
@@ -101,7 +101,12 @@ export async function buildSummarizerInjection(settings) {
     if (!events.length) return { text: '', count: 0, reason: 'no-events', collectionId: active.collectionId, requested: n };
 
     const fullDetail = settings.summarizer_injection_full_detail !== false; // default on
-    return { text: _format(events, fullDetail), count: events.length, collectionId: active.collectionId, requested: n };
+    const maxChars = Number.isFinite(settings.summarizer_injection_max_chars) ? settings.summarizer_injection_max_chars : 10000;
+    const { text, count } = _format(events, fullDetail, maxChars);
+    if (count < events.length) {
+        log.domain('injection', 'trace', `[Summarizer] Char budget (${maxChars}) trimmed ${events.length - count} oldest of ${events.length} events`);
+    }
+    return { text, count, collectionId: active.collectionId, requested: n };
 }
 
 /**
@@ -114,7 +119,7 @@ export async function buildSummarizerInjection(settings) {
  * @param {boolean} [fullDetail=false]
  * @returns {string}
  */
-function _format(events, fullDetail = false) {
+function _format(events, fullDetail = false, maxChars = 0) {
     // Recency rank by DISTINCT source_window_end (events is newest-first). A turn /
     // window can yield multiple events (Max Events per Window), all sharing one
     // source_window_end — they must share one label ("latest turn"), not be split
@@ -128,20 +133,28 @@ function _format(events, fullDetail = false) {
         rankByEvent.set(evt, rank);
     }
 
-    const lines = [];
-    // Walk oldest→newest for natural reading; the rank tells recency.
-    for (let i = events.length - 1; i >= 0; i--) {
-        const evt = events[i];
+    // Build per-event blocks newest-first so the character budget keeps the MOST
+    // recent events and drops the oldest overflow. The latest event is always
+    // included (even if it alone exceeds the cap) so the block is never empty.
+    const blocksNewestFirst = [];
+    let used = 0;
+    for (const evt of events) { // newest-first
         const summary = _stripEventTypePrefix(evt.text || evt.metadata?.summary || '');
         if (!summary) continue;
         const r = rankByEvent.get(evt);
         const label = r === 1 ? 'latest turn' : `${r} turns ago`;
-        lines.push(`(${label}) ${summary}`);
+        const blockLines = [`(${label}) ${summary}`];
         if (fullDetail) {
-            for (const d of _detailLines(evt.metadata || {})) lines.push(`  ${d}`);
+            for (const d of _detailLines(evt.metadata || {})) blockLines.push(`  ${d}`);
         }
+        const block = blockLines.join('\n');
+        if (maxChars > 0 && blocksNewestFirst.length > 0 && used + 1 + block.length > maxChars) break;
+        blocksNewestFirst.push(block);
+        used += block.length + 1;
     }
-    return `<VectFoxSummarizer>\n${lines.join('\n')}\n</VectFoxSummarizer>`;
+
+    const body = blocksNewestFirst.slice().reverse().join('\n'); // render oldest→newest
+    return { text: `<VectFoxSummarizer>\n${body}\n</VectFoxSummarizer>`, count: blocksNewestFirst.length };
 }
 
 /**

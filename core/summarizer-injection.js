@@ -75,12 +75,18 @@ export async function buildSummarizerInjection(settings) {
 
     let items = [];
     try {
-        // Overfetch — listChunks order is not guaranteed across backends; we sort
-        // client-side. Without the Similharity plugin the Standard backend returns
-        // hashes only (metadata: {}), so the filter below yields 0 — which is why
-        // the UI hides this feature on standard+no-plugin.
-        const limit = Math.max(n * 2, 100);
-        const result = await backendInstance.listChunks(active.collectionId, settings, { limit });
+        // Fetch the WHOLE collection, then sort client-side for the true most-recent N.
+        // listChunks applies its limit at the Qdrant-scroll level (point-ID order, i.e.
+        // random vs recency) BEFORE the plugin sorts the page by index — so any limit
+        // SMALLER than the collection returns an arbitrary sample and "sort + top-N"
+        // misses recent events (the database browser sidesteps this by fetching with
+        // NO limit, see ui/database-browser.js doLoad(null)). 50000 is a ceiling that
+        // never truncates a realistic per-chat EventBase collection (O(hundreds–low
+        // thousands)). Cost scales with ACTUAL collection size, not this ceiling.
+        // Without the Similharity plugin the Standard backend returns hashes only
+        // (metadata: {}) → filter yields 0, which is why the UI hides this on
+        // standard+no-plugin.
+        const result = await backendInstance.listChunks(active.collectionId, settings, { limit: 50000 });
         items = Array.isArray(result?.items) ? result.items : [];
     } catch (err) {
         log.warn('[Summarizer] listChunks failed:', err?.message || err);
@@ -109,14 +115,27 @@ export async function buildSummarizerInjection(settings) {
  * @returns {string}
  */
 function _format(events, fullDetail = false) {
+    // Recency rank by DISTINCT source_window_end (events is newest-first). A turn /
+    // window can yield multiple events (Max Events per Window), all sharing one
+    // source_window_end — they must share one label ("latest turn"), not be split
+    // into "latest", "2 turns ago", … by array position.
+    const rankByEvent = new Map();
+    let rank = 0;
+    let prevSwe;
+    for (const evt of events) { // newest-first
+        const swe = evt.metadata?.source_window_end;
+        if (rank === 0 || swe !== prevSwe) { rank++; prevSwe = swe; }
+        rankByEvent.set(evt, rank);
+    }
+
     const lines = [];
-    // Walk oldest→newest. `events[0]` is the most recent (rank 1), so event at
-    // index i is "i+1" turns back; i === 0 is the latest.
+    // Walk oldest→newest for natural reading; the rank tells recency.
     for (let i = events.length - 1; i >= 0; i--) {
         const evt = events[i];
         const summary = _stripEventTypePrefix(evt.text || evt.metadata?.summary || '');
         if (!summary) continue;
-        const label = i === 0 ? 'latest turn' : `${i + 1} turns ago`;
+        const r = rankByEvent.get(evt);
+        const label = r === 1 ? 'latest turn' : `${r} turns ago`;
         lines.push(`(${label}) ${summary}`);
         if (fullDetail) {
             for (const d of _detailLines(evt.metadata || {})) lines.push(`  ${d}`);
@@ -139,6 +158,8 @@ function _detailLines(meta) {
 
     if (str(meta.cause)) out.push(`Cause: ${str(meta.cause)}`);
     if (str(meta.result)) out.push(`Result: ${str(meta.result)}`);
+    if (arr(meta.characters).length) out.push(`Characters: ${arr(meta.characters).join(', ')}`);
+    if (arr(meta.locations).length) out.push(`Locations: ${arr(meta.locations).join(', ')}`);
     if (arr(meta.items).length) out.push(`Items: ${arr(meta.items).join(', ')}`);
     if (str(meta.DateTime)) out.push(`When: ${str(meta.DateTime)}`);
     if (arr(meta.concepts).length) out.push(`Concepts: ${arr(meta.concepts).join(', ')}`);

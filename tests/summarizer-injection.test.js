@@ -87,6 +87,14 @@ describe('runSummarizerInjection', () => {
         expect(text).toBe('<VectFoxSummarizer>\n(3 turns ago) B\n(2 turns ago) C\n(latest turn) D\n</VectFoxSummarizer>');
     });
 
+    it('events sharing a source_window_end (multiple per turn) share one recency label', async () => {
+        // Two events at 2119 (same turn) + one at 2113. Both 2119s must read "latest turn".
+        mocks.listChunks.mockResolvedValue({ items: [ev(2119, 'A'), ev(2113, 'C'), ev(2119, 'B')] });
+        const r = await runSummarizerInjection(SETTINGS({ summarizer_injection_count: 10 }));
+        expect(r.injected).toBe(3);
+        expect(lastInjected()[1]).toBe('<VectFoxSummarizer>\n(2 turns ago) C\n(latest turn) B\n(latest turn) A\n</VectFoxSummarizer>');
+    });
+
     it('injects all when fewer events than N exist (no padding)', async () => {
         mocks.listChunks.mockResolvedValue({ items: [ev(2, 'X'), ev(4, 'Y')] });
         const r = await runSummarizerInjection(SETTINGS({ summarizer_injection_count: 10 }));
@@ -126,13 +134,35 @@ describe('buildSummarizerInjection (Debug Summarizer preview path)', () => {
         expect(out).toMatchObject({ count: 0, text: '', reason: 'no-collection' });
     });
 
+    it('fetches the whole collection (not a small sample) so the true most-recent N are found', async () => {
+        // listChunks returns points in backend ID order, NOT source_window_end order.
+        // A small limit returns a random sample → wrong "last N". Must overfetch.
+        mocks.listChunks.mockResolvedValue({ items: [] });
+        await buildSummarizerInjection(SETTINGS({ summarizer_injection_count: 30 }));
+        const opts = mocks.listChunks.mock.calls[0][2];
+        expect(opts.limit).toBeGreaterThanOrEqual(10000);
+    });
+
+    it('picks the globally-most-recent N even when listChunks returns them unordered', async () => {
+        // Simulate the real bug: recent events arrive AFTER older ones in the list.
+        mocks.listChunks.mockResolvedValue({ items: [
+            ev(2107, 'old-ish'), ev(1621, 'oldest'),
+            ev(2119, 'newest'), ev(2113, 'second'), ev(2111, 'third'),
+        ] });
+        const out = await buildSummarizerInjection(SETTINGS({ summarizer_injection_full_detail: false, summarizer_injection_count: 3 }));
+        expect(out.count).toBe(3);
+        // top-3 by swe = 2119, 2113, 2111; rendered chronological
+        expect(out.text).toBe('<VectFoxSummarizer>\n(3 turns ago) third\n(2 turns ago) second\n(latest turn) newest\n</VectFoxSummarizer>');
+    });
+
     it('full-detail mode lists structured fields (content-only) under each summary', async () => {
         mocks.listChunks.mockResolvedValue({ items: [
             ev(8, '[TALK] Pact sealed', {
                 cause: 'tension rose', result: 'alliance formed',
+                characters: ['Rabbit', 'Engni'], locations: ['Hollow Aqueduct'],
                 items: ['tideglass', 'lantern'], DateTime: '2026-01-02T03:04:00.000Z',
                 concepts: ['accord'], keywords: ['pact', 'accord'],
-                open_threads: ['who funds it?'], characters: ['Rabbit'], // characters NOT rendered
+                open_threads: ['who funds it?'],
             }),
         ] });
         const out = await buildSummarizerInjection(SETTINGS({ summarizer_injection_full_detail: true, summarizer_injection_count: 1 }));
@@ -142,6 +172,8 @@ describe('buildSummarizerInjection (Debug Summarizer preview path)', () => {
             '(latest turn) Pact sealed',
             '  Cause: tension rose',
             '  Result: alliance formed',
+            '  Characters: Rabbit, Engni',
+            '  Locations: Hollow Aqueduct',
             '  Items: tideglass, lantern',
             '  When: 2026-01-02T03:04:00.000Z',
             '  Concepts: accord',

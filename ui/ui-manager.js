@@ -827,7 +827,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <input type="checkbox" id="VectFox_summarizer_injection_full_detail" />
                                     <span>Include full event detail</span>
                                 </label>
-                                <small class="VectFox_hint">Add each event's structured fields (cause, result, items, time, concepts, keywords, open threads, message index) beneath its summary. Off = summary only.</small>
+                                <small class="VectFox_hint">Add each event's structured fields (cause, result, characters, locations, items, time, concepts, keywords, open threads, message index) beneath its summary. Off = summary only.</small>
                             </div>
 
                             <!-- Collection lock moved to Database Browser (per-collection settings) -->

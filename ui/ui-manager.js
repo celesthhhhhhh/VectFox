@@ -818,7 +818,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <input type="checkbox" id="VectFox_summarizer_injection_enabled" />
                                     <span>Summarizer Injection</span>
                                 </label>
-                                <small class="VectFox_hint">Inject the most recent N EventBase summaries into the prompt every turn (wrapped in &lt;VectFoxSummarizer&gt; tags), in addition to semantic retrieval. Enables word-for-word-ish memory of the last few turns. <strong>Forces the auto-sync window to 1 turn while on.</strong></small>
+                                <small class="VectFox_hint">Inject the most recent N EventBase summaries into the prompt every turn (wrapped in &lt;VectFoxSummarizer&gt; tags), in addition to semantic retrieval. Enables word-for-word-ish memory of the last few turns. <strong>Turns on auto-sync and forces its window to 1 turn while on</strong> (so the latest reply is always extracted before the next injection).</small>
                                 <div class="vectfox-form-group" id="VectFox_summarizer_injection_count_group" style="margin-top: 8px;">
                                     <label class="vectfox-label">Inject last <span id="VectFox_summarizer_injection_count_val">20</span> turn(s)</label>
                                     <input type="range" id="VectFox_summarizer_injection_count" min="1" max="50" step="1" class="vectfox-range" />
@@ -2301,6 +2301,20 @@ function bindSettingsEvents(settings, callbacks) {
                 toastr.success(message);
                 log.lifecycle(`VectFox: Chat auto-sync ENABLED for ${lockKey} (state=${status.state})`);
             } else {
+                // Auto-sync is the summarizer's data source — once it's off, "most recent
+                // N events" goes stale, so disabling auto-sync also disables the summarizer
+                // to keep the two consistent (reverse of the forward bind in the summarizer
+                // checkbox handler). Set the flag + checkbox directly and release the window
+                // lock; the injection self-clears on its next (now-disabled) turn.
+                if (settings.summarizer_injection_enabled) {
+                    settings.summarizer_injection_enabled = false;
+                    Object.assign(extension_settings.vectfox, settings);
+                    saveSettingsDebounced();
+                    $('#VectFox_summarizer_injection_enabled').prop('checked', false);
+                    _applySummarizerLock();
+                    toastr.info('Summarizer Injection disabled (needs auto-sync)');
+                }
+
                 // Uncheck — clear the flag and release the chat lock.
                 if (status.state !== 'no-collection') {
                     const lockKey = status.registryKey || status.collectionId;
@@ -3290,10 +3304,23 @@ function bindSettingsEvents(settings, callbacks) {
     $('#VectFox_summarizer_injection_enabled')
         .prop('checked', !!settings.summarizer_injection_enabled)
         .on('change', function() {
-            settings.summarizer_injection_enabled = $(this).prop('checked');
+            const enabling = $(this).prop('checked');
+            settings.summarizer_injection_enabled = enabling;
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
             _applySummarizerLock();
+
+            // "Most recent N events" is only meaningful if the collection stays current,
+            // so turning the summarizer ON also turns auto-sync ON — reusing the auto-sync
+            // checkbox's OWN enable flow (backlog catch-up gate, lock, marker stamp) rather
+            // than duplicating it. Symmetric with the window-lock above: while the
+            // summarizer runs, both the window (1 turn) and auto-sync (on) are bound to it.
+            if (enabling) {
+                const $autosync = $('#VectFox_autosync_enabled');
+                if (!$autosync.prop('checked')) {
+                    $autosync.prop('checked', true).trigger('input');
+                }
+            }
         });
 
     // Hide the whole group on standard + no plugin (listChunks returns no metadata

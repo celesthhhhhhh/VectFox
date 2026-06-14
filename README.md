@@ -35,6 +35,7 @@ To tackle this, VectFox uses a dedicated vector database that stores **every sin
 
 - 🧠 **The original VectHare doesn't think about what's worth remembering.** VectFox adds an LLM-driven **EventBase** extraction layer on top: the AI decides which moments are meaningful events and tags each event with the characters, items, locations, and concepts involved.
 - 🤖 **The original VectHare doesn't reason about your query** — it only matches surface-level text similarity. VectFox adds optional **Agent Mode** that uses a small LLM to plan multi-angle searches, surfacing memories your raw query wouldn't have found on its own.
+- ⏳ **Semantic search can't *guarantee* the AI remembers what just happened.** Retrieval surfaces old events by relevance — but the last few turns of continuity (who's in the room, the thread you're mid-way through, the promise made two replies ago) should *always* be present, not have to win a recall slot. VectFox adds optional **Summarizer Injection** that pins the most recent N extracted events into every prompt, in chronological order — so short-term memory is guaranteed while long-term recall stays relevance-driven.
 - 😩 Strip out all functional tags used by [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker) before memory storage.
 - 🧠 Adding story-based memory on top of character-based memory in [MVU Game Maker](https://github.com/KritBlade/MVU_Game_Maker).
 - 💸 Long conversations choke your token budget with irrelevant history.
@@ -158,6 +159,26 @@ All four merge with the original search and feed the same 4-weight re-ranker. Th
 
 > 💡 Agent Mode works best on **reflective questions** ("why...", "remember when..."), **vague callbacks** ("that thing about my father"), and **cause-chain queries** where the literal user message doesn't contain the search anchors. For direct lookups where your message already contains the right keywords, the standard pre-search already does most of the work; Agent Mode is incremental polish.
 
+### 4. Summarizer Injection — guaranteed recent-turn memory (optional)
+
+Semantic retrieval answers *"which old event is relevant to this message?"*. But every reply also needs a second, different question answered: *"what just happened over the last few turns?"* — the running thread, who's present, the deal struck two replies ago. That continuity shouldn't have to **win** a relevance contest to be remembered; it should always be there.
+
+**Summarizer Injection** does exactly that. Every turn it pulls the **most recent N extracted events** (default 20) straight off the EventBase collection — newest-first by message index — and pins them into the prompt in chronological order, each tagged with how far back it is:
+
+```
+<VectFoxSummarizer>
+(3 turns ago) Critblade agreed to escort Mayla to the harbor before dawn.
+(2 turns ago) They were ambushed in the alley; Mayla took a knife wound to the arm.
+(latest turn) Critblade carried her into the apothecary and demanded a healer.
+</VectFoxSummarizer>
+```
+
+It's independent of semantic retrieval and **stacks on top of it** (its own prompt slot, so the two never clobber each other). Retrieval still pulls the relevant *old* events by meaning; the summarizer guarantees the *recent* ones are always present regardless of score. With **full detail** on (default), each line also carries the event's structured fields (cause, result, characters, locations, items, time, concepts, keywords, open threads) — so it's effectively a structured "last-N-events" recap rebuilt fresh every turn from the database, never recursively re-compressed.
+
+Because "most recent" only means anything if the database is current, the feature **requires auto-sync** and forces the auto-sync window to 1 turn while enabled, so the latest reply is always extracted before the next injection. A character budget (default 10 000) caps the block — if the events overflow it, the *oldest* are dropped and the newest always kept, so a huge recap can never blow out the model's context. Configure it in the **AutoSync** tab; default off.
+
+> 💡 Think of it as the one genuinely useful thing rolling-summary extensions do — *"always remind the AI what just happened"* — rebuilt on EventBase's structured events instead of a lossy recursive text blob. You get the guaranteed recent context **without** the detail-destroying re-summarization.
+
 ### 🧠 Difference between traditional memory extensions
 
 Most existing memory extensions use one of two approaches. Both lose detail as the chat grows. Here's why — and how EventBase avoids it:
@@ -174,6 +195,8 @@ Most existing memory extensions use one of two approaches. Both lose detail as t
 | **What gets injected**      | The whole running summary (every turn, every time)                       | A few semantically-close raw messages                                 | Only the events that matter for the current message                                                  |
 
 **The core insight:** rolling summaries lose detail because they *throw away* old content to make room. Raw chunking loses detail because *retrieval breaks* at scale. EventBase keeps every meaningful event around forever — and lets vector + keyword search decide which 5–10 of them are worth showing the AI right now. Detail isn't compressed; **irrelevance is filtered**.
+
+**Where Summarizer Injection fits:** the one thing rolling summaries get *right* is that they always keep recent context in front of the AI. VectFox's optional **Summarizer Injection** rebuilds that guarantee on EventBase — it pins the most recent N structured events into every prompt — but without the recursive re-compression that makes rolling summaries lose detail over time. So you get rolling-summary's *"always remember what just happened"* **and** EventBase's *"never lose an old detail,"* from one structured store: recent turns are always injected, older turns surface by relevance.
 
 > 💡 **The way you phrase your message has a big impact on what gets retrieved.** Because retrieval is driven by the text of your reply, the words you use matter. For example, *"Mayla, Do you remember why I paid the ransom?"* and *"Mayla, Do you remember why I paid 2,000 bucks?"* will return very different events — "ransom" pulls in every event tied to that storyline (the kidnapping, the negotiation, the drop-off), while "2,000 bucks" mostly matches events that literally mention the number 2,000. If you want the AI to recall a specific scene, anchor your message with the **story-meaningful words** from that scene rather than incidental details like exact numbers.
 >
@@ -299,6 +322,12 @@ should_persist: false
 
 Both signals (meaning + keywords) operate over this rich field set, so a query like "armor for the dungeon" hits via concepts/open_threads, while "Astarion 80gp" hits via characters/items/keywords.  The structure is native to Qdrant vector database so that hit rate is WAY higher than any other kind of memory extension.
 
+### 🧠 Summarizer Injection — guaranteed recent-turn memory
+
+Pins the most recent **N extracted events** (default 20) into every prompt, in chronological order, each labeled with its recency (`latest turn`, `3 turns ago`). Independent of — and stacked on top of — semantic retrieval, so short-term continuity is *always* present while long-term recall stays relevance-driven. With **full detail** on (default) each event carries its structured fields (cause, result, characters, locations, items, time, concepts, keywords, open threads); a character budget (default 10 000) caps the block, dropping oldest-first if it overflows so it can never blow out the model's context.
+
+It's the useful half of a rolling summary — *"always remind the AI what just happened"* — rebuilt on structured events instead of a lossy recursive text blob, so recent context is guaranteed without the detail loss. Requires auto-sync (forces the window to 1 turn while on, keeping the database current). A **Debug Summarizer** button (Actions tab) previews the exact block that would be injected — same code path, minus the injection. Configure it in the **AutoSync** tab; default off. Needs the Similharity plugin on the Standard backend (it reads per-event metadata); works natively on Qdrant.
+
 ### 🤖 Agent Mode — LLM-planned multi-angle retrieval (Qdrant / A3 only)
 
 A small planner LLM reads your recent chat plus the top pre-search candidates, then emits 1–4 follow-up Qdrant queries each targeting a different angle of what you asked about. Results fan out in parallel and merge through the same 4-weight re-ranker — purely additive, never replaces normal search. Falls back cleanly to the standard flow on any failure. Best for **reflective questions, vague callbacks, and cause-chain queries** where the literal user message doesn't contain the right search anchors.
@@ -314,14 +343,14 @@ See the **AgentMode** tab in settings, or the "How It Works → Agent Mode" sect
 
 VectFox tokenizes and indexes any language — the BM25/keyword half is fully language-neutral. Every language works out of the box; five have extra stop-word tuning.
 
-| Language | Segmenter | Stop-word list | Notes |
-|---|---|---|---|
-| **English** | Intl.Segmenter | ✅ 667 words | Always-on baseline; present in every mode |
-| **Japanese** | TinySegmenter | ✅ 672 words | Particles 「は・を・の…」 stripped |
-| **Korean** | Intl.Segmenter | ✅ 679 words | Particles 「의・은・는…」 stripped |
-| **Traditional Chinese** | Jieba WASM (TW dict) | ✅ 899 words | `jieba_tw` mode only; distinct from Simplified |
-| **Simplified Chinese** | Jieba WASM | ✅ 994 words | `jieba` mode only; distinct from Traditional |
-| **Spanish, French, German, Arabic, Hindi, …** | Intl.Segmenter | — | Tokenize and index correctly; English stop-word baseline only (no dedicated list yet) |
+| Language                                      | Segmenter            | Stop-word list | Notes                                                                                 |
+| --------------------------------------------- | -------------------- | -------------- | ------------------------------------------------------------------------------------- |
+| **English**                                   | Intl.Segmenter       | ✅ 667 words   | Always-on baseline; present in every mode                                             |
+| **Japanese**                                  | TinySegmenter        | ✅ 672 words   | Particles 「は・を・の…」 stripped                                                    |
+| **Korean**                                    | Intl.Segmenter       | ✅ 679 words   | Particles 「의・은・는…」 stripped                                                    |
+| **Traditional Chinese**                       | Jieba WASM (TW dict) | ✅ 899 words   | `jieba_tw` mode only; distinct from Simplified                                        |
+| **Simplified Chinese**                        | Jieba WASM           | ✅ 994 words   | `jieba` mode only; distinct from Traditional                                          |
+| **Spanish, French, German, Arabic, Hindi, …** | Intl.Segmenter       | —              | Tokenize and index correctly; English stop-word baseline only (no dedicated list yet) |
 
 **Stop-word lists are per-mode, not a global union.** A Korean collection consults only English + Korean (~1 346 words) — never the 2 200+ Chinese entries it used to. This prevents a Sino-Korean word from being silently dropped because it happened to match a Chinese grammar particle.
 
@@ -336,9 +365,7 @@ VectFox tokenizes and indexes any language — the BM25/keyword half is fully la
 Long stories on bad connections are where naive vectorizers die: one stalled embedding call, one flaky timeout, and a 2,000-message ingest is wrecked halfway through. VectFox is built so vectorization **always makes forward progress and always recovers** — three independent safety nets, each containing a different failure mode.
 
 - **Request hedging** — when an embedding call goes quiet past a threshold (15s by default), VectFox fires a *duplicate* request on a fresh connection instead of waiting. Up to 3 hedges race the original; first to answer wins, stragglers are dropped. A single stuck SiliconFlow worker or a bad OpenRouter routing decision no longer freezes the whole run — a new connection simply routes around it. (Skipped for local GPU endpoints, where a new connection lands on the same server anyway.)
-
 - **Parallel-split embedding** — instead of one giant batched POST where a *single* stuck item hangs everything (we measured 555-second monster batches), VectFox splits the batch into one-item requests fired in concurrent waves of up to 16. The blast radius of any bad item is exactly one item: it retries in isolation while everything else sails through.
-
 - **Pipelined extract → insert with overlap** — batch N's vector insert overlaps batch N+1's LLM extraction, so the pipeline never idles on a single slow phase (~35% faster wall-clock on long chats). Overlapping extraction windows capture events that straddle a window boundary, and a fingerprint cache that survives Chrome restarts lets a half-finished run resume exactly where it stopped instead of starting over.
 
 Together these compound: the worse the environment — longer story, flakier connection, slower provider — the harder they work. Vectorization recovers and completes rather than stalling out.
@@ -447,17 +474,18 @@ That's it! VectFox will be downloaded and enabled automatically.
 
 **Required if using Qdrant backend.** Optional if using the Standard backend, but installing it unlocks additional functionality even there:
 
-| Feature                              | Standard without plugin             | Standard with plugin            | **Qdrant (Cloud or Local)** ⭐                                   |
-| ------------------------------------ | ----------------------------------- | ------------------------------- | ---------------------------------------------------------------- |
-| Event search & injection             | ✅ Full functionality               | ✅ Full functionality           | ✅ Full functionality                                            |
-| Embedding & vectorization            | ✅ Works                            | ✅ Works                        | ✅ Works                                                         |
-| Keywords stored in DB (boost search) | ❌ Saved to local settings only     | ✅ Stored in vector DB          | ✅ Stored in vector DB                                           |
-| Event importance score               | ❌ Lost (native API drops metadata) | ⚠️ Stored, not used in re-rank | ✅ Stored & used in re-rank                                      |
-| View Chunks in Database Browser      | ❌ Not available                    | ✅ Available                    | ✅ Available                                                     |
-| Edit individual chunks               | ❌ Not available                    | ✅ Available                    | ✅ Available                                                     |
-| Search algorithm                     | A1/A2 hybrid                        | A1/A2 hybrid                    | **A3 hybrid (best accuracy)**                                    |
-| Scales to large datasets             | ⚠️ Degrades on long story          | ⚠️ Degrades on long story      | ✅ 10 k+ messages, stays fast                                    |
-| Setup                                | None                                | Plugin install                  | Plugin install + Free cloud account **or** [local install](Doc/Qdrant_install.md) |
+| Feature                                   | Standard without plugin             | Standard with plugin            | **Qdrant (Cloud or Local)** ⭐                                                    |
+| ----------------------------------------- | ----------------------------------- | ------------------------------- | --------------------------------------------------------------------------------- |
+| Event search & injection                  | ✅ Full functionality               | ✅ Full functionality           | ✅ Full functionality                                                             |
+| Summarizer Injection (recent-turn memory) | ❌ Needs per-event metadata         | ✅ Available                    | ✅ Available                                                                      |
+| Embedding & vectorization                 | ✅ Works                            | ✅ Works                        | ✅ Works                                                                          |
+| Keywords stored in DB (boost search)      | ❌ Saved to local settings only     | ✅ Stored in vector DB          | ✅ Stored in vector DB                                                            |
+| Event importance score                    | ❌ Lost (native API drops metadata) | ⚠️ Stored, not used in re-rank | ✅ Stored & used in re-rank                                                       |
+| View Chunks in Database Browser           | ❌ Not available                    | ✅ Available                    | ✅ Available                                                                      |
+| Edit individual chunks                    | ❌ Not available                    | ✅ Available                    | ✅ Available                                                                      |
+| Search algorithm                          | A1/A2 hybrid                        | A1/A2 hybrid                    | **A3 hybrid (best accuracy)**                                                     |
+| Scales to large datasets                  | ⚠️ Degrades on long story          | ⚠️ Degrades on long story      | ✅ 10 k+ messages, stays fast                                                     |
+| Setup                                     | None                                | Plugin install                  | Plugin install + Free cloud account **or** [local install](Doc/Qdrant_install.md) |
 
 If you are on the Standard backend and do not install the plugin, event search and injection still work correctly — you just won't have chunk inspection or keyword metadata. For the best retrieval quality, **Qdrant is strongly recommended** — the free cloud tier at https://qdrant.tech/ requires no local setup at all.
 
@@ -485,7 +513,7 @@ Restart SillyTavern.
 2. Choose your vector storage (Standard or Qdrant).
 3. Select your embedding provider (Transformers, vLLM, Ollama, OpenRouter, etc.).
 
-   - 💡 **Recommended:** use `qwen/qwen3-embedding-8b` through **OpenRouter**. It's extremely cheap ($0.00000015/run), multilingual (excellent CJK + Latin), and produces high-quality dense vectors for the corpus size VectFox targets.
+   - 💡 **Recommended:** use `qwen/qwen3-embedding-8b` through **OpenRouter**. It's extremely cheap ($0.00000015/run), multilingual (excellent CJK + Latin), and produces high-quality dense vectors for the corpus size VectFox targets. The better embedding model you use, the better result you will receive from recall, this is the most important model that you do NOT want to use cheap model.
 4. Select your Summarization LLM (OpenRouter or vLLM) — used by EventBase extraction during vectorization.
 
    - 💡 **Recommended OpenRouter models:** for a cheap & fast extraction path, use `openai/gpt-4o-mini` or `google/gemini-3.1-flash-lite` — both keep cost and ingestion latency low. If you want higher extraction quality and don't mind paying more, `x-ai/grok-4.3` is a stronger but more expensive option. Avoid older model IDs such as `x-ai/grok-4.1-fast` if OpenRouter returns a 404/deprecation error; model availability changes over time, so verify the exact ID on OpenRouter before long ingestion runs. The same recommendation applies to the **Agent Mode LLM** (configured separately in the AgentMode tab) — if you leave the AgentMode model field blank it inherits this summarizer setting.

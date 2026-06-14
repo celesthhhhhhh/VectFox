@@ -812,6 +812,19 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <small class="VectFox_hint">Independent of the EventBase "Window Size". 1 turn = 2 messages (1 user + 1 AI reply). Auto-sync extracts a window every this-many turns of new chat.</small>
                             </div>
 
+                            <!-- Summarizer Injection (Feature B). Whole group hidden on standard+no-plugin. -->
+                            <div class="vectfox-form-group" id="VectFox_summarizer_injection_group" style="margin-top: 12px;">
+                                <label class="checkbox_label" for="VectFox_summarizer_injection_enabled">
+                                    <input type="checkbox" id="VectFox_summarizer_injection_enabled" />
+                                    <span>Summarizer Injection</span>
+                                </label>
+                                <small class="VectFox_hint">Inject the most recent N EventBase summaries into the prompt every turn (wrapped in &lt;VectFoxSummarizer&gt; tags), in addition to semantic retrieval. Enables word-for-word-ish memory of the last few turns. <strong>Forces the auto-sync window to 1 turn while on.</strong></small>
+                                <div class="vectfox-form-group" id="VectFox_summarizer_injection_count_group" style="margin-top: 8px;">
+                                    <label class="vectfox-label">Inject last <span id="VectFox_summarizer_injection_count_val">30</span> turn(s)</label>
+                                    <input type="range" id="VectFox_summarizer_injection_count" min="1" max="50" step="1" class="vectfox-range" />
+                                </div>
+                            </div>
+
                             <!-- Collection lock moved to Database Browser (per-collection settings) -->
 
                             <div class="vectfox-form-group" style="margin-top: 12px;">
@@ -870,6 +883,10 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <button id="VectFox_view_results" class="vectfox-action-btn vectfox-btn-secondary">
                                     <i class="fa-solid fa-bug"></i>
                                     <span>Debug Query</span>
+                                </button>
+                                <button id="VectFox_debug_summarizer" class="vectfox-action-btn vectfox-btn-secondary" title="Preview the exact <VectFoxSummarizer> block that would be injected into the prompt this turn (without injecting it).">
+                                    <i class="fa-solid fa-eye"></i>
+                                    <span>Debug Summarizer</span>
                                 </button>
                                 <button id="VectFox_purge" class="vectfox-action-btn vectfox-btn-danger-outline">
                                     <i class="fa-solid fa-trash"></i>
@@ -2159,6 +2176,9 @@ function bindSettingsEvents(settings, callbacks) {
     // are wired up. The optional-call `?.()` at the call site guards against
     // any backend-change event that fires before assignment.
     let _refreshCosineWeightAvailability = null;
+    // Forward-declared like the cosine helper above. Hides the Summarizer
+    // Injection group on standard+no-plugin (its listChunks returns no metadata).
+    let _refreshSummarizerInjectionAvailability = null;
 
     // Auto-sync enable/disable - now per-collection instead of global
     // Initial state is set by refreshAutoSyncCheckbox() after chat loads
@@ -2827,6 +2847,8 @@ function bindSettingsEvents(settings, callbacks) {
             // Refresh Cosine weight availability — backend switch may have
             // moved us into or out of the "no vector scoring" state.
             _refreshCosineWeightAvailability?.();
+            // Same for Summarizer Injection — hidden on standard+no-plugin.
+            _refreshSummarizerInjectionAvailability?.();
         });
 
     // Qdrant cloud toggle
@@ -3201,6 +3223,65 @@ function bindSettingsEvents(settings, callbacks) {
                 }
             });
     }
+
+    // --- Summarizer Injection (Feature B) ---
+    // Count slider (1-50, default 30).
+    const _summCount0 = Math.max(1, Math.min(50, settings.summarizer_injection_count ?? 30));
+    $('#VectFox_summarizer_injection_count_val').text(_summCount0);
+    $('#VectFox_summarizer_injection_count')
+        .val(_summCount0)
+        .on('input', function() {
+            const val = Math.max(1, Math.min(50, parseInt(this.value, 10) || 30));
+            settings.summarizer_injection_count = val;
+            $('#VectFox_summarizer_injection_count_val').text(val);
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // One-way lock: enabling Summarizer Injection forces + locks the auto-sync
+    // window to 1 turn (so "last N events" == "last N turns"). Flipping the slider
+    // to 1 via .trigger('input') reuses its own handler, which re-stamps the marker
+    // — so the lock can't cause a re-extraction storm.
+    const _applySummarizerLock = () => {
+        const enabled = !!settings.summarizer_injection_enabled;
+        const $slider = $('#VectFox_eventbase_autosync_window_turns');
+        const $group = $slider.closest('.vectfox-form-group');
+        if (enabled) {
+            if (settings.eventbase_autosync_window_turns !== 1) {
+                $slider.val(1).trigger('input'); // updates setting + label + re-stamps marker
+            }
+            $slider.prop('disabled', true);
+            if ($group.find('[data-lock="summarizer"]').length === 0) {
+                $group.append('<small class="VectFox_hint" data-lock="summarizer" style="display:block;">Locked to 1 turn by Summarizer Injection (below).</small>');
+            }
+        } else {
+            $slider.prop('disabled', false);
+            $group.find('[data-lock="summarizer"]').remove();
+        }
+    };
+
+    $('#VectFox_summarizer_injection_enabled')
+        .prop('checked', !!settings.summarizer_injection_enabled)
+        .on('change', function() {
+            settings.summarizer_injection_enabled = $(this).prop('checked');
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+            _applySummarizerLock();
+        });
+
+    // Hide the whole group on standard + no plugin (listChunks returns no metadata
+    // there → 0 events → silent no-op, so the feature can't function). Mirror of
+    // _refreshCosineWeightAvailability; also called on vector-backend change.
+    _refreshSummarizerInjectionAvailability = async function() {
+        const $group = $('#VectFox_summarizer_injection_group');
+        if ($group.length === 0) return;
+        const backend = settings.vector_backend || 'standard';
+        const pluginUp = await checkPluginAvailable();
+        $group.toggle(!(backend === 'standard' && !pluginUp));
+    };
+
+    _applySummarizerLock();
+    _refreshSummarizerInjectionAvailability();
 
     // Auto-sync popup toggle
     $('#VectFox_autosync_popup')
@@ -4330,6 +4411,9 @@ function bindSettingsEvents(settings, callbacks) {
     $('#VectFox_view_results').on('click', () => {
         openQueryTestModal();
     });
+    $('#VectFox_debug_summarizer').on('click', () => {
+        openSummarizerDebug(settings);
+    });
     $('#VectFox_text_cleaning').on('click', () => {
         openTextCleaningManager();
     });
@@ -4341,6 +4425,52 @@ function bindSettingsEvents(settings, callbacks) {
 
     // Initialize provider-specific settings visibility
     toggleProviderSettings(settings.source, settings);
+}
+
+/**
+ * "Debug Summarizer" action — preview the exact <VectFoxSummarizer> block that the
+ * summarizer injection would put into the prompt this turn, WITHOUT injecting it.
+ * Runs the same compute path (buildSummarizerInjection); ignores only the enabled
+ * flag so the preview works while the feature is off.
+ * @param {object} settings - extension_settings.vectfox
+ */
+async function openSummarizerDebug(settings) {
+    const { callGenericPopup, POPUP_TYPE } = await import('../../../../popup.js');
+
+    let result;
+    try {
+        const { buildSummarizerInjection } = await import('../core/summarizer-injection.js');
+        result = await buildSummarizerInjection(settings);
+    } catch (err) {
+        result = { text: '', count: 0, reason: 'error', error: err?.message || String(err) };
+    }
+
+    const enabled = !!settings.summarizer_injection_enabled;
+    const REASONS = {
+        'no-chat': 'No chat is open.',
+        'no-collection': 'This chat has no active EventBase collection yet — vectorize it first.',
+        'no-events': 'The collection has no events to inject yet.',
+        'backend-error': `Backend unavailable: ${result.error || ''}`,
+        'listchunks-error': `Could not read the collection: ${result.error || ''}`,
+        'error': `Failed: ${result.error || ''}`,
+    };
+
+    let body;
+    if (result.count > 0) {
+        const reqNote = result.requested ? ` (requested up to ${result.requested})` : '';
+        const offNote = enabled ? '' : ' — <em>feature is currently OFF; this previews what enabling it would inject</em>';
+        body = `<p style="margin:0 0 6px;"><strong>${result.count}</strong> event(s) would be injected${reqNote}${offNote}.</p>`
+            + `<pre style="white-space:pre-wrap; word-break:break-word; max-height:55vh; overflow:auto; text-align:left; background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; margin:0;">${StringUtils.escapeHtml(result.text)}</pre>`;
+    } else {
+        body = `<p style="margin:0;">Nothing would be injected this turn.</p>`
+            + `<p style="margin:6px 0 0; opacity:0.85;">${StringUtils.escapeHtml(REASONS[result.reason] || result.reason || 'No events.')}</p>`;
+    }
+
+    const html = `<div style="text-align:left;">
+        <h3 style="margin:0 0 8px;">Summarizer Injection — preview</h3>
+        ${body}
+    </div>`;
+    await callGenericPopup(html, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true });
 }
 
 // Store current diagnostic results for copy/filter functionality

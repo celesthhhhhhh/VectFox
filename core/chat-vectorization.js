@@ -1308,6 +1308,21 @@ export async function rearrangeChat(chat, settings, type, { dryRun = false, test
                 const { EXTENSION_PROMPT_TAG } = await import('./constants.js');
                 setExtensionPrompt(`${EXTENSION_PROMPT_TAG}_eventbase`, '', settings.position, settings.depth, false);
             }
+
+            // Feature B — Summarizer Injection: inject the most recent N EventBase
+            // events every turn, independent of semantic retrieval above. Self-clears
+            // when disabled (so a toggle-off mid-session doesn't leave a stale block).
+            // Non-fatal + time-bounded so a slow listChunks can't freeze the turn.
+            try {
+                const { runSummarizerInjection } = await import('./summarizer-injection.js');
+                await AsyncUtils.timeout(
+                    runSummarizerInjection(settings),
+                    RETRIEVAL_TIMEOUT_MS,
+                    'Summarizer injection timed out',
+                );
+            } catch (error) {
+                log.error('VectFox Summarizer: injection error (non-fatal, message sends without summarizer memory):', error);
+            }
         } // end if (!dryRun) EventBase block
 
         // === STAGE 1: Gather collections to query ===

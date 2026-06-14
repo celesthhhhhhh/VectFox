@@ -211,6 +211,13 @@ const defaultSettings = {
     // uses this instead of eventbase_window_size, so its cadence is independent of the
     // one-off Vectorize Content window. Range 1-20. Default 1 (most reactive).
     eventbase_autosync_window_turns: 1,
+    // Summarizer Injection (Feature B): when enabled, inject the most recent N
+    // EventBase events (by source_window_end desc) into the prompt every turn,
+    // wrapped in <VectFoxSummarizer> tags — word-for-word-ish recent-turn memory,
+    // independent of semantic retrieval. Only meaningful with auto-sync active, so
+    // it lives on the AutoSync tab and forces the auto-sync window to 1 turn while on.
+    summarizer_injection_enabled: false,
+    summarizer_injection_count: 30,               // recent events to inject; range 1-50
     // Per-chat marker: auto-sync only processes windows whose start >= marker.
     // Stamped at "max(source_window_end across existing events) + 1" when auto-sync
     // is enabled on a non-empty collection, or at current chat length when collection

@@ -366,6 +366,14 @@ After this change, the EventBase-tab "Window Size (messages)" slider continues t
 
 ## 3. Feature B — Inject Last N Turn Summary
 
+> ✅ **IMPLEMENTED 2026-06-14** as **"Summarizer Injection"** (per the §0.0 A respec). As-built:
+> - Settings: `summarizer_injection_enabled: false`, `summarizer_injection_count: 30` (range 1-50) — [`index.js`](../index.js).
+> - New module [`core/summarizer-injection.js`](../core/summarizer-injection.js) — `runSummarizerInjection(settings)`. Tag `3_vectfox_summarizer` (= `${EXTENSION_PROMPT_TAG}_summarizer`). Resolves the active collection via **`resolveActiveEventBaseCollection`** (lock-aware; cleaner than the plan's `findEventBaseCollectionIdsForChat(...)[0]`), `listChunks`, filters `metadata.eventbase===true`, sorts `source_window_end` desc, slices N, renders **chronological** lines wrapped in `<VectFoxSummarizer> … </VectFoxSummarizer>`. Self-clears on disabled/no-chat/no-collection/no-events. Uses `log`, not `console`.
+> - Hook: [`core/chat-vectorization.js`](../core/chat-vectorization.js) — called after `runEventBaseRetrieval` inside the `if (!dryRun)` block, time-bounded by `RETRIEVAL_TIMEOUT_MS`, non-fatal. (Run **sequentially** after retrieval, not via `Promise.all` — simpler error handling; summarizer is opt-in and adds only a `listChunks`. Parallelize later if hot-path latency matters.)
+> - UI: AutoSync-tab checkbox + count slider inside `#VectFox_summarizer_injection_group`; one-way lock (`_applySummarizerLock`) forces+locks the auto-sync window to 1 turn (reusing the slider's own re-stamp hook); plugin gate (`_refreshSummarizerInjectionAvailability`) **hides** the whole group on standard+no-plugin per §E — [`ui/ui-manager.js`](../ui/ui-manager.js).
+> - Tests: [`tests/summarizer-injection.test.js`](../tests/summarizer-injection.test.js) (8 cases — sort/slice/format/clamp/clear/non-eventbase filter). Suite 701/701. UI flow + prompt-inspector checks (§5 #8-#14) still need the Playwright e2e against a deployed build.
+> - **Not done (separate from Feature B):** §10 (C4 — Continue/marker unification + warn-modal deletion). The window-size-change confirm popup still exists; Feature B's lock is already safe because Feature A's re-stamp hook fires on the forced slider change.
+
 ### 3.1 New module: `core/eventbase-last-n-injection.js`
 
 A new file, not a modification to existing injection logic. The standard EventBase injection ([`core/eventbase-injection.js`](core/eventbase-injection.js)) is keyed off semantic retrieval — re-using it would conflate two different injection sources. Keep them in different files with different prompt tags so debugging is unambiguous.

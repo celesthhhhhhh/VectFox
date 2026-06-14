@@ -289,7 +289,7 @@ export async function synchronizeChat(settings, batchSize = 5, triggerEvent = nu
     }
 
     // Find EventBase collections registered for this chat and check the per-collection auto-sync flag
-    const { findEventBaseCollectionsForChat } = await import('./eventbase-store.js');
+    const { findEventBaseCollectionsForChat, resolveActiveEventBaseCollection } = await import('./eventbase-store.js');
     const { isCollectionAutoSyncEnabled } = await import('./collection-metadata.js');
     const backend = getRegistryBackend(settings?.vector_backend);
     const eventbaseCollections = findEventBaseCollectionsForChat(uuid, backend);
@@ -299,10 +299,18 @@ export async function synchronizeChat(settings, batchSize = 5, triggerEvent = nu
         const flagPerCollection = eventbaseCollections.map(({ registryKey }) => `${registryKey}=${isCollectionAutoSyncEnabled(registryKey)}`);
         log.lifecycle(`[AutoSync] uuid=${uuid}, backend=${backend}, eventbaseCollections=${eventbaseCollections.length}, autoSyncFlags=[${flagPerCollection.join(', ')}]`);
     }
-    const autoSyncEnabled = eventbaseCollections.some(({ registryKey }) => isCollectionAutoSyncEnabled(registryKey));
+    // Gate on the ACTIVE (lock-aware, ownership-filtered) collection ONLY — the same
+    // one the AutoSync checkbox reflects (refreshAutoSyncCheckbox → getChatAutoSyncStatus
+    // → resolveActiveEventBaseCollection). Using `.some()` across ALL of the chat's
+    // collections meant a leftover autoSync=true on a non-active collection (a different
+    // persona/backend enabled earlier) fired auto-sync even though the visible toggle was
+    // off — and then ingested into the current-backend collection whose own flag was false.
+    // Resolving the active collection keeps the toggle and the behavior in lockstep.
+    const activeCollection = resolveActiveEventBaseCollection(settings, uuid);
+    const autoSyncEnabled = !!activeCollection && isCollectionAutoSyncEnabled(activeCollection.registryKey);
 
     if (!autoSyncEnabled) {
-        log.lifecycle('[AutoSync] BAIL: no collection has autoSync=true');
+        log.lifecycle(`[AutoSync] BAIL: active collection auto-sync is off (active=${activeCollection?.registryKey ?? 'none'})`);
         return { remaining: -1, messagesProcessed: 0, chunksCreated: 0 };
     }
 

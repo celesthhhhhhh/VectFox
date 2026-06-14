@@ -627,16 +627,6 @@ export function getCollectionLocks(collectionId) {
 }
 
 /**
- * Gets the first locked chat ID (for backward compat with single-lock code)
- * @param {string} collectionId
- * @returns {string|null}
- */
-export function getCollectionLock(collectionId) {
-    const locks = getCollectionLocks(collectionId);
-    return locks.length > 0 ? locks[0] : null;
-}
-
-/**
  * Checks whether the collection is locked to the provided chatId
  * @param {string} collectionId
  * @param {string} chatId

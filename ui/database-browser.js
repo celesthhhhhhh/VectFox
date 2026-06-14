@@ -39,7 +39,6 @@ import {
   getCollectionActivationSummary,
   isCollectionEnabled,
   // Locking API
-  getCollectionLock,
   getCollectionLocks,
   setCollectionLock,
   removeCollectionLock,

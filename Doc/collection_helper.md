@@ -10,13 +10,14 @@ Updated 2026-05-23 — added `resolveBackendForCollection`, refreshed line refs,
 
 **Read this before writing any code that touches a collection.** These functions are the *only* entry points new code should call for collection listing, lock state, registry-key construction, and **per-collection backend routing**. They bundle backend disambiguation, persona/handle ownership, superadmin checks, and storage-key normalization. Re-implementing the logic inline gets it wrong almost every time — the failure mode is silent: locks land in the wrong storage bucket, queries hit the wrong backend, the UI shows nothing changed.
 
-| Function | File:Line | Use when |
+| Function | File | Use when |
 |---|---|---|
-| **`getCollectionListing(settings)`** | [collection-loader.js:180](../core/collection-loader.js#L180) | You need to iterate every collection (rendering a list, finding matches by pattern, computing aggregate state). |
-| **`getLock(collectionId, options)`** | [collection-metadata.js:793](../core/collection-metadata.js#L793) | You need lock state for *one* collection (badge, tooltip, checkbox state, "is this active right now?"). |
-| **`setLock(collectionId, action, options)`** | [collection-metadata.js:839](../core/collection-metadata.js#L839) | You need to *mutate* lock state for *one* collection (user clicks lock / unlock / clear). |
-| **`buildRegistryKey(collectionId, settings)`** | [collection-ids.js:169](../core/collection-ids.js#L169) | You only have a bare collection ID and need to convert it to the canonical `"backend:id"` storage key (for any metadata read/write). Never hand-roll `` `${backend}:${collectionId}` `` — use this instead. |
-| **`resolveBackendForCollection(input)`** | [collection-ids.js:207](../core/collection-ids.js#L207) | You have an ID (either registry-key or bare) and need to pick the right backend instance for it (query, delete, list, etc.). Returns `{ backend, collectionId }` where `collectionId` is the bare form. Replaces hand-rolled `parseRegistryKey(...).backend ?? settings.vector_backend` chains. |
+| **`getCollectionListing(settings)`** | [collection-loader.js](../core/collection-loader.js) | You need to iterate every collection (rendering a list, finding matches by pattern, computing aggregate state). |
+| **`resolveActiveEventBaseCollection(settings, chatUUID?)`** | [eventbase-store.js](../core/eventbase-store.js) | You need *the one* active EventBase collection for a chat (ownership-filtered + lock-aware). Use this instead of taking `[0]` from `findEventBaseCollectionsForChat`. |
+| **`getLock(collectionId, options)`** | [collection-metadata.js](../core/collection-metadata.js) | You need lock state for *one* collection (badge, tooltip, checkbox state, "is this active right now?"). |
+| **`setLock(collectionId, action, options)`** | [collection-metadata.js](../core/collection-metadata.js) | You need to *mutate* lock state for *one* collection (user clicks lock / unlock / clear). |
+| **`buildRegistryKey(collectionId, settings)`** | [collection-ids.js](../core/collection-ids.js) | You only have a bare collection ID and need to convert it to the canonical `"backend:id"` storage key (for any metadata read/write). Never hand-roll `` `${backend}:${collectionId}` `` — use this instead. |
+| **`resolveBackendForCollection(input)`** | [collection-ids.js](../core/collection-ids.js) | You have an ID (either registry-key or bare) and need to pick the right backend instance for it (query, delete, list, etc.). Returns `{ backend, collectionId }` where `collectionId` is the bare form. Replaces hand-rolled `parseRegistryKey(...).backend ?? settings.vector_backend` chains. |
 
 ### `resolveBackendForCollection(input)` — pick the right backend for a collection
 
@@ -109,7 +110,7 @@ These patterns will look correct but produce broken state:
 
 ### Older primitives — when you might still need them
 
-`setCollectionLock`, `removeCollectionLock`, `clearCollectionLock`, `setCollectionCharacterLock`, etc. ([collection-metadata.js:488+](../core/collection-metadata.js#L488)) are the raw write primitives without authorization. The facade routes to these. **Only call them directly from inside `setLock` or from system code that already enforces auth at a higher layer** (`registerCollection`'s creatorHandle stamping is the canonical example). Application code, UI handlers, and anything user-triggered should go through `setLock`.
+`setCollectionLock`, `removeCollectionLock`, `clearCollectionLock`, `setCollectionCharacterLock`, etc. ([collection-metadata.js](../core/collection-metadata.js)) are the raw write primitives without authorization. The facade routes to these. **Only call them directly from inside `setLock` or from system code that already enforces auth at a higher layer** (`registerCollection`'s creatorHandle stamping is the canonical example). Application code, UI handlers, and anything user-triggered should go through `setLock`.
 
 ## Pause/Resume button — `enabled` flag
 
@@ -164,7 +165,7 @@ Sibling principle to the lock facade — same "use the one helper, never reimple
 
 The settings object stores the embedding model under **provider-specific** field names: `openrouter_model`, `ollama_model`, `vllm_model`, `cohere_model`, etc. There is **no flat `settings.model`** — that key is always empty/undefined. Code that reads `settings.model` directly silently produces the wrong value (empty string) without throwing.
 
-**Always use** [`getModelFromSettings(settings, fallback?)`](../core/providers.js#L99) from `core/providers.js`:
+**Always use** [`getModelFromSettings(settings, fallback?)`](../core/providers.js) from `core/providers.js`:
 
 ```js
 import { getModelFromSettings } from './providers.js';
@@ -392,7 +393,7 @@ The **auto-sync start marker** is the second gate that catches this case. It's a
 | `getAutoSyncMarker(chatUUID)` | Read by `runEventBaseIngestion` to gate the window list. Returns `undefined` when no marker is stamped (manual runs and pre-auto-sync chats). |
 | `clearAutoSyncMarker(chatUUID)` | Called when auto-sync is disabled so re-enabling later re-computes a fresh marker against the current chat state. |
 
-The filter is at [`core/eventbase-workflow.js:170-180`](../core/eventbase-workflow.js#L170):
+The filter is at [`core/eventbase-workflow.js`](../core/eventbase-workflow.js):
 
 ```js
 if (isAutoSync) {
@@ -430,21 +431,21 @@ User scenario the marker makes safe:
 
 The auto-sync start marker is stamped *once* at enable time and never advances as new windows extract. Using it for the UI count produces a frozen, misleading number. The vectorization tip is the live truth source. Not persisted — `setVectorizationTip` keeps it current during the session (backend-agnostic). On a cold cache after page reload, `ensureVectorizationTip` probes the backend via `listChunks` to backfill it; this works for Qdrant and Standard+plugin. For Standard without the similharity plugin the probe returns `null` (native fallback only returns hashes, no metadata), so the UI falls back to `markerValue` until the next ingestion run refreshes the in-memory cache.
 
-| Function | File:Line | Notes |
+| Function | File | Notes |
 |---|---|---|
-| `getVectorizationTip(chatUUID)` | [eventbase-store.js:47](../core/eventbase-store.js#L47) | Sync; returns cached tip or `undefined`. UI falls back to `markerValue` when undefined. |
-| `setVectorizationTip(chatUUID, tip)` | [eventbase-store.js:52](../core/eventbase-store.js#L52) | Sync, monotonic max — out-of-order calls won't regress. Called by `runEventBaseIngestion` after every successful window via `setVectorizationTip(uuid, win.end + 1)`. |
-| `clearVectorizationTip(chatUUID)` | [eventbase-store.js:59](../core/eventbase-store.js#L59) | Call when deleting or clearing EventBase for a chat (parity with `clearAutoSyncMarker`). |
-| `ensureVectorizationTip(chatUUID, collectionId, settings)` | [eventbase-store.js:74](../core/eventbase-store.js#L74) | Async. Returns cached tip immediately on hit; probes backend once on session-cold miss, populates cache, returns value. Returns `null` when collection has no events. Called by `getChatAutoSyncStatus`. |
+| `getVectorizationTip(chatUUID)` | [eventbase-store.js](../core/eventbase-store.js) | Sync; returns cached tip or `undefined`. UI falls back to `markerValue` when undefined. |
+| `setVectorizationTip(chatUUID, tip)` | [eventbase-store.js](../core/eventbase-store.js) | Sync, monotonic max — out-of-order calls won't regress. Called by `runEventBaseIngestion` after every successful window via `setVectorizationTip(uuid, win.end + 1)`. |
+| `clearVectorizationTip(chatUUID)` | [eventbase-store.js](../core/eventbase-store.js) | Call when deleting or clearing EventBase for a chat (parity with `clearAutoSyncMarker`). |
+| `ensureVectorizationTip(chatUUID, collectionId, settings)` | [eventbase-store.js](../core/eventbase-store.js) | Async. Returns cached tip immediately on hit; probes backend once on session-cold miss, populates cache, returns value. Returns `null` when collection has no events. Called by `getChatAutoSyncStatus`. |
 
 ### Last-used window size — window-size-change detection for Continue
 
 Persists the `windowSize` that was in effect when auto-sync last ran successfully. Used by the Continue modal to detect a window-size change since the last extraction (the modal is planned for deletion by §10 / C4 of the autosync plan, but `getLastUsedWindowSize` will remain as a diagnostic).
 
-| Function | File:Line | Notes |
+| Function | File | Notes |
 |---|---|---|
-| `getLastUsedWindowSize(chatUUID)` | [eventbase-store.js:367](../core/eventbase-store.js#L367) | Reads from `extension_settings.vectfox.eventbase_last_used_window_size[chatUUID]`. Returns `undefined` when no prior run. |
-| `setLastUsedWindowSize(chatUUID, windowSize)` | [eventbase-store.js:377](../core/eventbase-store.js#L377) | Stamped by `runEventBaseIngestion` after a successful run with `windowsProcessed > 0`. Do not call from application code. |
+| `getLastUsedWindowSize(chatUUID)` | [eventbase-store.js](../core/eventbase-store.js) | Reads from `extension_settings.vectfox.eventbase_last_used_window_size[chatUUID]`. Returns `undefined` when no prior run. |
+| `setLastUsedWindowSize(chatUUID, windowSize)` | [eventbase-store.js](../core/eventbase-store.js) | Stamped by `runEventBaseIngestion` after a successful run with `windowsProcessed > 0`. Do not call from application code. |
 
 ### Collection resolver — find the EventBase collection for a chat
 
@@ -460,7 +461,7 @@ Persists the `windowSize` that was in effect when auto-sync last ran successfull
 marker to read a stale import instead of the active collection. Use the **lock** to
 disambiguate which one is active.
 
-| Function | File:Line | Use when |
+| Function | File | Use when |
 |---|---|---|
 | `resolveActiveEventBaseCollection(settings, chatUUID?)` | [eventbase-store.js](../core/eventbase-store.js) | **Default choice.** Returns `{ collectionId, registryKey }` for the single **active** collection — ownership-filtered (via `getCollectionListing`) and lock-aware (matches the DB Browser's "Active here only" and the auto-sync write target). Returns `null` when none. Used by `stampAutoSyncMarker` and `getChatAutoSyncStatus`. |
 | `findEventBaseCollectionsForChat(uuid, preferredBackend)` | [eventbase-store.js](../core/eventbase-store.js) | Only when you genuinely need **every** candidate (e.g. pausing auto-sync on all of a chat's collections, or a has-data fallback probe). Returns `Array<{ collectionId, registryKey }>`, lock-ranked first. Pass `getRegistryBackend(settings.vector_backend)` as `preferredBackend`. **Do not** take `[0]` to mean "the active one" — call `resolveActiveEventBaseCollection` for that. Returns `[]` when no collection exists yet. |
@@ -469,17 +470,17 @@ disambiguate which one is active.
 
 Called internally by the ingestion loop. Do not call from application code — reimplementing these inline is the historical source of dedup bugs.
 
-| Function | File:Line | Notes |
+| Function | File | Notes |
 |---|---|---|
-| `windowFingerprint(sourceHashes)` | [eventbase-store.js:396](../core/eventbase-store.js#L396) | Deterministic sorted-join of message hashes. **Window-size dependent** — a fingerprint from `windowSize=2` never collides with one from `windowSize=4`, which is why the start marker is needed as a second safety layer. |
-| `clearWindowCacheForChat(chatUUID)` | [eventbase-store.js:436](../core/eventbase-store.js#L436) | Evicts the in-memory fingerprint Set for a chat. Use when a collection is deleted. Do NOT call on window-size change — that would force full re-extraction; use `stampAutoSyncMarker` instead. |
+| `windowFingerprint(sourceHashes)` | [eventbase-store.js](../core/eventbase-store.js) | Deterministic sorted-join of message hashes. **Window-size dependent** — a fingerprint from `windowSize=2` never collides with one from `windowSize=4`, which is why the start marker is needed as a second safety layer. |
+| `clearWindowCacheForChat(chatUUID)` | [eventbase-store.js](../core/eventbase-store.js) | Evicts the in-memory fingerprint Set for a chat. Use when a collection is deleted. Do NOT call on window-size change — that would force full re-extraction; use `stampAutoSyncMarker` instead. |
 
 ### Auto-sync entry points
 
-| Function | File:Line | Role |
+| Function | File | Role |
 |---|---|---|
-| `synchronizeChat(settings, batchSize, triggerEvent)` | [chat-vectorization.js:327](../core/chat-vectorization.js#L327) | The auto-sync coordinator. Checks whether the chat's EventBase collection has `autoSync=true` (via `findEventBaseCollectionsForChat` + `isCollectionAutoSyncEnabled`), then calls `runEventBaseIngestion({ isAutoSync: true })`. Called from ST event hooks (MESSAGE_SENT, MESSAGE_RECEIVED, etc.). Pass `triggerEvent` so it can suppress the popup on MESSAGE_SENT mid-generation. |
-| `rearrangeChat(chat, settings, type, { dryRun, testMessage })` | [chat-vectorization.js:1198](../core/chat-vectorization.js#L1198) | ST generation interceptor (`CHAT_COMPLETION_PROMPT_READY`). Handles semantic retrieval and prompt injection. **Separate concern from `synchronizeChat`** — retrieval does not trigger auto-sync extraction. The `dryRun` / `testMessage` params support the debug query tester. |
+| `synchronizeChat(settings, batchSize, triggerEvent)` | [chat-vectorization.js](../core/chat-vectorization.js) | The auto-sync coordinator. Checks whether the chat's EventBase collection has `autoSync=true` (via `findEventBaseCollectionsForChat` + `isCollectionAutoSyncEnabled`), then calls `runEventBaseIngestion({ isAutoSync: true })`. Called from ST event hooks (MESSAGE_SENT, MESSAGE_RECEIVED, etc.). Pass `triggerEvent` so it can suppress the popup on MESSAGE_SENT mid-generation. |
+| `rearrangeChat(chat, settings, type, { dryRun, testMessage })` | [chat-vectorization.js](../core/chat-vectorization.js) | ST generation interceptor (`CHAT_COMPLETION_PROMPT_READY`). Handles semantic retrieval and prompt injection. **Separate concern from `synchronizeChat`** — retrieval does not trigger auto-sync extraction. The `dryRun` / `testMessage` params support the debug query tester. |
 
 ### Key-form parity
 

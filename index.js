@@ -23,7 +23,7 @@ import { debounce } from '../../../utils.js';
 import { debounce_timeout } from '../../../constants.js';
 
 // VectFox modules - Core
-import { synchronizeChat, rearrangeChat, vectorizeAll } from './core/chat-vectorization.js';
+import { synchronizeChat, rearrangeChat } from './core/chat-vectorization.js';
 import { purgeAllVectorIndexes, purgeVectorIndex } from './core/core-vector-api.js';
 import { migrateOldEnabledKeys } from './core/collection-metadata.js';
 import { clearCollectionRegistry, discoverExistingCollections, cleanupCorruptedCollections, pruneOrphanedEventBaseChatMaps } from './core/collection-loader.js';
@@ -33,7 +33,6 @@ import { log } from './core/log.js';
 
 // VectFox modules - UI
 import { renderSettings, openDiagnosticsModal, loadWebLlmModels, updateWebLlmStatus, refreshAutoSyncCheckbox } from './ui/ui-manager.js';
-import { progressTracker } from './ui/progress-tracker.js';
 import { initializeVisualizer } from './ui/chunk-visualizer.js';
 import { initializeDatabaseBrowser } from './ui/database-browser.js';
 import { initializeWorldInfoIntegration } from './core/world-info-integration.js';
@@ -362,16 +361,16 @@ async function vectfox_rearrangeChat(chat, _contextSize, _abort, type) {
 window['vectfox_rearrangeChat'] = vectfox_rearrangeChat;
 
 /**
- * Action: Vectorize all messages in current chat
+ * Action: Sync Chat — shortcut to the Vectorize Content screen.
+ *
+ * Rather than running a parallel `vectorizeAll` here, this just opens the
+ * Vectorize Content modal (chat tab), whose "Continue" button is the single,
+ * mobile-tested vectorization path. Keeping Sync Chat as a shortcut to that
+ * screen — instead of its own code — removes the risk of the two drifting.
  */
 async function onVectorizeAllClick() {
-    const controller = new AbortController();
-    progressTracker.setCancelHandler(() => controller.abort('user-stop'));
-    try {
-        await vectorizeAll(settings, getBatchSize(), controller.signal);
-    } finally {
-        progressTracker.clearCancelHandler();
-    }
+    const { openContentVectorizer } = await import('./ui/content-vectorizer.js');
+    openContentVectorizer('chat');
 }
 
 /**

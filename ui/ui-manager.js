@@ -823,6 +823,11 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <label class="vectfox-label">Inject last <span id="VectFox_summarizer_injection_count_val">30</span> turn(s)</label>
                                     <input type="range" id="VectFox_summarizer_injection_count" min="1" max="50" step="1" class="vectfox-range" />
                                 </div>
+                                <label class="checkbox_label" for="VectFox_summarizer_injection_full_detail" style="margin-top: 8px;">
+                                    <input type="checkbox" id="VectFox_summarizer_injection_full_detail" />
+                                    <span>Include full event detail</span>
+                                </label>
+                                <small class="VectFox_hint">Add each event's structured fields (cause, result, items, time, concepts, keywords, open threads, message index) beneath its summary. Off = summary only.</small>
                             </div>
 
                             <!-- Collection lock moved to Database Browser (per-collection settings) -->
@@ -3234,6 +3239,15 @@ function bindSettingsEvents(settings, callbacks) {
             const val = Math.max(1, Math.min(50, parseInt(this.value, 10) || 30));
             settings.summarizer_injection_count = val;
             $('#VectFox_summarizer_injection_count_val').text(val);
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
+    // Full event detail toggle (default ON — includes structured fields per event).
+    $('#VectFox_summarizer_injection_full_detail')
+        .prop('checked', settings.summarizer_injection_full_detail !== false)
+        .on('change', function() {
+            settings.summarizer_injection_full_detail = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });

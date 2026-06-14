@@ -94,27 +94,58 @@ export async function buildSummarizerInjection(settings) {
 
     if (!events.length) return { text: '', count: 0, reason: 'no-events', collectionId: active.collectionId, requested: n };
 
-    return { text: _format(events), count: events.length, collectionId: active.collectionId, requested: n };
+    const fullDetail = settings.summarizer_injection_full_detail !== false; // default on
+    return { text: _format(events, fullDetail), count: events.length, collectionId: active.collectionId, requested: n };
 }
 
 /**
  * Render events oldest→newest inside <VectFoxSummarizer> tags, one summary per
  * line, each tagged with its recency so the model knows how far back it is:
  * the most recent extracted turn is "(latest turn)", older ones "(N turns ago)".
+ * When `fullDetail` is on, each event's structured fields are listed (indented)
+ * beneath its summary — only the fields that actually have content.
  * @param {Array<{text?: string, metadata?: object}>} events - newest-first (sorted desc)
+ * @param {boolean} [fullDetail=false]
  * @returns {string}
  */
-function _format(events) {
+function _format(events, fullDetail = false) {
     const lines = [];
     // Walk oldest→newest. `events[0]` is the most recent (rank 1), so event at
     // index i is "i+1" turns back; i === 0 is the latest.
     for (let i = events.length - 1; i >= 0; i--) {
-        const summary = _stripEventTypePrefix(events[i].text || events[i].metadata?.summary || '');
+        const evt = events[i];
+        const summary = _stripEventTypePrefix(evt.text || evt.metadata?.summary || '');
         if (!summary) continue;
         const label = i === 0 ? 'latest turn' : `${i + 1} turns ago`;
         lines.push(`(${label}) ${summary}`);
+        if (fullDetail) {
+            for (const d of _detailLines(evt.metadata || {})) lines.push(`  ${d}`);
+        }
     }
     return `<VectFoxSummarizer>\n${lines.join('\n')}\n</VectFoxSummarizer>`;
+}
+
+/**
+ * Build the indented structured-field lines for one event's metadata. Only fields
+ * with content are emitted, so sparse events stay compact. `summary` is omitted
+ * (already the headline line) and lives in the embed text, not metadata.
+ * @param {object} meta
+ * @returns {string[]}
+ */
+function _detailLines(meta) {
+    const out = [];
+    const arr = (v) => (Array.isArray(v) ? v.filter(x => x != null && String(x).trim() !== '') : []);
+    const str = (v) => (typeof v === 'string' ? v.trim() : '');
+
+    if (str(meta.cause)) out.push(`Cause: ${str(meta.cause)}`);
+    if (str(meta.result)) out.push(`Result: ${str(meta.result)}`);
+    if (arr(meta.items).length) out.push(`Items: ${arr(meta.items).join(', ')}`);
+    if (str(meta.DateTime)) out.push(`When: ${str(meta.DateTime)}`);
+    if (arr(meta.concepts).length) out.push(`Concepts: ${arr(meta.concepts).join(', ')}`);
+    if (arr(meta.keywords).length) out.push(`Keywords: ${arr(meta.keywords).join(', ')}`);
+    if (arr(meta.open_threads).length) out.push(`Open threads: ${arr(meta.open_threads).join(', ')}`);
+    if (meta.source_window_end != null) out.push(`Message index: ${meta.source_window_end}`);
+    return out;
 }
 
 /** Strip a leading "[EVENT_TYPE] " prefix from the first line of an event's text. */

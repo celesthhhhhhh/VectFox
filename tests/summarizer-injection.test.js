@@ -30,12 +30,13 @@ import { runSummarizerInjection, buildSummarizerInjection } from '../core/summar
 const SETTINGS = (over = {}) => ({
     summarizer_injection_enabled: true,
     summarizer_injection_count: 30,
+    summarizer_injection_full_detail: false, // summary-only for the format/sort tests
     position: 1,
     depth: 4,
     vector_backend: 'qdrant',
     ...over,
 });
-const ev = (swe, text) => ({ text, metadata: { eventbase: true, source_window_end: swe } });
+const ev = (swe, text, extra = {}) => ({ text, metadata: { eventbase: true, source_window_end: swe, ...extra } });
 const lastInjected = () => mocks.setExtensionPrompt.mock.calls.at(-1);
 
 beforeEach(() => {
@@ -123,5 +124,45 @@ describe('buildSummarizerInjection (Debug Summarizer preview path)', () => {
         mocks.resolveActive.mockReturnValue(null);
         const out = await buildSummarizerInjection(SETTINGS());
         expect(out).toMatchObject({ count: 0, text: '', reason: 'no-collection' });
+    });
+
+    it('full-detail mode lists structured fields (content-only) under each summary', async () => {
+        mocks.listChunks.mockResolvedValue({ items: [
+            ev(8, '[TALK] Pact sealed', {
+                cause: 'tension rose', result: 'alliance formed',
+                items: ['tideglass', 'lantern'], DateTime: '2026-01-02T03:04:00.000Z',
+                concepts: ['accord'], keywords: ['pact', 'accord'],
+                open_threads: ['who funds it?'], characters: ['Rabbit'], // characters NOT rendered
+            }),
+        ] });
+        const out = await buildSummarizerInjection(SETTINGS({ summarizer_injection_full_detail: true, summarizer_injection_count: 1 }));
+        expect(out.count).toBe(1);
+        expect(out.text).toBe([
+            '<VectFoxSummarizer>',
+            '(latest turn) Pact sealed',
+            '  Cause: tension rose',
+            '  Result: alliance formed',
+            '  Items: tideglass, lantern',
+            '  When: 2026-01-02T03:04:00.000Z',
+            '  Concepts: accord',
+            '  Keywords: pact, accord',
+            '  Open threads: who funds it?',
+            '  Message index: 8',
+            '</VectFoxSummarizer>',
+        ].join('\n'));
+    });
+
+    it('full-detail mode omits empty fields (compact for sparse events)', async () => {
+        mocks.listChunks.mockResolvedValue({ items: [
+            ev(4, 'just a summary', { cause: '', result: '   ', items: [], concepts: [null, ''], keywords: ['k1'] }),
+        ] });
+        const out = await buildSummarizerInjection(SETTINGS({ summarizer_injection_full_detail: true }));
+        expect(out.text).toBe([
+            '<VectFoxSummarizer>',
+            '(latest turn) just a summary',
+            '  Keywords: k1',
+            '  Message index: 4',
+            '</VectFoxSummarizer>',
+        ].join('\n'));
     });
 });

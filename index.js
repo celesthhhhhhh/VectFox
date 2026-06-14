@@ -218,6 +218,10 @@ const defaultSettings = {
     // it lives on the AutoSync tab and forces the auto-sync window to 1 turn while on.
     summarizer_injection_enabled: false,
     summarizer_injection_count: 30,               // recent events to inject; range 1-50
+    // When on (default), each injected event also includes its structured fields
+    // (cause, result, items, DateTime, concepts, keywords, open_threads, message
+    // index) beneath the summary line. Off = summary only (compact).
+    summarizer_injection_full_detail: true,
     // Per-chat marker: auto-sync only processes windows whose start >= marker.
     // Stamped at "max(source_window_end across existing events) + 1" when auto-sync
     // is enabled on a non-empty collection, or at current chat length when collection

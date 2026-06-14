@@ -101,11 +101,13 @@ describe('stripGameSystemBlocks', () => {
         expect(stripGameSystemBlocks(stripReasoningBlocks(raw))).toBe('敘事。');
     });
 
-    // Regression on the real captured reply (Doc/log.txt). Skips cleanly if the
-    // sample isn't present in this checkout.
+    // Regression on a representative captured reply. Uses a committed, dedicated
+    // fixture (NOT Doc/log.txt — that's a shared scratchpad that gets overwritten
+    // with debug logs, which silently broke this test). Replace the fixture with a
+    // real captured reply anytime; it just needs the same block types + narrative.
     it('clears reasoning + game-system blocks from the real captured reply', () => {
         const here = dirname(fileURLToPath(import.meta.url));
-        const sample = join(here, '..', 'Doc', 'log.txt');
+        const sample = join(here, 'fixtures', 'captured-reply.txt');
         if (!existsSync(sample)) return; // sample not in this checkout — nothing to assert
         const raw = readFileSync(sample, 'utf8');
         const out = stripGameSystemBlocks(stripReasoningBlocks(raw));

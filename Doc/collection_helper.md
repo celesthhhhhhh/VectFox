@@ -389,7 +389,7 @@ The **auto-sync start marker** is the second gate that catches this case. It's a
 
 | Function | Role |
 |---|---|
-| `stampAutoSyncMarker(chatUUID, settings)` | Called from the Auto-Sync checkbox change handler when the user enables auto-sync (and re-called when the window-size setting changes while auto-sync is on). Smart placement: if the EventBase collection has existing events → `marker = max(source_window_end) + 1`; if empty → `marker = current chat length`. Persists to `extension_settings.vectfox.eventbase_autosync_start_marker[chatUUID]` and calls `saveSettingsDebounced()`. |
+| `stampAutoSyncMarker(chatUUID, settings, options?)` | Called from the Auto-Sync checkbox change handler when the user enables auto-sync (and re-called when the window-size setting changes while auto-sync is on). Smart placement: if the EventBase collection has existing events → `marker = max(source_window_end) + 1`; if empty → `marker = current chat length`. Pass `{ floor: 'chatLength' }` to force from-now-on placement regardless of coverage (the enable-time "Just keep up from here" choice). Persists to `extension_settings.vectfox.eventbase_autosync_start_marker[chatUUID]` and calls `saveSettingsDebounced()`. |
 | `getAutoSyncMarker(chatUUID)` | Read by `runEventBaseIngestion` to gate the window list. Returns `undefined` when no marker is stamped (manual runs and pre-auto-sync chats). |
 | `clearAutoSyncMarker(chatUUID)` | Called when auto-sync is disabled so re-enabling later re-computes a fresh marker against the current chat state. |
 
@@ -405,6 +405,18 @@ if (isAutoSync) {
 ```
 
 **Why `>=` and not `>`:** `stampAutoSyncMarker` uses `max(source_window_end) + 1`, so the next legitimate window starts *exactly at* the marker. Using `>` would skip the first new window after the boundary — an extraction gap. Boundary inclusion is asserted by TEST 015 Phase 4.
+
+### Enable-time backlog catch-up (confirm, then run)
+
+Auto-sync **catches up the whole gap** (tip → now) on its next trigger — it does *not* "start from now" by default. For a large gap that next trigger is a surprise burst of LLM calls, so the enable handler ([ui-manager.js](../ui/ui-manager.js) → `#VectFox_autosync_enabled` `input`) gates it:
+
+1. Compute pending windows: `floor((chatMessageCount − getVectorizationTip(uuid)) / getAutoSyncWindowSize(settings))`.
+2. If `>= 5` windows, `callGenericPopup(CONFIRM, …)` — **Catch up now** vs **Just keep up from here** (X/Esc reverts):
+   - *Catch up now* → `backfillCurrentChatWithProgress()` ([content-vectorizer.js](../ui/content-vectorizer.js)) runs the Continue path with the standard progress UI (full-screen on mobile), then the marker lands at the freshly-advanced tip (smart placement).
+   - *Just keep up from here* → `stampAutoSyncMarker(uuid, settings, { floor: 'chatLength' })` skips the backlog.
+3. Below threshold → enable silently (small gap catches up on the next trigger, as before).
+
+The catch-up backfill runs at `eventbase_window_size` while auto-sync runs at `getAutoSyncWindowSize` — **safe** because the marker/tip gate is index-based: catch-up advances the tip, the marker is stamped there, and auto-sync only processes windows *above* it at its own size. No fingerprint collision, no duplicate coverage. Floor-override behavior is asserted by TEST 016 Phase 5.
 
 **Why the manual path ignores the marker:** the filter only applies when `isAutoSync === true`. A user manually clicking Vectorize Content can refill historical gaps at a new window size on purpose; the marker is an auto-sync-only safety, not a global "don't re-process" gate.
 

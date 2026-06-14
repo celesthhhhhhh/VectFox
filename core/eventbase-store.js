@@ -428,16 +428,30 @@ export function clearAutoSyncMarker(chatUUID) {
  *     (auto-sync starts "from now on" — no full backfill of a long pre-existing
  *     chat that was never vectorized).
  *
+ * Floor override: pass `{ floor: 'chatLength' }` to force "from now on" placement
+ * regardless of existing coverage — used by the auto-sync enable flow's "Just keep
+ * up from here" choice, where the user explicitly declines backfilling the gap.
+ *
  * @param {string} chatUUID
  * @param {object} settings
+ * @param {{ floor?: 'chatLength' }} [options]
  * @returns {Promise<number>}  The marker that was stamped.
  */
-export async function stampAutoSyncMarker(chatUUID, settings) {
+export async function stampAutoSyncMarker(chatUUID, settings, options = {}) {
     if (!chatUUID) return 0;
     const store = extension_settings?.vectfox;
     if (!store) return 0;
 
     const chatLength = getContext()?.chat?.length ?? 0;
+
+    // Explicit "from now on" — skip the coverage scan entirely.
+    if (options.floor === 'chatLength') {
+        if (!store.eventbase_autosync_start_marker) store.eventbase_autosync_start_marker = {};
+        store.eventbase_autosync_start_marker[chatUUID] = chatLength;
+        saveSettingsDebounced();
+        log.lifecycle(`[EventBase] AutoSyncMarker stamped (floor=chatLength): uuid=${chatUUID}, marker=${chatLength}`);
+        return chatLength;
+    }
 
     // Resolve THE active EventBase collection for this chat (lock-aware), so the
     // marker is computed from the collection the user is actually vectorizing —

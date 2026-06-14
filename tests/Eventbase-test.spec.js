@@ -3169,7 +3169,24 @@ test('TEST 016 — stampAutoSyncMarker smart placement (production-function smok
             }
             console.log(`${TEST} Phase 4 ✓ re-stamp overwrites prior value (sentinel -999 → ${chatLengthB})`);
 
-            console.log(`${TEST} [PASS] stampAutoSyncMarker smart placement holds — Branch A early-exit, Branch B no-candidate falls to chatLength, Branch C empty-candidate falls to chatLength via try/catch, re-stamp overwrites. Branch D (max(source_window_end)+1) is not asserted by this test because env-1/2 standard-backend inserts strip metadata; the one-line reducer is trivial.`);
+            // ═══ Phase 5 — floor override: { floor: 'chatLength' } forces from-now-on ═══
+            // Used by the auto-sync enable "Just keep up from here" choice. Must stamp
+            // chat length directly (skipping the coverage scan) regardless of state.
+            console.log(`${TEST} Phase 5: stampAutoSyncMarker(..., { floor: 'chatLength' }) stamps chat length directly`);
+            const chatLenNow = ctx?.chat?.length ?? 0;
+            extension_settings.vectfox.eventbase_autosync_start_marker[uuidBranchB] = -777;
+            const floored = await stampAutoSyncMarker(uuidBranchB, settings, { floor: 'chatLength' });
+            if (floored !== chatLenNow) {
+                console.error(`${TEST} [FAIL] Phase 5: floor override returned ${floored}, expected chatLength=${chatLenNow}`);
+                return;
+            }
+            if (getAutoSyncMarker(uuidBranchB) !== chatLenNow) {
+                console.error(`${TEST} [FAIL] Phase 5: floor override did not persist chatLength — getAutoSyncMarker reads ${getAutoSyncMarker(uuidBranchB)} (sentinel -777 not overwritten)`);
+                return;
+            }
+            console.log(`${TEST} Phase 5 ✓ floor override stamps chatLength (${chatLenNow}), overwriting sentinel -777`);
+
+            console.log(`${TEST} [PASS] stampAutoSyncMarker smart placement holds — Branch A early-exit, Branch B no-candidate falls to chatLength, Branch C empty-candidate falls to chatLength via try/catch, re-stamp overwrites, floor override forces chatLength. Branch D (max(source_window_end)+1) is not asserted by this test because env-1/2 standard-backend inserts strip metadata; the one-line reducer is trivial.`);
         } finally {
             // Cleanup — markers, on-disk artifacts, meta, and registry.
             // ORDER MATTERS: deleteContentCollection FIRST so the vectra

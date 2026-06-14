@@ -2913,6 +2913,36 @@ async function _runEventBaseBackfill({ resetCaches = false } = {}) {
 }
 
 /**
+ * Headless backfill of the CURRENT chat, reusing the Continue path — but invokable
+ * WITHOUT the vectorizer modal being open. Used by the auto-sync "Catch up now"
+ * flow (ui-manager.js): when the user enables auto-sync on a chat with a large
+ * unvectorized gap, this runs the backfill with the standard progress tracker
+ * (full-screen on mobile, corner panel on desktop) and resolves when extraction
+ * completes, so the caller can then enable auto-sync.
+ *
+ * Reuses _runEventBaseBackfill (Continue semantics: resetCaches=false → keep
+ * caches, fill only the gap via tip/fingerprint dedup). Its modal-DOM touches
+ * (hideVectorizerForProgress / updateVectorizeButtonState / closeContentVectorizer)
+ * are jQuery no-ops when the modal is closed, and messages come from getContext(),
+ * so it works headless. See plans/autosync-backlog-catchup-on-enable.md.
+ *
+ * @returns {Promise<{ ran: boolean, reason?: string }>}
+ */
+export async function backfillCurrentChatWithProgress() {
+    if (isVectorizing) {
+        toastr.info('A vectorization is already running');
+        return { ran: false, reason: 'busy' };
+    }
+    // Point the (closed) vectorizer state at the live chat so _runEventBaseBackfill's
+    // live-chat route is taken. getSourceData() returning null still routes here —
+    // only source.type==='file' diverges to the archive path.
+    currentContentType = 'chat';
+    currentSettings = { ...getContentTypeDefaults('chat') };
+    await _runEventBaseBackfill({ resetCaches: false });
+    return { ran: true };
+}
+
+/**
  * Starts the vectorization process
  */
 async function startVectorization() {

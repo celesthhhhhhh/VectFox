@@ -2187,10 +2187,66 @@ function bindSettingsEvents(settings, callbacks) {
                     openContentVectorizer('chat');
                     return;
                 }
-                // Collection exists (partial or fully-vectorized) — lock + enable.
+                // Collection exists (partial or fully-vectorized).
                 // Use registry-key form ("backend:id") so metadata writes land in the
                 // same bucket as the loader/import path.
                 const lockKey = status.registryKey || status.collectionId;
+
+                // --- Backlog catch-up gate ---
+                // Auto-sync backfills the whole gap (tip → now) on its next trigger —
+                // for a large gap that's a surprise burst of LLM calls. So for a big
+                // gap, confirm first: run the catch-up now (with progress) or skip it
+                // ("just keep up from here"). Small gaps catch up silently as before.
+                // See plans/autosync-backlog-catchup-on-enable.md.
+                let markerFloorOverride; // undefined → smart placement (catch up to tip)
+                try {
+                    const { getVectorizationTip } = await import('../core/eventbase-store.js');
+                    const { getAutoSyncWindowSize } = await import('../core/eventbase-workflow.js');
+                    const { getChatUUID } = await import('../core/collection-ids.js');
+                    const uuid = getChatUUID();
+                    const chatMsgCount = typeof status.chatMessageCount === 'number'
+                        ? status.chatMessageCount
+                        : (getContext()?.chat || []).filter(m => m.mes && m.mes.trim().length > 0).length;
+                    const tip = getVectorizationTip(uuid) ?? 0;
+                    const windowSize = Math.max(1, getAutoSyncWindowSize(settings));
+                    const pendingMsgs = Math.max(0, chatMsgCount - tip);
+                    const pendingWindows = Math.floor(pendingMsgs / windowSize);
+                    const CATCHUP_PROMPT_THRESHOLD = 5; // windows (~5 LLM calls)
+
+                    if (pendingWindows >= CATCHUP_PROMPT_THRESHOLD) {
+                        const popup = await import('../../../../popup.js');
+                        const { callGenericPopup, POPUP_TYPE } = popup;
+                        const POPUP_RESULT = popup.POPUP_RESULT || { AFFIRMATIVE: 1, NEGATIVE: 0 };
+                        const choice = await callGenericPopup(
+                            `<div style="text-align:left">
+                                <p><strong>${pendingMsgs} messages aren't vectorized yet</strong> (~${pendingWindows} extraction call${pendingWindows === 1 ? '' : 's'}).</p>
+                                <p>Auto-sync will catch up this backlog. Run it now — with a progress bar you can cancel — or just keep up from here on?</p>
+                            </div>`,
+                            POPUP_TYPE.CONFIRM,
+                            '',
+                            { okButton: 'Catch up now', cancelButton: 'Just keep up from here' },
+                        );
+                        if (choice === POPUP_RESULT.AFFIRMATIVE) {
+                            // Run the backfill now with the standard progress UI (full-screen
+                            // on mobile). Resolves at extraction completion; the marker then
+                            // lands at the freshly-advanced tip (smart placement below).
+                            const { backfillCurrentChatWithProgress } = await import('./content-vectorizer.js');
+                            await backfillCurrentChatWithProgress();
+                        } else if (choice === POPUP_RESULT.NEGATIVE) {
+                            // Keep up from here — skip the backlog (floor the marker at "now").
+                            markerFloorOverride = 'chatLength';
+                        } else {
+                            // X / Esc — abort enabling entirely.
+                            $checkbox.prop('checked', false);
+                            await refreshAutoSyncCheckbox(settings);
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    log.warn('[VectFox] auto-sync backlog gate failed (continuing with default placement):', err?.message || err);
+                }
+
+                // Lock + enable (every non-revert path).
                 setCollectionLock(lockKey, chatId);
                 setCollectionAutoSync(lockKey, true);
 
@@ -2200,12 +2256,13 @@ function bindSettingsEvents(settings, callbacks) {
                 // auto-sync. See plans/autosync-independent-window-and-last-n-injection.md §9.
                 // Smart placement: stamps at max(source_window_end)+1 when events
                 // exist (backfills the gap at the new window size), or at current
-                // chat length when collection is empty (from-now-on behavior).
+                // chat length when collection is empty. markerFloorOverride='chatLength'
+                // forces from-now-on when the user chose "just keep up from here".
                 try {
                     const { stampAutoSyncMarker } = await import('../core/eventbase-store.js');
                     const { getChatUUID } = await import('../core/collection-ids.js');
                     const uuid = getChatUUID();
-                    if (uuid) await stampAutoSyncMarker(uuid, settings);
+                    if (uuid) await stampAutoSyncMarker(uuid, settings, markerFloorOverride ? { floor: markerFloorOverride } : {});
                 } catch (err) {
                     log.warn('[VectFox] Failed to stamp auto-sync marker on enable:', err?.message || err);
                 }

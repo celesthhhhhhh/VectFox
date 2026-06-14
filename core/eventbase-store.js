@@ -17,9 +17,9 @@ import {
 } from './core-vector-api.js';
 import { saveSettingsDebounced, getRequestHeaders, getCurrentChatId } from '../../../../../script.js';
 import { extension_settings, getContext } from '../../../../extensions.js';
-import { getChatUUID, buildEventBaseCollectionId, getRegistryBackend, COLLECTION_PREFIXES, parseRegistryKey } from './collection-ids.js';
-import { registerCollection, getCollectionRegistry } from './collection-loader.js';
-import { getChatLockedCollections } from './collection-metadata.js';
+import { getChatUUID, buildEventBaseCollectionId, getRegistryBackend, COLLECTION_PREFIXES, parseRegistryKey, buildChatSearchPatterns, matchesPatterns } from './collection-ids.js';
+import { registerCollection, getCollectionRegistry, getCollectionListing } from './collection-loader.js';
+import { getChatLockedCollections, isCollectionLockedToChat } from './collection-metadata.js';
 import { buildEmbedText } from './eventbase-schema.js';
 import { log } from './log.js';
 
@@ -439,25 +439,26 @@ export async function stampAutoSyncMarker(chatUUID, settings) {
 
     const chatLength = getContext()?.chat?.length ?? 0;
 
-    // Find the EventBase collection for this chat, if any.
-    const backend = getRegistryBackend(settings?.vector_backend);
-    const candidates = findEventBaseCollectionIdsForChat(chatUUID, backend);
+    // Resolve THE active EventBase collection for this chat (lock-aware), so the
+    // marker is computed from the collection the user is actually vectorizing —
+    // not an arbitrary per-persona sibling (the stale-import bug).
+    const active = resolveActiveEventBaseCollection(settings, chatUUID);
 
     let maxEnd = -1;
-    if (candidates.length > 0) {
+    if (active) {
         try {
             const { getBackend } = await import('../backends/backend-manager.js');
             const backendInstance = await getBackend(settings);
             // Overfetch generously; per-chat EventBase collections are typically
             // O(hundreds to low thousands) of events. listChunks is paged anyway.
-            const result = await backendInstance.listChunks(candidates[0].collectionId, settings, { limit: 10000 });
+            const result = await backendInstance.listChunks(active.collectionId, settings, { limit: 10000 });
             const items = Array.isArray(result?.items) ? result.items : [];
             for (const it of items) {
                 const end = it?.metadata?.source_window_end;
                 if (typeof end === 'number' && end > maxEnd) maxEnd = end;
             }
         } catch (err) {
-            log.warn(`[EventBase AutoSyncMarker] listChunks failed for ${candidates[0].collectionId} — falling back to chat-tail marker:`, err?.message || err);
+            log.warn(`[EventBase AutoSyncMarker] listChunks failed for ${active.collectionId} — falling back to chat-tail marker:`, err?.message || err);
         }
     }
 
@@ -467,7 +468,7 @@ export async function stampAutoSyncMarker(chatUUID, settings) {
     store.eventbase_autosync_start_marker[chatUUID] = marker;
     saveSettingsDebounced();
 
-    log.lifecycle(`[EventBase] AutoSyncMarker stamped: uuid=${chatUUID}, marker=${marker} (maxEnd=${maxEnd}, chatLength=${chatLength}, candidates=${candidates.length})`);
+    log.lifecycle(`[EventBase] AutoSyncMarker stamped: uuid=${chatUUID}, marker=${marker} (maxEnd=${maxEnd}, chatLength=${chatLength}, active=${active?.collectionId ?? 'none'})`);
     return marker;
 }
 
@@ -739,11 +740,17 @@ export async function isWindowAlreadyExtracted(sourceHashes, messageIds, setting
  *   2. Other backend-scoped IDs
  *   3. Legacy (no backend) IDs
  *
+ * Naming convention (see Doc/collection_helper.md):
+ *   - `find…`  → ALL candidates, returns an array (this function).
+ *   - `resolve…` → THE single active answer (see resolveActiveEventBaseCollection).
+ * Take care before reaching for `[0]` here — if you want the one active
+ * collection for the current chat, call resolveActiveEventBaseCollection instead.
+ *
  * @param {string} uuid Chat UUID
  * @param {string} [preferredBackend] Backend to prefer (e.g. 'qdrant', 'vectra')
  * @returns {{ registryKey: string, collectionId: string }[]}
  */
-export function findEventBaseCollectionIdsForChat(uuid, preferredBackend) {
+export function findEventBaseCollectionsForChat(uuid, preferredBackend) {
     if (!uuid) return [];
     const matches = [];
     for (const registryKey of getCollectionRegistry()) {
@@ -781,6 +788,53 @@ export function findEventBaseCollectionIdsForChat(uuid, preferredBackend) {
 }
 
 /**
+ * Resolve THE active EventBase collection for a chat — the canonical answer to
+ * "which EventBase collection does this chat use right now?".
+ *
+ * This is the single entry point callers should use when they want one
+ * collection (not a list). It is:
+ *   - ownership-filtered (via getCollectionListing → drops collections owned by
+ *     other personas/users, matching the DB Browser and the auto-sync LED), and
+ *   - lock-aware (a chat UUID can map to MULTIPLE per-persona collections; the
+ *     lock picks the one the rest of the system treats as active — "Active here
+ *     only" / the auto-sync write target).
+ *
+ * Prefer this over `findEventBaseCollectionsForChat(...)[0]`. The plural `find…`
+ * is only for the rare case where you genuinely need every candidate (e.g.
+ * pausing auto-sync on all of a chat's collections).
+ *
+ * @param {object} settings - extension_settings.vectfox
+ * @param {string} [chatUUID] - defaults to the current chat's UUID
+ * @returns {{ collectionId: string, registryKey: string } | null}
+ */
+export function resolveActiveEventBaseCollection(settings, chatUUID) {
+    const uuid = chatUUID || getChatUUID();
+    if (!uuid) return null;
+
+    // Match by UUID (stable across legacy ID formats and character renames).
+    const patterns = buildChatSearchPatterns(null, uuid);
+    const isEbMatch = ({ collectionId, registryKey, isOwn }) => {
+        if (!isOwn) return false;
+        const idLower = String(collectionId || '').toLowerCase();
+        if (!idLower.startsWith('vf_eventbase_') && !idLower.includes('eventbase_')) return false;
+        return matchesPatterns(collectionId, patterns) || matchesPatterns(registryKey, patterns);
+    };
+    const ebMatches = getCollectionListing(settings).filter(isEbMatch);
+    if (ebMatches.length === 0) return null;
+
+    // Disambiguate persona collections: lock dominates, current backend
+    // tie-breaks, otherwise listing order. The lock index is keyed by the active
+    // chat id, so the lock is only meaningful when resolving the current chat.
+    const chatId = (uuid === getChatUUID()) ? getCurrentChatId() : null;
+    const wantBackend = getRegistryBackend(settings?.vector_backend);
+    const isLocked = (m) => !!chatId && (isCollectionLockedToChat(m.registryKey, chatId)
+                                      || isCollectionLockedToChat(m.collectionId, chatId));
+    const rank = (m) => (isLocked(m) ? 0 : 10) + (m.backend === wantBackend ? 0 : 1);
+    const active = ebMatches.slice().sort((a, b) => rank(a) - rank(b))[0];
+    return { collectionId: active.collectionId, registryKey: active.registryKey };
+}
+
+/**
  * Resolve which EventBase collection ID to read from for the given chat.
  *
  * Looks up the registered collection(s) by UUID and returns the first one
@@ -797,7 +851,7 @@ async function _resolveEventBaseCollectionIdForRead(settings, chatUUID) {
     if (!uuid) return null;
 
     const backend = getRegistryBackend(settings?.vector_backend);
-    const registered = findEventBaseCollectionIdsForChat(uuid, backend);
+    const registered = findEventBaseCollectionsForChat(uuid, backend);
 
     for (const { collectionId, registryKey } of registered) {
         // Only probe collections that match the current backend.

@@ -13,14 +13,14 @@
 
 import { setExtensionPrompt, extension_prompts, getCurrentChatId, substituteParams } from '../../../../../script.js';
 import { extension_settings, getContext } from '../../../../extensions.js';
-import { getChatUUID, parseRegistryKey, COLLECTION_PREFIXES, buildRegistryKey, buildChatSearchPatterns, matchesPatterns } from './collection-ids.js';
-import { getCollectionRegistry, getCollectionListing } from './collection-loader.js';
+import { getChatUUID, parseRegistryKey, COLLECTION_PREFIXES, buildRegistryKey } from './collection-ids.js';
+import { getCollectionRegistry } from './collection-loader.js';
 import { queryCollection } from './core-vector-api.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { EventBaseFatalError, EventBaseExtractionError } from './eventbase-schema.js';
 import { extractEvents } from './eventbase-extractor.js';
 import { generationRateLimiter, generationRateLimitSettings } from './generation-rate-limiter.js';
-import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearExtractionCachesForChat, buildEventBaseCollectionId, isLastWindowExtracted, setVectorizationTip, ensureVectorizationTip, shouldUseTipFallback } from './eventbase-store.js';
+import { insertEvents, isWindowAlreadyExtracted, markWindowExtracted, clearExtractionCachesForChat, buildEventBaseCollectionId, isLastWindowExtracted, setVectorizationTip, ensureVectorizationTip, shouldUseTipFallback, resolveActiveEventBaseCollection } from './eventbase-store.js';
 import { getSavedHashes } from './core-vector-api.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { retrieveEventsWithAgent } from './agentic-retrieval.js';
@@ -1214,25 +1214,10 @@ export async function getChatAutoSyncStatus(settings) {
     const uuid = getChatUUID();
     if (!uuid) return { state: 'no-chat' };
 
-    // Match by UUID — robust to legacy ID formats and character renames
-    // (the chat's UUID is the stable identifier; everything else can drift).
-    // Ownership/superadmin filtering is bundled into getCollectionListing.
-    const patterns = buildChatSearchPatterns(chatId, uuid);
-    const listing = getCollectionListing(settings);
-    const isEbMatch = ({ collectionId, registryKey, isOwn }) => {
-        if (!isOwn) return false;
-        const idLower = collectionId.toLowerCase();
-        if (!idLower.startsWith('vf_eventbase_') && !idLower.includes('eventbase_')) return false;
-        return matchesPatterns(collectionId, patterns) || matchesPatterns(registryKey, patterns);
-    };
-    // A chat UUID can have multiple per-persona EventBase collections. Prefer the
-    // one locked to THIS chat (matches the DB Browser's "Active here only" and the
-    // auto-sync write target) over an arbitrary first UUID match. Fall back to the
-    // first match for legacy collections that predate the lock index.
-    const ebMatches = listing.filter(isEbMatch);
-    const match = ebMatches.find(m => isCollectionLockedToChat(m.registryKey, chatId)
-                                   || isCollectionLockedToChat(m.collectionId, chatId))
-        || ebMatches[0];
+    // Resolve THE active EventBase collection for this chat — ownership-filtered
+    // and lock-aware (matches the DB Browser's "Active here only" and the
+    // auto-sync write target). See resolveActiveEventBaseCollection.
+    const match = resolveActiveEventBaseCollection(settings, uuid);
 
     if (!match) return { state: 'no-collection' };
 

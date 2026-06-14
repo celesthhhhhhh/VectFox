@@ -3069,7 +3069,7 @@ test('TEST 016 — stampAutoSyncMarker smart placement (production-function smok
             stampAutoSyncMarker,
             getAutoSyncMarker,
             clearAutoSyncMarker,
-            findEventBaseCollectionIdsForChat,
+            findEventBaseCollectionsForChat,
         } = await import(base + 'core/eventbase-store.js');
         const { registerCollection, unregisterCollection } = await import(base + 'core/collection-loader.js');
         const { deleteCollectionMeta } = await import(base + 'core/collection-metadata.js');
@@ -3128,12 +3128,12 @@ test('TEST 016 — stampAutoSyncMarker smart placement (production-function smok
             registerCollection(syntheticRegistryKey);
 
             // Sanity: confirm the synthetic registration is actually visible
-            // to findEventBaseCollectionIdsForChat so the test exercises the
+            // to findEventBaseCollectionsForChat so the test exercises the
             // intended branch (`candidates.length > 0`). If this fails the
             // test would silently degrade into another Branch B run.
-            const candidates = findEventBaseCollectionIdsForChat(uuidBranchC, backend);
+            const candidates = findEventBaseCollectionsForChat(uuidBranchC, backend);
             if (candidates.length === 0) {
-                console.error(`${TEST} [FAIL] Phase 3: synthetic registration didn't surface in findEventBaseCollectionIdsForChat — would silently re-test Branch B. Registry key was ${syntheticRegistryKey}.`);
+                console.error(`${TEST} [FAIL] Phase 3: synthetic registration didn't surface in findEventBaseCollectionsForChat — would silently re-test Branch B. Registry key was ${syntheticRegistryKey}.`);
                 return;
             }
 

@@ -194,8 +194,11 @@ describe('Live code remains intact (regression guard)', () => {
                 .toMatch(/getCollectionListing/);
         });
 
-        it('eventbase-workflow.js consumes getCollectionListing', () => {
-            expect(readRel('core/eventbase-workflow.js'))
+        it('eventbase-store.js consumes getCollectionListing', () => {
+            // The EventBase path resolves its active collection via the centralized
+            // listing inside resolveActiveEventBaseCollection (moved here from
+            // eventbase-workflow.js when the per-call-site logic was unified).
+            expect(readRel('core/eventbase-store.js'))
                 .toMatch(/getCollectionListing/);
         });
 

@@ -56,11 +56,11 @@ export function resetInvalidModelNotifications() {
  */
 export async function pauseAutoSyncForChat(chatUUID, backend) {
     if (!chatUUID || !backend) return;
-    const { findEventBaseCollectionIdsForChat } = await import('./eventbase-store.js');
+    const { findEventBaseCollectionsForChat } = await import('./eventbase-store.js');
     const { setCollectionAutoSync } = await import('./collection-metadata.js');
 
     let paused = 0;
-    for (const { registryKey } of findEventBaseCollectionIdsForChat(chatUUID, backend)) {
+    for (const { registryKey } of findEventBaseCollectionsForChat(chatUUID, backend)) {
         setCollectionAutoSync(registryKey, false);
         paused++;
     }

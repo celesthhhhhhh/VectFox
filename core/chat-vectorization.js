@@ -289,10 +289,10 @@ export async function synchronizeChat(settings, batchSize = 5, triggerEvent = nu
     }
 
     // Find EventBase collections registered for this chat and check the per-collection auto-sync flag
-    const { findEventBaseCollectionIdsForChat } = await import('./eventbase-store.js');
+    const { findEventBaseCollectionsForChat } = await import('./eventbase-store.js');
     const { isCollectionAutoSyncEnabled } = await import('./collection-metadata.js');
     const backend = getRegistryBackend(settings?.vector_backend);
-    const eventbaseCollections = findEventBaseCollectionIdsForChat(uuid, backend);
+    const eventbaseCollections = findEventBaseCollectionsForChat(uuid, backend);
     // Metadata is keyed by the registry-key form ("backend:id"), matching the
     // write paths (eventbase-workflow.js, content-vectorization.js, ui-manager.js).
     if (log.enabled('lifecycle')) {

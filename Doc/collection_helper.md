@@ -448,9 +448,22 @@ Persists the `windowSize` that was in effect when auto-sync last ran successfull
 
 ### Collection resolver — find the EventBase collection for a chat
 
+> **Naming convention (apply going forward):**
+> `resolve…` returns **the one** active/canonical answer (or `null`).
+> `find…`/`list…` return **all** candidates (an array).
+> `get…` reads a stored value; `is…`/`has…` return a boolean.
+> Pick the verb that matches the contract so callers don't have to read this doc.
+
+**A chat UUID can map to MULTIPLE EventBase collections** — one per persona/handle
+(`name1`), plus imported archives registered under a different name. The earlier
+"at most one collection per backend" assumption was wrong and caused the auto-sync
+marker to read a stale import instead of the active collection. Use the **lock** to
+disambiguate which one is active.
+
 | Function | File:Line | Use when |
 |---|---|---|
-| `findEventBaseCollectionIdsForChat(uuid, preferredBackend)` | [eventbase-store.js:522](../core/eventbase-store.js#L522) | Resolve which EventBase collection belongs to the current chat UUID. Returns `Array<{ collectionId, registryKey }>`. Use `[0]` for single-collection access — in practice each chat has at most one EventBase collection per backend. Pass `getRegistryBackend(settings.vector_backend)` as `preferredBackend`. Returns `[]` when no collection exists for the chat yet. |
+| `resolveActiveEventBaseCollection(settings, chatUUID?)` | [eventbase-store.js](../core/eventbase-store.js) | **Default choice.** Returns `{ collectionId, registryKey }` for the single **active** collection — ownership-filtered (via `getCollectionListing`) and lock-aware (matches the DB Browser's "Active here only" and the auto-sync write target). Returns `null` when none. Used by `stampAutoSyncMarker` and `getChatAutoSyncStatus`. |
+| `findEventBaseCollectionsForChat(uuid, preferredBackend)` | [eventbase-store.js](../core/eventbase-store.js) | Only when you genuinely need **every** candidate (e.g. pausing auto-sync on all of a chat's collections, or a has-data fallback probe). Returns `Array<{ collectionId, registryKey }>`, lock-ranked first. Pass `getRegistryBackend(settings.vector_backend)` as `preferredBackend`. **Do not** take `[0]` to mean "the active one" — call `resolveActiveEventBaseCollection` for that. Returns `[]` when no collection exists yet. |
 
 ### Low-level fingerprint cache management
 
@@ -465,7 +478,7 @@ Called internally by the ingestion loop. Do not call from application code — r
 
 | Function | File:Line | Role |
 |---|---|---|
-| `synchronizeChat(settings, batchSize, triggerEvent)` | [chat-vectorization.js:327](../core/chat-vectorization.js#L327) | The auto-sync coordinator. Checks whether the chat's EventBase collection has `autoSync=true` (via `findEventBaseCollectionIdsForChat` + `isCollectionAutoSyncEnabled`), then calls `runEventBaseIngestion({ isAutoSync: true })`. Called from ST event hooks (MESSAGE_SENT, MESSAGE_RECEIVED, etc.). Pass `triggerEvent` so it can suppress the popup on MESSAGE_SENT mid-generation. |
+| `synchronizeChat(settings, batchSize, triggerEvent)` | [chat-vectorization.js:327](../core/chat-vectorization.js#L327) | The auto-sync coordinator. Checks whether the chat's EventBase collection has `autoSync=true` (via `findEventBaseCollectionsForChat` + `isCollectionAutoSyncEnabled`), then calls `runEventBaseIngestion({ isAutoSync: true })`. Called from ST event hooks (MESSAGE_SENT, MESSAGE_RECEIVED, etc.). Pass `triggerEvent` so it can suppress the popup on MESSAGE_SENT mid-generation. |
 | `rearrangeChat(chat, settings, type, { dryRun, testMessage })` | [chat-vectorization.js:1198](../core/chat-vectorization.js#L1198) | ST generation interceptor (`CHAT_COMPLETION_PROMPT_READY`). Handles semantic retrieval and prompt injection. **Separate concern from `synchronizeChat`** — retrieval does not trigger auto-sync extraction. The `dryRun` / `testMessage` params support the debug query tester. |
 
 ### Key-form parity

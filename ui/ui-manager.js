@@ -148,6 +148,9 @@ export function renderSettings(containerId, settings, callbacks) {
                                     • Standard: ST's built-in Vectra (best for &lt;100k vectors)<br>
                                     • Qdrant: Production-grade with HNSW, filtering, cloud support
                                 </small>
+                                <small id="VectFox_qdrant_plugin_error" class="VectFox_hint" style="display:none; color:#e04a4a; font-weight:600; margin-top:-8px; margin-bottom:16px; line-height:1.5;">
+                                    ⚠ Qdrant requires the Similharity server plugin, which is not installed. Install the plugin to use this backend, or switch to Standard.
+                                </small>
 
                                 <!-- Qdrant Settings (shown only when Qdrant backend is selected) -->
                                 <div id="VectFox_qdrant_settings" style="display: none;">
@@ -2835,6 +2838,18 @@ function bindSettingsEvents(settings, callbacks) {
         saveSettingsDebounced();
     }
 
+    // Helper: show a red error when Qdrant is selected but the Similharity
+    // server plugin (which exposes all /api/plugins/similharity/... endpoints
+    // Qdrant depends on) is not installed. Standard backend can fall back to
+    // ST's native Vectors extension, but Qdrant cannot run without the plugin.
+    async function _refreshQdrantPluginAvailability() {
+        const $err = $('#VectFox_qdrant_plugin_error');
+        if ($err.length === 0) return;
+        const backend  = settings.vector_backend || 'standard';
+        const pluginUp = await checkPluginAvailable();
+        $err.toggle(backend === 'qdrant' && !pluginUp);
+    }
+
     // Vector backend selection
     $('#VectFox_vector_backend')
         .val(settings.vector_backend || 'qdrant')
@@ -2847,6 +2862,9 @@ function bindSettingsEvents(settings, callbacks) {
             } else {
                 $('#VectFox_qdrant_settings').hide();
             }
+
+            // Warn (in red) if Qdrant chosen without the plugin installed.
+            _refreshQdrantPluginAvailability();
 
             // NOTE: standard backend is now safe to use with hedge, parallel-split,
             // and pipelined mode all enabled. The per-collection write queue in
@@ -2997,6 +3015,10 @@ function bindSettingsEvents(settings, callbacks) {
     if (settings.vector_backend === 'qdrant') {
         $('#VectFox_qdrant_settings').show();
     }
+
+    // Surface the red "plugin not installed" error on initial load too, in
+    // case Qdrant is the saved backend but the plugin isn't present.
+    _refreshQdrantPluginAvailability();
 
     // Embedding provider
     $('#VectFox_source')

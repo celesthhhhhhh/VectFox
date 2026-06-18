@@ -843,7 +843,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                     </label>
                                     <small class="VectFox_hint">Keep the most recent messages raw and blank ALL older already-vectorized messages from the prompt sent to the AI. The chat UI and saved file are <strong>untouched</strong>, and it resets every turn. The wiped turns rely on EventBase memory (the injection above + semantic retrieval) instead of their raw text — so check your recall quality as you <strong>lower</strong> the slider. Scales to any chat length. Requires Summarizer Injection.</small>
                                     <div class="vectfox-form-group" id="VectFox_eventbase_ghost_keep_recent_group" style="margin-top: 8px;">
-                                        <label class="vectfox-label">Keep last <span id="VectFox_eventbase_ghost_keep_recent_val">20</span> message(s) verbatim</label>
+                                        <label class="vectfox-label">Keep last <span id="VectFox_eventbase_ghost_keep_recent_val">10</span> message(s) verbatim</label>
                                         <input type="range" id="VectFox_eventbase_ghost_keep_recent" min="0" max="100" step="1" class="vectfox-range" />
                                         <small class="VectFox_hint">Everything older than this that's been vectorized is wiped (never the recent un-synced tail). Lower = more aggressive (more tokens saved). Even at <strong>0</strong>, ghosting always keeps the current turn and your World Info scan window verbatim — so it never breaks keyword triggers and never sends an empty prompt. "<strong>0</strong>" means "wipe as much as is safe," not literally everything.</small>
                                     </div>
@@ -3368,7 +3368,7 @@ function bindSettingsEvents(settings, callbacks) {
             _applyGhostAvailability();
         });
 
-    const _ghostKeep0 = Math.max(0, Math.min(100, parseInt(settings.eventbase_ghost_keep_recent ?? 20, 10) || 0));
+    const _ghostKeep0 = Math.max(0, Math.min(100, parseInt(settings.eventbase_ghost_keep_recent ?? 10, 10) || 0));
     $('#VectFox_eventbase_ghost_keep_recent_val').text(_ghostKeep0);
     $('#VectFox_eventbase_ghost_keep_recent')
         .val(_ghostKeep0)

@@ -240,7 +240,7 @@ const defaultSettings = {
     // that forces auto-sync window=1, guaranteeing every message below the vectorization
     // tip is extracted before it could be wiped.
     eventbase_ghost_enabled: false,
-    eventbase_ghost_keep_recent: 20,              // recent messages kept verbatim; everything older that's vectorized is wiped. range 0-100
+    eventbase_ghost_keep_recent: 10,              // recent messages kept verbatim; everything older that's vectorized is wiped. range 0-100 (summarizer injects ~20 events to cover the wiped span)
     // Per-chat marker: auto-sync only processes windows whose start >= marker.
     // Stamped at "max(source_window_end across existing events) + 1" when auto-sync
     // is enabled on a non-empty collection, or at current chat length when collection

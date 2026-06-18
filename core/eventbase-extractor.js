@@ -407,7 +407,7 @@ async function _callVLLM(prompt, settings, windowIndex) {
     const baseUrl = (settings.summarize_vllm_url || '').trim();
     if (!baseUrl) {
         throw new EventBaseFatalError(
-            'EventBase: vLLM URL not configured. Set the vLLM URL in Core → LLM Summarization settings.',
+            'EventBase: OpenAI-compatible Base URL not configured. Set the Base URL in Core → LLM Summarization settings.',
             'missing_url',
         );
     }
@@ -423,7 +423,7 @@ async function _callVLLM(prompt, settings, windowIndex) {
     const apiKey = getCustomApiKey(settings);
     if (!apiKey) {
         throw new EventBaseFatalError(
-            'EventBase: vLLM / Custom OpenAI-compatible API key not configured. Enter it in Core → LLM Summarization settings.',
+            'EventBase: OpenAI-compatible API key not configured. Enter it in Core → LLM Summarization settings.',
             'missing_api_key',
         );
     }
@@ -449,13 +449,13 @@ async function _callVLLM(prompt, settings, windowIndex) {
         const errText = await response.text().catch(() => response.statusText);
         if (response.status === 401 || response.status === 403) {
             throw new EventBaseFatalError(
-                `EventBase: vLLM authentication failed (${response.status}). Check your API key in Core → LLM Summarization settings.`,
+                `EventBase: OpenAI-compatible authentication failed (${response.status}). Check your API key in Core → LLM Summarization settings.`,
                 'invalid_api_key',
             );
         }
         const modelConfigError = getModelConfigErrorMessage({
             contextLabel: 'EventBase',
-            provider: 'vLLM',
+            provider: 'OpenAI-compatible',
             model,
             status: response.status,
             responseText: errText,
@@ -464,7 +464,7 @@ async function _callVLLM(prompt, settings, windowIndex) {
             throw new EventBaseFatalError(modelConfigError, 'invalid_model_config');
         }
         throw new EventBaseExtractionError(
-            `EventBase: vLLM HTTP ${response.status}: ${errText}`,
+            `EventBase: OpenAI-compatible HTTP ${response.status}: ${errText}`,
             windowIndex,
         );
     }
@@ -472,8 +472,8 @@ async function _callVLLM(prompt, settings, windowIndex) {
     const data = await response.json();
     const reply = _extractReply(data);
     if (!reply) {
-        _classifyEmptyReplyBody({ provider: 'vLLM', model, status: response.status, data, settings });
-        throw new EventBaseExtractionError('EventBase: vLLM returned empty response', windowIndex);
+        _classifyEmptyReplyBody({ provider: 'OpenAI-compatible', model, status: response.status, data, settings });
+        throw new EventBaseExtractionError('EventBase: OpenAI-compatible returned empty response', windowIndex);
     }
     return reply;
 }

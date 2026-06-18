@@ -12,7 +12,7 @@
 
 import { saveSettingsDebounced, getCurrentChatId, eventSource, event_types, getRequestHeaders } from '../../../../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu, getContext } from '../../../../extensions.js';
-import { writeSecret, SECRET_KEYS, secret_state, readSecretState } from '../../../../secrets.js';
+import { writeSecret, deleteSecret, SECRET_KEYS, secret_state, readSecretState } from '../../../../secrets.js';
 import {
     getOpenRouterApiKey,
     getCustomApiKey,
@@ -218,7 +218,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <option value="transformers">Transformers (Local)</option>
                                     <option value="ollama">Ollama</option>
                                     <option value="openrouter">OpenRouter</option>
-                                    <option value="vllm">vLLM</option>
+                                    <option value="vllm">OpenAI API compatible</option>
                                 </select>
 
                                 <!-- Provider-Specific Settings -->
@@ -250,16 +250,17 @@ export function renderSettings(containerId, settings, callbacks) {
                                             <span>Use Alternative Endpoint</span>
                                         </label>
                                         <input type="text" id="VectFox_vllm_alt_endpoint_url" class="vectfox-input" placeholder="http://localhost:8000" />
-                                        <small class="VectFox_hint">Override default vLLM API URL</small>
+                                        <small class="VectFox_hint">Override the default OpenAI-compatible API URL</small>
                                         <label for="VectFox_vllm_model" style="margin-top: 8px;">
-                                            <small>vLLM Model:</small>
+                                            <small>OpenAI-compatible Model:</small>
                                         </label>
                                         <input type="text" id="VectFox_vllm_model" class="vectfox-input" placeholder="Model name" />
-                                        <small class="VectFox_hint">Enter the model name from your vLLM deployment</small>
+                                        <small class="VectFox_hint">Enter the model name from your OpenAI-compatible deployment</small>
                                         <label for="VectFox_vllm_api_key" style="margin-top: 8px;">
-                                            <small>vLLM API Key (optional):</small>
+                                            <small>OpenAI-compatible API Key (optional):</small>
                                         </label>
                                         <input type="password" id="VectFox_vllm_api_key" class="vectfox-input" placeholder="Leave blank for local / no-auth deployments" autocomplete="off" />
+                                        <button type="button" id="VectFox_vllm_api_key_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                                     </div>
 
                                     <!-- OpenRouter Model -->
@@ -279,6 +280,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                             <small>OpenRouter API Key:</small>
                                         </label>
                                         <input type="password" id="VectFox_openrouter_apikey" class="vectfox-input" placeholder="Paste key here to save..." autocomplete="off" />
+                                        <button type="button" id="VectFox_openrouter_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                                     </div>
 
                                 </div>
@@ -340,7 +342,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                         <input type="checkbox" id="VectFox_vector_hedge_enabled" />
                                         <span>Hedge slow embedding calls</span>
                                     </label>
-                                    <small class="VectFox_hint">Default (checked): when an embedding HTTP call hasn't returned within 15 seconds, fire a duplicate request on a fresh connection. Whichever returns first wins. Cuts routing-stall recovery from 120s (ST's timeout) to under 20s when the upstream gateway fails. Applies only to OpenRouter and vLLM.</small>
+                                    <small class="VectFox_hint">Default (checked): when an embedding HTTP call hasn't returned within 15 seconds, fire a duplicate request on a fresh connection. Whichever returns first wins. Cuts routing-stall recovery from 120s (ST's timeout) to under 20s when the upstream gateway fails. Applies only to OpenRouter and OpenAI-compatible endpoints.</small>
                                 </div>
                             </div>
 
@@ -363,7 +365,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                 </label>
                                 <select id="VectFox_summarize_provider" class="vectfox-select">
                                     <option value="openrouter">OpenRouter</option>
-                                    <option value="vllm">vLLM</option>
+                                    <option value="vllm">OpenAI API compatible</option>
                                 </select>
                                 <small class="VectFox_hint">Provider required for summarization / EventBase extraction LLM calls</small>
 
@@ -375,21 +377,23 @@ export function renderSettings(containerId, settings, callbacks) {
                                         </label>
                                         <input type="password" id="VectFox_summarize_openrouter_apikey" class="vectfox-input"
                                             placeholder="Paste key here to save..." autocomplete="off" />
+                                        <button type="button" id="VectFox_summarize_openrouter_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                                         <small class="VectFox_hint">Stored in VectFox settings (separate from the embedding key)</small>
                                     </div>
 
                                     <div id="VectFox_summarize_vllm_url_row" style="display:none; margin-bottom:10px;">
                                         <label for="VectFox_summarize_vllm_url">
-                                            <small>vLLM Base URL</small>
+                                            <small>OpenAI-compatible Base URL</small>
                                         </label>
                                         <input type="text" id="VectFox_summarize_vllm_url" class="vectfox-input"
                                             placeholder="http://localhost:8000" />
-                                        <small class="VectFox_hint">Base URL of your vLLM server (OpenAI-compatible)</small>
+                                        <small class="VectFox_hint">Base URL of your OpenAI-compatible server</small>
                                         <label for="VectFox_summarize_vllm_apikey" style="margin-top:8px;">
-                                            <small>vLLM API Key <span style="opacity:0.6;">(optional — leave blank if not required)</span></small>
+                                            <small>OpenAI-compatible API Key <span style="opacity:0.6;">(optional — leave blank if not required)</span></small>
                                         </label>
                                         <input type="password" id="VectFox_summarize_vllm_apikey" class="vectfox-input"
                                             placeholder="Paste key here to save..." autocomplete="off" />
+                                        <button type="button" id="VectFox_summarize_vllm_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                                     </div>
 
                                     <label for="VectFox_summarize_model">
@@ -1142,7 +1146,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <select id="VectFox_agentic_provider" class="vectfox-select">
                                     <option value="">(Inherit from summarizer)</option>
                                     <option value="openrouter">OpenRouter</option>
-                                    <option value="vllm">vLLM</option>
+                                    <option value="vllm">OpenAI API compatible</option>
                                 </select>
                             </div>
 
@@ -1157,15 +1161,17 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <label for="VectFox_agentic_openrouter_apikey"><small>OpenRouter API Key</small></label>
                                 <input type="password" id="VectFox_agentic_openrouter_apikey" class="vectfox-input"
                                     placeholder="(empty → inherit summarize key)" autocomplete="off" />
+                                <button type="button" id="VectFox_agentic_openrouter_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                             </div>
 
                             <div class="vectfox-form-group" id="VectFox_agentic_vllm_row" style="display:none;">
-                                <label for="VectFox_agentic_vllm_url"><small>vLLM Base URL</small></label>
+                                <label for="VectFox_agentic_vllm_url"><small>OpenAI-compatible Base URL</small></label>
                                 <input type="text" id="VectFox_agentic_vllm_url" class="vectfox-input"
                                     placeholder="(empty → inherit summarize URL)" />
-                                <label for="VectFox_agentic_vllm_apikey" style="margin-top:8px;"><small>vLLM API Key</small></label>
+                                <label for="VectFox_agentic_vllm_apikey" style="margin-top:8px;"><small>OpenAI-compatible API Key</small></label>
                                 <input type="password" id="VectFox_agentic_vllm_apikey" class="vectfox-input"
                                     placeholder="(empty → inherit summarize key)" autocomplete="off" />
+                                <button type="button" id="VectFox_agentic_vllm_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                             </div>
 
                             <!-- Retrieval Tuning -->
@@ -2192,6 +2198,47 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
 }
 
 /**
+ * Delete a shared VectFox API key from ST's secret store and refresh every input that
+ * displays it. ONE implementation reused by all "Clear saved key" buttons (Embedding /
+ * Summarization / AgentMode, OpenRouter + vLLM) so the delete + refresh logic never drifts.
+ *
+ * Deletes the ACTIVE entry in each slot (the masked key the UI shows); vLLM/Custom keys live
+ * in two slots (CUSTOM for chat-side, VLLM for embedding-side) so both are cleared. The
+ * placeholder refresh rides the existing `vectfox:*-key-changed` document events that every
+ * placeholder updater already listens to — so all three places re-render from one trigger.
+ *
+ * @param {{ slots: string[], changedEvent: string, label: string, getCurrent: () => string, sharedWithST?: boolean }} opts
+ */
+async function clearSharedApiKey({ slots, changedEvent, label, getCurrent, sharedWithST = false }) {
+    if (typeof getCurrent === 'function' && !getCurrent()) {
+        toastr.info(`No ${label} API key is saved.`);
+        return;
+    }
+    const warn = sharedWithST
+        ? `\n\nThis is the same secret slot SillyTavern itself uses, so deleting it also affects your main chat if that's set to ${label}.`
+        : '';
+    if (!confirm(`Delete the saved ${label} API key?\n\nIt is shared across Embedding, Summarization, and AgentMode.${warn}\n\nThis cannot be undone.`)) {
+        return;
+    }
+    const failed = [];
+    for (const slot of slots) {
+        try {
+            await deleteSecret(slot); // no id → removes the active entry; clears the slot if it was the last
+        } catch (err) {
+            log.error(`[VectFox] deleteSecret(${slot}) failed:`, err);
+            failed.push(slot);
+        }
+    }
+    try { await readSecretState(); } catch { /* deleteSecret already refreshes secret_state */ }
+    $(document).trigger(changedEvent); // every placeholder updater re-renders from this
+    if (failed.length) {
+        toastr.error(`Failed to delete ${label} key — see console.`);
+    } else {
+        toastr.info(`${label} API key deleted.`);
+    }
+}
+
+/**
  * Binds event handlers to UI elements
  * @param {object} settings - VectFox settings object
  * @param {object} callbacks - Callback functions
@@ -2415,7 +2462,7 @@ function bindSettingsEvents(settings, callbacks) {
             } else if (provider === 'vllm') {
                 const baseUrl = (settings.summarize_vllm_url || '').replace(/\/$/, '').replace(/\/v1$/, '');
                 if (!baseUrl) {
-                    toastr.error('Set the vLLM Base URL first.', 'vLLM not configured');
+                    toastr.error('Set the OpenAI-compatible Base URL first.', 'Endpoint not configured');
                     return;
                 }
                 // Route through ST's chat-completions /status endpoint, which
@@ -2533,7 +2580,7 @@ function bindSettingsEvents(settings, callbacks) {
                 : '*'.repeat(savedKey.length);
             $('#VectFox_summarize_vllm_apikey').attr('placeholder', `Key saved: ${masked} (shared with Embedding + AgentMode)`);
         } else {
-            $('#VectFox_summarize_vllm_apikey').attr('placeholder', 'Paste vLLM / Custom OpenAI-compatible key (shared with Embedding + AgentMode)');
+            $('#VectFox_summarize_vllm_apikey').attr('placeholder', 'Paste OpenAI-compatible API key (shared with Embedding + AgentMode)');
         }
     };
     updateSummarizeVllmKeyDisplay();
@@ -2560,12 +2607,12 @@ function bindSettingsEvents(settings, callbacks) {
             }
             await readSecretState();
             if (errors.length === 0) {
-                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+                toastr.success('OpenAI-compatible API key saved (shared across embedding/summarize/agentic)');
             } else if (errors.length === 2) {
-                toastr.error('Failed to save vLLM key to either slot — see console');
+                toastr.error('Failed to save OpenAI-compatible key to either slot — see console');
                 return;
             } else {
-                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
+                toastr.warning(`OpenAI-compatible key partially saved — ${errors.join(', ')} write failed. See console.`);
             }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');
@@ -2704,7 +2751,7 @@ function bindSettingsEvents(settings, callbacks) {
                 : '*'.repeat(savedKey.length);
             $('#VectFox_agentic_vllm_apikey').attr('placeholder', `Key saved: ${masked} (shared with Embedding + Summarize)`);
         } else {
-            $('#VectFox_agentic_vllm_apikey').attr('placeholder', 'Paste vLLM / Custom OpenAI-compatible key (shared with Embedding + Summarize)');
+            $('#VectFox_agentic_vllm_apikey').attr('placeholder', 'Paste OpenAI-compatible API key (shared with Embedding + Summarize)');
         }
     };
     updateAgenticVllmKeyDisplay();
@@ -2728,17 +2775,39 @@ function bindSettingsEvents(settings, callbacks) {
             }
             await readSecretState();
             if (errors.length === 0) {
-                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+                toastr.success('OpenAI-compatible API key saved (shared across embedding/summarize/agentic)');
             } else if (errors.length === 2) {
-                toastr.error('Failed to save vLLM key to either slot — see console');
+                toastr.error('Failed to save OpenAI-compatible key to either slot — see console');
                 return;
             } else {
-                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
+                toastr.warning(`OpenAI-compatible key partially saved — ${errors.join(', ')} write failed. See console.`);
             }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');
         }
     });
+
+    // "Clear saved key" buttons — all 6 (Embedding / Summarize / AgentMode × OpenRouter / vLLM)
+    // funnel through the single clearSharedApiKey() helper so the delete + refresh never drifts.
+    // OpenRouter keys share one slot; vLLM/Custom keys live in CUSTOM + VLLM (both cleared).
+    const _openRouterClearOpts = {
+        slots: [SECRET_KEYS.OPENROUTER],
+        changedEvent: 'vectfox:openrouter-key-changed',
+        label: 'OpenRouter',
+        getCurrent: () => getOpenRouterApiKey(settings),
+        sharedWithST: true,
+    };
+    const _vllmClearOpts = {
+        slots: [SECRET_KEYS.CUSTOM, SECRET_KEYS.VLLM],
+        changedEvent: 'vectfox:vllm-key-changed',
+        label: 'OpenAI-compatible',
+        getCurrent: () => getCustomApiKey(settings),
+        sharedWithST: true,
+    };
+    ['#VectFox_openrouter_apikey_clear', '#VectFox_summarize_openrouter_apikey_clear', '#VectFox_agentic_openrouter_apikey_clear']
+        .forEach(sel => $(sel).on('click', () => clearSharedApiKey(_openRouterClearOpts)));
+    ['#VectFox_vllm_api_key_clear', '#VectFox_summarize_vllm_apikey_clear', '#VectFox_agentic_vllm_apikey_clear']
+        .forEach(sel => $(sel).on('click', () => clearSharedApiKey(_vllmClearOpts)));
 
     // Sliders — chat depth, candidates, max queries
     const bindAgenticSlider = (inputId, valSpanId, settingKey, defaultVal) => {
@@ -4312,12 +4381,12 @@ function bindSettingsEvents(settings, callbacks) {
             }
             await readSecretState();
             if (errors.length === 0) {
-                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
+                toastr.success('OpenAI-compatible API key saved (shared across embedding/summarize/agentic)');
             } else if (errors.length === 2) {
-                toastr.error('Failed to save vLLM key to either slot — see console');
+                toastr.error('Failed to save OpenAI-compatible key to either slot — see console');
                 return;
             } else {
-                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
+                toastr.warning(`OpenAI-compatible key partially saved — ${errors.join(', ')} write failed. See console.`);
             }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');

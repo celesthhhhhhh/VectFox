@@ -72,7 +72,7 @@ export function validateLLMConfig(settings = {}) {
     } else if (provider === 'vllm') {
         const url = (settings?.summarize_vllm_url || '').trim();
         if (!url) {
-            return { ok: false, reason: 'vLLM Base URL is not set.' };
+            return { ok: false, reason: 'OpenAI-compatible Base URL is not set.' };
         }
     } else {
         return { ok: false, reason: `Unknown LLM provider: ${provider}` };
@@ -314,7 +314,7 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
     const baseUrl = (settings?.summarize_vllm_url || '').trim();
     if (!baseUrl) {
         throw new SummarizationFatalError(
-            'vLLM URL not configured.',
+            'OpenAI-compatible Base URL not configured.',
             'vllm',
             'missing_url'
         );
@@ -325,7 +325,7 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
     const apiKey = getCustomApiKey(settings);
     if (!apiKey) {
         throw new SummarizationFatalError(
-            'vLLM / Custom OpenAI-compatible API key not configured. Enter it in Summarize Before Store settings.',
+            'OpenAI-compatible API key not configured. Enter it in Summarize Before Store settings.',
             'vllm',
             'missing_api_key'
         );
@@ -348,14 +348,14 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
         const errText = await response.text().catch(() => response.statusText);
         if (response.status === 401 || response.status === 403) {
             throw new SummarizationFatalError(
-                `vLLM authentication failed (${response.status}). Check your API key in Summarize Before Store settings.`,
+                `OpenAI-compatible authentication failed (${response.status}). Check your API key in Summarize Before Store settings.`,
                 'vllm',
                 'invalid_api_key'
             );
         }
         const modelConfigError = getModelConfigErrorMessage({
             contextLabel: 'Summarizer',
-            provider: 'vLLM',
+            provider: 'OpenAI-compatible',
             model,
             status: response.status,
             responseText: errText,
@@ -363,7 +363,7 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
         if (modelConfigError) {
             throw new SummarizationFatalError(modelConfigError, 'vllm', 'invalid_model_config');
         }
-        throw new Error(`vLLM HTTP ${response.status}: ${errText}`);
+        throw new Error(`OpenAI-compatible HTTP ${response.status}: ${errText}`);
     }
 
     const data = await response.json();
@@ -372,14 +372,14 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
         const bodyText = data?.error ? JSON.stringify(data.error) : JSON.stringify(data || {});
         const modelConfigError = getModelConfigErrorMessage({
             contextLabel: 'Summarizer',
-            provider: 'vLLM',
+            provider: 'OpenAI-compatible',
             model,
             status: response.status,
             responseText: bodyText,
             enforceStatusGate: false,
         });
         if (modelConfigError) throw new SummarizationFatalError(modelConfigError, 'vllm', 'invalid_model_config');
-        throw new Error('vLLM returned empty summary');
+        throw new Error('OpenAI-compatible endpoint returned empty summary');
     }
 
     return summary;

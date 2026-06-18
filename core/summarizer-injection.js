@@ -20,7 +20,7 @@
 import { setExtensionPrompt } from '../../../../../script.js';
 import { getBackend } from '../backends/backend-manager.js';
 import { getChatUUID } from './collection-ids.js';
-import { resolveActiveEventBaseCollection } from './eventbase-store.js';
+import { resolveActiveEventBaseCollection, getVectorizationTip } from './eventbase-store.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { log } from './log.js';
 
@@ -43,6 +43,73 @@ export async function runSummarizerInjection(settings) {
     setExtensionPrompt(SUMMARIZER_PROMPT_TAG, text, settings.position, settings.depth, false);
     if (count > 0) log.domain('injection', 'trace', `[Summarizer] Injected ${count} event(s) under ${SUMMARIZER_PROMPT_TAG}`);
     return { injected: count };
+}
+
+/**
+ * Ephemeral "ghosting": keep the most recent N messages verbatim and blank ALL older
+ * already-vectorized messages from the OUTGOING prompt only. ST's generate_interceptor
+ * hands us a working copy of the chat array whose slots still reference the live message
+ * objects, so we replace each slot with a clone and wipe the clone — the saved chat + UI
+ * never change, and the whole effect resets on the next generation (nothing to un-ghost,
+ * branch-safe).
+ *
+ * The wipe boundary is `cutoff = min(tip, chat.length - keepRecent)`:
+ *   - `tip` = vectorization tip (highest extracted index + 1) → never wipe un-vectorized
+ *     messages, so anything not yet in EventBase stays raw.
+ *   - `chat.length - keepRecent` → the last `keepRecent` messages always stay raw.
+ * Messages [0, cutoff) are wiped. "Keep last N" auto-scales: wipe count grows with the
+ * chat, so the same setting works on a 50- or 5000-reply story.
+ *
+ * Gated to Summarizer Injection (forces auto-sync window=1 → the tip stays current).
+ *
+ * @param {Array} chat - ST interceptor chat array (mutated in place by slot replacement)
+ * @param {object} settings - extension_settings.vectfox
+ * @returns {{ wiped: number, charsRemoved: number }}
+ */
+export function applyGhosting(chat, settings) {
+    if (!settings?.eventbase_ghost_enabled || !settings?.summarizer_injection_enabled) {
+        return { wiped: 0, charsRemoved: 0 };
+    }
+    let wiped = 0;
+    let charsRemoved = 0;
+
+    const keepRecent = Math.max(0, Math.floor(Number(settings.eventbase_ghost_keep_recent) || 0));
+    const uuid = getChatUUID();
+    // tip = highest extracted message index + 1 → messages [0, tip) are vectorized.
+    const tip = uuid ? getVectorizationTip(uuid) : undefined;
+
+    if (Array.isArray(chat) && chat.length > 0 && typeof tip === 'number' && tip > 0) {
+        // Keep the last `keepRecent` messages raw; only wipe vectorized ones below that.
+        const cutoff = Math.min(tip, chat.length - keepRecent);
+
+        // ST's ignore symbol drops a message from the prompt entirely (better token saving
+        // than an empty string, which still costs role/template tokens). Fall back to a
+        // blanked .mes when the symbol isn't exposed by this ST build.
+        let ignoreSymbol = null;
+        try { ignoreSymbol = globalThis.SillyTavern?.getContext?.()?.symbols?.ignore ?? null; } catch (_) { /* optional */ }
+
+        for (let i = 0; i < cutoff; i++) {
+            const m = chat[i];
+            if (!m || m.is_system) continue;          // skip system/separator messages
+            if (!m.mes || !m.mes.trim()) continue;     // nothing to save
+            charsRemoved += m.mes.length;
+            const clone = structuredClone(m);          // never mutate the live message object
+            clone.mes = '';
+            if (ignoreSymbol) { clone.extra = clone.extra || {}; clone.extra[ignoreSymbol] = true; }
+            chat[i] = clone;
+            wiped++;
+        }
+    }
+
+    // Always publish the latest outcome while the feature is enabled — so the on-screen
+    // readout reflects "0 saved this turn" (e.g. tip hasn't advanced yet) instead of a
+    // stale value from an earlier generation.
+    const approxTokens = Math.round(charsRemoved / 4); // rough 4-chars/token heuristic
+    window.VectFox_LastGhost = { wiped, charsRemoved, approxTokens, at: Date.now() };
+    if (wiped > 0) {
+        log.domain('injection', 'lifecycle', `[Ghost] Wiped ${wiped} vectorized message(s) from prompt — ~${charsRemoved} chars (~${approxTokens} tokens) saved`);
+    }
+    return { wiped, charsRemoved };
 }
 
 /**

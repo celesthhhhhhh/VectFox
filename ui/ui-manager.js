@@ -834,6 +834,21 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <label for="VectFox_summarizer_injection_max_chars" style="margin-top: 8px; display:block;"><small>Max injection size (characters, 0 = no cap)</small></label>
                                 <input type="number" id="VectFox_summarizer_injection_max_chars" class="vectfox-input" min="0" max="100000" step="500" />
                                 <small class="VectFox_hint">Safety cap on the whole &lt;VectFoxSummarizer&gt; block. If the events exceed it, the OLDEST are dropped (newest always kept) — prevents a huge injection from overflowing the model's context.</small>
+
+                                <!-- Ghosting: wipe oldest N vectorized messages from the OUTGOING prompt only. -->
+                                <div class="vectfox-form-group" id="VectFox_eventbase_ghost_group" style="margin-top: 12px; border-top: 1px dashed var(--SmartThemeBorderColor); padding-top: 10px;">
+                                    <label class="checkbox_label" for="VectFox_eventbase_ghost_enabled">
+                                        <input type="checkbox" id="VectFox_eventbase_ghost_enabled" />
+                                        <span>Ghost vectorized messages (token saver)</span>
+                                    </label>
+                                    <small class="VectFox_hint">Keep the most recent messages raw and blank ALL older already-vectorized messages from the prompt sent to the AI. The chat UI and saved file are <strong>untouched</strong>, and it resets every turn. The wiped turns rely on EventBase memory (the injection above + semantic retrieval) instead of their raw text — so check your recall quality as you <strong>lower</strong> the slider. Scales to any chat length. Requires Summarizer Injection.</small>
+                                    <div class="vectfox-form-group" id="VectFox_eventbase_ghost_keep_recent_group" style="margin-top: 8px;">
+                                        <label class="vectfox-label">Keep last <span id="VectFox_eventbase_ghost_keep_recent_val">20</span> message(s) verbatim</label>
+                                        <input type="range" id="VectFox_eventbase_ghost_keep_recent" min="0" max="100" step="1" class="vectfox-range" />
+                                        <small class="VectFox_hint">Everything older than this that's been vectorized is wiped (never the recent un-synced tail). Lower = more aggressive (more tokens saved); 0 = wipe ALL vectorized history.</small>
+                                    </div>
+                                    <div id="VectFox_eventbase_ghost_readout" class="VectFox_hint" style="margin-top: 8px; display:block; padding: 6px 8px; border-radius: 6px; background: rgba(127,127,127,0.12);">Last turn: no generation yet.</div>
+                                </div>
                             </div>
 
                             <!-- Collection lock moved to Database Browser (per-collection settings) -->
@@ -3301,6 +3316,70 @@ function bindSettingsEvents(settings, callbacks) {
             saveSettingsDebounced();
         });
 
+    // Per-turn token-saved readout, fed by window.VectFox_LastGhost (set inside
+    // applyGhosting on every enabled generation). Refreshed on init, on toggle, and
+    // after each AI reply / swipe via the event subscriptions below.
+    const _refreshGhostReadout = () => {
+        const $el = $('#VectFox_eventbase_ghost_readout');
+        if ($el.length === 0) return;
+        if (!settings.eventbase_ghost_enabled || !settings.summarizer_injection_enabled) {
+            $el.text('Last turn: ghosting off.');
+            return;
+        }
+        const g = window.VectFox_LastGhost;
+        if (!g || typeof g.wiped !== 'number') {
+            $el.text('Last turn: no generation yet.');
+        } else if (g.wiped === 0) {
+            $el.text('Last turn: 0 messages wiped (nothing vectorized below the recent tail yet).');
+        } else {
+            $el.html(`Last turn: wiped <strong>${g.wiped}</strong> message(s) — ~${g.charsRemoved.toLocaleString()} chars (<strong>~${g.approxTokens.toLocaleString()} tokens</strong>) saved.`);
+        }
+    };
+
+    // Ghosting controls depend on Summarizer Injection being on (the wipe self-gates
+    // on it too). Grey out + disable when it's off, with a one-line nudge.
+    const _applyGhostAvailability = () => {
+        const summOn = !!settings.summarizer_injection_enabled;
+        const ghostOn = !!settings.eventbase_ghost_enabled;
+        $('#VectFox_eventbase_ghost_enabled').prop('disabled', !summOn);
+        $('#VectFox_eventbase_ghost_keep_recent').prop('disabled', !summOn || !ghostOn);
+        const $group = $('#VectFox_eventbase_ghost_group');
+        $group.css('opacity', summOn ? '1' : '0.5');
+        if (!summOn) {
+            if ($group.find('[data-lock="needs-summarizer"]').length === 0) {
+                $group.append('<small class="VectFox_hint" data-lock="needs-summarizer" style="display:block; color: var(--warning, #e0a800);">Enable Summarizer Injection above to use ghosting.</small>');
+            }
+        } else {
+            $group.find('[data-lock="needs-summarizer"]').remove();
+        }
+        _refreshGhostReadout();
+    };
+
+    // Refresh the readout after each generation completes (reply + swipe regenerate).
+    eventSource.on(event_types.MESSAGE_RECEIVED, _refreshGhostReadout);
+    eventSource.on(event_types.MESSAGE_SWIPED, _refreshGhostReadout);
+
+    $('#VectFox_eventbase_ghost_enabled')
+        .prop('checked', !!settings.eventbase_ghost_enabled)
+        .on('change', function() {
+            settings.eventbase_ghost_enabled = $(this).prop('checked');
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+            _applyGhostAvailability();
+        });
+
+    const _ghostKeep0 = Math.max(0, Math.min(100, parseInt(settings.eventbase_ghost_keep_recent ?? 20, 10) || 0));
+    $('#VectFox_eventbase_ghost_keep_recent_val').text(_ghostKeep0);
+    $('#VectFox_eventbase_ghost_keep_recent')
+        .val(_ghostKeep0)
+        .on('input', function() {
+            const val = Math.max(0, Math.min(100, parseInt(this.value, 10) || 0));
+            settings.eventbase_ghost_keep_recent = val;
+            $('#VectFox_eventbase_ghost_keep_recent_val').text(val);
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+        });
+
     // One-way lock: enabling Summarizer Injection forces + locks the auto-sync
     // window to 1 turn (so "last N events" == "last N turns"). Flipping the slider
     // to 1 via .trigger('input') reuses its own handler, which re-stamps the marker
@@ -3321,6 +3400,7 @@ function bindSettingsEvents(settings, callbacks) {
             $slider.prop('disabled', false);
             $group.find('[data-lock="summarizer"]').remove();
         }
+        _applyGhostAvailability(); // ghosting requires summarizer injection — keep in sync
     };
 
     $('#VectFox_summarizer_injection_enabled')

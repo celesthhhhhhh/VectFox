@@ -1331,6 +1331,18 @@ export async function rearrangeChat(chat, settings, type, { dryRun = false, test
             } catch (error) {
                 log.error('VectFox Summarizer: injection error (non-fatal, message sends without summarizer memory):', error);
             }
+
+            // Ghosting: blank the OLDEST already-vectorized messages from THIS prompt
+            // only (non-destructive clone; resets next gen). Self-gates to ghost +
+            // summarizer enabled. Runs AFTER retrieval/injection and buildSearchQuery,
+            // and the wiped span (old history, below the tip) sits below the ChunkBase
+            // condition dedup tail — so query + conditions are unaffected.
+            try {
+                const { applyGhosting } = await import('./summarizer-injection.js');
+                applyGhosting(chat, settings);
+            } catch (error) {
+                log.error('VectFox Ghost: prompt wipe error (non-fatal):', error);
+            }
         } // end if (!dryRun) EventBase block
 
         // === STAGE 1: Gather collections to query ===

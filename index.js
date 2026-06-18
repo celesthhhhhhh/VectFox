@@ -228,6 +228,18 @@ const defaultSettings = {
     // OLDEST overflow is dropped (most-recent always kept); the latest event is always
     // included even if it alone exceeds the cap. 0 = no cap. Default ~4-6.5k tokens.
     summarizer_injection_max_chars: 10000,
+    // Ghosting (ephemeral prompt wipe): when enabled AND Summarizer Injection is on,
+    // keep the most recent N messages verbatim and blank ALL older already-vectorized
+    // messages from the OUTGOING prompt only. The chat file + UI are untouched and the
+    // effect resets every generation (nothing to undo, branch-safe — mirrors the proven
+    // interceptor-wipe pattern). Trades raw old context for token savings, leaning on
+    // EventBase memory (summarizer injection + semantic retrieval) for the wiped span.
+    // "Keep last N" auto-scales to any chat length (wipe count = tip − N), so a 50-reply
+    // and a 5000-reply chat use the same setting. Gated to Summarizer Injection because
+    // that forces auto-sync window=1, guaranteeing every message below the vectorization
+    // tip is extracted before it could be wiped.
+    eventbase_ghost_enabled: false,
+    eventbase_ghost_keep_recent: 20,              // recent messages kept verbatim; everything older that's vectorized is wiped. range 0-100
     // Per-chat marker: auto-sync only processes windows whose start >= marker.
     // Stamped at "max(source_window_end across existing events) + 1" when auto-sync
     // is enabled on a non-empty collection, or at current chat length when collection

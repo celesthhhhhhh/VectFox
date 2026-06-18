@@ -260,7 +260,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                             <small>OpenAI-compatible API Key (optional):</small>
                                         </label>
                                         <input type="password" id="VectFox_vllm_api_key" class="vectfox-input" placeholder="Leave blank for local / no-auth deployments" autocomplete="off" />
-                                        <button type="button" id="VectFox_vllm_api_key_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
+                                        <button type="button" id="VectFox_vllm_api_key_clear" class="menu_button" style="margin-top:4px; width:auto; white-space:nowrap;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                                     </div>
 
                                     <!-- OpenRouter Model -->
@@ -280,7 +280,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                             <small>OpenRouter API Key:</small>
                                         </label>
                                         <input type="password" id="VectFox_openrouter_apikey" class="vectfox-input" placeholder="Paste key here to save..." autocomplete="off" />
-                                        <button type="button" id="VectFox_openrouter_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
+                                        <button type="button" id="VectFox_openrouter_apikey_clear" class="menu_button" style="margin-top:4px; width:auto; white-space:nowrap;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                                     </div>
 
                                 </div>
@@ -377,7 +377,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                         </label>
                                         <input type="password" id="VectFox_summarize_openrouter_apikey" class="vectfox-input"
                                             placeholder="Paste key here to save..." autocomplete="off" />
-                                        <button type="button" id="VectFox_summarize_openrouter_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
+                                        <button type="button" id="VectFox_summarize_openrouter_apikey_clear" class="menu_button" style="margin-top:4px; width:auto; white-space:nowrap;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                                         <small class="VectFox_hint">Stored in VectFox settings (separate from the embedding key)</small>
                                     </div>
 
@@ -393,7 +393,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                         </label>
                                         <input type="password" id="VectFox_summarize_vllm_apikey" class="vectfox-input"
                                             placeholder="Paste key here to save..." autocomplete="off" />
-                                        <button type="button" id="VectFox_summarize_vllm_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
+                                        <button type="button" id="VectFox_summarize_vllm_apikey_clear" class="menu_button" style="margin-top:4px; width:auto; white-space:nowrap;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                                     </div>
 
                                     <label for="VectFox_summarize_model">
@@ -1161,7 +1161,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <label for="VectFox_agentic_openrouter_apikey"><small>OpenRouter API Key</small></label>
                                 <input type="password" id="VectFox_agentic_openrouter_apikey" class="vectfox-input"
                                     placeholder="(empty → inherit summarize key)" autocomplete="off" />
-                                <button type="button" id="VectFox_agentic_openrouter_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
+                                <button type="button" id="VectFox_agentic_openrouter_apikey_clear" class="menu_button" style="margin-top:4px; width:auto; white-space:nowrap;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                             </div>
 
                             <div class="vectfox-form-group" id="VectFox_agentic_vllm_row" style="display:none;">
@@ -1171,7 +1171,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <label for="VectFox_agentic_vllm_apikey" style="margin-top:8px;"><small>OpenAI-compatible API Key</small></label>
                                 <input type="password" id="VectFox_agentic_vllm_apikey" class="vectfox-input"
                                     placeholder="(empty → inherit summarize key)" autocomplete="off" />
-                                <button type="button" id="VectFox_agentic_vllm_apikey_clear" class="menu_button" style="margin-top:4px;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
+                                <button type="button" id="VectFox_agentic_vllm_apikey_clear" class="menu_button" style="margin-top:4px; width:auto; white-space:nowrap;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
                             </div>
 
                             <!-- Retrieval Tuning -->

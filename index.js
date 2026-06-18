@@ -36,6 +36,7 @@ import { renderSettings, openDiagnosticsModal, loadWebLlmModels, updateWebLlmSta
 import { initializeVisualizer } from './ui/chunk-visualizer.js';
 import { initializeDatabaseBrowser } from './ui/database-browser.js';
 import { initializeWorldInfoIntegration } from './core/world-info-integration.js';
+import { refreshWorldInfoEntryDepthCache } from './core/summarizer-injection.js';
 import { CJK_TOKENIZER_MODES, setCjkTokenizerMode, ensureJiebaTokenizerLoaded, ensureJiebaTwLoaded } from './core/bm25-scorer.js';
 
 // SillyTavern display label — NOT the settings key. For settings, use 'vectfox' (lowercase).
@@ -719,6 +720,17 @@ jQuery(async () => {
         log.lifecycle('VectFox: Chat changed, refreshing UI state');
         refreshAutoSyncCheckbox(settings);
     });
+
+    // Keep the ghosting WI-scan floor accurate: refresh the cached deepest per-entry World
+    // Info scanDepth whenever the active books or WI settings change (off the hot path, so
+    // applyGhosting never blanks a message a deep-scanning WI entry still needs to read).
+    // Debounced — WORLDINFO_UPDATED can fire in bursts while editing, and each refresh loads
+    // lore. Initial call is direct so the floor is correct before the first generation.
+    refreshWorldInfoEntryDepthCache();
+    const refreshWiDepthDebounced = debounce(refreshWorldInfoEntryDepthCache, debounce_timeout.relaxed);
+    eventSource.on(event_types.CHAT_CHANGED, refreshWiDepthDebounced);
+    eventSource.on(event_types.WORLDINFO_UPDATED, refreshWiDepthDebounced);
+    eventSource.on(event_types.WORLDINFO_SETTINGS_UPDATED, refreshWiDepthDebounced);
 
     log.lifecycle('VectFox: ✅ Initialized successfully');
 });

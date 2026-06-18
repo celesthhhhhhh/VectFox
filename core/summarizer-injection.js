@@ -19,7 +19,7 @@
 
 import { setExtensionPrompt } from '../../../../../script.js';
 import { getContext } from '../../../../extensions.js';
-import { getWorldInfoSettings } from '../../../../world-info.js';
+import { getWorldInfoSettings, getSortedEntries } from '../../../../world-info.js';
 import { getBackend } from '../backends/backend-manager.js';
 import { getChatUUID } from './collection-ids.js';
 import { resolveActiveEventBaseCollection, getVectorizationTip } from './eventbase-store.js';
@@ -47,33 +47,57 @@ export async function runSummarizerInjection(settings) {
     return { injected: count };
 }
 
+// Deepest per-entry WI `scanDepth` across the active world books. Entries can override the
+// global scan window with a deeper fixed depth, so the keep-raw floor must cover them too.
+// Computed OFF the hot path (getSortedEntries loads lore = async) and refreshed on WI/chat
+// changes via refreshWorldInfoEntryDepthCache(); read synchronously by worldInfoScanFloor.
+let _maxEntryScanDepth = 0;
+
+/**
+ * Recompute _maxEntryScanDepth from the active world books. Async (loads lore) — wire it to
+ * CHAT_CHANGED / WORLDINFO_UPDATED / WORLDINFO_SETTINGS_UPDATED, NOT to per-generation code.
+ * Best-effort: keeps the previous cached value on failure. Disabled entries are ignored
+ * (ST skips them during the scan), matching ST's own behavior.
+ */
+export async function refreshWorldInfoEntryDepthCache() {
+    try {
+        const entries = await getSortedEntries();
+        let max = 0;
+        for (const e of entries) {
+            if (!e || e.disable) continue;           // ST skips disabled entries when scanning
+            const d = Number(e.scanDepth);           // null/undefined = use global depth (skip)
+            if (Number.isFinite(d) && d > max) max = d;
+        }
+        _maxEntryScanDepth = max;
+    } catch (_) { /* keep previous cached value */ }
+}
+
 /**
  * How many of the most-recent messages World Info will scan — i.e. how many MUST stay raw
  * for keyword triggers to keep firing. Ghosting wipes `coreChat` BEFORE ST scans WI from
  * that same array, so any message WI would look at must not be wiped.
  *
  *   - Base = global `world_info_depth` (the standard scan window, default 2).
+ *   - Per-entry `scanDepth` overrides: an entry can scan deeper than the global window, so we
+ *     fold in the cached deepest override (_maxEntryScanDepth, refreshed on WI/chat changes).
  *   - If `min_activations` is on, the scan advances deeper until the minimum is met, capped
  *     by `min_activations_depth_max` — or by the END OF CHAT when that cap is 0. So an
  *     uncapped min-activations scan can reach the whole chat → return Infinity, which makes
  *     ghosting back off entirely (wipe nothing) rather than risk breaking WI.
- *
- * Per-entry `scanDepth` overrides deeper than this global reach aren't covered here (they'd
- * need an async entry load on the hot path); raise keepRecent manually if you use them.
  *
  * @returns {number} message count that must remain raw for WI (may be Infinity)
  */
 function worldInfoScanFloor() {
     try {
         const wi = getWorldInfoSettings();
-        let floor = Math.max(0, Number(wi.world_info_depth) || 0);
+        let floor = Math.max(0, Number(wi.world_info_depth) || 0, _maxEntryScanDepth || 0);
         if ((Number(wi.world_info_min_activations) || 0) > 0) {
             const cap = Number(wi.world_info_min_activations_depth_max) || 0;
             floor = cap > 0 ? Math.max(floor, cap) : Number.POSITIVE_INFINITY; // 0 cap = whole chat
         }
         return floor;
     } catch (_) {
-        return 0; // WI module unavailable — don't constrain the wipe
+        return _maxEntryScanDepth || 0; // WI settings unavailable — still honor cached entry depth
     }
 }
 

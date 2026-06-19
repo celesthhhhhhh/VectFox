@@ -46,6 +46,34 @@ export function getAutoSyncWindowSize(settings) {
     return turns * 2;
 }
 
+/**
+ * Settle/commit lag boundary: the number of messages eligible for auto-sync
+ * extraction. The last `lag` messages — the active, still-swipeable turn — are
+ * held back until a newer message supersedes them, so re-rolls/swipes on the
+ * latest turn never produce throwaway embeddings (only the final, superseded
+ * turn is extracted).
+ *
+ * Returns a *count* (an exclusive upper index) so callers can
+ * `messages.slice(0, getCommitBoundary(messages, settings))`.
+ *
+ * Lag is one whole auto-sync window (one turn) so windows tile evenly and the
+ * held-back region is exactly the active turn — never a stray incomplete tail.
+ * Returns `messages.length` (no lag) when the feature is off. This is the SINGLE
+ * source of truth shared by the window-builder, the quick-exit, and the LED /
+ * counter so "fully synced" means "all committed windows done", not "the active
+ * turn done". See plans/autosync-settle-lag.md.
+ *
+ * @param {object[]} messages - filtered chat messages
+ * @param {object}   settings - VectFox settings
+ * @returns {number} count of messages eligible for extraction
+ */
+export function getCommitBoundary(messages, settings) {
+    const total = Array.isArray(messages) ? messages.length : 0;
+    if (settings?.eventbase_autosync_settle_lag === false) return total; // feature off → no lag
+    const lag = getAutoSyncWindowSize(settings);
+    return Math.max(0, total - lag);
+}
+
 // ---------------------------------------------------------------------------
 // Ingestion
 // ---------------------------------------------------------------------------
@@ -180,9 +208,18 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
     // If it's already extracted, all prior windows are done too (processed in order).
     // Avoids building O(n/step) window objects on every auto-sync fire when nothing is new.
     // Note: edits to messages deep in history bypass this check — acceptable limitation.
+    // Settle/commit lag: on auto-sync, hold back the active (still-swipeable) last
+    // turn — only extract messages up to the commit boundary. Manual Vectorize
+    // Content / backfill (isAutoSync=false) covers the whole chat. The boundary is
+    // the SINGLE source of truth for "what is eligible", reused by the LED/counter
+    // (see getChatAutoSyncStatus) so "fully synced" tracks committed windows, not
+    // the active turn. See plans/autosync-settle-lag.md.
+    const commitBoundary = isAutoSync ? getCommitBoundary(messages, settings) : messages.length;
+    const committedMessages = commitBoundary < messages.length ? messages.slice(0, commitBoundary) : messages;
+
     const _msgHash = m => { const t = (m.mes || '').trim(); return m.hash ?? _djb2(`${m.name || ''}:${t}`); };
-    if (isLastWindowExtracted(messages, windowSize, step, uuid, _msgHash)) {
-        log.lifecycle(`[EventBase] Quick-exit: last window already extracted, nothing new`);
+    if (isLastWindowExtracted(committedMessages, windowSize, step, uuid, _msgHash)) {
+        log.lifecycle(`[EventBase] Quick-exit: last committed window already extracted, nothing new`);
         return { eventsExtracted: 0, windowsProcessed: 0, windowsSkipped: 0 };
     }
 
@@ -202,8 +239,8 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
     if (isAutoSync) log.lifecycle(`[VectFox AutoSync] running — messages=${messages.length}, popupShown=${popupAllowed}`);
 
     let windows = [];
-    for (let start = 0; start < messages.length; start += step) {
-        const end = Math.min(start + windowSize - 1, messages.length - 1);
+    for (let start = 0; start < commitBoundary; start += step) {
+        const end = Math.min(start + windowSize - 1, commitBoundary - 1);
         const msgs = messages.slice(start, end + 1);
         if (msgs.length < windowSize) break; // tail is incomplete — wait for more messages
         windows.push({ start, end, msgs });
@@ -1317,7 +1354,16 @@ export async function getChatAutoSyncStatus(settings) {
     // Evaluate auto-sync "fully vectorized" against the AUTO-SYNC window (turns*2,
     // overlap 0), not the one-off Vectorize Content window — otherwise the LED
     // would read "partial" forever whenever the two window sizes differ.
-    const fullyVectorized = isChatFullyVectorized(messages, settings, uuid, getAutoSyncWindowSize(settings), 0);
+    //
+    // Settle/commit lag: evaluate against the COMMITTED slice (chat minus the
+    // active, still-swipeable last turn), matching what runEventBaseIngestion
+    // actually extracts. Without this, the deliberately-unextracted active turn
+    // would pin the LED on "partial" forever. After a manual full vectorize the
+    // committed slice's last window is also extracted, so the LED is still green —
+    // both modes stay consistent. See plans/autosync-settle-lag.md.
+    const commitBoundary = getCommitBoundary(messages, settings);
+    const committedMessages = commitBoundary < messages.length ? messages.slice(0, commitBoundary) : messages;
+    const fullyVectorized = isChatFullyVectorized(committedMessages, settings, uuid, getAutoSyncWindowSize(settings), 0);
 
     // Cache-first read; one-time probe on cold cache populates from Qdrant.
     // After first session-warmup, the ingestion loop keeps this up-to-date
@@ -1330,6 +1376,7 @@ export async function getChatAutoSyncStatus(settings) {
         collectionId: match.collectionId,
         registryKey: match.registryKey,
         chatMessageCount,
+        commitBoundary,
         markerValue: typeof markerValue === 'number' ? markerValue : undefined,
         vectorizationTip: typeof vectorizationTip === 'number' ? vectorizationTip : undefined,
     };

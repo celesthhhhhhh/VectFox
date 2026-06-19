@@ -430,14 +430,36 @@ User scenario the marker makes safe:
 6. Marker filter: `[0-3]` (start=0 < 2) excluded; `[4-7]` (start=4 ≥ 2) kept. Only legitimate new content gets extracted.
 7. Without the marker, both windows would have unknown fingerprints (new window size → fresh fingerprints) and both would be re-extracted, including the duplicate of messages 0,1 inside `[0-3]`.
 
+### Third safety layer — the settle/commit lag (re-roll protection)
+
+Auto-sync fires on `MESSAGE_SWIPED`. Without a lag, every swipe of the latest AI reply rewrites its `.mes` → new hash → new window fingerprint → a fresh extraction, leaving **one embedding per discarded generation**. The Summarizer worsens it (it force-locks the window to 1 turn and forces auto-sync on).
+
+The **settle/commit lag** holds the *active* (still-swipeable) last turn back from extraction until a newer message supersedes it. One helper is the single source of truth:
+
+```js
+// core/eventbase-workflow.js
+getCommitBoundary(messages, settings)
+//  → settings.eventbase_autosync_settle_lag === false ? messages.length
+//  : max(0, messages.length - getAutoSyncWindowSize(settings))   // hold back one turn
+```
+
+`runEventBaseIngestion` slices its window-builder **and** its quick-exit to `messages.slice(0, commitBoundary)` on auto-sync runs (`isAutoSync === true`); manual Vectorize Content / backfill ignores the lag and covers the whole chat. Crucially, `getChatAutoSyncStatus` evaluates `isChatFullyVectorized` against the **same committed slice** — so "fully synced" means *all committed windows extracted*, not *the active turn extracted*. Without that, the deliberately-unextracted active turn would pin the LED on yellow forever.
+
+Because un-kept swipes only ever live on the active turn (which is past the boundary), they never reach the window-builder → **zero embeddings for discarded generations**. When the user sends the next turn, the previously-active turn falls inside the boundary and extracts exactly once.
+
+- **On by default, no migration, no practical downside:** the held-back turn is always the newest message, hence always inside ST's live context window — retrieval never needs it. Existing fully-synced chats show no gap at upgrade (their tail was already extracted; the monotonic tip already covers it). See [plans/autosync-settle-lag.md](../plans/autosync-settle-lag.md).
+- **UI:** when fully synced with `vectorization < chat`, the counter appends `· latest turn pending settle` so green + a one-turn gap reads as intentional, not a backlog. The enable-time backlog estimate clamps pending to `status.commitBoundary` so the held turn isn't counted as backfill.
+- **The one inherent property:** the final turn of a chat that is never continued is never auto-extracted (nothing supersedes it) — it's still in live context, and manual Vectorize Content force-covers it if ever wanted.
+
 **Layer-summary table:**
 
 | Layer | Helper | Catches | When |
 |---|---|---|---|
 | 1 | `isLastWindowExtracted` / `isWindowAlreadyExtracted` (fingerprint cache) | Re-running the same windowing again | Same window size as the prior extraction |
 | 2 | `getAutoSyncMarker` + `windows.filter(w => w.start >= marker)` | Re-processing pre-marker history under a *different* window size | Window size changed between the prior extraction and auto-sync enable |
+| 3 | `getCommitBoundary` (settle/commit lag) | Embedding throwaway re-rolls/swipes of the active turn | Always, on auto-sync runs (default ON) |
 
-**Test coverage:** TEST 015 in `tests/Eventbase-test.spec.js` is a pure-function exercise of the marker contract — fresh UUID returns `undefined`, stamp/read round-trips through the canonical getter, the `>= marker` filter excludes obsolete pre-marker windows and keeps post-marker windows, the boundary `start === marker` is included, and `clearAutoSyncMarker` removes the entry cleanly.
+**Test coverage:** TEST 015 in `tests/Eventbase-test.spec.js` is a pure-function exercise of the marker contract — fresh UUID returns `undefined`, stamp/read round-trips through the canonical getter, the `>= marker` filter excludes obsolete pre-marker windows and keeps post-marker windows, the boundary `start === marker` is included, and `clearAutoSyncMarker` removes the entry cleanly. The settle-lag is covered by `tests/eventbase-settle-lag.test.js` (pure boundary math, runs in CI) and TEST 023 in the spec (swipe-on-active-turn never extracts; the kept turn extracts once superseded).
 
 ### Vectorization tip cache — honest "vectorization: N msgs" display
 

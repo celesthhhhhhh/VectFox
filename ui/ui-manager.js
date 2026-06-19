@@ -1914,9 +1914,18 @@ export async function refreshAutoSyncCheckbox(settings) {
     const vectorizedCount = (typeof status.vectorizationTip === 'number')
         ? status.vectorizationTip
         : (typeof status.markerValue === 'number' ? status.markerValue : null);
+    // Settle/commit lag: when fully synced, the active last turn is intentionally
+    // held back (it's already in live context), so "vectorization" can sit one
+    // turn behind "chat" without being a backlog. Label that gap so green + a
+    // small delta reads as intentional, not "behind". See plans/autosync-settle-lag.md.
+    const settleGap = (typeof status.chatMessageCount === 'number' && vectorizedCount !== null)
+        ? status.chatMessageCount - vectorizedCount
+        : 0;
+    const showSettleNote = status.state === 'fully-vectorized' && settleGap > 0;
     const counts = (typeof status.chatMessageCount === 'number')
         ? `<div style="margin-top:4px;font-size:0.85em;opacity:0.8;">chat: ${status.chatMessageCount} msgs` +
           (vectorizedCount !== null ? ` · vectorization: ${vectorizedCount} msgs` : '') +
+          (showSettleNote ? ` · latest turn pending settle` : '') +
           `</div>`
         : '';
 
@@ -2310,7 +2319,11 @@ function bindSettingsEvents(settings, callbacks) {
                         : (getContext()?.chat || []).filter(m => m.mes && m.mes.trim().length > 0).length;
                     const tip = getVectorizationTip(uuid) ?? 0;
                     const windowSize = Math.max(1, getAutoSyncWindowSize(settings));
-                    const pendingMsgs = Math.max(0, chatMsgCount - tip);
+                    // Clamp the backlog to the commit boundary — the active last turn is
+                    // held back by the settle-lag and settles on its own, so it isn't
+                    // "pending backlog". See plans/autosync-settle-lag.md.
+                    const boundary = typeof status.commitBoundary === 'number' ? status.commitBoundary : chatMsgCount;
+                    const pendingMsgs = Math.max(0, boundary - tip);
                     const pendingWindows = Math.floor(pendingMsgs / windowSize);
                     const CATCHUP_PROMPT_THRESHOLD = 5; // windows (~5 LLM calls)
 

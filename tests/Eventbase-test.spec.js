@@ -4086,3 +4086,109 @@ test('TEST 022 — Standard+plugin: context/xmlTag wrapping + condition filter t
     });
     assertPassed(logs);
 });
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  TEST 023 — Auto-sync settle/commit lag: re-rolls on the active turn
+//             never extract; the kept turn extracts once superseded
+// ═══════════════════════════════════════════════════════════════════
+//
+// Why this test exists:
+//   Auto-sync fires on MESSAGE_SWIPED. Without the settle-lag, every swipe of
+//   the latest AI reply rewrites .mes → new hash → new window fingerprint →
+//   a fresh extraction, leaving one embedding per discarded generation.
+//
+//   The settle/commit lag (getCommitBoundary) holds the active last turn back:
+//   the window-builder, the quick-exit, and the LED all evaluate against the
+//   COMMITTED slice = messages minus the last auto-sync window. So a swipe on
+//   the active turn changes only messages beyond the boundary → the committed
+//   slice is unchanged → no re-extraction. Once the user sends a newer turn,
+//   the previously-active turn falls inside the boundary and extracts exactly
+//   once. See plans/autosync-settle-lag.md.
+//
+// What it proves (using the SAME real functions the ingestion loop uses):
+//   - getCommitBoundary holds back exactly one turn by default, none when off.
+//   - A swipe on the active turn leaves the committed quick-exit "done" (no work).
+//   - Superseding the turn flips the committed quick-exit to "work pending" so
+//     the kept turn extracts.
+test('TEST 023 — Auto-sync settle/commit lag: swipes on active turn never extract', async () => {
+    const logs = await runTestInPage(async () => {
+        const TEST = 'TEST 023 [SettleLag]';
+        const base = '/scripts/extensions/third-party/VectFox/';
+        const { getCommitBoundary, getAutoSyncWindowSize } = await import(base + 'core/eventbase-workflow.js');
+        const { markWindowExtracted, isLastWindowExtracted, clearWindowCacheForChat } = await import(base + 'core/eventbase-store.js');
+        const { extension_settings } = await import('/scripts/extensions.js');
+
+        const testUUID = '__vf_playwright_test_023__settle_lag';
+        const windowSize = 2, step = 2;
+
+        // 8-message chat (4 turns). hashes are arbitrary-but-stable per message.
+        const messages = [
+            { mes: 'human 0', name: 'You' }, { mes: 'ai 0', name: 'AI' },
+            { mes: 'human 1', name: 'You' }, { mes: 'ai 1', name: 'AI' },
+            { mes: 'human 2', name: 'You' }, { mes: 'ai 2', name: 'AI' },
+            { mes: 'human 3', name: 'You' }, { mes: 'ai 3', name: 'AI' },
+        ];
+        const hashes = [100, 200, 300, 400, 500, 600, 700, 800];
+        const hashFn = (m) => hashes[messages.indexOf(m)];
+
+        try {
+            // ═══ Phase 1 — boundary math: hold back exactly one turn ═══
+            const chat6 = messages.slice(0, 6); // chat currently 6 messages (3 turns)
+            const win = getAutoSyncWindowSize({});
+            const boundary6 = getCommitBoundary(chat6, {});
+            if (win !== 2) { console.error(`${TEST} [FAIL] Phase 1: auto-sync window=${win}, expected 2`); return; }
+            if (boundary6 !== 4) { console.error(`${TEST} [FAIL] Phase 1: commitBoundary=${boundary6} for 6 msgs, expected 4 (last turn held)`); return; }
+            if (getCommitBoundary(chat6, { eventbase_autosync_settle_lag: false }) !== 6) {
+                console.error(`${TEST} [FAIL] Phase 1: lag-off boundary should equal full length 6`); return;
+            }
+            console.log(`${TEST} Phase 1 ✓ commitBoundary holds back exactly one turn (6→4), off→6`);
+
+            // ═══ Phase 2 — committed windows extracted → quick-exit reports DONE ═══
+            // The held-back turn [4-5] is intentionally NOT marked.
+            markWindowExtracted([hashes[0], hashes[1]], testUUID);
+            markWindowExtracted([hashes[2], hashes[3]], testUUID);
+            const committed6 = chat6.slice(0, boundary6); // msgs 0..3
+            if (!isLastWindowExtracted(committed6, windowSize, step, testUUID, hashFn)) {
+                console.error(`${TEST} [FAIL] Phase 2: committed quick-exit reports work pending, but all committed windows are marked → LED would stick yellow`); return;
+            }
+            console.log(`${TEST} Phase 2 ✓ committed slice fully extracted → quick-exit DONE (LED green)`);
+
+            // ═══ Phase 3 — SWIPE the active last turn (msg 5) ═══
+            // Re-roll rewrites the AI reply text → new hash. The active turn is
+            // beyond the boundary, so the committed slice is untouched and no
+            // re-extraction is triggered. This is the anti-duplicate property.
+            messages[5] = { mes: 'ai 2 (re-rolled)', name: 'AI' };
+            hashes[5] = 99999; // swipe → different hash
+            const boundaryAfterSwipe = getCommitBoundary(messages.slice(0, 6), {});
+            if (boundaryAfterSwipe !== 4) { console.error(`${TEST} [FAIL] Phase 3: boundary changed to ${boundaryAfterSwipe} after swipe, expected still 4`); return; }
+            const committedAfterSwipe = messages.slice(0, 6).slice(0, boundaryAfterSwipe);
+            if (!isLastWindowExtracted(committedAfterSwipe, windowSize, step, testUUID, hashFn)) {
+                console.error(`${TEST} [FAIL] Phase 3: swipe on the active turn flipped committed quick-exit to "work pending" — it would re-extract a discarded generation`); return;
+            }
+            console.log(`${TEST} Phase 3 ✓ swipe on active turn leaves committed slice unchanged → NO re-extraction`);
+
+            // ═══ Phase 4 — SUPERSEDE: user sends the next turn (chat → 8 msgs) ═══
+            // The previously-active turn [4-5] now falls inside the boundary and
+            // must extract. Quick-exit on the new committed slice reports pending
+            // because window [4-5] was never marked.
+            const boundary8 = getCommitBoundary(messages, {});
+            if (boundary8 !== 6) { console.error(`${TEST} [FAIL] Phase 4: commitBoundary=${boundary8} for 8 msgs, expected 6`); return; }
+            const committed8 = messages.slice(0, boundary8); // msgs 0..5 — now includes the kept turn
+            if (isLastWindowExtracted(committed8, windowSize, step, testUUID, hashFn)) {
+                console.error(`${TEST} [FAIL] Phase 4: after superseding, committed quick-exit reports DONE — the kept turn [4-5] would never extract`); return;
+            }
+            console.log(`${TEST} Phase 4 ✓ superseded turn now inside boundary → quick-exit reports the kept turn pending`);
+
+            console.log(`${TEST} [PASS] Settle-lag holds the active turn: swipes never extract, the kept turn extracts once superseded`);
+        } finally {
+            try {
+                clearWindowCacheForChat(testUUID);
+                const after = extension_settings?.vectfox?.eventbase_extracted_windows?.[testUUID];
+                if (after !== undefined) console.warn(`${TEST} [WARN] clearWindowCacheForChat left a stale entry: ${JSON.stringify(after)}`);
+                else console.log(`${TEST} Cleanup ✓ fingerprint cache cleared for ${testUUID}`);
+            } catch (cleanupErr) { console.warn(`${TEST} [WARN] Cleanup failed: ${cleanupErr.message}`); }
+        }
+    });
+    assertPassed(logs);
+});

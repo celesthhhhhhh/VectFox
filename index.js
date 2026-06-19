@@ -213,6 +213,15 @@ const defaultSettings = {
     // uses this instead of eventbase_window_size, so its cadence is independent of the
     // one-off Vectorize Content window. Range 1-20. Default 1 (most reactive).
     eventbase_autosync_window_turns: 1,
+    // Settle/commit lag: when true, auto-sync does NOT extract the active (still-
+    // swipeable) last turn — it waits until a newer message supersedes it. Kills
+    // duplicate embeddings from re-rolls/swipes (only the kept, superseded turn is
+    // ever extracted) and cuts wasted extraction calls. ON by default and harmless:
+    // the held-back turn is always the newest message, so it is always inside ST's
+    // live context window already — retrieval never needs it. Manual Vectorize
+    // Content ignores this and still covers the whole chat. See
+    // plans/autosync-settle-lag.md.
+    eventbase_autosync_settle_lag: true,
     // Summarizer Injection (Feature B): when enabled, inject the most recent N
     // EventBase events (by source_window_end desc) into the prompt every turn,
     // wrapped in <VectFoxSummarizer> tags — word-for-word-ish recent-turn memory,

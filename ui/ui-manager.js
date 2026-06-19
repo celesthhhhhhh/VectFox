@@ -1028,8 +1028,16 @@ export function renderSettings(containerId, settings, callbacks) {
                             </div>
 
                             <div class="vectfox-form-group">
-                                <label class="vectfox-label">Timeout (ms)</label>
+                                <p class="vectfox-section-label" style="margin-bottom:4px;"><strong>LLM Call Timeouts</strong></p>
+                                <small class="VectFox_hint" style="display:block; margin-bottom:8px;">
+                                    Two independent per-call timeouts, both on the same configured model. <strong>Extraction</strong> bounds each end-to-end EventBase extraction call (a window of messages in → finished structured events out). <strong>Summarization</strong> bounds each single "Summarize Before Store" call (one chunk in → its summary out). Raise either if a slow local model gets cut off.
+                                </small>
+
+                                <label class="vectfox-label">Extraction Timeout (ms)</label>
                                 <input type="number" id="VectFox_eventbase_timeout_ms" class="vectfox-input" min="5000" max="300000" step="1000" style="width:130px;" />
+
+                                <label class="vectfox-label" style="margin-top:8px;">Summarization Timeout (ms)</label>
+                                <input type="number" id="VectFox_summarize_timeout_ms" class="vectfox-input" min="5000" max="300000" step="1000" style="width:130px;" />
                             </div>
 
                             <div class="vectfox-form-group">
@@ -4218,6 +4226,20 @@ function bindSettingsEvents(settings, callbacks) {
     _bindEventBaseNumber('temperature', 'eventbase_temperature');
     _bindEventBaseNumber('max_tokens', 'eventbase_max_tokens');
     _bindEventBaseNumber('timeout_ms', 'eventbase_timeout_ms');
+
+    // Summarizer timeout lives in the EventBase tab next to the extraction timeout
+    // (both bound the same configured model). Its setting key is summarize_*, so it
+    // can't go through _bindEventBaseNumber (which prefixes ids/keys with eventbase_).
+    $('#VectFox_summarize_timeout_ms')
+        .val(settings.summarize_timeout_ms ?? '')
+        .on('change', function() {
+            const v = parseFloat($(this).val());
+            if (!isNaN(v)) {
+                settings.summarize_timeout_ms = v;
+                Object.assign(extension_settings.vectfox, settings);
+                saveSettingsDebounced();
+            }
+        });
 
     // Re-rank weight inputs
     ['rerank_w_cosine', 'rerank_w_importance', 'rerank_w_persist', 'rerank_w_recency'].forEach(k => {

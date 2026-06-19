@@ -163,6 +163,7 @@ const defaultSettings = {
     summarize_model: '',              // Model ID for summarization (e.g. 'google/gemini-flash-1.5-8b')
     summarize_vllm_url: '',           // vLLM base URL for summarization (e.g. 'http://localhost:8000')
     summarize_prompt: '',             // Custom prompt template (empty = use built-in default)
+    summarize_timeout_ms: 30000,      // Per-call timeout for one "Summarize Before Store" request (ms). Separate from eventbase_timeout_ms (extraction); both share the same model. UI: EventBase tab.
 
     // Hybrid Search fusion settings.
     // A1 (BM25 re-rank, Vectra) reads hybrid_fusion_method/weights when invoked via A2 client-side hybrid.

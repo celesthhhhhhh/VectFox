@@ -212,7 +212,7 @@ function _extractReply(data) {
 // architecture pivot rationale (custom secret_state slots don't round-trip).
 const _getOpenRouterApiKey = getOpenRouterApiKey;
 
-async function _callOpenRouter(prompt, model, settings, originalLength, maxTokens = DEFAULT_MAX_TOKENS, timeoutMs = DEFAULT_TIMEOUT_MS) {
+async function _callOpenRouter(prompt, model, settings, originalLength, maxTokens = DEFAULT_MAX_TOKENS, timeoutMs = settings?.summarize_timeout_ms || DEFAULT_TIMEOUT_MS) {
     // Presence-only check: getOpenRouterApiKey() returns the MASKED value from
     // secret_state (e.g. "*******abcd"), not the real key — ST's getSecretState
     // masks all non-EXPORTABLE_KEYS. We can't send a masked value as a Bearer
@@ -305,7 +305,7 @@ export function buildVllmChatCompletionsUrl(baseUrl) {
         + '/v1/chat/completions';
 }
 
-async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS, timeoutMs = DEFAULT_TIMEOUT_MS) {
+async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS, timeoutMs = settings?.summarize_timeout_ms || DEFAULT_TIMEOUT_MS) {
     // Routes through ST's chat-completions proxy with `chat_completion_source:
     // 'custom'` — ST's server reads the real key from SECRET_KEYS.CUSTOM and
     // forwards to settings.summarize_vllm_url. Same pattern as _callOpenRouter

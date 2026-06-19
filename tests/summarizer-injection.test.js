@@ -19,6 +19,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../../script.js', () => ({ setExtensionPrompt: mocks.setExtensionPrompt }));
+// Host modules that summarizer-injection.js imports but the tests don't drive.
+// They don't exist in the repo (ST provides them at runtime), so without these
+// mocks the import only resolves when a sibling test file's extensions.js mock
+// happens to be registered first in the same vitest worker — the source of the
+// flaky "Failed to load url ../../../../extensions.js" collection failure.
+vi.mock('../../../../extensions.js', () => ({ getContext: vi.fn(() => ({ chat: [], symbols: { ignore: null } })) }));
+vi.mock('../../../../world-info.js', () => ({ getWorldInfoSettings: vi.fn(() => ({})), getSortedEntries: vi.fn(async () => []) }));
 vi.mock('../backends/backend-manager.js', () => ({ getBackend: vi.fn(async () => ({ listChunks: mocks.listChunks })) }));
 vi.mock('../core/collection-ids.js', () => ({ getChatUUID: mocks.getChatUUID }));
 vi.mock('../core/eventbase-store.js', () => ({ resolveActiveEventBaseCollection: mocks.resolveActive }));

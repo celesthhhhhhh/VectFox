@@ -218,7 +218,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <option value="transformers">Transformers (Local)</option>
                                     <option value="ollama">Ollama</option>
                                     <option value="openrouter">OpenRouter</option>
-                                    <option value="vllm">OpenAI API compatible</option>
+                                    <option value="vllm">vLLM</option>
                                 </select>
 
                                 <!-- Provider-Specific Settings -->
@@ -250,14 +250,14 @@ export function renderSettings(containerId, settings, callbacks) {
                                             <span>Use Alternative Endpoint</span>
                                         </label>
                                         <input type="text" id="VectFox_vllm_alt_endpoint_url" class="vectfox-input" placeholder="http://localhost:8000" />
-                                        <small class="VectFox_hint">Override the default OpenAI-compatible API URL</small>
+                                        <small class="VectFox_hint">Override default vLLM API URL</small>
                                         <label for="VectFox_vllm_model" style="margin-top: 8px;">
-                                            <small>OpenAI-compatible Model:</small>
+                                            <small>vLLM Model:</small>
                                         </label>
                                         <input type="text" id="VectFox_vllm_model" class="vectfox-input" placeholder="Model name" />
-                                        <small class="VectFox_hint">Enter the model name from your OpenAI-compatible deployment</small>
+                                        <small class="VectFox_hint">Enter the model name from your vLLM deployment</small>
                                         <label for="VectFox_vllm_api_key" style="margin-top: 8px;">
-                                            <small>OpenAI-compatible API Key (optional):</small>
+                                            <small>vLLM API Key (optional):</small>
                                         </label>
                                         <input type="password" id="VectFox_vllm_api_key" class="vectfox-input" placeholder="Leave blank for local / no-auth deployments" autocomplete="off" />
                                         <button type="button" id="VectFox_vllm_api_key_clear" class="menu_button" style="margin-top:4px; width:auto; white-space:nowrap;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
@@ -342,7 +342,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                         <input type="checkbox" id="VectFox_vector_hedge_enabled" />
                                         <span>Hedge slow embedding calls</span>
                                     </label>
-                                    <small class="VectFox_hint">Default (checked): when an embedding HTTP call hasn't returned within 15 seconds, fire a duplicate request on a fresh connection. Whichever returns first wins. Cuts routing-stall recovery from 120s (ST's timeout) to under 20s when the upstream gateway fails. Applies only to OpenRouter and OpenAI-compatible endpoints.</small>
+                                    <small class="VectFox_hint">Default (checked): when an embedding HTTP call hasn't returned within 15 seconds, fire a duplicate request on a fresh connection. Whichever returns first wins. Cuts routing-stall recovery from 120s (ST's timeout) to under 20s when the upstream gateway fails. Applies only to OpenRouter and vLLM.</small>
                                 </div>
                             </div>
 
@@ -365,7 +365,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                 </label>
                                 <select id="VectFox_summarize_provider" class="vectfox-select">
                                     <option value="openrouter">OpenRouter</option>
-                                    <option value="vllm">OpenAI API compatible</option>
+                                    <option value="vllm">vLLM</option>
                                 </select>
                                 <small class="VectFox_hint">Provider required for summarization / EventBase extraction LLM calls</small>
 
@@ -383,13 +383,13 @@ export function renderSettings(containerId, settings, callbacks) {
 
                                     <div id="VectFox_summarize_vllm_url_row" style="display:none; margin-bottom:10px;">
                                         <label for="VectFox_summarize_vllm_url">
-                                            <small>OpenAI-compatible Base URL</small>
+                                            <small>vLLM Base URL</small>
                                         </label>
                                         <input type="text" id="VectFox_summarize_vllm_url" class="vectfox-input"
                                             placeholder="http://localhost:8000" />
-                                        <small class="VectFox_hint">Base URL of your OpenAI-compatible server</small>
+                                        <small class="VectFox_hint">Base URL of your vLLM server (OpenAI-compatible)</small>
                                         <label for="VectFox_summarize_vllm_apikey" style="margin-top:8px;">
-                                            <small>OpenAI-compatible API Key <span style="opacity:0.6;">(optional — leave blank if not required)</span></small>
+                                            <small>vLLM API Key <span style="opacity:0.6;">(optional — leave blank if not required)</span></small>
                                         </label>
                                         <input type="password" id="VectFox_summarize_vllm_apikey" class="vectfox-input"
                                             placeholder="Paste key here to save..." autocomplete="off" />
@@ -1154,7 +1154,7 @@ export function renderSettings(containerId, settings, callbacks) {
                                 <select id="VectFox_agentic_provider" class="vectfox-select">
                                     <option value="">(Inherit from summarizer)</option>
                                     <option value="openrouter">OpenRouter</option>
-                                    <option value="vllm">OpenAI API compatible</option>
+                                    <option value="vllm">vLLM</option>
                                 </select>
                             </div>
 
@@ -1173,10 +1173,10 @@ export function renderSettings(containerId, settings, callbacks) {
                             </div>
 
                             <div class="vectfox-form-group" id="VectFox_agentic_vllm_row" style="display:none;">
-                                <label for="VectFox_agentic_vllm_url"><small>OpenAI-compatible Base URL</small></label>
+                                <label for="VectFox_agentic_vllm_url"><small>vLLM Base URL</small></label>
                                 <input type="text" id="VectFox_agentic_vllm_url" class="vectfox-input"
                                     placeholder="(empty → inherit summarize URL)" />
-                                <label for="VectFox_agentic_vllm_apikey" style="margin-top:8px;"><small>OpenAI-compatible API Key</small></label>
+                                <label for="VectFox_agentic_vllm_apikey" style="margin-top:8px;"><small>vLLM API Key</small></label>
                                 <input type="password" id="VectFox_agentic_vllm_apikey" class="vectfox-input"
                                     placeholder="(empty → inherit summarize key)" autocomplete="off" />
                                 <button type="button" id="VectFox_agentic_vllm_apikey_clear" class="menu_button" style="margin-top:4px; width:auto; white-space:nowrap;"><i class="fa-solid fa-trash-can"></i> Clear saved key</button>
@@ -2470,7 +2470,7 @@ function bindSettingsEvents(settings, callbacks) {
             } else if (provider === 'vllm') {
                 const baseUrl = (settings.summarize_vllm_url || '').replace(/\/$/, '').replace(/\/v1$/, '');
                 if (!baseUrl) {
-                    toastr.error('Set the OpenAI-compatible Base URL first.', 'Endpoint not configured');
+                    toastr.error('Set the vLLM Base URL first.', 'vLLM not configured');
                     return;
                 }
                 // Route through ST's chat-completions /status endpoint, which
@@ -2588,7 +2588,7 @@ function bindSettingsEvents(settings, callbacks) {
                 : '*'.repeat(savedKey.length);
             $('#VectFox_summarize_vllm_apikey').attr('placeholder', `Key saved: ${masked} (shared with Embedding + AgentMode)`);
         } else {
-            $('#VectFox_summarize_vllm_apikey').attr('placeholder', 'Paste OpenAI-compatible API key (shared with Embedding + AgentMode)');
+            $('#VectFox_summarize_vllm_apikey').attr('placeholder', 'Paste vLLM / Custom OpenAI-compatible key (shared with Embedding + AgentMode)');
         }
     };
     updateSummarizeVllmKeyDisplay();
@@ -2615,12 +2615,12 @@ function bindSettingsEvents(settings, callbacks) {
             }
             await readSecretState();
             if (errors.length === 0) {
-                toastr.success('OpenAI-compatible API key saved (shared across embedding/summarize/agentic)');
+                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
             } else if (errors.length === 2) {
-                toastr.error('Failed to save OpenAI-compatible key to either slot — see console');
+                toastr.error('Failed to save vLLM key to either slot — see console');
                 return;
             } else {
-                toastr.warning(`OpenAI-compatible key partially saved — ${errors.join(', ')} write failed. See console.`);
+                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
             }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');
@@ -2759,7 +2759,7 @@ function bindSettingsEvents(settings, callbacks) {
                 : '*'.repeat(savedKey.length);
             $('#VectFox_agentic_vllm_apikey').attr('placeholder', `Key saved: ${masked} (shared with Embedding + Summarize)`);
         } else {
-            $('#VectFox_agentic_vllm_apikey').attr('placeholder', 'Paste OpenAI-compatible API key (shared with Embedding + Summarize)');
+            $('#VectFox_agentic_vllm_apikey').attr('placeholder', 'Paste vLLM / Custom OpenAI-compatible key (shared with Embedding + Summarize)');
         }
     };
     updateAgenticVllmKeyDisplay();
@@ -2783,12 +2783,12 @@ function bindSettingsEvents(settings, callbacks) {
             }
             await readSecretState();
             if (errors.length === 0) {
-                toastr.success('OpenAI-compatible API key saved (shared across embedding/summarize/agentic)');
+                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
             } else if (errors.length === 2) {
-                toastr.error('Failed to save OpenAI-compatible key to either slot — see console');
+                toastr.error('Failed to save vLLM key to either slot — see console');
                 return;
             } else {
-                toastr.warning(`OpenAI-compatible key partially saved — ${errors.join(', ')} write failed. See console.`);
+                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
             }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');
@@ -2808,7 +2808,7 @@ function bindSettingsEvents(settings, callbacks) {
     const _vllmClearOpts = {
         slots: [SECRET_KEYS.CUSTOM, SECRET_KEYS.VLLM],
         changedEvent: 'vectfox:vllm-key-changed',
-        label: 'OpenAI-compatible',
+        label: 'vLLM',
         getCurrent: () => getCustomApiKey(settings),
         sharedWithST: true,
     };
@@ -4403,12 +4403,12 @@ function bindSettingsEvents(settings, callbacks) {
             }
             await readSecretState();
             if (errors.length === 0) {
-                toastr.success('OpenAI-compatible API key saved (shared across embedding/summarize/agentic)');
+                toastr.success('vLLM API key saved (shared across embedding/summarize/agentic)');
             } else if (errors.length === 2) {
-                toastr.error('Failed to save OpenAI-compatible key to either slot — see console');
+                toastr.error('Failed to save vLLM key to either slot — see console');
                 return;
             } else {
-                toastr.warning(`OpenAI-compatible key partially saved — ${errors.join(', ')} write failed. See console.`);
+                toastr.warning(`vLLM key partially saved — ${errors.join(', ')} write failed. See console.`);
             }
             $(this).val('');
             $(document).trigger('vectfox:vllm-key-changed');

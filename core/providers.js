@@ -40,7 +40,7 @@ export const EMBEDDING_PROVIDERS = {
     // llamacpp: { name: 'llama.cpp', local: true, requiresModel: false, requiresApiKey: false, requiresUrl: true },
     // koboldcpp: { name: 'KoboldCpp', local: true, requiresModel: false, requiresApiKey: false, requiresUrl: true },
     vllm: {
-        name: 'OpenAI API compatible',
+        name: 'vLLM',
         local: true,
         requiresModel: true,
         modelField: 'vllm_model',

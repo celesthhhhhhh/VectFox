@@ -36,6 +36,7 @@ import { renderSettings, openDiagnosticsModal, loadWebLlmModels, updateWebLlmSta
 import { initializeVisualizer } from './ui/chunk-visualizer.js';
 import { initializeDatabaseBrowser } from './ui/database-browser.js';
 import { initializeWorldInfoIntegration } from './core/world-info-integration.js';
+import { refreshWorldInfoEntryDepthCache } from './core/summarizer-injection.js';
 import { CJK_TOKENIZER_MODES, setCjkTokenizerMode, ensureJiebaTokenizerLoaded, ensureJiebaTwLoaded } from './core/bm25-scorer.js';
 
 // SillyTavern display label — NOT the settings key. For settings, use 'vectfox' (lowercase).
@@ -228,6 +229,18 @@ const defaultSettings = {
     // OLDEST overflow is dropped (most-recent always kept); the latest event is always
     // included even if it alone exceeds the cap. 0 = no cap. Default ~4-6.5k tokens.
     summarizer_injection_max_chars: 10000,
+    // Ghosting (ephemeral prompt wipe): when enabled AND Summarizer Injection is on,
+    // keep the most recent N messages verbatim and blank ALL older already-vectorized
+    // messages from the OUTGOING prompt only. The chat file + UI are untouched and the
+    // effect resets every generation (nothing to undo, branch-safe — mirrors the proven
+    // interceptor-wipe pattern). Trades raw old context for token savings, leaning on
+    // EventBase memory (summarizer injection + semantic retrieval) for the wiped span.
+    // "Keep last N" auto-scales to any chat length (wipe count = tip − N), so a 50-reply
+    // and a 5000-reply chat use the same setting. Gated to Summarizer Injection because
+    // that forces auto-sync window=1, guaranteeing every message below the vectorization
+    // tip is extracted before it could be wiped.
+    eventbase_ghost_enabled: false,
+    eventbase_ghost_keep_recent: 10,              // recent messages kept verbatim; everything older that's vectorized is wiped. range 0-100 (summarizer injects ~20 events to cover the wiped span)
     // Per-chat marker: auto-sync only processes windows whose start >= marker.
     // Stamped at "max(source_window_end across existing events) + 1" when auto-sync
     // is enabled on a non-empty collection, or at current chat length when collection
@@ -707,6 +720,17 @@ jQuery(async () => {
         log.lifecycle('VectFox: Chat changed, refreshing UI state');
         refreshAutoSyncCheckbox(settings);
     });
+
+    // Keep the ghosting WI-scan floor accurate: refresh the cached deepest per-entry World
+    // Info scanDepth whenever the active books or WI settings change (off the hot path, so
+    // applyGhosting never blanks a message a deep-scanning WI entry still needs to read).
+    // Debounced — WORLDINFO_UPDATED can fire in bursts while editing, and each refresh loads
+    // lore. Initial call is direct so the floor is correct before the first generation.
+    refreshWorldInfoEntryDepthCache();
+    const refreshWiDepthDebounced = debounce(refreshWorldInfoEntryDepthCache, debounce_timeout.relaxed);
+    eventSource.on(event_types.CHAT_CHANGED, refreshWiDepthDebounced);
+    eventSource.on(event_types.WORLDINFO_UPDATED, refreshWiDepthDebounced);
+    eventSource.on(event_types.WORLDINFO_SETTINGS_UPDATED, refreshWiDepthDebounced);
 
     log.lifecycle('VectFox: ✅ Initialized successfully');
 });

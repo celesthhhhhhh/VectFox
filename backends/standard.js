@@ -600,6 +600,13 @@ export class StandardBackend extends VectorBackend {
                 threshold,
                 source,
                 model,
+                // Pass provider params (apiUrl for url-based sources like vllm/
+                // ollama/llamacpp) so the plugin embeds the searchText against the
+                // user's configured endpoint instead of falling back to localhost.
+                // Without this the plugin defaulted to http://localhost:8000, which
+                // hit SillyTavern itself and failed CSRF (GitHub issue #7). Matches
+                // the insert path and the qdrant backend's query body.
+                ...getProviderSpecificParams(settings, true),
             };
             // Pass pre-computed vector when available; otherwise let the plugin generate it
             if (queryVector) {

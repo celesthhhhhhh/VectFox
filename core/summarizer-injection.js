@@ -18,9 +18,11 @@
  */
 
 import { setExtensionPrompt } from '../../../../../script.js';
+import { getContext } from '../../../../extensions.js';
+import { getWorldInfoSettings, getSortedEntries } from '../../../../world-info.js';
 import { getBackend } from '../backends/backend-manager.js';
 import { getChatUUID } from './collection-ids.js';
-import { resolveActiveEventBaseCollection } from './eventbase-store.js';
+import { resolveActiveEventBaseCollection, getVectorizationTip } from './eventbase-store.js';
 import { EXTENSION_PROMPT_TAG } from './constants.js';
 import { log } from './log.js';
 
@@ -43,6 +45,204 @@ export async function runSummarizerInjection(settings) {
     setExtensionPrompt(SUMMARIZER_PROMPT_TAG, text, settings.position, settings.depth, false);
     if (count > 0) log.domain('injection', 'trace', `[Summarizer] Injected ${count} event(s) under ${SUMMARIZER_PROMPT_TAG}`);
     return { injected: count };
+}
+
+// Deepest per-entry WI `scanDepth` across the active world books. Entries can override the
+// global scan window with a deeper fixed depth, so the keep-raw floor must cover them too.
+// Computed OFF the hot path (getSortedEntries loads lore = async) and refreshed on WI/chat
+// changes via refreshWorldInfoEntryDepthCache(); read synchronously by worldInfoScanFloor.
+let _maxEntryScanDepth = 0;
+
+/**
+ * Recompute _maxEntryScanDepth from the active world books. Async (loads lore) — wire it to
+ * CHAT_CHANGED / WORLDINFO_UPDATED / WORLDINFO_SETTINGS_UPDATED, NOT to per-generation code.
+ * Best-effort: keeps the previous cached value on failure. Disabled entries are ignored
+ * (ST skips them during the scan), matching ST's own behavior.
+ */
+export async function refreshWorldInfoEntryDepthCache() {
+    try {
+        const entries = await getSortedEntries();
+        let max = 0;
+        for (const e of entries) {
+            if (!e || e.disable) continue;           // ST skips disabled entries when scanning
+            const d = Number(e.scanDepth);           // null/undefined = use global depth (skip)
+            if (Number.isFinite(d) && d > max) max = d;
+        }
+        _maxEntryScanDepth = max;
+    } catch (_) { /* keep previous cached value */ }
+}
+
+/**
+ * How many of the most-recent messages World Info will scan — i.e. how many MUST stay raw
+ * for keyword triggers to keep firing. Ghosting wipes `coreChat` BEFORE ST scans WI from
+ * that same array, so any message WI would look at must not be wiped.
+ *
+ *   - Base = global `world_info_depth` (the standard scan window, default 2).
+ *   - Per-entry `scanDepth` overrides: an entry can scan deeper than the global window, so we
+ *     fold in the cached deepest override (_maxEntryScanDepth, refreshed on WI/chat changes).
+ *   - If `min_activations` is on, the scan advances deeper until the minimum is met, capped
+ *     by `min_activations_depth_max` — or by the END OF CHAT when that cap is 0. So an
+ *     uncapped min-activations scan can reach the whole chat → return Infinity, which makes
+ *     ghosting back off entirely (wipe nothing) rather than risk breaking WI.
+ *
+ * @returns {number} message count that must remain raw for WI (may be Infinity)
+ */
+function worldInfoScanFloor() {
+    try {
+        const wi = getWorldInfoSettings();
+        let floor = Math.max(0, Number(wi.world_info_depth) || 0, _maxEntryScanDepth || 0);
+        if ((Number(wi.world_info_min_activations) || 0) > 0) {
+            const cap = Number(wi.world_info_min_activations_depth_max) || 0;
+            floor = cap > 0 ? Math.max(floor, cap) : Number.POSITIVE_INFINITY; // 0 cap = whole chat
+        }
+        return floor;
+    } catch (_) {
+        return _maxEntryScanDepth || 0; // WI settings unavailable — still honor cached entry depth
+    }
+}
+
+/**
+ * Build a prompt-only wiped clone of a message: empty text AND stripped of every
+ * content-bearing field ST folds into the outgoing prompt independently of `.mes` —
+ * images/files (`extra.media`), tool-call args+results (`extra.tool_invocations`), and
+ * model reasoning (`extra.reasoning` / `reasoning_signature`). The caller also flags this
+ * clone with ST's IGNORE_SYMBOL to drop it entirely; the blank here is the "bulletproof"
+ * fallback for any code path that doesn't honor the symbol — and
+ * it stops media/reasoning leaking on builds where the symbol is unavailable.
+ *
+ * We shallow-copy (not structuredClone): we only overwrite top-level `.mes` and a fresh
+ * `.extra`, so a shallow spread is sufficient, can't throw on an unclonable nested value,
+ * and never touches the LIVE message object — the UI + saved chat keep their media/
+ * reasoning intact. (ST already hands the interceptor detached copies, but cloning keeps
+ * us correct regardless of ST version.)
+ *
+ * @param {object} m - source message
+ * @returns {object} prompt clone with no recoverable content
+ */
+function blankPromptClone(m) {
+    const clone = { ...m, mes: '' };
+    if (m.extra && typeof m.extra === 'object') {
+        clone.extra = { ...m.extra };
+        delete clone.extra.media;               // images / files (heaviest leak)
+        delete clone.extra.tool_invocations;    // tool-call arguments + results
+        delete clone.extra.reasoning;           // model reasoning text
+        delete clone.extra.reasoning_signature;
+    }
+    return clone;
+}
+
+/**
+ * Ephemeral "ghosting": keep the most recent N messages verbatim and blank ALL older
+ * already-vectorized messages from the OUTGOING prompt only. The chat array we get is
+ * ST's interceptor working copy; we replace each wiped slot with a sanitized clone
+ * (see blankPromptClone), so the saved chat + UI never change and the whole effect
+ * resets on the next generation (nothing to un-ghost, branch-safe).
+ *
+ * Wipe boundary `cutoff = min(vectorizedInCore, chat.length - keepFloor)`:
+ *   - `vectorizedInCore` — the vectorization tip translated from FULL-chat index space
+ *     into the coreChat space we actually receive (see below). Messages below it are in
+ *     EventBase; nothing above it (not yet vectorized) is ever wiped.
+ *   - `chat.length - keepFloor` — keeps the last `keepRecent` messages raw, with a hard
+ *     floor of 1 so the current outgoing turn is NEVER blanked (even at keepRecent=0).
+ * Messages [0, cutoff) are wiped. "Keep last N" auto-scales to any chat length.
+ *
+ * Wipe mechanism : flag each wiped message
+ * with ST's IGNORE_SYMBOL (drops it from the prompt entirely — no empty turn left behind,
+ * which some chat-completion APIs reject) AND blank its clone as a bulletproof fallback.
+ * CONTIGUITY IS MANDATORY: setOpenAIMessages leaves an *unassigned slot* per ignored
+ * message — a contiguous ignored block [0, cutoff) just shortens the array (safe), but
+ * leaving any message raw INSIDE the span punches an interior `undefined` hole that crashes
+ * prompt building ("Message role not set" → `chatPrompt.media` on undefined → "An unknown
+ * error occurred while counting tokens"). So we wipe EVERY message in the span — including
+ * empty and tool/system ones — and skip only null slots. (This mid-span skip was the
+ * original crash: we used to `continue` past empty messages, breaking contiguity.)
+ *
+ * Gated to Summarizer Injection (forces auto-sync window=1 → the tip stays current).
+ *
+ * World Info safety: ST scans WI from this same chat array AFTER us, so the wipe is floored
+ * to keep WI's full scan window raw (see worldInfoScanFloor) — keyword triggers keep firing
+ * at any slider value, and ghosting auto-pauses if WI could scan the whole chat.
+ *
+ * @param {Array} chat - ST interceptor chat array (coreChat; mutated by slot replacement)
+ * @param {object} settings - extension_settings.vectfox
+ * @returns {{ wiped: number, charsRemoved: number }}
+ */
+export function applyGhosting(chat, settings) {
+    if (!settings?.eventbase_ghost_enabled || !settings?.summarizer_injection_enabled) {
+        return { wiped: 0, charsRemoved: 0 };
+    }
+    let wiped = 0;
+    let charsRemoved = 0;
+
+    const keepRecent = Math.max(0, Math.floor(Number(settings.eventbase_ghost_keep_recent) || 0));
+    const uuid = getChatUUID();
+    // tip = highest extracted message index + 1, in FULL-chat index space.
+    const tip = uuid ? getVectorizationTip(uuid) : undefined;
+
+    if (Array.isArray(chat) && chat.length > 0 && typeof tip === 'number' && tip > 0) {
+        // INDEX-SPACE FIX: `tip` indexes the full chat (incl. is_system messages), but the
+        // interceptor hands us coreChat — ST filters is_system OUT before calling us. Using
+        // `tip` directly as a coreChat cutoff over-reaches whenever system/narrator messages
+        // sit below the tip, wiping into the kept-recent tail. Translate by counting how many
+        // full-chat messages below the tip survive coreChat's filter (non-system). Conservative:
+        // a system message kept only via tool_invocations isn't counted, so we under-wipe rather
+        // than risk a not-yet-vectorized message. Falls back to raw `tip` if the live chat is
+        // unavailable (the keepFloor below still caps the reach).
+        let vectorizedInCore = tip;
+        const fullChat = getContext()?.chat;
+        if (Array.isArray(fullChat)) {
+            vectorizedInCore = 0;
+            const end = Math.min(tip, fullChat.length);
+            for (let k = 0; k < end; k++) {
+                if (fullChat[k] && !fullChat[k].is_system) vectorizedInCore++;
+            }
+        }
+
+        // keepFloor = how many recent messages stay raw no matter the slider:
+        //   - >= 1      → never blank the current outgoing turn (prompt is never left empty).
+        //   - >= WI reach → never blank a message World Info will scan, so ghosting can't
+        //                   break keyword triggers at ANY slider value. If WI may scan the
+        //                   whole chat (uncapped min-activations), the floor is Infinity →
+        //                   cutoff clamps to 0 → ghosting wipes nothing this turn.
+        const keepFloor = Math.max(keepRecent, 1, worldInfoScanFloor());
+        const cutoff = Math.max(0, Math.min(vectorizedInCore, chat.length - keepFloor));
+
+        // ST's ignore flag: drop the message from the prompt entirely. Optional — falls back
+        // to the blanked clone alone when this ST build doesn't expose it.
+        let ignoreSymbol = null;
+        try { ignoreSymbol = getContext()?.symbols?.ignore ?? null; } catch (_) { /* optional */ }
+
+        for (let i = 0; i < cutoff; i++) {
+            const m = chat[i];
+            if (!m) continue;                          // null slot: can't wipe (pre-existing ST issue upstream)
+            try {
+                const hadContent = !!(m.mes && m.mes.trim());
+                const clone = blankPromptClone(m);     // never mutate the live message object
+                if (ignoreSymbol) {
+                    clone.extra = clone.extra || {};
+                    clone.extra[ignoreSymbol] = true;
+                }
+                chat[i] = clone;
+                // Count only content-bearing messages for the readout; empty/system ones are
+                // still wiped (to preserve contiguity) but represent no real token saving.
+                if (hadContent) { charsRemoved += m.mes.length; wiped++; }
+            } catch (err) {
+                // A failure here leaves this slot raw → breaks contiguity → hole. Shallow-clone
+                // of a plain message effectively never throws, but log loudly if it ever does.
+                log.domain('injection', 'verbose', `[Ghost] could not wipe idx ${i}: ${err?.message || err}`);
+            }
+        }
+    }
+
+    // Always publish the latest outcome while the feature is enabled — so the on-screen
+    // readout reflects "0 saved this turn" (e.g. tip hasn't advanced yet) instead of a
+    // stale value from an earlier generation.
+    const approxTokens = Math.round(charsRemoved / 4); // rough 4-chars/token heuristic
+    window.VectFox_LastGhost = { wiped, charsRemoved, approxTokens, at: Date.now() };
+    if (wiped > 0) {
+        log.domain('injection', 'lifecycle', `[Ghost] Wiped ${wiped} vectorized message(s) from prompt — ~${charsRemoved} chars (~${approxTokens} tokens) saved`);
+    }
+    return { wiped, charsRemoved };
 }
 
 /**

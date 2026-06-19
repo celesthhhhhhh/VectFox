@@ -13,6 +13,7 @@
 import { getContentType, getContentTypeDefaults, hasFeature } from './content-types.js';
 import { chunkText } from './chunking.js';
 import { insertVectorItems, purgeVectorIndex, getSavedHashes } from './core-vector-api.js';
+import { isConnectionError } from './model-config-notifier.js';
 import { setCollectionMeta, setCollectionLock, setCollectionCharacterLock, saveChunkMetadata } from './collection-metadata.js';
 import { registerCollection } from './collection-loader.js';
 import { getBackend } from '../backends/backend-manager.js';
@@ -176,7 +177,19 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
         // Chat content never reaches this function (EventBase intercepts it upstream).
         //
         // The summarize-before-store pipeline below is intentionally preserved (commented out)
-        // in case we want to re-enable per-chunk LLM summarization later.
+        // in case we want to re-enable per-chunk LLM summarization later (e.g. summarize a
+        // lorebook/document chunk BEFORE vectorizing it).
+        //
+        // REVIVAL NOTE — when re-enabling this block, do NOT reuse its summarizer-specific
+        // error handling (`isSummarizationFatalError` / `SummarizationFatalError` and
+        // `summarizeText`'s bespoke throws). Route errors through the SHARED helpers in
+        // core/model-config-notifier.js that the rest of the codebase already uses:
+        //   - `isInvalidModelConfigError` / `notifyInvalidModel`  → config/auth/model failures
+        //   - `isConnectionError` / `notifyConnectionError`       → wrong / unreachable URLs
+        // (the same pattern as EventBase extraction, agent mode, and embedding). Once this is
+        // revived on the shared helpers, DELETE `summarizeText` + `isSummarizationFatalError` +
+        // `SummarizationFatalError` from summarizer.js for good — we don't keep one-off error
+        // types for a single feature.
         /* ----- BEGIN: summarize-before-store pipeline (DISABLED, kept for future use) -----
         if (contentType === 'chat') {
             progressTracker.updateProgress(3, `Summarizing and inserting ${finalChunks.length} chunks...`);
@@ -259,7 +272,19 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
             } catch (error) {
                 log.error('VectFox: insertVectorItems failed', error);
                 try { progressTracker.addError(error.message || String(error)); } catch (_) {}
-                try { toastr.error('Failed to write embeddings: ' + (error.message || String(error)), 'VectFox'); } catch (_) {}
+                // Distinguish an embedder-call failure from a storage-write failure
+                // (#4): they were both reported as "Failed to write embeddings",
+                // which misleads when the real problem is the embedding provider
+                // URL/model. A connection failure already raised its own red toast
+                // via notifyConnectionError, so skip a second one here.
+                const isEmbedFail = error?.code === 'embedding_generation_failed'
+                    || /generate embeddings|no embeddings returned/i.test(error?.message || '');
+                if (!isConnectionError(error?.message)) {
+                    const headline = isEmbedFail
+                        ? 'Failed to generate embeddings (check your embedding provider URL and model): '
+                        : 'Failed to write embeddings to storage: ';
+                    try { toastr.error(headline + (error.message || String(error)), 'VectFox'); } catch (_) {}
+                }
                 throw error;
             }
 

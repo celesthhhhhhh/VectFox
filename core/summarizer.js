@@ -19,12 +19,21 @@
 import { getOpenRouterApiKey, getCustomApiKey } from './api-keys.js';
 import { getDefaultSummarizePrompt } from './prompts-i18n.js';
 import { getModelConfigErrorMessage } from './model-http-errors.js';
+import { isConnectionError, notifyConnectionError } from './model-config-notifier.js';
 import { getRequestHeaders } from '../../../../../script.js';
 import { log } from './log.js';
 
 /**
  * Fatal summarization error that should abort vectorization instead of silently
  * falling back to raw text.
+ *
+ * SLATED FOR REMOVAL: this type (and `isSummarizationFatalError` + `summarizeText`)
+ * is a summarizer-only error path. Its only consumer — the summarize-before-store
+ * pipeline in content-vectorization.js — is currently DISABLED. When that pipeline is
+ * revived it must route errors through the shared core/model-config-notifier.js helpers
+ * (isInvalidModelConfigError/notifyInvalidModel + isConnectionError/notifyConnectionError)
+ * like every other LLM path, after which delete this class for codebase consistency.
+ * See the REVIVAL NOTE in content-vectorization.js.
  */
 export class SummarizationFatalError extends Error {
     /**
@@ -127,6 +136,11 @@ const DEFAULT_TIMEOUT_MS = 30000;
  * vector store is useless for EventBase retrieval, and the chunk path (lorebook /
  * document / etc.) no longer routes through the summarizer, so there is no caller
  * that wants the un-summarized text back.
+ *
+ * CURRENTLY UNUSED / SLATED FOR REMOVAL — see SummarizationFatalError above and the
+ * REVIVAL NOTE in content-vectorization.js. The only call site (summarize-before-store)
+ * is disabled; on revival, switch its error handling to the shared model-config-notifier
+ * helpers and delete this function.
  *
  * @param {string} text - Raw message/chunk text to summarize
  * @param {object} settings - VectFox settings object
@@ -258,6 +272,10 @@ async function _callOpenRouter(prompt, model, settings, originalLength, maxToken
         if (modelConfigError) {
             throw new SummarizationFatalError(modelConfigError, 'openrouter', 'invalid_model_config');
         }
+        if (isConnectionError(errText)) {
+            notifyConnectionError('Summarizer', null, errText);
+            throw new SummarizationFatalError(`Summarizer: couldn't reach OpenRouter — ${errText}`, 'openrouter', 'connection_failed');
+        }
         throw new Error(`OpenRouter HTTP ${response.status}: ${errText}`);
     }
 
@@ -362,6 +380,10 @@ async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS
         });
         if (modelConfigError) {
             throw new SummarizationFatalError(modelConfigError, 'vllm', 'invalid_model_config');
+        }
+        if (isConnectionError(errText)) {
+            notifyConnectionError('Summarizer', baseUrl, errText);
+            throw new SummarizationFatalError(`Summarizer: couldn't reach ${baseUrl} — ${errText}`, 'vllm', 'connection_failed');
         }
         throw new Error(`OpenAI-compatible HTTP ${response.status}: ${errText}`);
     }

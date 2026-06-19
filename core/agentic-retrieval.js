@@ -402,6 +402,12 @@ async function _callPlanner({ systemPrompt, userMessage, llmCfg, timeoutMs }) {
             err.code = 'invalid_model_config';
             throw err;
         }
+        const { isConnectionError, notifyConnectionError } = await import('./model-config-notifier.js');
+        if (isConnectionError(errText)) {
+            // Agent Mode degrades to pre-search on failure (caught upstream), but
+            // the user still needs to know their planner URL is unreachable.
+            notifyConnectionError('Agent Mode', llmCfg.vllmUrl || null, errText);
+        }
         throw new Error(`HTTP ${response.status}: ${String(errText).slice(0, 200)}`);
     }
 

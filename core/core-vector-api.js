@@ -46,6 +46,7 @@ import {
     getUrlProviders,
     resolveProviderApiUrl
 } from './providers.js';
+import { isConnectionError, notifyConnectionError } from './model-config-notifier.js';
 import { getOverfetchAmount } from './keyword-boost.js';
 import { applyBM25Scoring, porterStemmer } from './bm25-scorer.js';
 import { hybridSearch } from './hybrid-search.js';
@@ -899,7 +900,19 @@ async function streamEmbeddingsAndWrite(backend, collectionId, items, textString
                 return await getAdditionalArgs(batchTextStrings, settings);
             }, RETRY_CONFIG);
         } catch (error) {
-            throw new Error(`VectFox: Failed to generate embeddings for batch ${batchNum} after retries: ${error.message}`);
+            // A wrong/unreachable embedding URL surfaces here, NOT at the DB-write
+            // step below — so a connection failure must be reported as an embedder
+            // problem, not a storage one (the #4/#5 conflation). Resolve the
+            // configured embedding URL (URL-based providers only) for the toast.
+            if (isConnectionError(error?.message)) {
+                let embedUrl = null;
+                try { embedUrl = resolveProviderApiUrl(settings, settings.source) || null; } catch (_) { /* not a URL provider */ }
+                notifyConnectionError('Embedding', embedUrl, error.message);
+            }
+            throw Object.assign(
+                new Error(`VectFox: Failed to generate embeddings for batch ${batchNum} after retries: ${error.message}`),
+                { code: 'embedding_generation_failed' },
+            );
         }
 
         if (!additionalArgs.embeddings) {

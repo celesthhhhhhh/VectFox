@@ -46,6 +46,58 @@ export function resetInvalidModelNotifications() {
     _notified.clear();
 }
 
+// ---------------------------------------------------------------------------
+// Connection / URL error surfacing — sibling concern to model-config.
+// ---------------------------------------------------------------------------
+// When a configured endpoint URL is wrong (or the server behind it is down /
+// unreachable), the call fails at the connection level. The summarizer, EventBase
+// extractor, and agent-mode planner all route through ST's chat-completions proxy,
+// so the failure comes back as a non-2xx body carrying the upstream socket error
+// (ECONNREFUSED, getaddrinfo ENOTFOUND, "fetch failed", …) rather than a client
+// fetch throw. We cannot distinguish "wrong URL" from "server is down" — both look
+// identical — so the toast guides the user to check both.
+const _connNotified = new Set();
+
+/**
+ * Heuristic: does this text/error look like a connection/URL failure (vs an HTTP
+ * 4xx, auth, or model-config error, which are classified elsewhere)?
+ * @param {unknown} detail - response body text, err.message, or an Error
+ * @returns {boolean}
+ */
+export function isConnectionError(detail) {
+    const s = (typeof detail === 'string' ? detail : (detail?.message || detail?.name || '')).toLowerCase();
+    if (!s) return false;
+    return /econnrefused|enotfound|eai_again|econnreset|etimedout|ehostunreach|enetunreach|epipe|getaddrinfo|fetch failed|failed to fetch|socket hang up|connection refused|refused to connect|could not connect|err_invalid_url|invalid url|err_connection|net::err|network ?error|connection error|dns lookup/i.test(s);
+}
+
+/**
+ * Red, sticky, de-duped toast for a connection/URL failure. De-dup key is
+ * context+url, so a different endpoint warns afresh but a persistently-failing
+ * one doesn't spam on every retry / auto-sync tick.
+ * @param {string} contextLabel - 'Summarizer' | 'EventBase' | 'Agent Mode' | 'Embedding'
+ * @param {string} [url] - the endpoint the user configured (omit for fixed providers like OpenRouter)
+ * @param {string} [detail] - short upstream error snippet for diagnosis
+ */
+export function notifyConnectionError(contextLabel, url, detail) {
+    const key = `${contextLabel}|${url || ''}`;
+    if (_connNotified.has(key)) return;
+    _connNotified.add(key);
+    const where = url ? ` at ${url}` : '';
+    const why = detail ? ` (${String(detail).replace(/\s+/g, ' ').trim().slice(0, 160)})` : '';
+    try {
+        toastr.error(
+            `Couldn't connect to the ${contextLabel} endpoint${where}. Check the URL is correct and the server is running — we can't proceed until this is fixed.${why}`,
+            `VectFox — can't reach ${contextLabel}`,
+            { timeOut: 0, extendedTimeOut: 0 },
+        );
+    } catch (_) { /* toastr unavailable (e.g. unit tests) */ }
+}
+
+/** Forget prior connection notifications (parity with resetInvalidModelNotifications). */
+export function resetConnectionNotifications() {
+    _connNotified.clear();
+}
+
 /**
  * Turn OFF auto-sync for the current chat's EventBase collection(s) so a bad model
  * stops silently re-failing on every message. The user re-enables it after fixing

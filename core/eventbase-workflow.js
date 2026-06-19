@@ -70,7 +70,7 @@ export function getAutoSyncWindowSize(settings) {
  * @param {object}   params.settings    - VectFox settings
  * @param {AbortSignal|null} [params.abortSignal]
  * @param {{ strategy?: string, batchSize?: number, totalChunks?: number }|null} [params.progressPlan]
- * @returns {Promise<{ eventsExtracted: number, windowsProcessed: number, windowsSkipped: number }>}
+ * @returns {Promise<{ eventsExtracted: number, windowsProcessed: number, windowsSkipped: number, windowsTimedOut?: number }>}
  */
 export async function runEventBaseIngestion({ messages, chatUUID, settings, abortSignal = null, progressPlan = null, collectionIdOverride = null, parallelWindows = 3, isAutoSync = false, suppressAutoSyncPopup = false, skipTipFallback = false, windowSizeOverride = undefined, windowOverlapOverride = undefined }) {
     const uuid = chatUUID || getChatUUID();
@@ -260,6 +260,26 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
     let eventsExtracted = 0;
     let windowsProcessed = 0;
     let windowsSkipped = 0;
+    let windowsTimedOut = 0;
+
+    // First-timeout toast — fire once per run, the moment a window times out,
+    // instead of leaving the user staring at a silent "0 vectors" at the end
+    // (the #2 bug). A per-call timeout almost always means the model/endpoint is
+    // too slow or unreachable, so it's actionable. Shown regardless of the
+    // auto-sync popup/progress-modal settings because it's an error, not progress.
+    let _timeoutToastShown = false;
+    const _notifyFirstTimeout = () => {
+        if (_timeoutToastShown) return;
+        _timeoutToastShown = true;
+        const secs = Math.round((settings.eventbase_timeout_ms || 60000) / 1000);
+        try {
+            toastr.error(
+                `EventBase extraction timed out after ${secs}s. Raise "Extraction Timeout" in the EventBase settings, or check that your model/endpoint is responding. Events from timed-out windows were not stored.`,
+                'VectFox — EventBase timeout',
+                { timeOut: 0, extendedTimeOut: 0 },
+            );
+        } catch (_) { /* toastr unavailable (e.g. unit tests) */ }
+    };
 
     // Smart fast-forward: windows are processed in order, so already-extracted ones
     // cluster at the front. Linear-scan past them with cheap Set.has() lookups instead
@@ -418,12 +438,29 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                     const extractMs = performance.now() - extractStart;
                     log.verbose(`[EventBase concurrency] Window ${wIdx}: LLM extract done in ${extractMs.toFixed(0)}ms (finished at +${(performance.now() - batchStartedAt).toFixed(1)}ms from batch start)`);
                 } catch (err) {
-                    // User/request cancellation is expected and should not be logged as a failure.
-                    if (err?.name === 'AbortError' || abortSignal?.aborted) {
-                        log.verbose(`[EventBase] Window ${wIdx}: request aborted`);
+                    // Genuine user/request cancellation — expected, stay silent.
+                    // The user's abortSignal isn't wired into the extractor fetch
+                    // (it uses AbortSignal.timeout only), so a user cancel surfaces
+                    // here via abortSignal.aborted, not as the timeout below.
+                    if (abortSignal?.aborted) {
+                        log.verbose(`[EventBase] Window ${wIdx}: request aborted by user`);
                         return { skipped: true };
                     }
                     if (err instanceof EventBaseFatalError) throw err; // propagate
+                    // A per-call timeout (AbortSignal.timeout) rejects with a
+                    // TimeoutError — NOT a user cancel. Silently skipping it is the
+                    // #2 bug: every window times out → "0 vectors, no error". Detect
+                    // it (same test as agentic-retrieval.js), warn loudly, fire the
+                    // one-shot toast, and mark the window timedOut so the run reports it.
+                    const isTimeout = err?.name === 'TimeoutError'
+                        || err?.name === 'AbortError'
+                        || /aborted|timeout|timed out/i.test(err?.message || '');
+                    if (isTimeout) {
+                        const secs = Math.round((settings.eventbase_timeout_ms || 60000) / 1000);
+                        log.warn(`[EventBase] Window ${wIdx}: extraction TIMED OUT after ${secs}s (skipped). Raise "Extraction Timeout" in EventBase settings, or check your model/endpoint is responding.`);
+                        _notifyFirstTimeout();
+                        return { skipped: false, events: [], timedOut: true };
+                    }
                     if (err instanceof EventBaseExtractionError) {
                         log.warn(`[EventBase] Window ${wIdx}: extraction error (skipped) — ${err.message}`);
                         return { skipped: false, events: [] };
@@ -579,7 +616,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
 
         // Tally results, watch for fatal LLM errors (extract-side fatals
         // arrive as rejected promises in batchResults).
-        const tally = { eventsAdded: 0, windowsProcessed: 0, windowsSkipped: 0, fatalError: null };
+        const tally = { eventsAdded: 0, windowsProcessed: 0, windowsSkipped: 0, windowsTimedOut: 0, fatalError: null };
         for (const result of batchResults) {
             if (result.status === 'rejected') {
                 const err = result.reason;
@@ -591,6 +628,10 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             } else {
                 if (result.value?.skipped) {
                     tally.windowsSkipped++;
+                } else if (result.value?.timedOut) {
+                    // Counted separately — NOT as "processed" (it produced no events
+                    // and wasn't marked extracted, so it retries next run).
+                    tally.windowsTimedOut++;
                 } else {
                     tally.windowsProcessed++;
                     tally.eventsAdded += (result.value?.events?.length || 0);
@@ -658,7 +699,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                 try { await pendingExtract; } catch (_) { /* swallow */ }
             }
             progressTracker.complete(false, 'Stopped by user');
-            return { eventsExtracted, windowsProcessed, windowsSkipped };
+            return { eventsExtracted, windowsProcessed, windowsSkipped, windowsTimedOut };
         }
 
         // Decide what can start this iteration. Order is load-bearing:
@@ -752,7 +793,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
                 }
                 if (winner.error?.name === 'AbortError') {
                     progressTracker.complete(false, 'Stopped by user');
-                    return { eventsExtracted, windowsProcessed, windowsSkipped };
+                    return { eventsExtracted, windowsProcessed, windowsSkipped, windowsTimedOut };
                 }
                 // Surface the Qdrant error to the user. EventBaseFatalError
                 // is caught at the UI layer and turned into a popup.
@@ -774,6 +815,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
             eventsExtracted  += tally.eventsAdded;
             windowsProcessed += tally.windowsProcessed;
             windowsSkipped   += tally.windowsSkipped;
+            windowsTimedOut  += tally.windowsTimedOut;
             _updateProgressAfterFinalize(winner.extractResult);
         }
     }
@@ -831,9 +873,17 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         }
     }
 
-    progressTracker.complete(true, `EventBase: extracted ${eventsExtracted} event(s) from ${windowsProcessed} window(s)`);
+    // A timed-out window is a real failure (the immediate toast already told the
+    // user). Reflect it in the progress modal too rather than a misleading green
+    // "success" — especially when timeouts swallowed the whole run (0 events).
+    if (windowsTimedOut > 0) {
+        progressTracker.complete(false,
+            `EventBase: ${windowsTimedOut} window(s) timed out — ${eventsExtracted} event(s) extracted. See the timeout notice; raise "Extraction Timeout" or check your endpoint.`);
+    } else {
+        progressTracker.complete(true, `EventBase: extracted ${eventsExtracted} event(s) from ${windowsProcessed} window(s)`);
+    }
 
-    log.lifecycle(`[EventBase] Ingestion complete: extracted=${eventsExtracted}, processed=${windowsProcessed}, skipped=${windowsSkipped}`);
+    log.lifecycle(`[EventBase] Ingestion complete: extracted=${eventsExtracted}, processed=${windowsProcessed}, skipped=${windowsSkipped}, timedOut=${windowsTimedOut}`);
 
     // Record the window size used for this successful run. Vectorize Content →
     // Continue compares against this on the next click to detect window-size
@@ -852,7 +902,7 @@ export async function runEventBaseIngestion({ messages, chatUUID, settings, abor
         }));
     }
 
-    return { eventsExtracted, windowsProcessed, windowsSkipped };
+    return { eventsExtracted, windowsProcessed, windowsSkipped, windowsTimedOut };
 }
 
 // ---------------------------------------------------------------------------

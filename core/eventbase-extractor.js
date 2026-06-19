@@ -14,6 +14,7 @@
 import { getOpenRouterApiKey, getCustomApiKey } from './api-keys.js';
 import { getRequestHeaders } from '../../../../../script.js';
 import { getModelConfigErrorMessage } from './model-http-errors.js';
+import { isConnectionError, notifyConnectionError } from './model-config-notifier.js';
 import {
     EVENT_TYPES,
     EventBaseExtractionError,
@@ -385,6 +386,12 @@ async function _callOpenRouter(prompt, settings, windowIndex) {
         if (modelConfigError) {
             throw new EventBaseFatalError(modelConfigError, 'invalid_model_config');
         }
+        if (isConnectionError(errText)) {
+            notifyConnectionError('EventBase', null, errText);
+            // Fatal (not per-window): a connection failure hits every window, so
+            // stop the run immediately instead of retrying N times.
+            throw new EventBaseFatalError(`EventBase: couldn't reach OpenRouter — ${errText}`, 'connection_failed');
+        }
         throw new EventBaseExtractionError(
             `EventBase: OpenRouter HTTP ${response.status}: ${errText}`,
             windowIndex,
@@ -462,6 +469,10 @@ async function _callVLLM(prompt, settings, windowIndex) {
         });
         if (modelConfigError) {
             throw new EventBaseFatalError(modelConfigError, 'invalid_model_config');
+        }
+        if (isConnectionError(errText)) {
+            notifyConnectionError('EventBase', baseUrl, errText);
+            throw new EventBaseFatalError(`EventBase: couldn't reach ${baseUrl} — ${errText}`, 'connection_failed');
         }
         throw new EventBaseExtractionError(
             `EventBase: OpenAI-compatible HTTP ${response.status}: ${errText}`,

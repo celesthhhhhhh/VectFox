@@ -330,6 +330,19 @@ export async function synchronizeChat(settings, batchSize = 5, triggerEvent = nu
             chatUUID: uuid,
             settings,
             isAutoSync: true,
+            // Pin the write target to the collection we already resolved for the
+            // gate above. Without this, runEventBaseIngestion recomputes the ID via
+            // buildEventBaseCollectionId(uuid), whose char segment comes from the
+            // LIVE context.name2. In a group chat name2 is whichever character is
+            // speaking on this trigger, so each speaker's turn would manufacture and
+            // lock a NEW per-character EventBase collection for the same chat —
+            // scattering events across siblings the summarizer (which reads only the
+            // single resolveActiveEventBaseCollection) never sees. The resolved
+            // active collection IS the documented auto-sync write target
+            // (see Doc/collection_helper.md — resolveActiveEventBaseCollection).
+            // activeCollection is guaranteed non-null here: the autoSyncEnabled gate
+            // above bails when it's null.
+            collectionIdOverride: activeCollection.collectionId,
             // Suppress the popup when the trigger was the user sending a message —
             // the popup should only appear after the AI's reply, not mid-generation.
             // MESSAGE_RECEIVED (and edits/swipes/deletes) still get the popup.

@@ -75,9 +75,25 @@ export function getAutoSyncWindowSize(settings) {
 export async function runEventBaseIngestion({ messages, chatUUID, settings, abortSignal = null, progressPlan = null, collectionIdOverride = null, parallelWindows = 3, isAutoSync = false, suppressAutoSyncPopup = false, skipTipFallback = false, windowSizeOverride = undefined, windowOverlapOverride = undefined }) {
     const uuid = chatUUID || getChatUUID();
 
-    // Respect the global collection pause toggle before doing any extraction,
-    // ingestion, or insertion work. Pause is a hard stop regardless of chat locks.
-    const collectionId = collectionIdOverride || buildEventBaseCollectionId(uuid, settings?.vector_backend);
+    // Resolve the write target. Precedence:
+    //   1. Explicit override (archive uploads pass a fixed ID; auto-sync passes the
+    //      collection it already resolved for its gate).
+    //   2. The chat's ACTIVE collection from the registry — the source of truth.
+    //   3. A freshly-built ID, ONLY for first-time ingestion when no collection
+    //      exists yet (resolve returns null).
+    //
+    // Step 2 is load-bearing for group chats. buildEventBaseCollectionId derives the
+    // ID's char segment from the LIVE context.name2, which in a group chat is whoever
+    // is speaking on this trigger. Recomputing it per call would manufacture and lock
+    // a NEW per-character EventBase collection for the same chat every time a
+    // different character speaks, scattering events across siblings that the
+    // summarizer (which reads only resolveActiveEventBaseCollection) never sees.
+    // Trusting the registry instead of recomputing the ID is the rule in
+    // Doc/collection_helper.md — the registry is the source of truth for which
+    // collection holds a chat's data.
+    const collectionId = collectionIdOverride
+        || resolveActiveEventBaseCollection(settings, uuid)?.collectionId
+        || buildEventBaseCollectionId(uuid, settings?.vector_backend);
 
     // Lock to current chat at start so the index is populated even if vectorization is interrupted.
     // Archive collections are excluded — they are locked manually by the user.

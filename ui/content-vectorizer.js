@@ -1348,10 +1348,18 @@ function bindSourceEvents(type) {
         // Clear sourceData when switching tabs
         sourceData = null;
 
-        // Always hide chunking for chat uploads — EventBase uses its own window/overlap settings
+        // Chat's window controls (Parallel Windows / Window Size / Overlap) live in
+        // the chunking section and drive BOTH the live-chat and file-upload EventBase
+        // routes — both call runEventBaseIngestion, and the upload route reads
+        // #vectfox_cv_parallel_windows directly (see handleEventBaseVectorize). So keep
+        // the section visible on the Upload sub-tab too. updateChunkingSection() already
+        // hid the strategy/size controls and showed the window rows for the chat path,
+        // so a plain show() reveals exactly the right controls.
+        // (Was: hidden on upload — stale, predates the window controls being re-homed
+        //  into this section from the old EventBase tab, which silently dropped Parallel
+        //  Windows / Window Size / Overlap from the chat-upload screen.)
         if (currentContentType === 'chat') {
-            const hideChunking = source === 'upload';
-            $('.vectfox-cv-chunking-section').toggle(!hideChunking);
+            $('.vectfox-cv-chunking-section').show();
         }
     });
 

@@ -211,6 +211,16 @@ export function renderSettings(containerId, settings, callbacks) {
                                     <p class="vectfox-card-subtitle">Embedding provider and model</p>
                                 </div>
 
+                                <div style="margin: 4px 0 12px 0; padding: 8px 10px; border: 1px solid var(--crimson, #c0392b); border-left-width: 3px; border-radius: 4px; background: rgba(192, 57, 43, 0.08);">
+                                    <small style="color: var(--crimson, #e74c3c); font-weight: 600;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                        Do NOT change the embedding provider or model after a collection's first vectorization.
+                                    </small>
+                                    <small style="display: block; margin-top: 4px; opacity: 0.85;">
+                                        Existing vectors were built with the original model — mixing models in one collection breaks retrieval. To switch, re-vectorize the collection from scratch.
+                                    </small>
+                                </div>
+
                                 <label for="VectFox_source">
                                     <small>Embedding Provider</small>
                                 </label>

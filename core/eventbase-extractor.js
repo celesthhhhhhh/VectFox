@@ -520,7 +520,8 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     const msgRange = `msgs=${windowStart}-${windowEnd}`;
 
     // Build excerpt text from messages
-    const excerptLines = messages.map(m => {
+    let _reasoningMsgs = 0; // diagnostic: how many messages contributed a reasoning block
+    const excerptLines = messages.map((m, mi) => {
         const speaker = m.name || (m.is_user ? 'User' : 'Assistant');
         const text = cleanText(String(m.mes || '')).trim();
         // Date/time/location fallback for chats whose narrative has no inline date:
@@ -529,11 +530,19 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         // of events. Both shapes: live-chat ST objects (m.extra.reasoning) and
         // upload-path normalized objects (m.reasoning).
         const reasoning = String(m.extra?.reasoning ?? m.reasoning ?? '').trim();
+        // scene_time diagnostic: per-message reasoning presence + which field it came from.
+        const rsrc = m.extra?.reasoning ? 'extra.reasoning' : (m.reasoning ? 'reasoning' : 'none');
+        log.trace(`[EventBase][scene_time] win=${windowIndex} msg#${mi} "${speaker}": mes=${text.length}c reasoning=${reasoning.length}c src=${rsrc}`);
         if (!reasoning) return `${speaker}: ${text}`;
+        _reasoningMsgs++;
         const capped = StringUtils.truncateCodePoints(reasoning, REASONING_FEED_CHAR_CAP);
+        // Log the EXACT reasoning substring sent to the model (cap = REASONING_FEED_CHAR_CAP
+        // code points). Lets you confirm the date/time/location line survived the cut.
+        log.trace(`[EventBase][scene_time] win=${windowIndex} msg#${mi} REASONING SENT (${Array.from(capped).length}cp of ${Array.from(reasoning).length}cp original, cap=${REASONING_FEED_CHAR_CAP}):\n>>>${capped}<<<`);
         return `${speaker}: ${text}\n[REASONING — CONTEXT ONLY, for date/time/location; NOT a source of events]\n${capped}`;
     });
     const excerptText = excerptLines.join('\n\n');
+    log.trace(`[EventBase][scene_time] win=${windowIndex} ${msgRange}: ${_reasoningMsgs}/${messages.length} msgs had reasoning; excerpt contains REASONING block=${excerptText.includes('[REASONING')}`);
 
     if (!excerptText.trim()) {
         log.verbose('[EventBase] Skipping empty window');
@@ -556,6 +565,15 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     }
     const prompt = basePrompt;
     const provider = (settings.summarize_provider || 'openrouter').toLowerCase();
+
+    // scene_time diagnostic: confirm the ACTIVE prompt actually carries the new
+    // Rule 4 + scene_time field. If usingCustom=true and hasRule4=false, a saved
+    // custom prompt is overriding the built-in (the model is never told to mine
+    // date/time from the reasoning block, nor that scene_time exists).
+    const usingCustomPrompt = !!(settings.eventbase_custom_prompt && settings.eventbase_custom_prompt.trim());
+    log.trace(`[EventBase][scene_time] win=${windowIndex} prompt: usingCustom=${usingCustomPrompt}, hasRule4(REASONING BLOCKS)=${prompt.includes('REASONING BLOCKS')}, hasSceneTimeField=${prompt.includes('scene_time:')}, promptLen=${prompt.length}`);
+    // Full excerpt (the variable part actually sent) for deep inspection.
+    log.domain('raw_llm', 'trace', `[EventBase][scene_time] Full excerpt sent (window=${windowIndex} ${msgRange}):\n${excerptText}`);
 
     log.verbose(`[EventBase] Extracting events — window=${windowIndex} ${msgRange}, provider=${provider}, messages=${messages.length}`);
 
@@ -618,6 +636,11 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         if (errors.length > 0) {
             log.warn(`[EventBase] Window ${windowIndex} ${msgRange}, item ${i}: coercion warnings — ${errors.join('; ')}`);
         }
+
+        // scene_time diagnostic: what the model returned for the date/time/location
+        // fields, AND what the raw LLM object had for them before validation (so we
+        // can tell "model omitted it" from "validator dropped it").
+        log.trace(`[EventBase][scene_time] win=${windowIndex} item ${i}: raw.DateTime=${JSON.stringify(rawArray[i]?.DateTime)} raw.scene_time=${JSON.stringify(rawArray[i]?.scene_time)} | validated DateTime=${JSON.stringify(event.DateTime)} scene_time=${JSON.stringify(event.scene_time)} locations=${JSON.stringify(event.locations)}`);
 
         // Post-parse language sanity check (warn only — retained for visibility,
         // does not drop the event; retrieval quality may suffer if the summary

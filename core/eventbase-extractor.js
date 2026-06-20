@@ -25,7 +25,14 @@ import {
     EVENTBASE_SCHEMA_VERSION,
 } from './eventbase-schema.js';
 import { cleanText } from './text-cleaning.js';
+import StringUtils from '../utils/string-utils.js';
 import { log } from './log.js';
+
+// Cap each message's reasoning (chain-of-thought) fed to the extractor as a
+// date/time/location fallback. The MVU formats observed put the scene recap at
+// the TOP of the reasoning, so the head is the cheap place to find it. Tunable.
+// See plans/eventbase-scene-context-from-reasoning.md.
+const REASONING_FEED_CHAR_CAP = 100;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -516,7 +523,15 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     const excerptLines = messages.map(m => {
         const speaker = m.name || (m.is_user ? 'User' : 'Assistant');
         const text = cleanText(String(m.mes || '')).trim();
-        return `${speaker}: ${text}`;
+        // Date/time/location fallback for chats whose narrative has no inline date:
+        // append a capped, fenced reasoning block. The prompt's Rule 4 instructs the
+        // model to read it ONLY for DateTime/scene_time/locations, never as a source
+        // of events. Both shapes: live-chat ST objects (m.extra.reasoning) and
+        // upload-path normalized objects (m.reasoning).
+        const reasoning = String(m.extra?.reasoning ?? m.reasoning ?? '').trim();
+        if (!reasoning) return `${speaker}: ${text}`;
+        const capped = StringUtils.truncateCodePoints(reasoning, REASONING_FEED_CHAR_CAP);
+        return `${speaker}: ${text}\n[REASONING — CONTEXT ONLY, for date/time/location; NOT a source of events]\n${capped}`;
     });
     const excerptText = excerptLines.join('\n\n');
 

@@ -12,6 +12,7 @@
  * ============================================================================
  */
 import { getEventBaseExtractionPrompt } from './prompts-i18n.js';
+import StringUtils from '../utils/string-utils.js';
 
 /**
  * Controlled vocabulary for event_type field.
@@ -39,7 +40,10 @@ export const EVENT_TYPES = Object.freeze([
     'other',
 ]);
 
-export const EVENTBASE_SCHEMA_VERSION = 1;
+// 1.2 (2026-06-20): added optional `scene_time` (verbatim in-story date/time).
+// Float is safe — this constant is only stamped onto events + stored, never
+// compared or ordered. No re-extraction of older (v1) events is forced.
+export const EVENTBASE_SCHEMA_VERSION = 1.2;
 
 /**
  * Non-fatal extraction parse error (per-window; caller should log + skip).
@@ -174,6 +178,12 @@ export function validateEvent(raw) {
         importance,
         summary,
         DateTime: ensureDateTime(raw, errors),
+        // Verbatim in-story date/time, preserved exactly as written (any calendar/
+        // format/language). Companion to the ISO DateTime above — NOT parsed. Single
+        // line + capped to 100 code points so parseEmbedText round-trips it cleanly.
+        scene_time: typeof (/** @type {any} */ (raw)).scene_time === 'string'
+            ? StringUtils.truncateCodePoints((/** @type {any} */ (raw)).scene_time.replace(/\s+/g, ' ').trim(), 100)
+            : '',
         cause: typeof (/** @type {any} */ (raw)).cause === 'string' ? (/** @type {any} */ (raw)).cause.trim() : '',
         result: typeof (/** @type {any} */ (raw)).result === 'string' ? (/** @type {any} */ (raw)).result.trim() : '',
         characters: ensureArray((/** @type {any} */ (raw)).characters),
@@ -202,6 +212,7 @@ export function validateEvent(raw) {
 export function buildEmbedText(event) {
     const parts = [`[${event.event_type}] ${event.summary}`];
     if (event.DateTime) parts.push(`TIME: ${event.DateTime}`);
+    if (event.scene_time) parts.push(`SCENE_TIME: ${event.scene_time}`);
     if (event.cause) parts.push(`CAUSE: ${event.cause}`);
     if (event.result) parts.push(`RESULT: ${event.result}`);
     if (event.characters?.length) parts.push(`CHARS: ${event.characters.join(', ')}`);
@@ -220,15 +231,15 @@ export function buildEmbedText(event) {
 }
 
 const _ARRAY_KEYS = new Set(['CHARS', 'LOCS', 'ITEMS', 'KEYS', 'THREADS']);
-const _KEY_MAP = { TIME: 'DateTime', CAUSE: 'cause', RESULT: 'result', CHARS: 'characters', LOCS: 'locations', ITEMS: 'items', KEYS: 'keywords', THREADS: 'open_threads' };
+const _KEY_MAP = { TIME: 'DateTime', SCENE_TIME: 'scene_time', CAUSE: 'cause', RESULT: 'result', CHARS: 'characters', LOCS: 'locations', ITEMS: 'items', KEYS: 'keywords', THREADS: 'open_threads' };
 
 /**
  * Reverses buildEmbedText — parses a stored embed text string back into
  * EventBase content fields. Used by the native ST backend path where Vectra
  * only stores {hash, text, index} and structured metadata is unavailable.
  *
- * Recovers: event_type, summary, DateTime, cause, result, characters,
- *           locations, items, keywords, open_threads.
+ * Recovers: event_type, summary, DateTime, scene_time, cause, result,
+ *           characters, locations, items, keywords, open_threads.
  * Does NOT recover: importance, message_order, event_id, should_persist
  *                   (those were never written into the embed text).
  * @param {string} text

@@ -39,6 +39,7 @@ function _cleanEventForInjection(event) {
         message_order: event.source_window_end ?? null,
         summary: _summaryFromText(event.text),
         DateTime: event.DateTime || null,
+        scene_time: event.scene_time || '',
         cause: event.cause || '',
         result: event.result || '',
         characters: event.characters || [],
@@ -89,6 +90,7 @@ function _formatAsDenseText(events) {
             `message_order: ${event.message_order ?? '-'}`,
             `summary: ${event.summary || '-'}`,
             `DateTime: ${event.DateTime || '-'}`,
+            `scene_time: ${event.scene_time || '-'}`,
             `cause: ${event.cause || '-'}`,
             `result: ${event.result || '-'}`,
             `characters: ${_stringifyList(event.characters)}`,
@@ -116,6 +118,7 @@ function _formatAsSummaryOnly(events) {
             `message_order: ${event.message_order ?? '-'}`,
             `summary: ${event.summary || '-'}`,
             `DateTime: ${event.DateTime || '-'}`,
+            `scene_time: ${event.scene_time || '-'}`,
         ].join('\n');
     }).join('\n\n');
 }

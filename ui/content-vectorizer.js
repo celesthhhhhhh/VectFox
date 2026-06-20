@@ -2212,6 +2212,10 @@ async function handleChatFileUpload(e) {
                         mes: parsed.mes || parsed.text || parsed.content || '',
                         is_user: parsed.is_user || false,
                         send_date: parsed.send_date,
+                        // Preserved for EventBase: reasoning carries date/time/location
+                        // for older chats whose `mes` has no inline date (see
+                        // plans/eventbase-scene-context-from-reasoning.md).
+                        reasoning: parsed.extra?.reasoning || '',
                     });
                 }
 
@@ -2228,6 +2232,7 @@ async function handleChatFileUpload(e) {
                             mes: m.mes || m.text || m.content || '',
                             is_user: m.is_user || false,
                             send_date: m.send_date,
+                            reasoning: m.extra?.reasoning || '',
                         }));
                 } else if (data.chat || data.messages) {
                     // Object with chat/messages array — skip system messages
@@ -2240,6 +2245,7 @@ async function handleChatFileUpload(e) {
                             mes: m.mes || m.text || m.content || '',
                             is_user: m.is_user || false,
                             send_date: m.send_date,
+                            reasoning: m.extra?.reasoning || '',
                         }));
                 } else if (data.mes || data.text || data.content) {
                     // Single message object
@@ -2247,6 +2253,7 @@ async function handleChatFileUpload(e) {
                         name: data.name || 'Message',
                         mes: data.mes || data.text || data.content || '',
                         is_user: data.is_user || false,
+                        reasoning: data.extra?.reasoning || '',
                     }];
                 }
 

@@ -753,6 +753,21 @@ const _EXTRACTION_RULES_BODY =
 
    Sexual / intimate scenes: return [] UNLESS the scene contains a confession, promise, relationship change, revelation, or any narrative consequence that would still matter one week later. The intimacy itself is not the event — extract only what changes.
 
+4. REASONING BLOCKS — CONTEXT ONLY (DO NOT BREAK):
+   Some messages in the excerpt include a block marked exactly:
+       [REASONING — CONTEXT ONLY, for date/time/location; NOT a source of events]
+   This is the author-model's private planning/notes. It is NOT narrative, and what it
+   describes may be PLANNED but never actually happened.
+   - Use a reasoning block ONLY to fill DateTime, scene_time, and locations when the
+     narrative text itself does not state them. Prefer the narrative; fall back to the
+     reasoning block per-field (date from narrative, location from reasoning, etc.).
+   - NEVER extract an event from a reasoning block. NEVER treat an intended/planned
+     action inside it as something that occurred.
+   - NEVER copy reasoning text into summary, cause, result, characters, factions,
+     items, concepts, keywords, or open_threads.
+   - If a fact appears ONLY in a reasoning block and nowhere in the narrative, it did
+     NOT happen — ignore it (except date/time/location, which you may borrow as above).
+
 =========================
 OUTPUT SCHEMA
 =========================
@@ -789,9 +804,10 @@ Each event object MUST have these fields:
 - cause: short explanation of why it happened, SAME LANGUAGE AS EXCERPT (may be "")
 - result: outcome / state change, SAME LANGUAGE AS EXCERPT (may be "")
 - characters: array of proper-noun names, EXACT ORIGINAL SCRIPT
-- locations: array of strings, EXACT ORIGINAL SCRIPT
+- locations: array of strings, EXACT ORIGINAL SCRIPT, taken from the narrative OR a reasoning block (see Rule 4).
 - factions: array of strings, EXACT ORIGINAL SCRIPT
-- DateTime: ISO 8601 string (e.g., "2024-01-01T12:00:00Z") representing when the event occurred in the story timeline, if it can be determined from the excerpt; otherwise omit or set to null.
+- DateTime: ISO 8601 string (e.g., "2024-01-01T12:00:00Z") for when the event occurred in the story timeline, derived from the narrative OR a reasoning block (see Rule 4), if it can be determined; otherwise null. In-world calendar dates are fine (a year like 1577 is valid). If the date CANNOT be expressed as a real calendar date (e.g. "Day 3", "Third Age 47", a fictional calendar), leave DateTime null and put the original form in scene_time instead.
+- scene_time: the scene's date and/or time EXACTLY as written in the source — verbatim, any calendar or format, any language. Examples: "1577年8月17日 22:30", "早晨 8:00", "Day 3, dusk". Do NOT normalize, translate, or convert it (that is what DateTime is for). Take it from the narrative if stated there, otherwise from a reasoning block (see Rule 4). Use "" if no date/time is stated anywhere. Keep it to a single short line.
 - items: array of strings, EXACT ORIGINAL SCRIPT
 - concepts: array of 2-5 strings, SAME LANGUAGE AS EXCERPT.
   Concepts are ABSTRACT THEMES — the answer to "what is this event ABOUT,
@@ -834,31 +850,31 @@ Zero events (filler scene):
 // ── Per-language EXAMPLES (one localized example per variant) ────────────────
 const _EXTRACTION_EXAMPLES_INTL =
 `One event (English excerpt):
-[{"event_type":"relationship_change","importance":7,"summary":"Aria takes the blame for Leon's mistake in front of the commander, shielding him from punishment at personal cost. Leon is visibly shaken by her sacrifice and vows to repay her.","cause":"Leon froze during the mission briefing and Aria covered for him without hesitation.","result":"Leon feels indebted to Aria; their dynamic shifts from rivalry to fragile trust.","characters":["Aria","Leon","Commander Voss"],"locations":["Command Tent"],"factions":["Iron Company"],"DateTime":null,"items":[],"concepts":["sacrifice","debt","trust"],"keywords":["blame","shield","punishment","mistake","sacrifice","debt","trust","rivalry","vow","repay","commander","mission briefing","froze","covered"],"open_threads":["Will Leon repay Aria?","How will Commander Voss react if he finds out?"],"should_persist":true}]
+[{"event_type":"relationship_change","importance":7,"summary":"Aria takes the blame for Leon's mistake in front of the commander, shielding him from punishment at personal cost. Leon is visibly shaken by her sacrifice and vows to repay her.","cause":"Leon froze during the mission briefing and Aria covered for him without hesitation.","result":"Leon feels indebted to Aria; their dynamic shifts from rivalry to fragile trust.","characters":["Aria","Leon","Commander Voss"],"locations":["Command Tent"],"factions":["Iron Company"],"DateTime":null,"scene_time":"","items":[],"concepts":["sacrifice","debt","trust"],"keywords":["blame","shield","punishment","mistake","sacrifice","debt","trust","rivalry","vow","repay","commander","mission briefing","froze","covered"],"open_threads":["Will Leon repay Aria?","How will Commander Voss react if he finds out?"],"should_persist":true}]
 
 `;
 
 const _EXTRACTION_EXAMPLES_JIEBA =
 `One event (Simplified Chinese excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"师傅承诺帮梅拉寻找失踪的父亲暗影之翼。","cause":"梅拉在房间中央哭着请求帮助。","result":"寻找暗影之翼成为队伍的核心目标。","characters":["梅拉","师父"],"locations":["星月绿洲顶楼公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失踪的父亲","承诺","亲情"],"keywords":["暗影之翼","寻找父亲","承诺","哭泣","请求","失踪","核心目标","队伍任务","誓言","亲情"],"open_threads":["确定暗影之翼是生是死"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"师傅承诺帮梅拉寻找失踪的父亲暗影之翼。","cause":"梅拉在房间中央哭着请求帮助。","result":"寻找暗影之翼成为队伍的核心目标。","characters":["梅拉","师父"],"locations":["星月绿洲顶楼公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","scene_time":"","items":[],"concepts":["失踪的父亲","承诺","亲情"],"keywords":["暗影之翼","寻找父亲","承诺","哭泣","请求","失踪","核心目标","队伍任务","誓言","亲情"],"open_threads":["确定暗影之翼是生是死"],"should_persist":true}]
 
 `;
 
 const _EXTRACTION_EXAMPLES_JIEBA_TW =
 `One event (Traditional Chinese excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"師傅承諾幫梅拉尋找失蹤的父親暗影之翼。","cause":"梅拉在房間中央哭著請求幫助。","result":"尋找暗影之翼成為隊伍的核心目標。","characters":["梅拉","師父"],"locations":["星月綠洲頂樓公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["失蹤的父親","承諾","親情"],"keywords":["暗影之翼","尋找父親","承諾","哭泣","請求","失蹤","核心目標","隊伍任務","誓言","親情"],"open_threads":["確定暗影之翼是生是死"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"師傅承諾幫梅拉尋找失蹤的父親暗影之翼。","cause":"梅拉在房間中央哭著請求幫助。","result":"尋找暗影之翼成為隊伍的核心目標。","characters":["梅拉","師父"],"locations":["星月綠洲頂樓公寓"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","scene_time":"","items":[],"concepts":["失蹤的父親","承諾","親情"],"keywords":["暗影之翼","尋找父親","承諾","哭泣","請求","失蹤","核心目標","隊伍任務","誓言","親情"],"open_threads":["確定暗影之翼是生是死"],"should_persist":true}]
 
 `;
 
 const _EXTRACTION_EXAMPLES_TINY_SEGMENTER =
 `One event (Japanese excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"師匠はメイラの行方不明の父・影の翼を見つけることを約束した。","cause":"メイラが部屋の中央で泣きながら助けを求めた。","result":"影の翼の捜索がパーティーの中心目標となった。","characters":["メイラ","師匠"],"locations":["星月オアシス最上階アパート"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["行方不明の父","誓い","親子の絆"],"keywords":["影の翼","父の捜索","約束","泣く","懇願","行方不明","中心目標","パーティーの任務","誓い","親子の絆"],"open_threads":["影の翼の生死を確認する"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"師匠はメイラの行方不明の父・影の翼を見つけることを約束した。","cause":"メイラが部屋の中央で泣きながら助けを求めた。","result":"影の翼の捜索がパーティーの中心目標となった。","characters":["メイラ","師匠"],"locations":["星月オアシス最上階アパート"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","scene_time":"","items":[],"concepts":["行方不明の父","誓い","親子の絆"],"keywords":["影の翼","父の捜索","約束","泣く","懇願","行方不明","中心目標","パーティーの任務","誓い","親子の絆"],"open_threads":["影の翼の生死を確認する"],"should_persist":true}]
 
 `;
 
 const _EXTRACTION_EXAMPLES_KOREAN =
 `One event (Korean excerpt):
-[{"event_type":"promise_or_oath","importance":9,"summary":"스승은 메이라의 실종된 아버지 그림자의 날개를 찾아주기로 약속했다.","cause":"메이라가 방 한가운데서 울며 도움을 청했다.","result":"그림자의 날개를 찾는 것이 파티의 핵심 목표가 되었다.","characters":["메이라","스승"],"locations":["성월 오아시스 옥상 아파트"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","items":[],"concepts":["실종된 아버지","약속","부녀의 정"],"keywords":["그림자의 날개","아버지 찾기","약속","울음","간청","실종","핵심 목표","파티 임무","맹세","부녀의 정"],"open_threads":["그림자의 날개의 생사 확인"],"should_persist":true}]
+[{"event_type":"promise_or_oath","importance":9,"summary":"스승은 메이라의 실종된 아버지 그림자의 날개를 찾아주기로 약속했다.","cause":"메이라가 방 한가운데서 울며 도움을 청했다.","result":"그림자의 날개를 찾는 것이 파티의 핵심 목표가 되었다.","characters":["메이라","스승"],"locations":["성월 오아시스 옥상 아파트"],"factions":[],"DateTime":"2024-05-01T20:30:00Z","scene_time":"","items":[],"concepts":["실종된 아버지","약속","부녀의 정"],"keywords":["그림자의 날개","아버지 찾기","약속","울음","간청","실종","핵심 목표","파티 임무","맹세","부녀의 정"],"open_threads":["그림자의 날개의 생사 확인"],"should_persist":true}]
 
 `;
 
@@ -867,7 +883,7 @@ const _EXTRACTION_EXAMPLES_KOREAN =
 // output in whatever language the excerpt actually uses.
 const _EXTRACTION_EXAMPLES_OTHERS =
 `One event (English excerpt — apply the same field structure in your detected language):
-[{"event_type":"relationship_change","importance":7,"summary":"Aria takes the blame for Leon's mistake in front of the commander, shielding him from punishment at personal cost. Leon is visibly shaken by her sacrifice and vows to repay her.","cause":"Leon froze during the mission briefing and Aria covered for him without hesitation.","result":"Leon feels indebted to Aria; their dynamic shifts from rivalry to fragile trust.","characters":["Aria","Leon","Commander Voss"],"locations":["Command Tent"],"factions":["Iron Company"],"DateTime":null,"items":[],"concepts":["sacrifice","debt","trust"],"keywords":["blame","shield","punishment","mistake","sacrifice","debt","trust","rivalry","vow","repay","commander","mission briefing","froze","covered"],"open_threads":["Will Leon repay Aria?","How will Commander Voss react if he finds out?"],"should_persist":true}]
+[{"event_type":"relationship_change","importance":7,"summary":"Aria takes the blame for Leon's mistake in front of the commander, shielding him from punishment at personal cost. Leon is visibly shaken by her sacrifice and vows to repay her.","cause":"Leon froze during the mission briefing and Aria covered for him without hesitation.","result":"Leon feels indebted to Aria; their dynamic shifts from rivalry to fragile trust.","characters":["Aria","Leon","Commander Voss"],"locations":["Command Tent"],"factions":["Iron Company"],"DateTime":null,"scene_time":"","items":[],"concepts":["sacrifice","debt","trust"],"keywords":["blame","shield","punishment","mistake","sacrifice","debt","trust","rivalry","vow","repay","commander","mission briefing","froze","covered"],"open_threads":["Will Leon repay Aria?","How will Commander Voss react if he finds out?"],"should_persist":true}]
 
 `;
 

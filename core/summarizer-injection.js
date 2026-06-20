@@ -375,6 +375,7 @@ function _detailLines(meta) {
     if (arr(meta.locations).length) out.push(`Locations: ${arr(meta.locations).join(', ')}`);
     if (arr(meta.items).length) out.push(`Items: ${arr(meta.items).join(', ')}`);
     if (str(meta.DateTime)) out.push(`When: ${str(meta.DateTime)}`);
+    if (str(meta.scene_time)) out.push(`Scene time: ${str(meta.scene_time)}`);
     if (arr(meta.concepts).length) out.push(`Concepts: ${arr(meta.concepts).join(', ')}`);
     if (arr(meta.keywords).length) out.push(`Keywords: ${arr(meta.keywords).join(', ')}`);
     if (arr(meta.open_threads).length) out.push(`Open threads: ${arr(meta.open_threads).join(', ')}`);

@@ -51,6 +51,25 @@ const StringUtils = {
   },
 
   /**
+   * Hard-cap a string to N Unicode CODE POINTS (not UTF-16 code units), so it
+   * never splits a surrogate pair (emoji like 🗓️, rare CJK-extension ideographs)
+   * into a lone surrogate. No ellipsis, no word-boundary trim — a plain cap.
+   *
+   * Plain String.slice/substring count code units and would emit a broken
+   * "\uD83D" half-character mid-emoji. Used to bound reasoning fed to the LLM
+   * and the stored scene_time value (see plans/eventbase-scene-context-from-reasoning.md).
+   *
+   * @param {string} str - String to cap
+   * @param {number} max - Maximum number of code points
+   * @returns {string} str unchanged if within max, else its first `max` code points
+   */
+  truncateCodePoints(str, max) {
+    if (typeof str !== 'string' || max <= 0) return '';
+    const cp = Array.from(str);
+    return cp.length <= max ? str : cp.slice(0, max).join('');
+  },
+
+  /**
    * Strip HTML tags from string
    *
    * @param {string} str - String containing HTML

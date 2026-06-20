@@ -29,10 +29,14 @@ import StringUtils from '../utils/string-utils.js';
 import { log } from './log.js';
 
 // Cap each message's reasoning (chain-of-thought) fed to the extractor as a
-// date/time/location fallback. The MVU formats observed put the scene recap at
-// the TOP of the reasoning, so the head is the cheap place to find it. Tunable.
+// date/time/location fallback. Tunable — raise if a game places the scene recap
+// deeper in the reasoning. 100 was too small for the observed format, which
+// leads with an "INPUT" section and only states Time/Location in section 2
+// ("STORY") around char ~95-165 (see Doc/log.txt diagnosis 2026-06-20); 600
+// clears that with margin while still bounding pathologically long reasoning.
+// Cost is a few hundred input tokens per reasoning-bearing message.
 // See plans/eventbase-scene-context-from-reasoning.md.
-const REASONING_FEED_CHAR_CAP = 100;
+const REASONING_FEED_CHAR_CAP = 600;
 
 // ---------------------------------------------------------------------------
 // Constants

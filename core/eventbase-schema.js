@@ -41,9 +41,12 @@ export const EVENT_TYPES = Object.freeze([
 ]);
 
 // 1.2 (2026-06-20): added optional `scene_time` (verbatim in-story date/time).
+// 1.3 (2026-06-21): added `real_world_date` — the message's send_date stamped
+// as a deterministic real-world anchor (final date fallback). Ingestion-side
+// metadata, not an LLM field; older events simply lack it.
 // Float is safe — this constant is only stamped onto events + stored, never
 // compared or ordered. No re-extraction of older (v1) events is forced.
-export const EVENTBASE_SCHEMA_VERSION = 1.2;
+export const EVENTBASE_SCHEMA_VERSION = 1.3;
 
 /**
  * Non-fatal extraction parse error (per-window; caller should log + skip).

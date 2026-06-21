@@ -500,6 +500,38 @@ async function _callVLLM(prompt, settings, windowIndex) {
     return reply;
 }
 
+/**
+ * Resolve a real-world timestamp for an extraction window from the messages'
+ * `send_date` (SillyTavern stamps every message with one; the upload path
+ * preserves it). This is the FINAL date fallback: every event gets an absolute
+ * real-world anchor even when no in-story DateTime/scene_time can be mined from
+ * the narrative or reasoning.
+ *
+ * Deterministic metadata — NOT an LLM field, and deliberately kept OUT of the
+ * extraction excerpt so the model never mistakes the out-of-character send time
+ * (e.g. 2026) for the in-story DateTime (e.g. the year 1577). That separation is
+ * exactly why this lives here and needs no prompt change, unlike `reasoning`.
+ *
+ * Walks from the most recent message backward — the event's real-world time is
+ * best represented by the latest contributing message. Normalizes to ISO-8601
+ * when parseable; otherwise keeps the raw string so an unusual ST timestamp
+ * format is still captured. Returns null when no message carries a send_date.
+ *
+ * @param {object[]} messages
+ * @returns {string|null}
+ */
+function _resolveWindowRealWorldDate(messages) {
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const raw = messages[i]?.send_date;
+        if (raw == null) continue;
+        const s = String(raw).trim();
+        if (!s) continue;
+        const ms = Date.parse(s);
+        return Number.isNaN(ms) ? s : new Date(ms).toISOString();
+    }
+    return null;
+}
+
 // ---------------------------------------------------------------------------
 // Main extraction function
 // ---------------------------------------------------------------------------
@@ -631,6 +663,10 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
     // Validate + coerce each event
     const validatedEvents = [];
     const now = Date.now();
+    // Real-world send-time anchor stamped onto every event in this window — the
+    // final date fallback when no in-story DateTime/scene_time is available.
+    const realWorldDate = _resolveWindowRealWorldDate(messages);
+    log.trace(`[EventBase][scene_time] win=${windowIndex} real_world_date=${JSON.stringify(realWorldDate)} (from ${messages.length} msg send_date(s))`);
     for (let i = 0; i < rawArray.length; i++) {
         const { ok, errors, event } = validateEvent(rawArray[i]);
         if (!ok) {
@@ -672,6 +708,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
             source_window_start: windowStart,
             source_window_end: windowEnd,
             created_at: now,
+            real_world_date: realWorldDate, // ISO send_date anchor; null if none
             schema_version: EVENTBASE_SCHEMA_VERSION,
         });
     }

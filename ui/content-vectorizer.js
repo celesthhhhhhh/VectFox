@@ -2261,6 +2261,7 @@ async function handleChatFileUpload(e) {
                         name: data.name || 'Message',
                         mes: data.mes || data.text || data.content || '',
                         is_user: data.is_user || false,
+                        send_date: data.send_date,
                         reasoning: data.extra?.reasoning || '',
                     }];
                 }

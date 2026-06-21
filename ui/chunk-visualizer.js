@@ -153,6 +153,9 @@ function getChunkData(chunk) {
         concepts: chunk.metadata?.concepts || [],
         openThreads: chunk.metadata?.open_threads || [],
         eventItems: chunk.metadata?.items || [],
+        // Real-world send-time anchor (message send_date). Deterministic metadata,
+        // NOT part of the editable embed text — surfaced read-only in the info bar.
+        realWorldDate: chunk.metadata?.real_world_date || null,
     };
 }
 
@@ -697,6 +700,12 @@ function renderDetailPanel() {
                 <span class="vectfox-info-label">from Message</span>
                 <span class="vectfox-info-value">#${chunk.index}</span>
             </span>
+            ${data.realWorldDate ? `
+            <span class="vectfox-info-divider">•</span>
+            <span class="vectfox-info-item" title="Real-world send time of the source message (fallback date anchor — NOT the in-story TIME)">
+                <span class="vectfox-info-label">Real-world</span>
+                <span class="vectfox-info-value">${StringUtils.escapeHtml(String(data.realWorldDate))}</span>
+            </span>` : ''}
             <span class="vectfox-info-divider">•</span>
             <span class="vectfox-info-item vectfox-info-hash" title="Click to copy hash" id="VectFox_copy_hash">
                 <span class="vectfox-info-value">${chunk.hash}</span>

@@ -376,6 +376,12 @@ function _detailLines(meta) {
     if (arr(meta.items).length) out.push(`Items: ${arr(meta.items).join(', ')}`);
     if (str(meta.DateTime)) out.push(`When: ${str(meta.DateTime)}`);
     if (str(meta.scene_time)) out.push(`Scene time: ${str(meta.scene_time)}`);
+    // Real-world send-time fallback: surface ONLY when no in-story date/time was
+    // captured, so the event still carries a temporal anchor without injecting the
+    // out-of-character send timestamp on events that already have an in-story time.
+    if (!str(meta.DateTime) && !str(meta.scene_time) && str(meta.real_world_date)) {
+        out.push(`Real-world date: ${str(meta.real_world_date)}`);
+    }
     if (arr(meta.concepts).length) out.push(`Concepts: ${arr(meta.concepts).join(', ')}`);
     if (arr(meta.keywords).length) out.push(`Keywords: ${arr(meta.keywords).join(', ')}`);
     if (arr(meta.open_threads).length) out.push(`Open threads: ${arr(meta.open_threads).join(', ')}`);

@@ -760,6 +760,27 @@ export function isCollectionActiveForContext(collectionId, { chatId, characterId
     return false;
 }
 
+/**
+ * Key-tolerant wrapper over {@link isCollectionActiveForContext} — the single
+ * entry point for "is this collection active for the current chat/character?"
+ * when you hold raw keys instead of a getCollectionListing entry.
+ *
+ * Lock + scope metadata can live under EITHER key form: the DB Browser pause
+ * toggle and the registry write under the registry-key ("backend:id"), while the
+ * "Active for current chat" checkbox can write under the bare collectionId. So a
+ * caller that has a collection object must check both forms; this collapses that
+ * into one call so the active-resolution logic stays in one place. Returns true
+ * if active under ANY supplied form.
+ *
+ * @param {string|string[]} keys - registryKey and/or bare id (falsy entries skipped)
+ * @param {{chatId?: string, characterId?: string|number}} [context]
+ * @returns {boolean}
+ */
+export function isCollectionActiveForContextAnyKey(keys, context = {}) {
+    const list = Array.isArray(keys) ? keys : [keys];
+    return list.some(key => key && isCollectionActiveForContext(key, context));
+}
+
 // ============================================================================
 // LOCK FACADE — getLock / setLock
 // ============================================================================

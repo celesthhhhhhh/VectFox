@@ -65,6 +65,15 @@ export function renderSettings(containerId, settings, callbacks) {
                 </div>
                 <div class="inline-drawer-content">
 
+                    <!-- Master switch — global enable/disable for all VectFox runtime work -->
+                    <div class="vectfox-master-switch">
+                        <label class="checkbox_label" for="VectFox_master_enabled" style="font-weight: 600;">
+                            <input type="checkbox" id="VectFox_master_enabled" />
+                            <span>Enable VectFox</span>
+                        </label>
+                        <small class="VectFox_hint" id="VectFox_master_hint">Master switch. When off, VectFox stops all automatic retrieval injection, auto-sync, and lorebook injection. Manual tools (Database Browser, Vectorize Content) stay available.</small>
+                    </div>
+
                     <!-- Tab Navigation -->
                     <div class="vectfox-tabs">
                         <div class="vectfox-tab-nav-row">
@@ -1880,7 +1889,7 @@ export async function refreshAutoSyncCheckbox(settings) {
     const $hint = $('#VectFox_autosync_hint');
 
     const { getChatAutoSyncStatus } = await import('../core/eventbase-workflow.js');
-    const { isCollectionAutoSyncEnabled, isCollectionLockedToChat } = await import('../core/collection-metadata.js');
+    const { isCollectionAutoSyncEnabled, isCollectionActiveForContextAnyKey } = await import('../core/collection-metadata.js');
 
     const status = await getChatAutoSyncStatus(settings);
     const chatId = getCurrentChatId();
@@ -1912,7 +1921,8 @@ export async function refreshAutoSyncCheckbox(settings) {
     // Metadata is keyed by registry-key form ("backend:id").
     const lookupKey = status.registryKey || status.collectionId;
     const isEnabled = isCollectionAutoSyncEnabled(lookupKey);
-    const isLocked = chatId && isCollectionLockedToChat(lookupKey, chatId);
+    const isLocked = chatId && isCollectionActiveForContextAnyKey(
+        [status.registryKey, status.collectionId], { chatId });
     $checkbox.prop('checked', Boolean(isEnabled && isLocked));
     $hint.hide();
 
@@ -2279,6 +2289,27 @@ function bindSettingsEvents(settings, callbacks) {
     // Forward-declared like the cosine helper above. Hides the Summarizer
     // Injection group on standard+no-plugin (its listChunks returns no metadata).
     let _refreshSummarizerInjectionAvailability = null;
+
+    // Master switch — global enable/disable. Default ON (only false disables);
+    // mirrors core/feature-gate.js::isVectFoxEnabled so the UI and the runtime
+    // gates agree. Dims the rest of the panel when off as a visual cue.
+    const $masterSwitch = $('#VectFox_master_enabled');
+    const _applyMasterSwitchUI = (on) => {
+        $('#VectFox_settings .vectfox-tabs, #VectFox_settings .vectfox-card')
+            .css({ opacity: on ? '' : '0.5' });
+    };
+    $masterSwitch
+        .prop('checked', settings.enabled !== false)
+        .on('change', function() {
+            const on = $(this).prop('checked');
+            settings.enabled = on;
+            Object.assign(extension_settings.vectfox, settings);
+            saveSettingsDebounced();
+            _applyMasterSwitchUI(on);
+            toastr.info(on ? 'VectFox enabled' : 'VectFox disabled', 'VectFox');
+            log.lifecycle(`VectFox: master switch ${on ? 'ON' : 'OFF'}`);
+        });
+    _applyMasterSwitchUI(settings.enabled !== false);
 
     // Auto-sync enable/disable - now per-collection instead of global
     // Initial state is set by refreshAutoSyncCheckbox() after chat loads

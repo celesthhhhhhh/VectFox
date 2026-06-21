@@ -44,6 +44,11 @@ const MODULE_NAME = 'VectFox';
 
 // Default settings
 const defaultSettings = {
+    // Master switch — when false, VectFox does no automatic runtime work
+    // (retrieval injection, auto-sync, lorebook WI injection). Default ON.
+    // Single source of truth for reads: core/feature-gate.js::isVectFoxEnabled.
+    enabled: true,
+
     // Core vector settings
     source: 'transformers',
     vector_backend: 'qdrant', // Backend: 'standard' (ST Vectra) | 'qdrant'

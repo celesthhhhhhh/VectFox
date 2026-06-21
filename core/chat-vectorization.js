@@ -36,6 +36,7 @@ import { getRequestHeaders } from '../../../../../script.js';
 import { EXTENSION_PROMPT_TAG, HASH_CACHE_SIZE, RETRIEVAL_TIMEOUT_MS } from './constants.js';
 import AsyncUtils from '../utils/async-utils.js';
 import { log } from './log.js';
+import { isVectFoxEnabled } from './feature-gate.js';
 // Import from collection-ids.js - single source of truth for collection ID operations
 import {
     getChatUUID,
@@ -275,6 +276,12 @@ function trackChunkActivation(hash, messageCount) {
  */
 export async function synchronizeChat(settings, batchSize = 5, triggerEvent = null) {
     log.lifecycle(`[AutoSync] synchronizeChat: invoked (trigger=${triggerEvent || 'unknown'})`);
+
+    // Master switch: no auto-sync work while VectFox is disabled.
+    if (!isVectFoxEnabled(settings)) {
+        log.lifecycle('[AutoSync] BAIL: VectFox master switch OFF');
+        return { remaining: -1, messagesProcessed: 0, chunksCreated: 0 };
+    }
 
     const chatId = getCurrentChatId();
     if (!chatId) {
@@ -1285,6 +1292,14 @@ export async function rearrangeChat(chat, settings, type, { dryRun = false, test
                     setExtensionPrompt(posTag, '', 0, 0, false);
                 }
             }
+        }
+
+        // Master switch: inject nothing into live generation when disabled. Any
+        // stale injection was just cleared above. The dry-run query tester stays
+        // functional so users can still inspect retrieval while VectFox is off.
+        if (!dryRun && !isVectFoxEnabled(settings)) {
+            log.lifecycle('VectFox: master switch OFF — skipping retrieval/injection');
+            return;
         }
 
         if (!getCurrentChatId() || !Array.isArray(chat)) {

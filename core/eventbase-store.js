@@ -19,7 +19,7 @@ import { saveSettingsDebounced, getRequestHeaders, getCurrentChatId } from '../.
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { getChatUUID, buildEventBaseCollectionId, getRegistryBackend, COLLECTION_PREFIXES, parseRegistryKey, buildChatSearchPatterns, matchesPatterns } from './collection-ids.js';
 import { registerCollection, getCollectionRegistry, getCollectionListing } from './collection-loader.js';
-import { getChatLockedCollections, isCollectionLockedToChat } from './collection-metadata.js';
+import { getChatLockedCollections, isCollectionActiveForContextAnyKey } from './collection-metadata.js';
 import { buildEmbedText } from './eventbase-schema.js';
 import { log } from './log.js';
 
@@ -825,10 +825,23 @@ export function resolveActiveEventBaseCollection(settings, chatUUID) {
     const uuid = chatUUID || getChatUUID();
     if (!uuid) return null;
 
+    // Disambiguate persona collections: lock dominates, current backend
+    // tie-breaks, otherwise listing order. The lock index is keyed by the active
+    // chat id, so the lock is only meaningful when resolving the current chat.
+    // Computed up front because the ownership filter below also consults it.
+    const chatId = (uuid === getChatUUID()) ? getCurrentChatId() : null;
+    const isLocked = (m) => !!chatId && isCollectionActiveForContextAnyKey(
+        [m.registryKey, m.collectionId], { chatId });
+
     // Match by UUID (stable across legacy ID formats and character renames).
     const patterns = buildChatSearchPatterns(null, uuid);
-    const isEbMatch = ({ collectionId, registryKey, isOwn }) => {
-        if (!isOwn) return false;
+    const isEbMatch = (entry) => {
+        const { collectionId, registryKey, isOwn } = entry;
+        // Ownership-filtered — but an explicit per-chat lock is a deliberate
+        // user override of ownership (e.g. locking another persona's EventBase
+        // to this chat), so a locked collection stays eligible regardless of
+        // who created it. Without this the lock could never dominate below.
+        if (!isOwn && !isLocked(entry)) return false;
         const idLower = String(collectionId || '').toLowerCase();
         if (!idLower.startsWith('vf_eventbase_') && !idLower.includes('eventbase_')) return false;
         return matchesPatterns(collectionId, patterns) || matchesPatterns(registryKey, patterns);
@@ -836,13 +849,7 @@ export function resolveActiveEventBaseCollection(settings, chatUUID) {
     const ebMatches = getCollectionListing(settings).filter(isEbMatch);
     if (ebMatches.length === 0) return null;
 
-    // Disambiguate persona collections: lock dominates, current backend
-    // tie-breaks, otherwise listing order. The lock index is keyed by the active
-    // chat id, so the lock is only meaningful when resolving the current chat.
-    const chatId = (uuid === getChatUUID()) ? getCurrentChatId() : null;
     const wantBackend = getRegistryBackend(settings?.vector_backend);
-    const isLocked = (m) => !!chatId && (isCollectionLockedToChat(m.registryKey, chatId)
-                                      || isCollectionLockedToChat(m.collectionId, chatId));
     const rank = (m) => (isLocked(m) ? 0 : 10) + (m.backend === wantBackend ? 0 : 1);
     const active = ebMatches.slice().sort((a, b) => rank(a) - rank(b))[0];
     return { collectionId: active.collectionId, registryKey: active.registryKey };

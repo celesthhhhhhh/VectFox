@@ -25,7 +25,7 @@ import { getSavedHashes } from './core-vector-api.js';
 import { retrieveEvents } from './eventbase-retrieval.js';
 import { retrieveEventsWithAgent } from './agentic-retrieval.js';
 import { formatEventsForInjectionDetailed } from './eventbase-injection.js';
-import { isCollectionEnabled, isCollectionLockedToChat, setCollectionLock, setCollectionMeta } from './collection-metadata.js';
+import { isCollectionEnabled, isCollectionActiveForContextAnyKey, setCollectionLock, setCollectionMeta } from './collection-metadata.js';
 import { progressTracker } from '../ui/progress-tracker.js';
 import { log } from './log.js';
 
@@ -976,7 +976,7 @@ function _gatherArchiveEventCollections(currentChatId) {
             continue;
         }
 
-        const isLocked = candidateKeys.some(key => isCollectionLockedToChat(key, currentChatId));
+        const isLocked = isCollectionActiveForContextAnyKey(candidateKeys, { chatId: currentChatId });
         if (!isLocked) {
             log.trace(`[EventBase] Archive event collection skipped (not locked to chat): ${colId}`);
             continue;
@@ -1018,7 +1018,7 @@ function _gatherLockedEventBaseCollections(currentChatId) {
             continue;
         }
 
-        const isLocked = candidateKeys.some(key => isCollectionLockedToChat(key, currentChatId));
+        const isLocked = isCollectionActiveForContextAnyKey(candidateKeys, { chatId: currentChatId });
         if (!isLocked) {
             log.trace(`[EventBase] Live collection skipped (not locked to chat): ${colId}`);
             continue;

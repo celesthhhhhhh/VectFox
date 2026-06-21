@@ -22,6 +22,7 @@ import { detectLorebookRenames, showLorebookRenameModal, openDatabaseBrowserForR
 // exact ID (backend + handle + timestamp segments are not known at lookup time).
 import { eventSource, event_types, setExtensionPrompt, substituteParams, getCurrentChatId } from '../../../../../script.js';
 import { log } from './log.js';
+import { isVectFoxEnabled } from './feature-gate.js';
 
 // ============================================================================
 // WORLD INFO ACTIVATION HOOKS
@@ -386,6 +387,10 @@ async function handleGenerationStarted(type, options, dryRun) {
 
     // Always clear the previous lorebook injection first
     setExtensionPrompt(LOREBOOK_PROMPT_TAG, '', settings.position, settings.depth, false);
+
+    // Master switch: skip lorebook WI injection when VectFox is disabled (the
+    // stale injection was just cleared above).
+    if (!isVectFoxEnabled(settings)) return;
 
     try {
         const context = getContext();

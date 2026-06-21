@@ -2,6 +2,13 @@
  * VECTFOX - SETTINGS TAB NAVIGATION
  * ============================================================================ */
 
+/* Master switch — global enable/disable, sits above the tab nav */
+.vectfox-master-switch {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
+}
+
 /* Two-row tab nav */
 .vectfox-tabs {
     margin-bottom: 10px;

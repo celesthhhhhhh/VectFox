@@ -2322,6 +2322,7 @@ function bindSettingsEvents(settings, callbacks) {
             const { setCollectionAutoSync, setCollectionLock, removeCollectionLock } = await import('../core/collection-metadata.js');
             const status = await getChatAutoSyncStatus(settings);
             const chatId = getCurrentChatId();
+            log.lifecycle(`[AutoSync][checkbox] ${enabling ? 'CHECK' : 'UNCHECK'} → status.state=${status.state}, chatId=${chatId || '(none)'}, collection=${status.registryKey || status.collectionId || '(none)'}`);
 
             if (status.state === 'no-chat') {
                 toastr.warning('Open a chat first before enabling auto-sync');
@@ -2333,6 +2334,7 @@ function bindSettingsEvents(settings, callbacks) {
             if (enabling) {
                 if (status.state === 'no-collection') {
                     // No collection for this chat yet — send the user to vectorize first.
+                    log.lifecycle('[AutoSync][checkbox] state=no-collection → redirecting to Vectorize Content (resolveActiveEventBaseCollection found no eligible collection — see [EventBase][resolve] log above)');
                     $checkbox.prop('checked', false);
                     toastr.info('Vectorize your chat history first');
                     openContentVectorizer('chat');

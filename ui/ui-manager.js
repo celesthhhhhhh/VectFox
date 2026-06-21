@@ -3559,6 +3559,17 @@ function bindSettingsEvents(settings, callbacks) {
                 if (!$autosync.prop('checked')) {
                     $autosync.prop('checked', true).trigger('input');
                 }
+
+                // Ghosting is the summarizer's main payoff — the wiped turns rely on
+                // its injection for recall — so default it ON when the summarizer is
+                // enabled. Soft default, NOT a hard lock (unlike the 1-turn window):
+                // the ghost checkbox stays editable so the user can uncheck it. Reuses
+                // the ghost checkbox's own change handler so the setting + availability
+                // stay in sync.
+                const $ghost = $('#VectFox_eventbase_ghost_enabled');
+                if (!$ghost.prop('checked')) {
+                    $ghost.prop('checked', true).trigger('change');
+                }
             }
         });
 

@@ -2166,7 +2166,7 @@ async function showAutoSyncConfirmModal(allMatches, settings) {
                 // Use unified delete function - handles vectors, registry, AND metadata
                 const deleteSettings = {
                     ...settings,
-                    source: ghost.source || settings.source,
+                    source: ghost.source || settings.embedding_provider,
                 };
                 const result = await deleteCollection(ghost.collectionId, deleteSettings, ghost.registryKey);
 
@@ -3174,13 +3174,13 @@ function bindSettingsEvents(settings, callbacks) {
 
     // Embedding provider
     $('#VectFox_source')
-        .val(settings.source)
+        .val(settings.embedding_provider)
         .on('change', function() {
-            settings.source = String($(this).val());
+            settings.embedding_provider = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
-            toggleProviderSettings(settings.source, settings);
-            log.lifecycle(`VectFox: Embedding provider changed to ${settings.source}`);
+            toggleProviderSettings(settings.embedding_provider, settings);
+            log.lifecycle(`VectFox: Embedding provider changed to ${settings.embedding_provider}`);
             // Reset health cache since provider change may affect backend connectivity
             resetBackendHealth();
         });
@@ -4742,7 +4742,7 @@ function bindSettingsEvents(settings, callbacks) {
     });
 
     // Initialize provider-specific settings visibility
-    toggleProviderSettings(settings.source, settings);
+    toggleProviderSettings(settings.embedding_provider, settings);
 }
 
 /**
@@ -5073,7 +5073,7 @@ function copyDiagnosticsReport(results) {
     // Get current settings for the report
     const settings = extension_settings.vectfox;
     const backend = settings.vector_backend || 'qdrant';
-    const source = settings.source || 'none';
+    const source = settings.embedding_provider || 'none';
     const modelField = getModelField(source);
     const model = modelField ? (settings[modelField] || 'not set') : 'n/a (provider handles it)';
     const qdrantMode = settings.qdrant_mode || 'local';

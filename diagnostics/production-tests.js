@@ -31,7 +31,7 @@ async function cleanupTestCollection(collectionId, settings) {
         // Ignore purge errors - collection might already be empty
     }
     // Always unregister from registry to prevent ghost entries
-    const registryKey = `${settings.source}:${collectionId}`;
+    const registryKey = `${settings.embedding_provider}:${collectionId}`;
     unregisterCollection(registryKey);
     unregisterCollection(collectionId); // Also try without source prefix
 }
@@ -116,7 +116,7 @@ export async function sweepLeftoverTestCollections(settings) {
  */
 function getProviderBody(settings) {
     const body = {};
-    const source = settings.source;
+    const source = settings.embedding_provider;
     const modelField = getModelField(source);
 
     if (modelField && settings[modelField]) {
@@ -143,7 +143,7 @@ function getProviderBody(settings) {
  */
 function getPluginProviderParams(settings) {
     const params = {};
-    const source = settings.source;
+    const source = settings.embedding_provider;
 
     // Ollama needs apiUrl and keep param
     if (source === 'ollama') {
@@ -205,7 +205,7 @@ export async function testEmbeddingGeneration(settings) {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 text: testText,
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings, null),
                 // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
@@ -282,7 +282,7 @@ export async function testVectorStorage(settings) {
                     text: testText,
                     index: 0
                 }],
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings, null),
                 // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
@@ -633,7 +633,7 @@ export async function testPluginEmbeddingGeneration(settings) {
                     index: 0
                     // NOTE: No vector provided - plugin must generate it
                 }],
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings, null),
                 // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
@@ -659,7 +659,7 @@ export async function testPluginEmbeddingGeneration(settings) {
                 collectionId: testCollectionId,
                 searchText: testText,
                 topK: 1,
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings, null),
                 // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),

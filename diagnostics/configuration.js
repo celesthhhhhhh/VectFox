@@ -211,7 +211,7 @@ export function checkVisualizerApiReadiness(settings) {
     }
 
     // Check for required source configuration
-    if (!settings.source) {
+    if (!settings.embedding_provider) {
         return {
             name: 'Visualizer API',
             status: 'fail',
@@ -233,7 +233,7 @@ export function checkVisualizerApiReadiness(settings) {
     return {
         name: 'Visualizer API',
         status: 'pass',
-        message: `Ready for vector operations (source: ${settings.source}, backend: ${settings.vector_backend || 'standard'})`,
+        message: `Ready for vector operations (source: ${settings.embedding_provider}, backend: ${settings.vector_backend || 'standard'})`,
         category: 'configuration'
     };
 }

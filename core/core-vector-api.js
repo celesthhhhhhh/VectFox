@@ -353,7 +353,7 @@ function stripFormatting(text) {
  */
 export function getVectorsRequestBody(args = {}, settings) {
     const body = Object.assign({}, args);
-    switch (settings.source) {
+    switch (settings.embedding_provider) {
         case 'openrouter':
             body.model = settings.embedding_openrouter_model;
             break;
@@ -399,7 +399,7 @@ export function getVectorsRequestBody(args = {}, settings) {
  */
 export async function getAdditionalArgs(items, settings, onProgress = null) {
     const args = {};
-    switch (settings.source) {
+    switch (settings.embedding_provider) {
         // case 'webllm': args.embeddings = await createWebLlmEmbeddings(items, settings); break;
         // case 'koboldcpp': { const { embeddings, model } = await createKoboldCppEmbeddings(items, settings, onProgress); args.embeddings = embeddings; args.model = model; break; }
     }
@@ -550,7 +550,7 @@ async function createKoboldCppEmbeddings(items, settings, onProgress = null) {
  * @param {object} settings VectFox settings object
  */
 export function throwIfSourceInvalid(settings) {
-    const source = settings.source;
+    const source = settings.embedding_provider;
     const config = getProviderConfig(source);
 
     if (!config) {
@@ -622,7 +622,7 @@ export async function getSavedHashes(collectionId, settings, includeMetadata = f
             body: JSON.stringify({
                 backend: backendName === 'standard' ? 'vectra' : backendName,
                 collectionId: collectionId,
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings),
                 limit: 10000
             })
@@ -663,8 +663,8 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
 
     try {
         // If source requires client-side embeddings, use streaming approach
-        if (clientSideEmbeddingSources.includes(settings.source)) {
-            log.lifecycle(`VectFox: Streaming embeddings and writing for ${settings.source}...`);
+        if (clientSideEmbeddingSources.includes(settings.embedding_provider)) {
+            log.lifecycle(`VectFox: Streaming embeddings and writing for ${settings.embedding_provider}...`);
 
             // Extract text strings - getAdditionalArgs expects string[], not objects
             const textStrings = items.map(item => {
@@ -710,7 +710,7 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
             const groupEmbeddingCall = settings?.vector_group_embedding_call === true;
             const shouldParallelSplit = (
                 !groupEmbeddingCall
-                && !localGpuSources.has(settings.source)
+                && !localGpuSources.has(settings.embedding_provider)
                 && !hasRateLimit
                 && items.length > 1
             );
@@ -719,7 +719,7 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
             // Also force 1-item batches when parallel-split experiment is active.
             const BATCH_SIZE = shouldParallelSplit
                 ? 1
-                : ((!hasExplicitBatchSize && localGpuSources.has(settings.source)) ? 1 : configuredBatchSize);
+                : ((!hasExplicitBatchSize && localGpuSources.has(settings.embedding_provider)) ? 1 : configuredBatchSize);
             const batches = chunkArray(items, BATCH_SIZE);
 
             log.verbose(`VectFox: Processing ${items.length} items in ${batches.length} batch(es) of up to ${BATCH_SIZE}${hasRateLimit ? ` with rate limit (Max ${settings.rate_limit_calls} calls / ${settings.rate_limit_interval}s)` : ''}${shouldParallelSplit ? ` [parallel-split: ${batches.length} concurrent POSTs in waves of up to 16]` : ''}`);
@@ -735,7 +735,7 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
             const HEDGE_MAX_COUNT = 3;
             const hedgeEnabled = (
                 rawHedgeAfterMs > 0
-                && !localGpuSources.has(settings.source)
+                && !localGpuSources.has(settings.embedding_provider)
             );
             const hedgeAfterMs = hedgeEnabled ? rawHedgeAfterMs : 0;
 
@@ -754,7 +754,7 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
                     const attemptStart = performance.now();
                     const debugOn = log.enabled('verbose');
                     log.verbose(
-                        `VectFox: insert batch ${batchIdx}/${batches.length} attempt ${attemptCount}/${RETRY_CONFIG.maxAttempts} — POST ${batchItemCount} item(s) via ${settings.source}${hedgeEnabled ? ' [hedge armed]' : ''}`,
+                        `VectFox: insert batch ${batchIdx}/${batches.length} attempt ${attemptCount}/${RETRY_CONFIG.maxAttempts} — POST ${batchItemCount} item(s) via ${settings.embedding_provider}${hedgeEnabled ? ' [hedge armed]' : ''}`,
                     );
                     try {
                         if (abortSignal?.aborted) throw Object.assign(new Error('Vectorization stopped by user'), { name: 'AbortError' });
@@ -764,7 +764,7 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
                                 debugOn,
                                 batchIdx,
                                 totalBatches: batches.length,
-                                provider: settings.source,
+                                provider: settings.embedding_provider,
                             });
                         } else {
                             await insertCall();
@@ -787,7 +787,7 @@ export async function insertVectorItems(collectionId, items, settings, onProgres
                         if (debugOn) {
                             const elapsed = ((performance.now() - attemptStart) / 1000).toFixed(1);
                             log.warn(
-                                `VectFox: insert batch ${batchIdx}/${batches.length} attempt ${attemptCount}/${RETRY_CONFIG.maxAttempts} FAILED after ${elapsed}s — ${err?.name || 'Error'}: ${err?.message || err} (provider=${settings.source}, items=${batchItemCount})`,
+                                `VectFox: insert batch ${batchIdx}/${batches.length} attempt ${attemptCount}/${RETRY_CONFIG.maxAttempts} FAILED after ${elapsed}s — ${err?.name || 'Error'}: ${err?.message || err} (provider=${settings.embedding_provider}, items=${batchItemCount})`,
                             );
                         }
                         throw err;
@@ -906,7 +906,7 @@ async function streamEmbeddingsAndWrite(backend, collectionId, items, textString
             // configured embedding URL (URL-based providers only) for the toast.
             if (isConnectionError(error?.message)) {
                 let embedUrl = null;
-                try { embedUrl = resolveProviderApiUrl(settings, settings.source) || null; } catch (_) { /* not a URL provider */ }
+                try { embedUrl = resolveProviderApiUrl(settings, settings.embedding_provider) || null; } catch (_) { /* not a URL provider */ }
                 notifyConnectionError('Embedding', embedUrl, error.message);
             }
             throw Object.assign(
@@ -916,7 +916,7 @@ async function streamEmbeddingsAndWrite(backend, collectionId, items, textString
         }
 
         if (!additionalArgs.embeddings) {
-            throw new Error(`VectFox: No embeddings returned from ${settings.source} for batch ${batchNum}`);
+            throw new Error(`VectFox: No embeddings returned from ${settings.embedding_provider} for batch ${batchNum}`);
         }
 
         // Attach embeddings to items and validate
@@ -944,7 +944,7 @@ async function streamEmbeddingsAndWrite(backend, collectionId, items, textString
         }
 
         if (missingEmbeddings > 0) {
-            throw new Error(`VectFox: Failed to generate embeddings for ${settings.source} - ${missingEmbeddings} items missing in batch`);
+            throw new Error(`VectFox: Failed to generate embeddings for ${settings.embedding_provider} - ${missingEmbeddings} items missing in batch`);
         }
 
         // VEC-6: Write batch to database with retry logic
@@ -1024,21 +1024,21 @@ export async function queryCollection(collectionId, searchText, topK, settings, 
     let queryVector = null;
 
     // If source requires client-side embeddings, generate query vector
-    if (clientSideEmbeddingSources.includes(settings.source)) {
+    if (clientSideEmbeddingSources.includes(settings.embedding_provider)) {
         const queryItem = [searchText];
         try {
             const additionalArgs = await getAdditionalArgs(queryItem, settings);
             // additionalArgs.embeddings is a Record<string, number[]> where keys are original text
             if (additionalArgs.embeddings && additionalArgs.embeddings[searchText]) {
                 queryVector = additionalArgs.embeddings[searchText];
-                log.verbose(`[EventBase] Embedding model (${settings.source}) returned vector: dim=${queryVector.length}, first5=[${queryVector.slice(0, 5).map(v => v.toFixed(4)).join(', ')}], last5=[${queryVector.slice(-5).map(v => v.toFixed(4)).join(', ')}], model=${additionalArgs.model || 'n/a'}`);
+                log.verbose(`[EventBase] Embedding model (${settings.embedding_provider}) returned vector: dim=${queryVector.length}, first5=[${queryVector.slice(0, 5).map(v => v.toFixed(4)).join(', ')}], last5=[${queryVector.slice(-5).map(v => v.toFixed(4)).join(', ')}], model=${additionalArgs.model || 'n/a'}`);
             } else {
                 // VEC-35: Fallback to server-side embedding instead of failing completely
-                log.warn(`[VectFox] Client-side embedding generation returned empty result for ${settings.source}, falling back to server-side embedding`);
+                log.warn(`[VectFox] Client-side embedding generation returned empty result for ${settings.embedding_provider}, falling back to server-side embedding`);
             }
         } catch (clientEmbedError) {
             // VEC-35: Fallback to server-side embedding when client-side fails
-            log.warn(`[VectFox] Client-side embedding failed for ${settings.source}: ${clientEmbedError.message}. Falling back to server-side embedding.`);
+            log.warn(`[VectFox] Client-side embedding failed for ${settings.embedding_provider}: ${clientEmbedError.message}. Falling back to server-side embedding.`);
         }
     }
 
@@ -1211,7 +1211,7 @@ export async function queryMultipleCollections(collectionIds, searchText, topK, 
     let queryVector = null;
 
     // Generate query vector once for all collections (efficiency)
-    if (clientSideEmbeddingSources.includes(settings.source)) {
+    if (clientSideEmbeddingSources.includes(settings.embedding_provider)) {
         try {
             // getAdditionalArgs expects string[], not objects
             const additionalArgs = await getAdditionalArgs([searchText], settings);
@@ -1220,11 +1220,11 @@ export async function queryMultipleCollections(collectionIds, searchText, topK, 
                 queryVector = additionalArgs.embeddings[searchText];
             } else {
                 // VEC-35: Fallback to server-side embedding instead of failing completely
-                log.warn(`[VectFox] Client-side embedding generation returned empty result for ${settings.source}, falling back to server-side embedding`);
+                log.warn(`[VectFox] Client-side embedding generation returned empty result for ${settings.embedding_provider}, falling back to server-side embedding`);
             }
         } catch (clientEmbedError) {
             // VEC-35: Fallback to server-side embedding when client-side fails
-            log.warn(`[VectFox] Client-side embedding failed for ${settings.source}: ${clientEmbedError.message}. Falling back to server-side embedding.`);
+            log.warn(`[VectFox] Client-side embedding failed for ${settings.embedding_provider}: ${clientEmbedError.message}. Falling back to server-side embedding.`);
         }
     }
 

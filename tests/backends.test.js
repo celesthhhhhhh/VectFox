@@ -109,11 +109,11 @@ function mockFetchError(status, message) {
  * Default test settings
  */
 const defaultSettings = {
-    source: 'transformers',
+    embedding_provider: 'transformers',
     score_threshold: 0.25,
     openai_model: 'text-embedding-ada-002',
     cohere_model: 'embed-english-v3.0',
-    ollama_model: 'mxbai-embed-large',
+    embedding_ollama_model: 'mxbai-embed-large',
 };
 
 /**

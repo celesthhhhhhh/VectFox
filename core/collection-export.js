@@ -84,7 +84,7 @@ async function fetchChunksWithVectors(collectionId, settings) {
         body: JSON.stringify({
             backend: backendName === 'standard' ? 'vectra' : backendName,
             collectionId: collectionId,
-            source: settings.source || 'transformers',
+            source: settings.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
             limit: 50000, // High limit to get all chunks
             includeVectors: true, // Include the actual embedding vectors
@@ -125,7 +125,7 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
     const exportSettings = {
         ...settings,
         vector_backend: collectionInfo.backend || settings.vector_backend,
-        source: collectionInfo.source || settings.source,
+        source: collectionInfo.source || settings.embedding_provider,
     };
 
     try {
@@ -187,7 +187,7 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
             // NOTE: source + model must match for vectors to be compatible
             // backend is just storage location - vectors work across backends
             embedding: {
-                source: exportSettings.source || 'transformers',
+                source: exportSettings.embedding_provider || 'transformers',
                 model: getModelFromSettings(exportSettings),
                 backend: exportSettings.vector_backend || 'standard', // For reference only
                 dimension: vectorDimension,
@@ -465,10 +465,10 @@ export function validateImportData(data, currentSettings = {}) {
             embeddingInfo = col.embedding;
             const hasVectors = col.chunks?.some(c => c.vector);
 
-            if (hasVectors && currentSettings.source) {
+            if (hasVectors && currentSettings.embedding_provider) {
                 // Check if current settings match export
                 const currentModel = getModelFromSettings(currentSettings);
-                const sourceMatch = col.embedding.source === currentSettings.source;
+                const sourceMatch = col.embedding.source === currentSettings.embedding_provider;
                 const modelMatch = !col.embedding.model || !currentModel ||
                     col.embedding.model === currentModel;
 
@@ -476,7 +476,7 @@ export function validateImportData(data, currentSettings = {}) {
                     compatible = false;
                     warnings.push(
                         `Embedding mismatch: Export used ${col.embedding.source}/${col.embedding.model || 'default'}, ` +
-                        `but you're using ${currentSettings.source}/${currentModel || 'default'}. ` +
+                        `but you're using ${currentSettings.embedding_provider}/${currentModel || 'default'}. ` +
                         `Switch your settings to match, or vectors will be re-embedded.`
                     );
                 }
@@ -555,7 +555,7 @@ async function insertChunksWithVectors(collectionId, chunks, settings, onBatchPr
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
                     collectionId,
-                    source: settings.source || 'transformers',
+                    source: settings.embedding_provider || 'transformers',
                     model,
                     items: batch.map(item => ({
                         hash: item.hash,
@@ -572,7 +572,7 @@ async function insertChunksWithVectors(collectionId, chunks, settings, onBatchPr
                 body: JSON.stringify({
                     backend: backendName === 'standard' ? 'vectra' : backendName,
                     collectionId,
-                    source: settings.source || 'transformers',
+                    source: settings.embedding_provider || 'transformers',
                     model,
                     items: batch,
                     // qdrant requires nativeSparse=true so the collection is created with text_sparse
@@ -711,7 +711,7 @@ export async function importCollection(exportData, settings, options = {}) {
     const chunksWithVectors = validChunks.filter(c => c.vector && Array.isArray(c.vector));
     const canUseVectors = !options.forceReembed &&
         chunksWithVectors.length === validChunks.length &&
-        embeddingInfo.source === settings.source &&
+        embeddingInfo.source === settings.embedding_provider &&
         (!embeddingInfo.model || !getModelFromSettings(settings) || embeddingInfo.model === getModelFromSettings(settings));
 
     const totalSteps = 4;
@@ -1001,7 +1001,7 @@ async function importCollectionSilent(exportData, settings, options = {}) {
     const chunksWithVectors = validChunks.filter(c => c.vector && Array.isArray(c.vector));
     const canUseVectors = !options.forceReembed &&
         chunksWithVectors.length === validChunks.length &&
-        embeddingInfo.source === settings.source &&
+        embeddingInfo.source === settings.embedding_provider &&
         (!embeddingInfo.model || !getModelFromSettings(settings) || embeddingInfo.model === getModelFromSettings(settings));
 
     // Handle existing collection

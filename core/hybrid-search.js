@@ -139,7 +139,7 @@ async function clientSideHybridSearch(backend, collectionId, searchText, topK, s
 
     // 1. Vector search
     log.verbose(`[HybridSearch] Fetching ${expandedTopK} vector results from collection: ${collectionId}`);
-    log.verbose(`[HybridSearch] Backend: ${backend.constructor.name}, Source: ${settings.source}`);
+    log.verbose(`[HybridSearch] Backend: ${backend.constructor.name}, Source: ${settings.embedding_provider}`);
 
     let vectorResults;
     try {

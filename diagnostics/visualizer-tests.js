@@ -42,7 +42,7 @@ async function cleanupTestCollection(collectionId, settings) {
         // Ignore purge errors - collection might already be empty
     }
     // Always unregister from registry to prevent ghost entries
-    const registryKey = `${settings.source}:${collectionId}`;
+    const registryKey = `${settings.embedding_provider}:${collectionId}`;
     unregisterCollection(registryKey);
     unregisterCollection(collectionId); // Also try without source prefix
 }
@@ -69,7 +69,7 @@ export function checkVisualizerSettings(settings) {
         };
     }
 
-    if (!settings.source) {
+    if (!settings.embedding_provider) {
         return {
             name: 'Visualizer Settings',
             status: 'fail',
@@ -79,7 +79,7 @@ export function checkVisualizerSettings(settings) {
     }
 
     const backend = settings.vector_backend || 'standard';
-    const source = settings.source;
+    const source = settings.embedding_provider;
 
     return {
         name: 'Visualizer Settings',
@@ -222,7 +222,7 @@ export function checkMetadataOperations() {
  * Check: Vector insert capability
  */
 export async function checkVectorInsert(settings) {
-    if (!settings || !settings.source) {
+    if (!settings || !settings.embedding_provider) {
         return {
             name: 'Vector Insert',
             status: 'skipped',
@@ -280,7 +280,7 @@ export async function checkVectorInsert(settings) {
  * Check: Vector delete capability
  */
 export async function checkVectorDelete(settings) {
-    if (!settings || !settings.source) {
+    if (!settings || !settings.embedding_provider) {
         return {
             name: 'Vector Delete',
             status: 'skipped',
@@ -355,7 +355,7 @@ export async function checkVectorDelete(settings) {
  * Tests: delete old → insert new → migrate metadata
  */
 export async function checkReVectorization(settings) {
-    if (!settings || !settings.source) {
+    if (!settings || !settings.embedding_provider) {
         return {
             name: 'Re-Vectorization',
             status: 'skipped',
@@ -467,7 +467,7 @@ export async function checkReVectorization(settings) {
  * Check: Summary vector creation (dual-vector)
  */
 export async function checkSummaryVectorCreate(settings) {
-    if (!settings || !settings.source) {
+    if (!settings || !settings.embedding_provider) {
         return {
             name: 'Summary Vector Create',
             status: 'skipped',
@@ -557,7 +557,7 @@ export async function checkSummaryVectorCreate(settings) {
  * Check: Summary vector deletion
  */
 export async function checkSummaryVectorDelete(settings) {
-    if (!settings || !settings.source) {
+    if (!settings || !settings.embedding_provider) {
         return {
             name: 'Summary Vector Delete',
             status: 'skipped',
@@ -641,7 +641,7 @@ export async function checkSummaryVectorDelete(settings) {
  * Tests how quickly the backend responds to basic operations
  */
 export async function checkBackendResponsiveness(settings) {
-    if (!settings || !settings.source) {
+    if (!settings || !settings.embedding_provider) {
         return {
             name: 'Backend Responsiveness',
             status: 'skipped',

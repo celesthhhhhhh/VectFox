@@ -58,7 +58,7 @@ function _warnDimensionMismatch(errorBody) {
 // embedding provider is the bottleneck — not Qdrant. This note is appended to
 // query-failure logs so the embedding step is never misattributed to Qdrant.
 function _embedTimeoutHint(settings) {
-    const source = settings?.source || 'transformers';
+    const source = settings?.embedding_provider || 'transformers';
     return `NOTE: this request embeds server-side via '${source}' before querying Qdrant. Qdrant on LAN answers in <50ms, so a timeout/504 here points to the embedding provider ('${source}'), NOT Qdrant.`;
 }
 
@@ -70,7 +70,7 @@ const MULTITENANCY_COLLECTION = 'vectfox_main';
 function getPluginProviderParams(settings) {
     const params = {};
 
-    switch (settings.source) {
+    switch (settings.embedding_provider) {
         case 'ollama':
             params.apiUrl = resolveProviderApiUrl(settings, 'ollama');
             params.keep = !!settings.ollama_keep;
@@ -253,7 +253,7 @@ export class QdrantBackend extends VectorBackend {
         const body = {
             backend: BACKEND_TYPE,
             collectionId: actualCollectionId,
-            source: settings.source || 'transformers',
+            source: settings.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
             limit: VECTOR_LIST_LIMIT,
         };
@@ -352,7 +352,7 @@ export class QdrantBackend extends VectorBackend {
                             sparseVector: encodeSparseVector(textWithKeywords),
                         };
                     }),
-                    source: settings.source || 'transformers',
+                    source: settings.embedding_provider || 'transformers',
                     model: getModelFromSettings(settings),
                     nativeSparse: true,
                     cjkTokenizerMode: settings.cjk_tokenizer_mode,
@@ -382,7 +382,7 @@ export class QdrantBackend extends VectorBackend {
 
                 throwIfModelConfigError({
                     contextLabel: 'Embedding',
-                    provider: settings.source,
+                    provider: settings.embedding_provider,
                     model: getModelFromSettings(settings),
                     status: response.status,
                     responseText: errorBody,
@@ -420,7 +420,7 @@ export class QdrantBackend extends VectorBackend {
             backend: BACKEND_TYPE,
             collectionId: actualCollectionId,
             hashes: hashes,
-            source: settings.source || 'transformers',
+            source: settings.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
         };
 
@@ -455,7 +455,7 @@ export class QdrantBackend extends VectorBackend {
             searchText: searchText,
             topK: topK,
             threshold: 0.0,
-            source: settings.source || 'transformers',
+            source: settings.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
             eventbaseDebug: !!settings.eventbase_debug_qdrant_backend,
             ...getPluginProviderParams(settings),
@@ -500,7 +500,7 @@ export class QdrantBackend extends VectorBackend {
             log.warn(`[Qdrant timing] queryCollection FAILED after ${failMs}ms (HTTP ${response.status}). ${_embedTimeoutHint(settings)} Server said: ${errorBody.slice(0, 300)}`);
             throwIfModelConfigError({
                 contextLabel: 'Embedding',
-                provider: settings.source,
+                provider: settings.embedding_provider,
                 model: getModelFromSettings(settings),
                 status: response.status,
                 responseText: errorBody,
@@ -512,7 +512,7 @@ export class QdrantBackend extends VectorBackend {
         const data = await response.json();
         if (log.enabled('verbose')) {
             const totalMs = (performance.now() - tNetStart).toFixed(1);
-            log.verbose(`[Qdrant timing] queryCollection total=${totalMs}ms (incl. server-side embed via '${settings.source || 'transformers'}'), results=${data.results?.length || 0}`);
+            log.verbose(`[Qdrant timing] queryCollection total=${totalMs}ms (incl. server-side embed via '${settings.embedding_provider || 'transformers'}'), results=${data.results?.length || 0}`);
         }
 
         // Format results to match expected output
@@ -556,7 +556,7 @@ export class QdrantBackend extends VectorBackend {
                     searchText: searchText,
                     topK: topK,
                     threshold: threshold,
-                    source: settings.source || 'transformers',
+                    source: settings.embedding_provider || 'transformers',
                     model: getModelFromSettings(settings),
                     ...getPluginProviderParams(settings),
                 };
@@ -623,7 +623,7 @@ export class QdrantBackend extends VectorBackend {
         const body = {
             backend: BACKEND_TYPE,
             collectionId: actualCollectionId,
-            source: settings.source || 'transformers',
+            source: settings.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
         };
 
@@ -669,7 +669,7 @@ export class QdrantBackend extends VectorBackend {
         const response = await fetch(`/api/plugins/similharity/chunks/${encodeURIComponent(hash)}?` + new URLSearchParams({
             backend: BACKEND_TYPE,
             collectionId: actualCollectionId, // Use separate collection per content type
-            source: settings.source || 'transformers',
+            source: settings.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
         }), {
             headers: getRequestHeaders(),
@@ -696,7 +696,7 @@ export class QdrantBackend extends VectorBackend {
             body: JSON.stringify({
                 backend: BACKEND_TYPE,
                 collectionId: actualCollectionId, // Use separate collection per content type
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings),
                 offset: options.offset || 0,
                 limit: options.limit || 100,
@@ -724,7 +724,7 @@ export class QdrantBackend extends VectorBackend {
                 backend: BACKEND_TYPE,
                 collectionId: actualCollectionId, // Use separate collection per content type
                 text: newText,
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings),
             }),
         });
@@ -749,7 +749,7 @@ export class QdrantBackend extends VectorBackend {
                 backend: BACKEND_TYPE,
                 collectionId: actualCollectionId, // Use separate collection per content type
                 metadata: metadata,
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings),
             }),
         });
@@ -773,7 +773,7 @@ export class QdrantBackend extends VectorBackend {
             body: JSON.stringify({
                 backend: BACKEND_TYPE,
                 collectionId: actualCollectionId, // Use separate collection per content type
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings),
             }),
         });
@@ -872,7 +872,7 @@ export class QdrantBackend extends VectorBackend {
             searchText: searchText,
             topK: topK,
             threshold: 0.0,
-            source: settings.source || 'transformers',
+            source: settings.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
             hybrid: true,
             hybridOptions: {
@@ -1022,7 +1022,7 @@ export class QdrantBackend extends VectorBackend {
             searchText,
             topK,
             threshold: 0.0,
-            source: settings.source || 'transformers',
+            source: settings.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
             hybrid: true,
             hybridOptions: {

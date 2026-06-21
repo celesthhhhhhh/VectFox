@@ -131,7 +131,7 @@ async function _buildStats(collectionId, settings) {
         body: JSON.stringify({
             backend: _pluginBackendName(settings),
             collectionId,
-            source: settings?.source || 'transformers',
+            source: settings?.embedding_provider || 'transformers',
             model: getModelFromSettings(settings),
             limit: FETCH_LIMIT,
             includeVectors: false,

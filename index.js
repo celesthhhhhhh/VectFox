@@ -29,6 +29,7 @@ import { migrateOldEnabledKeys } from './core/collection-metadata.js';
 import { clearCollectionRegistry, discoverExistingCollections, cleanupCorruptedCollections, pruneOrphanedEventBaseChatMaps } from './core/collection-loader.js';
 import { migrateLegacyApiKeys } from './core/api-keys.js';
 import { migration_setting_name_for_connection } from './Migration/mg_setting_name_for_connection.js';
+import { migration_embedding_source_key } from './Migration/mg_embedding_source_key.js';
 import AsyncUtils from './utils/async-utils.js';
 import { log } from './core/log.js';
 
@@ -51,7 +52,7 @@ const defaultSettings = {
     enabled: true,
 
     // Core vector settings
-    source: 'transformers',
+    embedding_provider: 'transformers', // embedding provider selection (was `source` pre-Phase-B)
     vector_backend: 'qdrant', // Backend: 'standard' (ST Vectra) | 'qdrant'
     qdrant_host: 'localhost',
     qdrant_port: 6333,
@@ -384,7 +385,7 @@ let settings = { ...defaultSettings };
 const moduleWorker = new ModuleWorkerWrapper(() => synchronizeChat(settings, getBatchSize(), _lastChatTriggerEvent));
 
 // Batch size based on provider
-const getBatchSize = () => ['transformers', 'ollama'].includes(settings.source) ? 1 : 5;
+const getBatchSize = () => ['transformers', 'ollama'].includes(settings.embedding_provider) ? 1 : 5;
 
 // Most recent SillyTavern event that triggered the debounced chat-event handler.
 // Read by synchronizeChat to suppress the auto-sync popup on MESSAGE_SENT (so the
@@ -587,6 +588,16 @@ jQuery(async () => {
         await saveSettings();
     }
 
+    // Phase B: rename the highest-churn embedding key `source` → `embedding_provider`.
+    // Separate migration from Phase A (its blast radius spans nearly every backend/
+    // query/UI path). Idempotent, in-memory only. See Migration/mg_embedding_source_key.js.
+    const _srcRename = migration_embedding_source_key(extension_settings.vectfox);
+    if (_srcRename.migrated > 0) {
+        log.lifecycle('VectFox: Renamed embedding `source` → `embedding_provider`');
+        const { saveSettings } = await import('../../../../script.js');
+        await saveSettings();
+    }
+
     // H-1 one-shot migration (2026-05-24): move plaintext *_api_key values
     // from settings.json to ST secret_state. Runs AFTER the eventbase →
     // summarize copy above so any user who only had eventbase_* set gets
@@ -743,7 +754,7 @@ jQuery(async () => {
 
     // When WebLLM extension is loaded, refresh the model list
     eventSource.on(event_types.EXTENSION_SETTINGS_LOADED, async (manifest) => {
-        if (settings.source === 'webllm' && manifest?.display_name === 'WebLLM') {
+        if (settings.embedding_provider === 'webllm' && manifest?.display_name === 'WebLLM') {
             log.lifecycle('VectFox: WebLLM extension loaded, refreshing models...');
             updateWebLlmStatus();
             await loadWebLlmModels(settings);

@@ -117,7 +117,7 @@ export function getModelField(providerId) {
  * @returns {string}
  */
 export function getModelFromSettings(settings, fallback = '') {
-    const modelField = getModelField(settings?.source);
+    const modelField = getModelField(settings?.embedding_provider);
     if (!modelField) return fallback;
     return settings[modelField] || fallback;
 }
@@ -177,11 +177,11 @@ export function getUrlProviders() {
  * is unchanged. Add prefixed keys here if they are ever re-enabled.
  *
  * @param {object} settings - VectFox settings
- * @param {string} [source=settings.source] - Provider id (defaults to active source)
+ * @param {string} [source=settings.embedding_provider] - Provider id (defaults to active source)
  * @returns {string|undefined} Base URL, or undefined for providers that take no URL.
  *   May be an empty string when the provider is URL-based but nothing is configured.
  */
-export function resolveProviderApiUrl(settings, source = settings?.source) {
+export function resolveProviderApiUrl(settings, source = settings?.embedding_provider) {
     switch (source) {
         case 'ollama':
             return settings.embedding_ollama_url_override

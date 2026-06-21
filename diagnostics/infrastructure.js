@@ -33,7 +33,7 @@ import {
  */
 function getPluginProviderParams(settings) {
     const params = {};
-    const source = settings.source;
+    const source = settings.embedding_provider;
 
     // Ollama needs apiUrl and keep param
     if (source === 'ollama') {
@@ -500,7 +500,7 @@ export async function checkQdrantDimensionMatch(settings) {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 text: 'test',
-                source: settings.source || 'transformers',
+                source: settings.embedding_provider || 'transformers',
                 model: getModelFromSettings(settings),
                 // Include provider-specific params (apiUrl, keep, etc.)
                 ...getPluginProviderParams(settings),
@@ -576,7 +576,7 @@ export async function checkQdrantDimensionMatch(settings) {
  * Check: Embedding provider is configured properly
  */
 export async function checkEmbeddingProvider(settings) {
-    const source = settings.source;
+    const source = settings.embedding_provider;
 
     if (!source) {
         return {
@@ -625,7 +625,7 @@ export async function checkEmbeddingProvider(settings) {
  */
 export function checkTransformersMemoryLimits(settings) {
     // Only relevant for transformers provider
-    if (settings.source !== 'transformers') {
+    if (settings.embedding_provider !== 'transformers') {
         return {
             name: 'WASM Memory',
             status: 'skipped',
@@ -646,7 +646,7 @@ export function checkTransformersMemoryLimits(settings) {
  * Check: API keys are present for cloud providers
  */
 export function checkApiKeys(settings) {
-    const source = settings.source;
+    const source = settings.embedding_provider;
 
     if (!requiresApiKey(source)) {
         return {
@@ -681,7 +681,7 @@ export function checkApiKeys(settings) {
  * Check: API URLs are configured for local providers
  */
 export function checkApiUrls(settings) {
-    const source = settings.source;
+    const source = settings.embedding_provider;
 
     if (!requiresUrl(source)) {
         return {
@@ -718,17 +718,17 @@ export function checkApiUrls(settings) {
  * Check: Provider connectivity test
  */
 export async function checkProviderConnectivity(settings) {
-    if (!isValidProvider(settings.source)) {
+    if (!isValidProvider(settings.embedding_provider)) {
         return {
             name: 'Provider Connectivity',
             status: 'fail',
-            message: `Unknown provider: ${settings.source}`,
+            message: `Unknown provider: ${settings.embedding_provider}`,
             fixable: true,
             fixAction: 'configure_provider'
         };
     }
 
-    const config = getProviderConfig(settings.source);
+    const config = getProviderConfig(settings.embedding_provider);
     return {
         name: 'Provider Connectivity',
         status: 'pass',
@@ -742,7 +742,7 @@ export async function checkProviderConnectivity(settings) {
  */
 export function checkWebLlmExtension(settings) {
     // Only relevant if WebLLM is selected
-    if (settings.source !== 'webllm') {
+    if (settings.embedding_provider !== 'webllm') {
         return {
             name: 'WebLLM Extension',
             status: 'skipped',

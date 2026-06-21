@@ -165,7 +165,7 @@ Priority chain inside `shouldCollectionActivate`:
 
 Sibling principle to the lock facade — same "use the one helper, never reimplement inline" rule, different domain. Lives in this doc because the model is part of the **storage-key contract** for every collection: vectra partitions chunks by model on disk, so insert and query must agree on the model value or the read silently misses.
 
-The settings object stores the embedding model under **provider-specific** field names: `openrouter_model`, `ollama_model`, `vllm_model`, `cohere_model`, etc. There is **no flat `settings.model`** — that key is always empty/undefined. Code that reads `settings.model` directly silently produces the wrong value (empty string) without throwing.
+The settings object stores the embedding model under **provider-specific** field names: `embedding_openrouter_model`, `embedding_ollama_model`, `embedding_vllm_model`, `cohere_model`, etc. (the active providers were renamed to the `embedding_*` convention; the embedding-provider selection itself is `settings.embedding_provider`, formerly `settings.source`). There is **no flat `settings.model`** — that key is always empty/undefined. Code that reads `settings.model` directly silently produces the wrong value (empty string) without throwing.
 
 **Always use** [`getModelFromSettings(settings, fallback?)`](../core/providers.js) from `core/providers.js`:
 
@@ -176,7 +176,7 @@ const model = getModelFromSettings(settings);              // → 'qwen/qwen3-em
 const modelOrNull = getModelFromSettings(settings, null);  // null when provider has no model field
 ```
 
-It internally calls `getModelField(settings.source)` to look up the right field name, then reads that field.
+It internally calls `getModelField(settings.embedding_provider)` to look up the right field name, then reads that field.
 
 ### Why this matters
 
@@ -188,17 +188,17 @@ Every site that sends a `model` to the plugin API (`chunks/insert`, `chunks/list
 |---|---|
 | `model: settings.model` (flat key — always empty) | `model: getModelFromSettings(settings)` |
 | `settings.model \|\| ''` | `getModelFromSettings(settings)` |
-| `settings[getModelField(settings.source)] \|\| null` (one-liner with manual fallback) | `getModelFromSettings(settings, null)` |
-| `const modelField = getModelField(s.source); s[modelField] \|\| ''` (4-line inline expansion) | `getModelFromSettings(settings)` |
+| `settings[getModelField(settings.embedding_provider)] \|\| null` (one-liner with manual fallback) | `getModelFromSettings(settings, null)` |
+| `const modelField = getModelField(s.embedding_provider); s[modelField] \|\| ''` (4-line inline expansion) | `getModelFromSettings(settings)` |
 | Defining a local `getModelFromSettings` private helper (this happened 3 times before consolidation) | Import the canonical one |
 
 ### When to use `getModelField` directly instead
 
-`getModelField(source)` returns the **field name** (a string like `'openrouter_model'`) or `null`. Use it only when you need the *name* itself for a validation check or display:
+`getModelField(providerId)` returns the **field name** (a string like `'embedding_openrouter_model'`) or `null`. Use it only when you need the *name* itself for a validation check or display:
 
 ```js
 // Validation: does the user need to configure a model for the current provider?
-const modelField = getModelField(settings.source);
+const modelField = getModelField(settings.embedding_provider);
 if (config.requiresModel && modelField && !settings[modelField]) {
     return { error: 'Model not configured' };
 }

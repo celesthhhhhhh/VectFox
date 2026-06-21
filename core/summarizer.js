@@ -66,8 +66,8 @@ export function isSummarizationFatalError(err) {
  * @returns {{ok: true} | {ok: false, reason: string}}
  */
 export function validateLLMConfig(settings = {}) {
-    const provider = (settings?.summarize_provider || 'openrouter').toLowerCase();
-    const model = (settings?.summarize_model || '').trim();
+    const provider = (settings?.chat_provider || 'openrouter').toLowerCase();
+    const model = (settings?.chat_model || '').trim();
 
     if (!model) {
         return { ok: false, reason: 'Summarization / EventBase extraction model is not set.' };
@@ -79,7 +79,7 @@ export function validateLLMConfig(settings = {}) {
             return { ok: false, reason: 'OpenRouter API key is not set.' };
         }
     } else if (provider === 'vllm') {
-        const url = (settings?.summarize_vllm_url || '').trim();
+        const url = (settings?.chat_vllm_url || '').trim();
         if (!url) {
             return { ok: false, reason: 'vLLM Base URL is not set.' };
         }
@@ -97,7 +97,7 @@ export function validateLLMConfig(settings = {}) {
  * @returns {string}
  */
 export function getSummarizationConfigFingerprint(settings = {}) {
-    const provider = settings?.summarize_provider || 'openrouter';
+    const provider = settings?.chat_provider || 'openrouter';
 
     if (provider === 'openrouter') {
         const key = _getOpenRouterApiKey(settings);
@@ -107,7 +107,7 @@ export function getSummarizationConfigFingerprint(settings = {}) {
     }
 
     if (provider === 'vllm') {
-        const url = (settings?.summarize_vllm_url || '').trim();
+        const url = (settings?.chat_vllm_url || '').trim();
         // Key now lives in SECRET_KEYS.CUSTOM (masked client-side). Fingerprint
         // uses the masked-value length + boundary chars — still deterministic for
         // detecting key-rotation, never logs the secret.
@@ -151,10 +151,10 @@ const DEFAULT_TIMEOUT_MS = 30000;
 export async function summarizeText(text, settings) {
     if (!text || typeof text !== 'string') return text;
 
-    const provider = settings?.summarize_provider || 'openrouter';
+    const provider = settings?.chat_provider || 'openrouter';
     // don't remove
     //log.verbose(`[VectFox Summarizer] summarizeText called — provider=${provider}, textLen=${text.length}`);
-    const model = (settings?.summarize_model || '').trim();
+    const model = (settings?.chat_model || '').trim();
     if (!model) {
         throw new SummarizationFatalError(
             'No summarization model configured. Set a model in Summarize Before Store settings.',
@@ -312,7 +312,7 @@ async function _callOpenRouter(prompt, model, settings, originalLength, maxToken
  * normalization — the vLLM-style base URL flows through three call sites and
  * inline regex drift was the bug that surfaced this helper.
  *
- * @param {string} baseUrl raw user input from settings.summarize_vllm_url etc.
+ * @param {string} baseUrl raw user input from settings.chat_vllm_url etc.
  * @returns {string} fully-qualified chat-completions URL
  */
 export function buildVllmChatCompletionsUrl(baseUrl) {
@@ -326,10 +326,10 @@ export function buildVllmChatCompletionsUrl(baseUrl) {
 async function _callVLLM(prompt, model, settings, maxTokens = DEFAULT_MAX_TOKENS, timeoutMs = settings?.summarize_timeout_ms || DEFAULT_TIMEOUT_MS) {
     // Routes through ST's chat-completions proxy with `chat_completion_source:
     // 'custom'` — ST's server reads the real key from SECRET_KEYS.CUSTOM and
-    // forwards to settings.summarize_vllm_url. Same pattern as _callOpenRouter
+    // forwards to settings.chat_vllm_url. Same pattern as _callOpenRouter
     // above. The function name is kept for compat with the provider-dispatch
     // switch; the wire is no longer a direct fetch to vLLM.
-    const baseUrl = (settings?.summarize_vllm_url || '').trim();
+    const baseUrl = (settings?.chat_vllm_url || '').trim();
     if (!baseUrl) {
         throw new SummarizationFatalError(
             'vLLM URL not configured.',

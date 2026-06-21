@@ -355,10 +355,10 @@ export function getVectorsRequestBody(args = {}, settings) {
     const body = Object.assign({}, args);
     switch (settings.source) {
         case 'openrouter':
-            body.model = settings.openrouter_model;
+            body.model = settings.embedding_openrouter_model;
             break;
         case 'ollama':
-            body.model = settings.ollama_model;
+            body.model = settings.embedding_ollama_model;
             body.apiUrl = resolveProviderApiUrl(settings, 'ollama');
             body.keep = !!settings.ollama_keep;
             // No apiKey: ST has no ollama auth path. See backends/qdrant.js for
@@ -369,7 +369,7 @@ export function getVectorsRequestBody(args = {}, settings) {
                 ?.replace(/\/$/, '')
                 .replace(/\/v1\/embeddings$/, '')
                 .replace(/\/embeddings$/, '');
-            body.model = settings.vllm_model;
+            body.model = settings.embedding_vllm_model;
             // No apiKey passed: ST's vLLM embedding handler reads
             // SECRET_KEYS.VLLM server-side. See backends/standard.js for the
             // full rationale.

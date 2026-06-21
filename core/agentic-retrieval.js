@@ -303,8 +303,8 @@ export async function retrieveEventsWithAgent(params) {
  * { ok: false, reason } when a required value is missing.
  */
 export function _resolveAgenticLLMConfig(settings = {}) {
-    const provider = (settings.agentic_retrieval_provider || settings.summarize_provider || 'openrouter').toLowerCase();
-    const model = (settings.agentic_retrieval_model || settings.summarize_model || '').trim();
+    const provider = (settings.agent_provider || settings.chat_provider || 'openrouter').toLowerCase();
+    const model = (settings.agent_model || settings.chat_model || '').trim();
 
     if (!model) {
         return { ok: false, reason: 'missing_model' };
@@ -326,7 +326,7 @@ export function _resolveAgenticLLMConfig(settings = {}) {
     }
 
     if (provider === 'vllm') {
-        const vllmUrl = (settings.agentic_retrieval_vllm_url || settings.summarize_vllm_url || '').trim();
+        const vllmUrl = (settings.agent_vllm_url || settings.chat_vllm_url || '').trim();
         if (!vllmUrl) {
             return { ok: false, reason: 'missing_vllm_url' };
         }

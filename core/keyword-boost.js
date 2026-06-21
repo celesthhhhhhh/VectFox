@@ -183,7 +183,7 @@ function shouldKeepCjkKeyword(token, frequency, isJapaneseMode, isTraditionalChi
 }
 
 function isSummarizationEnabled(settings) {
-    return ['openrouter', 'vllm'].includes(String(settings?.summarize_provider || 'openrouter'));
+    return ['openrouter', 'vllm'].includes(String(settings?.chat_provider || 'openrouter'));
 }
 
 function getEffectiveHeaderSize(config, level, settings) {

@@ -121,7 +121,7 @@ export async function exportCollection(collectionId, settings, collectionInfo = 
     // Use collection-specific settings if provided (for multi-backend support).
     // Note: model is NOT set here as a flat key — it's looked up via
     // getModelFromSettings(exportSettings) wherever needed, since the real value
-    // lives under the provider-specific field (openrouter_model, ollama_model, …).
+    // lives under the provider-specific field (embedding_openrouter_model, embedding_ollama_model, …).
     const exportSettings = {
         ...settings,
         vector_backend: collectionInfo.backend || settings.vector_backend,

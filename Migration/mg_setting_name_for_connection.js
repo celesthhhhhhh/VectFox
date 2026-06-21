@@ -25,8 +25,12 @@
  * `defaultSettings` keys in index.js to the new names. Do NOT wire this migration
  * into init until those read sites are switched, or reads will miss the renamed keys.
  *
- * STATUS: RENAMES map below is PROPOSED — confirm the convention/terminology
- * (esp. "chat" vs "summarize") before wiring. The file is not yet called anywhere.
+ * STATUS: LANDED — Phase A, 2026-06-21. Convention confirmed (chat_ / embedding_ /
+ * agent_; `url_override` field vocab). Wired into init in index.js (after the
+ * eventbase→chat copy), with all read sites + defaultSettings converted in the
+ * same change (two-halves rule satisfied). Covered by
+ * tests/mg-setting-name-for-connection.test.js. Phase B (`source` →
+ * `embedding_provider`) is a SEPARATE migration — intentionally NOT in this map.
  * ============================================================================
  */
 

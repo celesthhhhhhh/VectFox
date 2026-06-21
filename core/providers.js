@@ -33,7 +33,7 @@ export const EMBEDDING_PROVIDERS = {
         name: 'Ollama',
         local: true,
         requiresModel: true,
-        modelField: 'ollama_model',
+        modelField: 'embedding_ollama_model',
         requiresApiKey: false,
         requiresUrl: true,
     },
@@ -43,7 +43,7 @@ export const EMBEDDING_PROVIDERS = {
         name: 'vLLM',
         local: true,
         requiresModel: true,
-        modelField: 'vllm_model',
+        modelField: 'embedding_vllm_model',
         requiresApiKey: false,
         requiresUrl: true,
     },
@@ -56,7 +56,7 @@ export const EMBEDDING_PROVIDERS = {
         name: 'OpenRouter',
         local: false,
         requiresModel: true,
-        modelField: 'openrouter_model',
+        modelField: 'embedding_openrouter_model',
         requiresApiKey: true,
         secretKey: SECRET_KEYS.OPENROUTER,
         requiresUrl: false,
@@ -100,8 +100,8 @@ export function getModelField(providerId) {
 /**
  * Resolve the actual model value from settings for the active provider.
  *
- * The settings object uses provider-specific field names — `openrouter_model`,
- * `ollama_model`, `vllm_model`, etc. — not a flat `settings.model`. Code that
+ * The settings object uses provider-specific field names — `embedding_openrouter_model`,
+ * `embedding_ollama_model`, `embedding_vllm_model`, etc. — not a flat `settings.model`. Code that
  * sends a `model` field to the plugin API (chunks/insert, chunks/list,
  * chunks/query) MUST use this function. Reading `settings.model` directly
  * returns an empty string for every real provider and leads to insert/query
@@ -165,8 +165,8 @@ export function getUrlProviders() {
  * Resolve the embedding base URL for a URL-based local provider.
  *
  * Single source of truth for "alternative endpoint" resolution. The settings UI
- * writes PER-PROVIDER keys (`ollama_use_alt_endpoint`/`ollama_alt_endpoint_url`,
- * `vllm_use_alt_endpoint`/`vllm_alt_endpoint_url`) — these are the canonical
+ * writes PER-PROVIDER keys (`embedding_ollama_url_override`/`embedding_ollama_url`,
+ * `embedding_vllm_url_override`/`embedding_vllm_url`) — these are the canonical
  * values. Earlier code scattered across backends + diagnostics read the legacy
  * unprefixed `use_alt_endpoint`/`alt_endpoint_url` keys, which the UI never
  * writes, so the alt endpoint silently read as OFF and requests fell back to
@@ -184,12 +184,12 @@ export function getUrlProviders() {
 export function resolveProviderApiUrl(settings, source = settings?.source) {
     switch (source) {
         case 'ollama':
-            return settings.ollama_use_alt_endpoint
-                ? settings.ollama_alt_endpoint_url
+            return settings.embedding_ollama_url_override
+                ? settings.embedding_ollama_url
                 : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
         case 'vllm':
-            return settings.vllm_use_alt_endpoint
-                ? settings.vllm_alt_endpoint_url
+            return settings.embedding_vllm_url_override
+                ? settings.embedding_vllm_url
                 : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
         case 'llamacpp':
             return settings.use_alt_endpoint

@@ -101,7 +101,7 @@ function getTextWithoutAttachments(message) {
 async function groupMessagesByStrategy(messages, strategy, batchSize = 4, keywordLevel = 'balanced', settings = {}) {
     if (!messages.length) return [];
 
-    log.verbose(`[VectFox] groupMessagesByStrategy: ${messages.length} messages, strategy=${strategy}, summarize_provider=${settings?.summarize_provider || 'openrouter'}`);
+    log.verbose(`[VectFox] groupMessagesByStrategy: ${messages.length} messages, strategy=${strategy}, chat_provider=${settings?.chat_provider || 'openrouter'}`);
 
     const summarize = (text) => summarizeText(text, settings);
 

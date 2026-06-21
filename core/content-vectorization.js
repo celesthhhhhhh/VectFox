@@ -193,7 +193,7 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
         /* ----- BEGIN: summarize-before-store pipeline (DISABLED, kept for future use) -----
         if (contentType === 'chat') {
             progressTracker.updateProgress(3, `Summarizing and inserting ${finalChunks.length} chunks...`);
-            log.lifecycle(`[VectFox Summarizer] Pipelining ${finalChunks.length} chat chunks via ${VectFoxSettings.summarize_provider}...`);
+            log.lifecycle(`[VectFox Summarizer] Pipelining ${finalChunks.length} chat chunks via ${VectFoxSettings.chat_provider}...`);
 
             // Pre-init backend once before pipeline starts
             try {
@@ -214,7 +214,7 @@ export async function vectorizeContent({ contentType, source, settings, abortSig
                         summaryText = await summarizeText(chunk.text, VectFoxSettings);
                     } catch (err) {
                         if (isSummarizationFatalError(err)) {
-                            const providerLabel = (VectFoxSettings?.summarize_provider || 'summarizer').toUpperCase();
+                            const providerLabel = (VectFoxSettings?.chat_provider || 'summarizer').toUpperCase();
                             const msg = `Summarization is enabled but misconfigured: ${err.message}`;
                             try { toastr.error(msg, `${providerLabel} configuration error`); } catch (_) {}
                             throw new Error(msg);

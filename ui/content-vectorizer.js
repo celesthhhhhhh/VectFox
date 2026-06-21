@@ -2585,13 +2585,13 @@ async function startContinueVectorization() {
     }
 
     // currentSettings only carries content-type defaults — merge global VECTFOX settings
-    // so the user's summarize_model / API key (set in Core → LLM Summarization) is visible.
+    // so the user's chat_model / API key (set in Core → LLM Summarization) is visible.
     const mergedSettings = resolveEffectiveSettings(currentSettings);
     console.log('[VectFox] LLM config check (vectorize-content):', {
-        provider: mergedSettings.summarize_provider,
-        model: mergedSettings.summarize_model,
+        provider: mergedSettings.chat_provider,
+        model: mergedSettings.chat_model,
         hasOpenRouterKey: !!getOpenRouterApiKey(mergedSettings),
-        hasVllmUrl: !!mergedSettings.summarize_vllm_url,
+        hasVllmUrl: !!mergedSettings.chat_vllm_url,
     });
     const llmCheck = validateLLMConfig(mergedSettings);
     if (!llmCheck.ok) {
@@ -2977,13 +2977,13 @@ async function startVectorization() {
     // All vectorization paths (EventBase for chat, chunk pipeline for non-chat) eventually
     // make LLM calls that share the summarize_* settings. Fail fast with a clear message
     // rather than letting it blow up mid-ingest. Merge global settings so the user's
-    // summarize_model / API key set in Core → LLM Summarization is visible here.
+    // chat_model / API key set in Core → LLM Summarization is visible here.
     const mergedSettings = resolveEffectiveSettings(currentSettings);
     console.log('[VectFox] LLM config check (start-vectorization):', {
-        provider: mergedSettings.summarize_provider,
-        model: mergedSettings.summarize_model,
+        provider: mergedSettings.chat_provider,
+        model: mergedSettings.chat_model,
         hasOpenRouterKey: !!getOpenRouterApiKey(mergedSettings),
-        hasVllmUrl: !!mergedSettings.summarize_vllm_url,
+        hasVllmUrl: !!mergedSettings.chat_vllm_url,
     });
     const llmCheck = validateLLMConfig(mergedSettings);
     if (!llmCheck.ok) {

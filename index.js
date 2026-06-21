@@ -28,6 +28,7 @@ import { purgeAllVectorIndexes, purgeVectorIndex } from './core/core-vector-api.
 import { migrateOldEnabledKeys } from './core/collection-metadata.js';
 import { clearCollectionRegistry, discoverExistingCollections, cleanupCorruptedCollections, pruneOrphanedEventBaseChatMaps } from './core/collection-loader.js';
 import { migrateLegacyApiKeys } from './core/api-keys.js';
+import { migration_setting_name_for_connection } from './Migration/mg_setting_name_for_connection.js';
 import AsyncUtils from './utils/async-utils.js';
 import { log } from './core/log.js';
 
@@ -65,14 +66,14 @@ const defaultSettings = {
     // core/api-keys.js::fetchQdrantApiKeyPresence (canonical presence check).
     qdrant_use_cloud: false,
     qdrant_multitenancy: false, // Use single collection with content_type field instead of separate collections
-    ollama_alt_endpoint_url: '',
-    ollama_use_alt_endpoint: false,
+    embedding_ollama_url: '',
+    embedding_ollama_url_override: false,
     // ollama_api_key removed 2026-05-26: ST has no SECRET_KEYS.OLLAMA and no
     // ollama auth path in additional-headers.js — the field was dead code on
     // both sides. Migration in core/api-keys.js drains-and-deletes any
     // leftover plaintext from settings.json on first load post-upgrade.
-    vllm_alt_endpoint_url: '',
-    vllm_use_alt_endpoint: false,
+    embedding_vllm_url: '',
+    embedding_vllm_url_override: false,
     rate_limit_calls: 60,
     rate_limit_interval: 60, // seconds
     // Summarizer (EventBase extraction) + Agent Mode planner share ONE
@@ -86,7 +87,7 @@ const defaultSettings = {
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
     electronhub_model: 'text-embedding-3-small',
-    openrouter_model: 'openai/text-embedding-3-large',
+    embedding_openrouter_model: 'openai/text-embedding-3-large',
     // OpenRouter key: stored in SECRET_KEYS.OPENROUTER (ST's shared slot, not in
     // defaults). Reader: core/api-keys.js::getOpenRouterApiKey. The legacy
     // plaintext slot used to live here as `openrouter_api_key: ''` but kept
@@ -94,9 +95,9 @@ const defaultSettings = {
     // Object.assign(extension_settings.vectfox, settings) which would re-add
     // any default-declared empty field after migrateLegacyApiKeys() deleted it.
     cohere_model: 'embed-english-v3.0',
-    ollama_model: 'mxbai-embed-large',
+    embedding_ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
-    vllm_model: '',
+    embedding_vllm_model: '',
     // vLLM key: stored in ST's SECRET_KEYS.CUSTOM (chat-side, via
     // chat_completion_source: 'custom' proxy) AND SECRET_KEYS.VLLM
     // (embedding-side, via ST's vector handler). Dual-write from VectFox UI
@@ -157,7 +158,7 @@ const defaultSettings = {
     keyword_extraction_level: 'balanced', // 'off', 'minimal', 'balanced', 'aggressive'
 
     // Summarization before vectorization
-    summarize_provider: 'openrouter', // 'openrouter', 'vllm'
+    chat_provider: 'openrouter', // 'openrouter', 'vllm'
     // summarize_openrouter_api_key and summarize_vllm_api_key are NOT in
     // defaults — they're legacy plaintext fields drained by
     // migrateLegacyApiKeys() into SECRET_KEYS.OPENROUTER and
@@ -165,8 +166,8 @@ const defaultSettings = {
     // respectively. Keeping them here would cause the same Object.assign
     // re-introduction loop documented above on the embedding-side keys.
     // Readers: core/api-keys.js helpers.
-    summarize_model: '',              // Model ID for summarization (e.g. 'google/gemini-flash-1.5-8b')
-    summarize_vllm_url: '',           // vLLM base URL for summarization (e.g. 'http://localhost:8000')
+    chat_model: '',              // Model ID for summarization (e.g. 'google/gemini-flash-1.5-8b')
+    chat_vllm_url: '',           // vLLM base URL for summarization (e.g. 'http://localhost:8000')
     summarize_prompt: '',             // Custom prompt template (empty = use built-in default)
     summarize_timeout_ms: 30000,      // Per-call timeout for one "Summarize Before Store" request (ms). Separate from eventbase_timeout_ms (extraction); both share the same model. UI: EventBase tab.
 
@@ -350,14 +351,14 @@ const defaultSettings = {
     // parallel against Qdrant. Purely additive — never replaces the existing
     // flow. A3 (Qdrant) only. See plans/agentic-retrieval-plan.md.
     agentic_retrieval_enabled: false,                  // Master toggle (default OFF)
-    agentic_retrieval_provider: '',                    // '' → inherit summarize_provider
-    agentic_retrieval_model: '',                       // '' → inherit summarize_model
+    agent_provider: '',                    // '' → inherit chat_provider
+    agent_model: '',                       // '' → inherit chat_model
     // agentic_retrieval_openrouter_api_key and agentic_retrieval_vllm_api_key
     // are NOT in defaults — same Object.assign re-introduction reason as the
     // other legacy *_api_key slots above. Migration drains them into
     // SECRET_KEYS.OPENROUTER and SECRET_KEYS.CUSTOM + SECRET_KEYS.VLLM
     // (dual-write for vLLM, see embedding/chat split in api-keys.js header).
-    agentic_retrieval_vllm_url: '',                    // '' → inherit summarize_vllm_url
+    agent_vllm_url: '',                    // '' → inherit chat_vllm_url
     agentic_retrieval_chat_depth: 3,                   // # of past chat turns sent to planner (slider 1-10)
     agentic_retrieval_candidates_to_show: 12,          // Pre-search slice shown to planner (slider 5-20)
     agentic_retrieval_max_queries: 6,                  // Hard ceiling on planner output (slider 1-6)
@@ -532,17 +533,19 @@ jQuery(async () => {
         log.lifecycle(`VectFox: Migrated ${migrationResult.migrated} old collection enabled keys`);
     }
 
-    // Migrate legacy EventBase LLM overrides → unified Core summarize settings.
-    // Copy any non-empty legacy value into the corresponding summarize_* field
-    // (only if summarize_* is still empty — never clobber), then DELETE the
+    // Migrate legacy EventBase LLM overrides → unified Core chat settings.
+    // Copy any non-empty legacy value into the corresponding chat_* field
+    // (only if chat_* is still empty — never clobber), then DELETE the
     // legacy field unconditionally. Previous version copied but left the
     // legacy keys behind as stale empty strings in settings.json.
+    // (Targets are the post-rename `chat_*` names — see the connection-key
+    // rename migration just below; this maps eventbase_* straight to chat_*.)
     const _ebs = extension_settings.vectfox;
     const _ebLegacyMap = [
-        ['eventbase_model', 'summarize_model'],
-        ['eventbase_provider', 'summarize_provider'],
+        ['eventbase_model', 'chat_model'],
+        ['eventbase_provider', 'chat_provider'],
         ['eventbase_openrouter_api_key', 'summarize_openrouter_api_key'],
-        ['eventbase_vllm_url', 'summarize_vllm_url'],
+        ['eventbase_vllm_url', 'chat_vllm_url'],
         ['eventbase_vllm_api_key', 'summarize_vllm_api_key'],
     ];
     let _ebMutated = false;
@@ -563,6 +566,23 @@ jQuery(async () => {
         // 2026-05-26 against a user whose summarize_openrouter_api_key /
         // summarize_vllm_api_key persisted on disk across multiple reloads
         // because the debounced save never fired before page close.
+        const { saveSettings } = await import('../../../../script.js');
+        await saveSettings();
+    }
+
+    // Connection-setting naming convention (Phase A) — rename the convention-less
+    // LLM/embedding keys to the `<consumer>_<provider>_<field>` scheme
+    // (embedding_* / chat_* / agent_*). Runs AFTER the eventbase→chat copy above
+    // so any legacy summarize_* / agentic_retrieval_* / *_alt_endpoint_url +
+    // *_model keys still on disk are renamed here. Idempotent, in-memory only,
+    // no I/O. See Migration/mg_setting_name_for_connection.js +
+    // plans/settings-naming-convention-migration.md. (Phase B — `source` →
+    // `embedding_provider` — is a separate migration, intentionally not here.)
+    const _connRename = migration_setting_name_for_connection(extension_settings.vectfox);
+    if (_connRename.migrated > 0) {
+        log.lifecycle(`VectFox: Renamed ${_connRename.migrated} connection setting key(s): ${_connRename.keys.join(', ')}`);
+        // Persist immediately (not debounced) — same reload-safety reason as the
+        // eventbase block above (R5 in the plan's crash-safety checklist).
         const { saveSettings } = await import('../../../../script.js');
         await saveSettings();
     }

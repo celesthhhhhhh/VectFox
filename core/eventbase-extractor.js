@@ -357,7 +357,7 @@ async function _callOpenRouter(prompt, settings, windowIndex) {
         );
     }
 
-    const model = (settings.summarize_model || '').trim();
+    const model = (settings.chat_model || '').trim();
     if (!model) {
         throw new EventBaseFatalError(
             'EventBase: No model configured. Set the Summarization Model in Core → LLM Summarization settings.',
@@ -421,8 +421,8 @@ async function _callOpenRouter(prompt, settings, windowIndex) {
 async function _callVLLM(prompt, settings, windowIndex) {
     // Routes through ST's chat-completions proxy with `chat_completion_source:
     // 'custom'` — server reads key from SECRET_KEYS.CUSTOM, forwards to
-    // settings.summarize_vllm_url. Same pattern as summarizer.js::_callVLLM.
-    const baseUrl = (settings.summarize_vllm_url || '').trim();
+    // settings.chat_vllm_url. Same pattern as summarizer.js::_callVLLM.
+    const baseUrl = (settings.chat_vllm_url || '').trim();
     if (!baseUrl) {
         throw new EventBaseFatalError(
             'EventBase: vLLM URL not configured. Set the vLLM URL in Core → LLM Summarization settings.',
@@ -430,7 +430,7 @@ async function _callVLLM(prompt, settings, windowIndex) {
         );
     }
 
-    const model = (settings.summarize_model || '').trim();
+    const model = (settings.chat_model || '').trim();
     if (!model) {
         throw new EventBaseFatalError(
             'EventBase: No model configured. Set the Summarization Model in Core → LLM Summarization settings.',
@@ -600,7 +600,7 @@ export async function extractEvents({ messages, windowStart, windowEnd, settings
         basePrompt = `DETECTED EXCERPT LANGUAGE: ${languageHint}. You MUST write ALL string fields in that language — no exceptions.\n\n${basePrompt}`;
     }
     const prompt = basePrompt;
-    const provider = (settings.summarize_provider || 'openrouter').toLowerCase();
+    const provider = (settings.chat_provider || 'openrouter').toLowerCase();
 
     // scene_time diagnostic: confirm the ACTIVE prompt actually carries the new
     // Rule 4 + scene_time field. If usingCustom=true and hasRule4=false, a saved

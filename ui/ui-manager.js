@@ -2489,21 +2489,21 @@ function bindSettingsEvents(settings, callbacks) {
         $('#VectFox_summarize_vllm_url_row').toggle(provider === 'vllm');
     };
     $('#VectFox_summarize_provider')
-        .val(settings.summarize_provider || 'openrouter')
+        .val(settings.chat_provider || 'openrouter')
         .on('change', function() {
-            settings.summarize_provider = String($(this).val());
+            settings.chat_provider = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
-            updateSummarizeUI(settings.summarize_provider);
+            updateSummarizeUI(settings.chat_provider);
         });
-    updateSummarizeUI(settings.summarize_provider || 'openrouter');
+    updateSummarizeUI(settings.chat_provider || 'openrouter');
 
     $('#VectFox_summarize_model')
-        .val(settings.summarize_model || '')
+        .val(settings.chat_model || '')
         .on('input change', function() {
             // Bind 'input' too — 'change' alone only fires on blur, so clicking Vectorize
             // immediately after typing would skip the save.
-            settings.summarize_model = String($(this).val()).trim();
+            settings.chat_model = String($(this).val()).trim();
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -2513,7 +2513,7 @@ function bindSettingsEvents(settings, callbacks) {
         const $btn = $(this);
         const $list = $('#VectFox_summarize_model_list');
         const $input = $('#VectFox_summarize_model');
-        const provider = settings.summarize_provider || 'openrouter';
+        const provider = settings.chat_provider || 'openrouter';
 
         const originalHtml = $btn.html();
         $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Loading…');
@@ -2528,7 +2528,7 @@ function bindSettingsEvents(settings, callbacks) {
                 const data = await resp.json();
                 models = (data?.data || []).map(m => ({ id: m.id, label: m.name ? `${m.id} — ${m.name}` : m.id }));
             } else if (provider === 'vllm') {
-                const baseUrl = (settings.summarize_vllm_url || '').replace(/\/$/, '').replace(/\/v1$/, '');
+                const baseUrl = (settings.chat_vllm_url || '').replace(/\/$/, '').replace(/\/v1$/, '');
                 if (!baseUrl) {
                     toastr.error('Set the vLLM Base URL first.', 'vLLM not configured');
                     return;
@@ -2614,9 +2614,9 @@ function bindSettingsEvents(settings, callbacks) {
     });
 
     $('#VectFox_summarize_vllm_url')
-        .val(settings.summarize_vllm_url || '')
+        .val(settings.chat_vllm_url || '')
         .on('change', function() {
-            settings.summarize_vllm_url = String($(this).val()).trim();
+            settings.chat_vllm_url = String($(this).val()).trim();
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -2747,19 +2747,19 @@ function bindSettingsEvents(settings, callbacks) {
         });
 
     $('#VectFox_agentic_provider')
-        .val(settings.agentic_retrieval_provider || '')
+        .val(settings.agent_provider || '')
         .on('change', function() {
-            settings.agentic_retrieval_provider = String($(this).val());
+            settings.agent_provider = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
-            updateAgenticUI(settings.agentic_retrieval_provider);
+            updateAgenticUI(settings.agent_provider);
         });
-    updateAgenticUI(settings.agentic_retrieval_provider || '');
+    updateAgenticUI(settings.agent_provider || '');
 
     $('#VectFox_agentic_model')
-        .val(settings.agentic_retrieval_model || '')
+        .val(settings.agent_model || '')
         .on('input change', function() {
-            settings.agentic_retrieval_model = String($(this).val()).trim();
+            settings.agent_model = String($(this).val()).trim();
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -2799,9 +2799,9 @@ function bindSettingsEvents(settings, callbacks) {
     });
 
     $('#VectFox_agentic_vllm_url')
-        .val(settings.agentic_retrieval_vllm_url || '')
+        .val(settings.agent_vllm_url || '')
         .on('change', function() {
-            settings.agentic_retrieval_vllm_url = String($(this).val()).trim();
+            settings.agent_vllm_url = String($(this).val()).trim();
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -4013,19 +4013,19 @@ function bindSettingsEvents(settings, callbacks) {
 
     // Ollama alternative endpoint
     $('#VectFox_ollama_use_alt_endpoint')
-        .prop('checked', settings.ollama_use_alt_endpoint)
+        .prop('checked', settings.embedding_ollama_url_override)
         .on('input', function() {
-            settings.ollama_use_alt_endpoint = $(this).prop('checked');
+            settings.embedding_ollama_url_override = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
-            $('#VectFox_ollama_alt_endpoint_url').toggle(settings.ollama_use_alt_endpoint);
+            $('#VectFox_ollama_alt_endpoint_url').toggle(settings.embedding_ollama_url_override);
         });
 
     $('#VectFox_ollama_alt_endpoint_url')
-        .val(settings.ollama_alt_endpoint_url)
-        .toggle(settings.ollama_use_alt_endpoint)
+        .val(settings.embedding_ollama_url)
+        .toggle(settings.embedding_ollama_url_override)
         .on('input', function() {
-            settings.ollama_alt_endpoint_url = String($(this).val());
+            settings.embedding_ollama_url = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -4042,19 +4042,19 @@ function bindSettingsEvents(settings, callbacks) {
 
     // vLLM alternative endpoint
     $('#VectFox_vllm_use_alt_endpoint')
-        .prop('checked', settings.vllm_use_alt_endpoint)
+        .prop('checked', settings.embedding_vllm_url_override)
         .on('input', function() {
-            settings.vllm_use_alt_endpoint = $(this).prop('checked');
+            settings.embedding_vllm_url_override = $(this).prop('checked');
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
-            $('#VectFox_vllm_alt_endpoint_url').toggle(settings.vllm_use_alt_endpoint);
+            $('#VectFox_vllm_alt_endpoint_url').toggle(settings.embedding_vllm_url_override);
         });
 
     $('#VectFox_vllm_alt_endpoint_url')
-        .val(settings.vllm_alt_endpoint_url)
-        .toggle(settings.vllm_use_alt_endpoint)
+        .val(settings.embedding_vllm_url)
+        .toggle(settings.embedding_vllm_url_override)
         .on('input', function() {
-            settings.vllm_alt_endpoint_url = String($(this).val());
+            settings.embedding_vllm_url = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -4109,9 +4109,9 @@ function bindSettingsEvents(settings, callbacks) {
 
     // Ollama model
     $('#VectFox_ollama_model')
-        .val(settings.ollama_model)
+        .val(settings.embedding_ollama_model)
         .on('input', function() {
-            settings.ollama_model = String($(this).val());
+            settings.embedding_ollama_model = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -4432,9 +4432,9 @@ function bindSettingsEvents(settings, callbacks) {
 
     // vLLM model
     $('#VectFox_vllm_model')
-        .val(settings.vllm_model)
+        .val(settings.embedding_vllm_model)
         .on('input', function() {
-            settings.vllm_model = String($(this).val());
+            settings.embedding_vllm_model = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -4497,9 +4497,9 @@ function bindSettingsEvents(settings, callbacks) {
 
     // OpenRouter model
     $('#VectFox_openrouter_model')
-        .val(settings.openrouter_model)
+        .val(settings.embedding_openrouter_model)
         .on('input', function() {
-            settings.openrouter_model = String($(this).val());
+            settings.embedding_openrouter_model = String($(this).val());
             Object.assign(extension_settings.vectfox, settings);
             saveSettingsDebounced();
         });
@@ -5084,12 +5084,12 @@ function copyDiagnosticsReport(results) {
     // Build provider URL info
     let providerUrl = 'n/a';
     if (source === 'ollama') {
-        providerUrl = settings.ollama_use_alt_endpoint && settings.ollama_alt_endpoint_url
-            ? settings.ollama_alt_endpoint_url
+        providerUrl = settings.embedding_ollama_url_override && settings.embedding_ollama_url
+            ? settings.embedding_ollama_url
             : (textgenerationwebui_settings?.server_urls?.[textgen_types?.OLLAMA] || 'http://localhost:11434');
     } else if (source === 'vllm') {
-        providerUrl = settings.vllm_use_alt_endpoint && settings.vllm_alt_endpoint_url
-            ? settings.vllm_alt_endpoint_url
+        providerUrl = settings.embedding_vllm_url_override && settings.embedding_vllm_url
+            ? settings.embedding_vllm_url
             : (textgenerationwebui_settings?.server_urls?.[textgen_types?.VLLM] || 'http://localhost:8000');
     }
 

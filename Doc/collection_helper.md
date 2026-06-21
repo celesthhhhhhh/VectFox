@@ -585,7 +585,7 @@ The "counts" suffix shows `chat: N msgs · vectorization: M msgs` when both numb
 | ✓ Check + no-collection | Open Content Vectorizer (`'chat'`) |
 | ✓ Check + partial | `setCollectionLock(registryKey, chatId)` + `setCollectionAutoSync(registryKey, true)` + toast "will catch up" |
 | ✓ Check + fully-vectorized | `setCollectionLock(registryKey, chatId)` + `setCollectionAutoSync(registryKey, true)` + toast "fully synced" |
-| ✗ Uncheck | `setCollectionAutoSync(registryKey, false)` + `removeCollectionLock(registryKey, chatId)` |
+| ✗ Uncheck | `setCollectionAutoSync(registryKey, false)` + `clearAutoSyncMarker(uuid)` only. **Does NOT remove the chat lock** — the lock is a separate concern (retrieval activation / explicit user choice via the DB Browser), so disabling auto-sync must not deactivate the collection. Unlocking is the DB Browser's job. |
 
 `registryKey` here is `status.registryKey` from `getChatAutoSyncStatus` — the canonical `"backend:id"` form. All four metadata read paths (this table, `refreshAutoSyncCheckbox`, `synchronizeChat`, `getChatAutoSyncStatus`) use the same form. After mutation, dispatches `vectfox:collections-updated` and re-runs `refreshAutoSyncCheckbox` so the LED updates.
 

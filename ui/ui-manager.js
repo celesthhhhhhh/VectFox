@@ -2319,7 +2319,7 @@ function bindSettingsEvents(settings, callbacks) {
             const $checkbox = $(this);
 
             const { getChatAutoSyncStatus } = await import('../core/eventbase-workflow.js');
-            const { setCollectionAutoSync, setCollectionLock, removeCollectionLock } = await import('../core/collection-metadata.js');
+            const { setCollectionAutoSync, setCollectionLock } = await import('../core/collection-metadata.js');
             const status = await getChatAutoSyncStatus(settings);
             const chatId = getCurrentChatId();
             log.lifecycle(`[AutoSync][checkbox] ${enabling ? 'CHECK' : 'UNCHECK'} → status.state=${status.state}, chatId=${chatId || '(none)'}, collection=${status.registryKey || status.collectionId || '(none)'}`);
@@ -2444,11 +2444,15 @@ function bindSettingsEvents(settings, callbacks) {
                     toastr.info('Summarizer Injection disabled (needs auto-sync)');
                 }
 
-                // Uncheck — clear the flag and release the chat lock.
+                // Uncheck — clear ONLY the auto-sync flag. Do NOT touch the chat
+                // lock: the lock is a separate concern (it marks the collection
+                // "active for this chat" for retrieval too, and the user may have
+                // set it deliberately via the DB Browser). Removing it here surprised
+                // users by deactivating a collection they only wanted to stop
+                // auto-syncing. Unlocking is the DB Browser's job, not this toggle's.
                 if (status.state !== 'no-collection') {
                     const lockKey = status.registryKey || status.collectionId;
                     setCollectionAutoSync(lockKey, false);
-                    if (chatId) removeCollectionLock(lockKey, chatId);
 
                     // Clear the marker so re-enabling later re-computes a fresh one
                     // against whatever collection state exists at that time.

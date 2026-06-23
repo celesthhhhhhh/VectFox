@@ -608,6 +608,21 @@ Hedging fixes this. If a request hasn't answered within the time limit (15s), Ve
 
 > 💡 Leave it on — it only ever activates when something is already going wrong, and it makes flaky cloud providers far less painful. It's automatically skipped for **local** models (Ollama, Transformers, llama.cpp, KoboldCpp), where a second connection wouldn't change anything. Set it to `0` to disable.
 
+**How do I configure NanoGPT as a provider?**
+First select **vLLM** as the provider — that's the OpenAI-compatible slot that exposes the custom URL fields NanoGPT needs. From there the embedding and summariser endpoints must be set up *differently*; the same base URL won't work for both. These settings are courtesy of Reddit user **[u/aturbofrog](https://www.reddit.com/user/aturbofrog/)**:
+
+| Setting             | Value                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| **Embeddings URL**  | `https://nano-gpt.com/api/v1/embeddings` — the full path is required; the base URL alone fails |
+| **Embeddings Model**| `Qwen/Qwen3-Embedding-8B`                                                                       |
+| **Summariser URL**  | `https://nano-gpt.com/api/v1/` — leave it at the base; appending `chat/completions` oddly fails the tests |
+| **Summariser Model**| `nvidia/nemotron-3-ultra-550b-a55b` (or any chat model you prefer)                              |
+
+A couple of gotchas:
+
+- **Enable paid models.** For embeddings to pass VectFox's connection tests, toggle **"Enable paid models on API"** on in your NanoGPT account settings.
+- **Zero output tokens is normal.** The NanoGPT usage page shows **zero output tokens** for every embedding run — that's expected (embeddings don't generate output tokens), not a sign anything is broken.
+
 ---
 
 ## 🐛 Troubleshooting

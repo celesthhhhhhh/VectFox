@@ -179,6 +179,17 @@ Because "most recent" only means anything if the database is current, the featur
 
 > 💡 Think of it as the one genuinely useful thing rolling-summary extensions do — *"always remind the AI what just happened"* — rebuilt on EventBase's structured events instead of a lossy recursive text blob. You get the guaranteed recent context **without** the detail-destroying re-summarization.
 
+#### 👻 Ghost vectorized messages — the token-saver payoff
+
+Once Summarizer Injection guarantees the recent thread is always in the prompt, the raw text of *older* messages becomes redundant — those turns already live in EventBase, and the structured recap above covers the recent ones. **Ghosting** cashes that in: every turn it keeps the most recent N messages verbatim and **blanks all older already-vectorized messages from the outgoing prompt**, so the model leans on EventBase memory (the injection above + semantic retrieval) instead of paying for the same history twice.
+
+- **Nothing is destroyed.** The wipe happens on a throwaway copy of the prompt only — your chat UI and the saved file are **untouched**, and the effect **resets every turn** (nothing to un-ghost, branch-safe). Lower the slider and the recap simply reaches further back next turn.
+- **Scales to any chat length.** "Keep the last N raw" auto-scales — a 2,000-message chat sends roughly the same number of raw turns as a 200-message one, with everything older served from memory. Token cost stops growing with chat length.
+- **Recall is the dial.** The fewer raw turns you keep, the more the AI relies on retrieval quality — so **check your recall as you lower the slider** and stop where the model still tracks the scene cleanly.
+- **World Info stays safe.** The wipe is floored so it never blanks a message World Info needs to scan, and it auto-pauses if WI could scan the whole chat — keyword triggers keep firing at any slider value.
+
+Because it leans entirely on EventBase being current, ghosting **requires Summarizer Injection** (which in turn forces the auto-sync window to 1, keeping the database one turn behind the live chat). Enable it right under Summarizer Injection in the **AutoSync** tab; default off.
+
 ### 🧠 Difference between traditional memory extensions
 
 Most existing memory extensions use one of two approaches. Both lose detail as the chat grows. Here's why — and how EventBase avoids it:

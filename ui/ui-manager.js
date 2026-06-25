@@ -2528,7 +2528,15 @@ function bindSettingsEvents(settings, callbacks) {
                 const data = await resp.json();
                 models = (data?.data || []).map(m => ({ id: m.id, label: m.name ? `${m.id} — ${m.name}` : m.id }));
             } else if (provider === 'vllm') {
-                const baseUrl = (settings.chat_vllm_url || '').replace(/\/$/, '').replace(/\/v1$/, '');
+                // Send the URL verbatim (trailing slash trimmed only). ST's /status
+                // does urlJoin(custom_url, '/models'), appending '/models' to exactly
+                // what we pass — it does NOT re-insert a version segment. Stripping a
+                // trailing '/v1' here made ST call <host>/models instead of
+                // <host>/v1/models, breaking model listing on every standard
+                // OpenAI-compatible endpoint (vLLM, OpenRouter, etc.). The summarizer
+                // and embedding call sites already pass the user's '/v1' through; this
+                // matches them. See GitHub issue #8.
+                const baseUrl = (settings.chat_vllm_url || '').trim().replace(/\/+$/, '');
                 if (!baseUrl) {
                     toastr.error('Set the vLLM Base URL first.', 'vLLM not configured');
                     return;
